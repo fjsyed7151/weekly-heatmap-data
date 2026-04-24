@@ -1792,6 +1792,11 @@
     border-top: none;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     overflow: hidden;
+    /* Container query root: grids below query their own width (i.e. the
+       sidebar's content width) and drop column count when tight, instead of
+       relying on the viewport-based media queries that don't know how wide
+       the sidebar itself is. */
+    container-type: inline-size;
   }
   .hm-app .hm-econ-subhead {
     background: var(--hm-bg-warm);
@@ -1805,18 +1810,26 @@
     border-bottom: 2px solid var(--hm-border);
   }
   .hm-app .hm-econ-body > .hm-econ-subhead:first-child { border-top: none; }
-  /* Responsive grids: auto-fit with a card floor. Cards stay at a readable
-     width; when the column narrows below the floor the grid drops a column
-     automatically (2 → 1, 3 → 2 → 1) instead of squishing. No horizontal
-     scroll needed. */
+  /* Grids use explicit column counts (not auto-fit) so 4-item groups like
+     Inflation always lay out as 2+2 rows, not 3+1 with empty cells. Container
+     queries below drop column count when the sidebar is tight. */
   .hm-app .hm-econ-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .hm-app .hm-econ-grid-3 {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .hm-app .hm-econ-grid-1 { grid-template-columns: 1fr; }
+  /* Tight body: 3-col groups drop to 2-col (keeps room for full card titles). */
+  @container (max-width: 360px) {
+    .hm-app .hm-econ-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  /* Very narrow body: everything stacks into a single column. */
+  @container (max-width: 260px) {
+    .hm-app .hm-econ-grid,
+    .hm-app .hm-econ-grid-3 { grid-template-columns: 1fr; }
+  }
   .hm-app .hm-econ-card {
     padding: 8px 12px;
     border-right: 1px solid var(--hm-border);
@@ -1843,7 +1856,8 @@
   .hm-app .hm-econ-row {
     display: flex;
     align-items: baseline;
-    gap: 12px;
+    gap: 8px;
+    flex-wrap: wrap;  /* prev drops below value if the card is too narrow to hold both */
   }
   .hm-app .hm-econ-value {
     font-size: 17px;
@@ -4849,7 +4863,7 @@
       var arrowCls = (val === prev) ? '' : (improved ? 'up' : 'down');
       var arrowChar = (val === prev) ? '\u2013' : (val > prev ? '\u25B2' : '\u25BC');
 
-      var asOf = ind.as_of ? '<span style="color:var(--hm-muted);font-size:10px;margin-left:4px">(' + ind.as_of + ')</span>' : '';
+      var asOf = ind.as_of ? '<span style="color:var(--hm-muted);font-size:10px;margin-left:4px;white-space:nowrap">(' + ind.as_of + ')</span>' : '';
       card.innerHTML =
         '<div class="hm-econ-name">' + ind.name + asOf + '</div>' +
         '<div class="hm-econ-row">' +
