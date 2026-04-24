@@ -6,6 +6,10 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<!-- Gridstack.js: drag + resize + rearrange for the main-column panels.
+     MIT license, vanilla JS, no dependencies. -->
+<link  href="https://cdn.jsdelivr.net/npm/gridstack@12.6.0/dist/gridstack.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gridstack@12.6.0/dist/gridstack-all.js"></script>
 <!-- iframe-resizer CHILD: auto-reports this document's height to a parent iframe.
      MIT license. No-op when loaded standalone (not in an iframe). -->
 <script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4.3.9/js/iframeResizer.contentWindow.min.js"></script>
@@ -149,6 +153,43 @@
   .hm-app .hm-main > * { max-width: 100%; }
   .hm-app.hm-left-hidden .hm-main { padding-left: 0; }
   .hm-app.hm-right-hidden .hm-main { padding-right: 0; }
+
+  /* Gridstack POC: minimal chrome so the panels look like they did before,
+     with drag handles (top edge) + a visible resize corner. */
+  .hm-app .grid-stack {
+    background: transparent;
+    min-height: 800px;
+  }
+  .hm-app .grid-stack-item-content {
+    /* Panels already have their own card chrome (borders, bg, padding).
+       The grid item content wrapper just provides the bounding box for
+       Gridstack — let the panel's native CSS show through. */
+    background: transparent;
+    border-radius: var(--hm-r);
+    overflow: visible;  /* Chart.js tooltips, dropdowns etc. can escape */
+    padding: 0;
+    box-sizing: border-box;
+  }
+  /* While dragging: highlight the ghost placeholder (the faint outline
+     showing where the item will drop). */
+  .hm-app .grid-stack > .grid-stack-placeholder > .placeholder-content {
+    background: rgba(218,165,32,0.10);
+    border: 2px dashed var(--hm-gold);
+    border-radius: var(--hm-r);
+  }
+  /* Resize handle, bottom-right. Visible gold corner triangle so users
+     know each panel is resizable. */
+  .hm-app .grid-stack-item > .ui-resizable-se,
+  .hm-app .grid-stack-item > .ui-resizable-handle {
+    filter: none;
+    opacity: 0.55;
+    transition: opacity 120ms;
+  }
+  .hm-app .grid-stack-item:hover > .ui-resizable-handle { opacity: 1; }
+  /* Whole panel gets a subtle move cursor on hover so the drag affordance
+     is discoverable. Only active when not hovering over interactive content. */
+  .hm-app .grid-stack-item > .grid-stack-item-content { cursor: default; }
+  .hm-app.hm-grid-editing .grid-stack-item > .grid-stack-item-content { cursor: move; }
 
   /* Draggable resize handles */
   .hm-app .hm-resize-handle {
@@ -2943,24 +2984,83 @@
         <div id="hm-currencies"></div>
       </div>
 
-      <!-- MAIN CONTENT -->
+      <!-- MAIN CONTENT — Gridstack-driven 12-column layout. Each .grid-stack-item
+           can be dragged (via .grid-stack-item-content drag cursor) and resized
+           (via bottom-right handle). Layout persists to localStorage. The chart
+           section and heat map below stay OUTSIDE the grid — they have special
+           behavior (conditional visibility + sticky header) that doesn't mix
+           well with grid resizing. -->
       <div class="hm-main">
-        <div id="hm-indexes"></div>
-        <div class="hm-gave-wrap" id="hm-gave-wrap">
-          <div id="hm-gave-quadrant"></div>
-          <div id="hm-gave-charts"></div>
+        <div class="grid-stack" id="hm-grid">
+          <div class="grid-stack-item" gs-id="hm-indexes" gs-w="12" gs-h="3">
+            <div class="grid-stack-item-content">
+              <div id="hm-indexes"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-gave-wrap" gs-w="12" gs-h="8">
+            <div class="grid-stack-item-content">
+              <div class="hm-gave-wrap" id="hm-gave-wrap">
+                <div id="hm-gave-quadrant"></div>
+                <div id="hm-gave-charts"></div>
+              </div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-macrocompass" gs-w="12" gs-h="7">
+            <div class="grid-stack-item-content">
+              <div id="hm-macrocompass"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-stylefactor" gs-w="6" gs-h="5">
+            <div class="grid-stack-item-content">
+              <div id="hm-stylefactor"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-factors" gs-w="6" gs-h="8">
+            <div class="grid-stack-item-content">
+              <div id="hm-factors"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-fixed-income" gs-w="12" gs-h="10">
+            <div class="grid-stack-item-content">
+              <div id="hm-fixed-income"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-w="12" gs-h="8">
+            <div class="grid-stack-item-content">
+              <div id="hm-global-indexes"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-country-etfs" gs-w="12" gs-h="12">
+            <div class="grid-stack-item-content">
+              <div id="hm-country-etfs"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-w="12" gs-h="8">
+            <div class="grid-stack-item-content">
+              <div id="hm-commodity-perf"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-majors-compare" gs-w="12" gs-h="3">
+            <div class="grid-stack-item-content">
+              <div id="hm-majors-compare"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-w="12" gs-h="8">
+            <div class="grid-stack-item-content">
+              <div id="hm-currency-matrix"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-theme-treemap" gs-w="12" gs-h="10">
+            <div class="grid-stack-item-content">
+              <div id="hm-theme-treemap"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-sector-chart" gs-w="12" gs-h="10">
+            <div class="grid-stack-item-content">
+              <div id="hm-sector-chart"></div>
+            </div>
+          </div>
         </div>
-        <div id="hm-macrocompass"></div>
-        <div id="hm-stylefactor"></div>
-        <div id="hm-factors"></div>
-        <div id="hm-fixed-income"></div>
-        <div id="hm-global-indexes"></div>
-        <div id="hm-country-etfs"></div>
-        <div id="hm-commodity-perf"></div>
-        <div id="hm-majors-compare"></div>
-        <div id="hm-currency-matrix"></div>
-        <div id="hm-theme-treemap"></div>
-        <div id="hm-sector-chart"></div>
 
         <!-- Metrics chart (appears when metrics selected) -->
         <div class="hm-chart-section" id="hm-chart-section" hidden>
@@ -4187,10 +4287,29 @@
   function applyBlockVisibility() {
     var hidden = getHiddenBlocks();
     TOGGLEABLE_BLOCKS.forEach(function (b) {
-      var el = document.getElementById(b.id);
+      /* Main-column panels live inside a .grid-stack-item; toggling the WRAPPER
+         lets Gridstack compact the layout upward. Sidebar panels have no grid
+         wrapper so fall back to toggling the panel itself. */
+      var gridItem = document.querySelector('.grid-stack-item[gs-id="' + b.id + '"]');
+      var el = gridItem || document.getElementById(b.id);
       if (!el) return;
-      if (hidden.indexOf(b.id) >= 0) el.style.display = 'none';
-      else el.style.removeProperty('display');
+      var shouldHide = hidden.indexOf(b.id) >= 0;
+      if (gridItem && typeof window !== 'undefined' && window.gridInstance) {
+        if (shouldHide && gridItem.gridstackNode) {
+          /* Remove from grid without destroying DOM so we can re-add later. */
+          window.gridInstance.removeWidget(gridItem, false, false);
+          gridItem.style.display = 'none';
+        } else if (!shouldHide && !gridItem.gridstackNode) {
+          gridItem.style.removeProperty('display');
+          window.gridInstance.makeWidget(gridItem);
+        } else if (!shouldHide) {
+          gridItem.style.removeProperty('display');
+        }
+      } else {
+        /* Pre-gridstack init (or sidebar item) — plain display toggle. */
+        if (shouldHide) el.style.display = 'none';
+        else el.style.removeProperty('display');
+      }
     });
     /* Collapse wrapper containers when all their togglable children are hidden,
        otherwise the wrapper's own border/padding renders as an empty box. */
@@ -4275,6 +4394,15 @@
     if (reset) {
       reset.addEventListener('click', function () {
         setHiddenBlocks([]);
+        /* Also nuke any saved grid layout so the user gets a true "reset to
+           default" — both visibility AND panel positions return to their
+           initial states. Since we need to re-create grid items from default
+           sizes, a page reload is the reliable path. */
+        try { localStorage.removeItem('hm-grid-layout-v1'); } catch (e) {}
+        if (window.gridInstance) {
+          window.location.reload();
+          return;
+        }
         applyBlockVisibility();
         buildCustomizePanel();
       });
@@ -7181,6 +7309,89 @@
      in the <head>. It measures the document, posts heights to the parent,
      and updates on content changes (charts rendering, etc.) automatically. */
 
+  /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
+  var LAYOUT_KEY = 'hm-grid-layout-v1';
+  var gridInstance = null;
+
+  function initGridStack() {
+    if (!window.GridStack) {
+      console.warn('[gridstack] library not loaded — skipping layout init');
+      return;
+    }
+    /* Try to restore saved layout. Shape: [{id, x, y, w, h}, ...] */
+    var saved = null;
+    try {
+      var raw = localStorage.getItem(LAYOUT_KEY);
+      if (raw) saved = JSON.parse(raw);
+    } catch (e) {}
+
+    gridInstance = GridStack.init({
+      column: 12,
+      cellHeight: 80,
+      margin: 8,
+      float: false,                            /* items compact upward — no gaps */
+      alwaysShowResizeHandle: false,           /* appears on hover */
+      resizable: { handles: 'se,s,e' },        /* resize from SE corner, south + east edges */
+      /* Drag handle: use the header area of panels that have one, else whole body. */
+      draggable: { handle: '.grid-stack-item-content' },
+      animate: true,
+      disableOneColumnMode: false,             /* collapse to 1-col on very narrow viewports */
+      minRow: 1,
+    }, '#hm-grid');
+    /* Exposed globally so the customize-view's applyBlockVisibility can add /
+       remove widgets as panels are toggled. */
+    window.gridInstance = gridInstance;
+
+    if (saved && Array.isArray(saved) && saved.length) {
+      /* Apply saved positions/sizes without re-creating DOM. */
+      try { gridInstance.load(saved, false); }
+      catch (e) { console.warn('[gridstack] failed to restore saved layout:', e); }
+    }
+
+    /* Persist layout on every change (drag end, resize end, item removed). */
+    gridInstance.on('change removed added', function () {
+      try {
+        var layout = gridInstance.save(false);  /* false: positions only, no content */
+        localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+      } catch (e) { /* localStorage quota / private-mode — silently ignore */ }
+    });
+
+    /* When a panel resizes, Chart.js instances inside it need to be told to
+       re-measure. The charts themselves have responsive: true + maintainAspectRatio:
+       false, so they'll auto-fit once their canvas box changes — but Chart.js
+       only listens to window resize. Poke each chart manually. */
+    gridInstance.on('resizestop', function (event, el) {
+      /* Iterate all chart instances we track and ask each to resize. Cheap. */
+      var pools = [
+        typeof chartInstances !== 'undefined' ? chartInstances : [],
+        typeof gaveChartInstances !== 'undefined' ? gaveChartInstances : [],
+        typeof indexChartInstances !== 'undefined' ? indexChartInstances : [],
+        typeof sectorCharts !== 'undefined' ? sectorCharts : [],
+      ];
+      pools.forEach(function (pool) {
+        (pool || []).forEach(function (c) {
+          if (c && typeof c.resize === 'function') {
+            try { c.resize(); } catch (e) {}
+          } else if (c && c.chart && typeof c.chart.resize === 'function') {
+            try { c.chart.resize(); } catch (e) {}
+          }
+        });
+      });
+    });
+  }
+
+  /* Expose a reset function for the customize panel "Show all" button to clear
+     the saved layout too, returning to the default DOM-order sizes. */
+  function resetGridLayout() {
+    try { localStorage.removeItem(LAYOUT_KEY); } catch (e) {}
+    if (gridInstance) {
+      /* Easiest reliable reset: reload the page. Rebuilding the grid in place
+         is fragile because each panel's internal Chart.js instances would need
+         to be destroyed and re-created. */
+      window.location.reload();
+    }
+  }
+
   fetch(HEATMAP_URL + "?t=" + Math.floor(Date.now() / 600000))
     .then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -7218,6 +7429,7 @@
           }, { passive: true });
         }
       });
+      safeRender('gridstack', initGridStack);
     })
     .catch(function (err) {
       document.getElementById("hm-table").innerHTML =
