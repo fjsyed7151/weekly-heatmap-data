@@ -2099,13 +2099,13 @@
   }
 
   /* Fixed Income rankings panel — reuses the factors card chrome (header,
-     period pills, scroll wrapper) but has 4 columns and shows raw period
+     period pills, scroll wrapper) but has 5 columns and shows raw period
      returns (no vs-benchmark). */
   .hm-app .hm-fi-body {
     display: grid;
-    grid-template-columns: repeat(4, minmax(190px, 1fr));
+    grid-template-columns: repeat(5, minmax(180px, 1fr));
     gap: 0;
-    min-width: 760px;  /* 4 cols × 190px floor triggers horizontal scroll */
+    min-width: 900px;  /* 5 cols × 180px floor triggers horizontal scroll */
   }
   .hm-app .hm-fi-col {
     border-right: 1px solid var(--hm-border);
@@ -5783,6 +5783,16 @@
     IGOV: "iShares International Treasury Bond. Ex-US developed market sovereign bonds, USD-hedged.",
     EMB:  "iShares JPM USD Emerging Markets Bond. Dollar-denominated EM sovereign debt. Spread product with FX resilience.",
     EMLC: "VanEck JPM EM Local Currency Bond. Local-currency EM sovereign debt. Higher yield plus direct EM FX exposure.",
+    VWOB: "Vanguard EM Government Bond. Alternative USD-denominated EM sovereign basket. Different index than EMB but similar exposure.",
+    EMHY: "iShares EM High Yield Bond. Just the below-investment-grade slice of USD EM sovereign + corporate debt.",
+    EMIH: "iShares EM Corp USD IG Bond. Investment-grade EM corporate debt in USD. Higher yield than US IG, lower risk than EMHY.",
+    IGSB: "iShares 1-5 Year Investment Grade Corp. Short-duration US IG corporate bonds. Lower rate sensitivity than LQD.",
+    IGIB: "iShares 5-10 Year Investment Grade Corp. Intermediate US IG corporate bonds. Core-duration IG bucket.",
+    IGLB: "iShares 10+ Year Investment Grade Corp. Long-duration US IG corporate bonds. Maximum spread + duration combo.",
+    QLTA: "iShares Aaa-A Rated Corporate Bond. Top-rated IG corporates only. Lowest-credit-risk slice of LQD.",
+    USHY: "iShares Broad USD High Yield Corporate. Alternative broad HY index to HYG; different constituents, similar total exposure.",
+    SHYG: "iShares 0-5 Year High Yield Corp. Short-duration HY. Less rate-sensitive than HYG, similar default risk.",
+    ANGL: "VanEck Fallen Angel High Yield. HY bonds that were recently IG but got downgraded. BB-concentrated, tends to outperform broad HY over cycles.",
   };
 
   function renderFixedIncome(data) {
