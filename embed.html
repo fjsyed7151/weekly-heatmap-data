@@ -111,8 +111,10 @@
     scrollbar-width: thin;
     scrollbar-color: var(--hm-border-strong) transparent;
   }
-  .hm-app .hm-col-left { padding-right: 16px; padding-bottom: 48px; }
-  .hm-app .hm-col-right { padding-left: 16px; padding-bottom: 48px; }
+  /* Small 6px gutter on the scrollbar-facing side of each sidebar so the
+     scrollbar reads as attached to the table without crowding it. */
+  .hm-app .hm-col-left  { padding-right: 6px;  padding-bottom: 48px; }
+  .hm-app .hm-col-right { padding-left: 16px; padding-right: 6px; padding-bottom: 48px; }
   .hm-app .hm-col-left::-webkit-scrollbar,
   .hm-app .hm-col-right::-webkit-scrollbar { width: 10px; }
   .hm-app .hm-col-left::-webkit-scrollbar-track,
