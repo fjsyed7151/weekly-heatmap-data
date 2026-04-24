@@ -3802,6 +3802,20 @@
       if (hidden.indexOf(b.id) >= 0) el.style.display = 'none';
       else el.style.removeProperty('display');
     });
+    /* Collapse wrapper containers when all their togglable children are hidden,
+       otherwise the wrapper's own border/padding renders as an empty box. */
+    collapseEmptyWrapper('hm-gave-wrap', ['hm-gave-quadrant', 'hm-gave-charts']);
+  }
+
+  function collapseEmptyWrapper(wrapId, childIds) {
+    var wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    var allHidden = childIds.every(function (id) {
+      var el = document.getElementById(id);
+      return !el || el.style.display === 'none';
+    });
+    if (allHidden) wrap.style.display = 'none';
+    else           wrap.style.removeProperty('display');
   }
   function setBlockHidden(id, hide) {
     var hidden = getHiddenBlocks();
