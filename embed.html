@@ -73,10 +73,21 @@
     font-size: 14px;
     line-height: 1.55;
     color: var(--hm-dark);
-    background: var(--hm-bg);
+    /* Dotted grid pattern so it reads visually as a grid the user can
+       rearrange. Darker enough to be seen on the default bg without
+       competing with content. */
+    background-color: var(--hm-bg);
+    background-image:
+      radial-gradient(circle, rgba(138, 126, 94, 0.32) 1.3px, transparent 1.5px);
+    background-size: 22px 22px;
+    background-position: 0 0;
     -webkit-font-smoothing: antialiased;
     width: 100%;
     overflow-anchor: none;
+  }
+  .hm-app.dark {
+    background-image:
+      radial-gradient(circle, rgba(255, 255, 255, 0.10) 1.3px, transparent 1.5px);
   }
   .hm-app button { font-family: 'Karla', sans-serif; }
 
@@ -95,44 +106,56 @@
 
   .hm-app .hm-main {
     min-width: 0;
-    overflow: hidden;
     padding: 0;
+    /* NOTE: do NOT set overflow: hidden here — it creates a scroll container
+       that prevents .hm-pinned-bar's position:sticky from sticking to the
+       viewport as the user scrolls the page. */
   }
   .hm-app .hm-main > * { max-width: 100%; }
 
-  /* Pinned-to-top bar — sticks below the topbar. Pinned panels get full width
-     and natural height (Gridstack's absolute positioning is overridden). */
+  /* Pinned-to-top bar — sticks below the topbar as the page scrolls.
+     Pinned panels are laid out in a horizontal flex row so they keep
+     something close to their original width; they wrap on narrow viewports. */
   .hm-app .hm-pinned-bar {
     position: sticky;
     top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px));
-    z-index: 8;
+    z-index: 50;                                    /* above grid items */
     background: var(--hm-bg);
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px 0;
-    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 0;
+    margin-bottom: 12px;
     border-bottom: 1px solid var(--hm-border);
-    max-height: calc(100vh - var(--hm-header-offset, 0px) - var(--hm-topbar-h, 52px) - 24px);
+    /* Cap the stack at half the viewport so a tall pinned panel (like the
+       commodities table) doesn't swallow the screen. Scroll inside if needed. */
+    max-height: 50vh;
     overflow-y: auto;
   }
   .hm-app .hm-pinned-bar:empty {
     display: none;
   }
   /* Override Gridstack's absolute positioning when an item lives in the
-     pinned bar — let it flow naturally, full-width, intrinsic height. */
+     pinned bar — let it flow naturally. Width is set inline at pin time
+     to a percentage derived from the item's original grid width so panels
+     don't balloon to full width when pinned. Height is intrinsic but
+     capped so tall tables don't dominate. */
   .hm-app .hm-pinned-bar > .grid-stack-item {
     position: relative !important;
     left: auto !important;
     top: auto !important;
-    width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
+    max-height: 45vh;
     transform: none !important;
+    flex: 0 1 auto;
+    overflow: hidden;
   }
   .hm-app .hm-pinned-bar > .grid-stack-item > .grid-stack-item-content {
     position: static !important;
     height: auto !important;
+    max-height: 45vh;
+    overflow: auto;
   }
 
   /* Right-click context menu on grid panels. */
@@ -172,7 +195,11 @@
   }
   .hm-app .grid-stack-item-content {
     /* Flex column: injected .hm-panel-header sits on top (fixed height),
-       the panel's card content fills the rest. */
+       the panel's card content fills the rest. NOTE: Gridstack positions
+       this via `top:12; bottom:12` (inset). Don't set `height: 100%` here —
+       that combined with top+bottom over-constrains the box and the
+       content overflows the outer grid-stack-item by 12px, eating the
+       vertical gap between panels. */
     background: transparent;
     border-radius: var(--hm-r);
     overflow: visible;  /* Chart.js tooltips, dropdowns etc. can escape */
@@ -180,7 +207,6 @@
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    height: 100%;
   }
   .hm-app .grid-stack-item-content > .hm-panel-header {
     flex: 0 0 auto;
@@ -247,34 +273,23 @@
     border-color: var(--hm-gold);
   }
   .hm-app .hm-panel-btn svg { width: 14px; height: 14px; display: block; }
-  /* Chart panels: opt-in fill chain from grid item → canvas wrap. Adding a
-     class wouldn't propagate without DOM changes in renderers, so target
-     existing structure by ID/class. resizestop pokes Chart.js so canvases
-     remeasure on drag-end. */
-  .hm-app #hm-sector-chart {
+  /* Chart panels: opt-in fill chain from grid item → canvas wrap so the
+     canvas grows when users resize a panel taller. resizestop pokes
+     Chart.js so canvases remeasure on drag-end. */
+  .hm-app #hm-sector-chart,
+  .hm-app #hm-sector-chart > .hm-sector-section {
     display: flex;
     flex-direction: column;
   }
   .hm-app #hm-sector-chart > .hm-sector-section {
     flex: 1 1 auto;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .hm-app .hm-sector-section > .hm-sector-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
   }
   .hm-app #hm-sector-chart-area {
+    display: flex;
+    flex-direction: column;
     flex: 1 1 auto;
-    min-height: 200px;
-    position: relative;
-  }
-  .hm-app .hm-sector-canvas-wrap {
-    position: absolute;
-    inset: 0;
+    min-height: 320px;
   }
   /* Gave four-quadrants panel: the wrap holds quadrant + three mini-charts
      in a column. Let the mini-charts row stretch when the panel grows. */
@@ -1615,10 +1630,14 @@
     border-top: none;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 16px;
-    overflow-x: auto;
-    /* Flex column so #hm-sector-chart-area can flex:1 and fill the body. */
+    /* Flex column so #hm-sector-chart-area can flex:1 and fill the body.
+       overflow auto so if user resizes panel smaller than content fits,
+       content scrolls inside the panel instead of overflowing past its
+       bottom edge (which was bleeding into the panel below). */
     display: flex;
     flex-direction: column;
+    overflow: auto;
+    min-height: 0;
   }
   .hm-app .hm-sector-canvas-wrap {
     position: relative;
@@ -3100,7 +3119,7 @@
           <div class="grid-stack-item" gs-id="hm-majors-compare" gs-x="0" gs-y="81"  gs-w="12" gs-h="6"><div class="grid-stack-item-content"><div id="hm-majors-compare"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="0" gs-y="87" gs-w="12" gs-h="9"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="0" gs-y="96"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="111" gs-w="12" gs-h="22"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="111" gs-w="12" gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
         </div>
 
         <!-- Metrics chart (appears when metrics selected) -->
@@ -7414,19 +7433,22 @@
     if (!item) return;
     /* Save current size so we can restore on unpin. */
     var node = item.gridstackNode;
+    var origW = (node && node.w) || parseInt(item.getAttribute('gs-w') || 12, 10);
     if (node) {
       item.dataset.unpinW = node.w;
       item.dataset.unpinH = node.h;
     }
     /* Remove from gridstack tracking but keep DOM (second arg = removeDOM=false). */
     try { gridInstance.removeWidget(item, false, false); } catch (e) {}
-    /* Strip Gridstack's inline positioning so CSS in .hm-pinned-bar can
-       lay it out as a regular block element. */
+    /* Strip Gridstack's inline positioning. Set width as a % of the grid
+       matching the item's original column span so a w=6 panel stays ~50% wide
+       when pinned, not 100%. Minimum 240px so narrow items stay legible. */
     item.style.left = '';
     item.style.top = '';
-    item.style.width = '';
     item.style.height = '';
     item.style.transform = '';
+    var pct = Math.max(20, Math.min(100, Math.round((origW / 12) * 100)));
+    item.style.width = 'max(240px, ' + pct + '% - 12px)';
     var bar = document.getElementById('hm-pinned-bar');
     if (bar) bar.appendChild(item);
     /* Persist if not already there. */
@@ -7445,6 +7467,9 @@
     var h = parseInt(item.dataset.unpinH || item.getAttribute('gs-h') || 4, 10);
     item.setAttribute('gs-w', w);
     item.setAttribute('gs-h', h);
+    /* Clear the inline width we set in pinItemById so Gridstack can size
+       the item by gs-w again. */
+    item.style.width = '';
     var grid = document.getElementById('hm-grid');
     if (grid) grid.appendChild(item);
     try { gridInstance.makeWidget(item); } catch (e) {}
