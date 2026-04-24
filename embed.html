@@ -1088,72 +1088,27 @@
     color: var(--hm-brown);
     line-height: 1.3;
   }
-  /* Position marker inside the active quadrant: a thin vertical guide line
-     from top of the cell down to a gold dot at (dev_x, dev_y), plus a "NOW"
-     label just below the dot. All three pieces sit at z-index: 1, BELOW the
-     cell text (z-index: 2), so the marker never obscures the title or hint. */
-  .hm-app .hm-gave-line,
-  .hm-app .hm-mc-line {
+  /* Position marker: two dotted crosshair lines projecting from the cell's
+     OUTER edges (the ones touching the axis labels) inward to the actual
+     (dev_x, dev_y) position. Reads like a coordinate read-out: horizontal
+     line along the Y value, vertical line along the X value. No dot, no
+     label — lines alone convey position and z-index: 1 keeps them behind
+     the cell text (z-index: 2) so nothing gets obscured. */
+  .hm-app .hm-quad-vline,
+  .hm-app .hm-quad-hline {
     position: absolute;
-    top: 0;
-    width: 1px;
-    transform: translateX(-50%);
-    background: linear-gradient(to bottom, rgba(218,165,32,0) 0%, rgba(218,165,32,0.55) 100%);
     pointer-events: none;
     z-index: 1;
   }
-  .hm-app .hm-gave-dot,
-  .hm-app .hm-mc-dot {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 1;
+  .hm-app .hm-quad-vline {
+    width: 0;
+    border-left: 1px dotted var(--hm-gold);
+    transform: translateX(-0.5px);
   }
-  .hm-app .hm-gave-dot::before,
-  .hm-app .hm-mc-dot::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: var(--hm-gold);
-    border: 2px solid var(--hm-panel);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  }
-  .hm-app .hm-gave-dot::after,
-  .hm-app .hm-mc-dot::after {
-    content: '';
-    position: absolute;
-    inset: -6px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(218,165,32,0.55);
-    animation: hm-gave-pulse 2.2s ease-in-out infinite;
-    pointer-events: none;
-  }
-  @keyframes hm-gave-pulse {
-    0%, 100% { transform: scale(1);    opacity: 0.65; }
-    50%      { transform: scale(1.35); opacity: 0.15; }
-  }
-  .hm-app .hm-gave-now,
-  .hm-app .hm-mc-now {
-    position: absolute;
-    transform: translate(-50%, 14px);
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.7px;
-    color: var(--hm-dark);
-    background: rgba(255,255,255,0.8);
-    padding: 1px 5px;
-    border-radius: 3px;
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 1;
-  }
-  .hm-app.dark .hm-gave-now,
-  .hm-app.dark .hm-mc-now {
-    background: rgba(11,13,18,0.8);
-    color: var(--hm-white);
+  .hm-app .hm-quad-hline {
+    height: 0;
+    border-top: 1px dotted var(--hm-gold);
+    transform: translateY(-0.5px);
   }
 
   /* Gave companion charts — three ratio lines with 7y MA overlay, rendered
@@ -1423,7 +1378,7 @@
     padding: 12px 16px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     position: relative;
     overflow: hidden;
   }
@@ -1433,23 +1388,29 @@
     text-transform: uppercase;
     color: var(--hm-brown);
   }
+  /* Stack price + change vertically instead of side-by-side: the change
+     string (e.g. "+123.45 (+0.98%)") used to wrap awkwardly next to the
+     big price when the card narrowed. Stacked = always stable layout. */
   .hm-app .hm-idx-row {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
   }
   .hm-app .hm-idx-close {
-    font-size: 22px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--hm-dark);
-    line-height: 1.1;
+    line-height: 1.2;
     font-variant-numeric: tabular-nums;
   }
   .hm-app .hm-idx-change {
-    font-size: 13px;
-    font-weight: 700;
-    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
   .hm-app .hm-idx-change.up { color: var(--hm-green); }
   .hm-app .hm-idx-change.down { color: var(--hm-red); }
@@ -1811,7 +1772,23 @@
     border: 1px solid var(--hm-border);
     border-top: none;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
-    overflow: hidden;
+    /* Horizontal scroll when the sidebar is narrower than the grid floor.
+       Prevents cards from squeezing into unreadable wraps. */
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .hm-app .hm-econ-body > .hm-econ-grid,
+  .hm-app .hm-econ-body > .hm-econ-subhead {
+    min-width: 300px;
+  }
+  .hm-app .hm-econ-body::-webkit-scrollbar { height: 8px; }
+  .hm-app .hm-econ-body::-webkit-scrollbar-thumb {
+    background: var(--hm-border);
+    border-radius: 4px;
+  }
+  .hm-app .hm-econ-body::-webkit-scrollbar-track {
+    background: var(--hm-bg-warm);
   }
   .hm-app .hm-econ-subhead {
     background: var(--hm-bg-warm);
@@ -4113,34 +4090,30 @@
          [-1, +1] where +1 = right/top edge, -1 = left/bottom edge. Map into
          cell's own coordinate space, with padding to avoid hugging edges. */
       if (c.key === g.quadrant) {
-        /* Line + dot + label marker. The guide line drops from the top of
-           the cell down to the dot; the dot sits at the actual (dev_x, dev_y)
-           position; the "NOW" label hangs just below the dot. All three live
-           at z-index: 1, under the cell text (z-index: 2), so text is never
-           obscured. */
+        /* Dotted crosshair. Each line projects from the cell's OUTER edge
+           (the one touching its axis label) inward to the (dev_x, dev_y)
+           coordinate. For left-column cells the horizontal line grows from
+           the left edge rightward; for right-column cells it grows from
+           the right edge leftward. Vertical line analogous for row. */
         var inX = Math.abs(g.dev_x);
         var inY = Math.abs(g.dev_y);
-        var leftPct = 10 + inX * 80;
+        /* Within the cell: inX=1 means AT the outer edge, inX=0 at grid center. */
+        var leftPct = c.col === 0 ? (90 - inX * 80) : (10 + inX * 80);
         var topPct  = c.row === 0 ? (90 - inY * 80) : (10 + inY * 80);
 
-        var line = document.createElement('div');
-        line.className = 'hm-gave-line';
-        line.style.left   = leftPct + '%';
-        line.style.height = topPct + '%';
-        cell.appendChild(line);
+        var vLine = document.createElement('div');
+        vLine.className = 'hm-quad-vline';
+        vLine.style.left = leftPct + '%';
+        if (c.row === 0) { vLine.style.top = '0';            vLine.style.height = topPct + '%'; }
+        else             { vLine.style.top = topPct + '%';   vLine.style.bottom = '0';          }
+        cell.appendChild(vLine);
 
-        var dot = document.createElement('div');
-        dot.className = 'hm-gave-dot';
-        dot.style.left = leftPct + '%';
-        dot.style.top  = topPct  + '%';
-        cell.appendChild(dot);
-
-        var label = document.createElement('span');
-        label.className = 'hm-gave-now';
-        label.textContent = 'NOW';
-        label.style.left = leftPct + '%';
-        label.style.top  = topPct  + '%';
-        cell.appendChild(label);
+        var hLine = document.createElement('div');
+        hLine.className = 'hm-quad-hline';
+        hLine.style.top = topPct + '%';
+        if (c.col === 0) { hLine.style.left = '0';           hLine.style.width = leftPct + '%'; }
+        else             { hLine.style.left = leftPct + '%'; hLine.style.right = '0';           }
+        cell.appendChild(hLine);
       }
       grid.appendChild(cell);
     });
@@ -4397,31 +4370,26 @@
         '</div>';
 
       if (c.key === m.quadrant) {
-        /* Line + dot + "NOW" label marker, same as Gave. Full-range
-           positioning for both axes; text sits on top via z-index. */
+        /* Dotted crosshair projecting inward from the cell's outer edges,
+           same design as the Gave quadrant above. */
         var inX = Math.abs(m.dev_x);
         var inY = Math.abs(m.dev_y);
-        var leftPct = 10 + inX * 80;
+        var leftPct = c.col === 0 ? (90 - inX * 80) : (10 + inX * 80);
         var topPct  = c.row === 0 ? (90 - inY * 80) : (10 + inY * 80);
 
-        var line = document.createElement('div');
-        line.className = 'hm-mc-line';
-        line.style.left   = leftPct + '%';
-        line.style.height = topPct + '%';
-        cell.appendChild(line);
+        var vLine = document.createElement('div');
+        vLine.className = 'hm-quad-vline';
+        vLine.style.left = leftPct + '%';
+        if (c.row === 0) { vLine.style.top = '0';            vLine.style.height = topPct + '%'; }
+        else             { vLine.style.top = topPct + '%';   vLine.style.bottom = '0';          }
+        cell.appendChild(vLine);
 
-        var dot = document.createElement('div');
-        dot.className = 'hm-mc-dot';
-        dot.style.left = leftPct + '%';
-        dot.style.top  = topPct  + '%';
-        cell.appendChild(dot);
-
-        var label = document.createElement('span');
-        label.className = 'hm-mc-now';
-        label.textContent = 'NOW';
-        label.style.left = leftPct + '%';
-        label.style.top  = topPct  + '%';
-        cell.appendChild(label);
+        var hLine = document.createElement('div');
+        hLine.className = 'hm-quad-hline';
+        hLine.style.top = topPct + '%';
+        if (c.col === 0) { hLine.style.left = '0';           hLine.style.width = leftPct + '%'; }
+        else             { hLine.style.left = leftPct + '%'; hLine.style.right = '0';           }
+        cell.appendChild(hLine);
       }
       grid.appendChild(cell);
     });
