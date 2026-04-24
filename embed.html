@@ -102,6 +102,10 @@
     top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px));
     max-height: calc(100vh - var(--hm-header-offset, 0px) - var(--hm-topbar-h, 52px) - 24px);
     overflow-y: auto;
+    /* Explicit overflow-x: hidden. Without this, setting overflow-y implies
+       overflow-x: auto too, which creates a rogue horizontal scrollbar at the
+       sidebar level whenever any child is wider than the sidebar. */
+    overflow-x: hidden;
     overscroll-behavior: contain;
     min-width: 0;
     scrollbar-width: thin;
@@ -1784,27 +1788,6 @@
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     overflow: hidden;
   }
-  /* Horizontal scroll moved to the section level so the header bar + subheads
-     + cards all stretch to the same min-width and scroll in unison. Scrolling
-     only the body would leave the yellow header clipped behind scrolled cards,
-     which looks broken. */
-  .hm-app .hm-econ-section {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-  .hm-app .hm-econ-section > .hm-econ-header,
-  .hm-app .hm-econ-section > .hm-econ-body {
-    min-width: 300px;
-  }
-  .hm-app .hm-econ-section::-webkit-scrollbar { height: 8px; }
-  .hm-app .hm-econ-section::-webkit-scrollbar-thumb {
-    background: var(--hm-border);
-    border-radius: 4px;
-  }
-  .hm-app .hm-econ-section::-webkit-scrollbar-track {
-    background: var(--hm-bg-warm);
-  }
   .hm-app .hm-econ-subhead {
     background: var(--hm-bg-warm);
     color: var(--hm-gold);
@@ -1817,11 +1800,17 @@
     border-bottom: 2px solid var(--hm-border);
   }
   .hm-app .hm-econ-body > .hm-econ-subhead:first-child { border-top: none; }
+  /* Responsive grids: auto-fit with a card floor. Cards stay at a readable
+     width; when the column narrows below the floor the grid drops a column
+     automatically (2 → 1, 3 → 2 → 1) instead of squishing. No horizontal
+     scroll needed. */
   .hm-app .hm-econ-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
-  .hm-app .hm-econ-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .hm-app .hm-econ-grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
   .hm-app .hm-econ-grid-1 { grid-template-columns: 1fr; }
   .hm-app .hm-econ-card {
     padding: 8px 12px;
@@ -1829,28 +1818,13 @@
     border-bottom: 1px solid var(--hm-border);
     position: relative;
   }
-  /* Strip right-border on the last column of each layout */
-  .hm-app .hm-econ-grid > .hm-econ-card:nth-child(2n) { border-right: none; }
-  .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(3n) { border-right: none; }
-  .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(2n):not(:nth-child(3n)) { border-right: 1px solid var(--hm-border); }
-  .hm-app .hm-econ-grid-1 > .hm-econ-card { border-right: none; }
-  /* Strip bottom border on the final row so groups end clean */
+  /* Strip trailing bottom border so the last row's cards sit flush with the
+     body's bottom edge. Right-border stripping by nth-child doesn't work with
+     auto-fit (column count varies), so we keep a border-right on every card
+     and let the body's own border-right on the rightmost column be obscured
+     by the outer frame border. */
   .hm-app .hm-econ-grid > .hm-econ-card:last-child { border-bottom: none; }
-  .hm-app .hm-econ-grid > .hm-econ-card:nth-last-child(2):nth-child(odd) { border-bottom: none; }
-  .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(-n+3) { border-bottom: none; }
-  @media (max-width: 1100px) {
-    .hm-app .hm-econ-grid:not(.hm-econ-grid-3):not(.hm-econ-grid-1) { grid-template-columns: repeat(4, 1fr); }
-    .hm-app .hm-econ-grid:not(.hm-econ-grid-3):not(.hm-econ-grid-1) > .hm-econ-card:nth-child(2n) { border-right: 1px solid var(--hm-border); }
-    .hm-app .hm-econ-grid:not(.hm-econ-grid-3):not(.hm-econ-grid-1) > .hm-econ-card:nth-child(4n) { border-right: none; }
-  }
-  @media (max-width: 600px) {
-    .hm-app .hm-econ-grid,
-    .hm-app .hm-econ-grid-3 { grid-template-columns: repeat(2, 1fr); }
-    .hm-app .hm-econ-grid > .hm-econ-card:nth-child(4n) { border-right: 1px solid var(--hm-border); }
-    .hm-app .hm-econ-grid > .hm-econ-card:nth-child(2n) { border-right: none; }
-    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(2n) { border-right: none; }
-    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(3n):not(:nth-child(2n)) { border-right: 1px solid var(--hm-border); }
-  }
+  .hm-app .hm-econ-grid-1 > .hm-econ-card { border-right: none; }
   .hm-app .hm-econ-name {
     font-size: 11px;
     font-weight: 600;
