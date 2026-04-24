@@ -1551,7 +1551,8 @@
   }
   .hm-app .hm-sector-tbl th {
     padding: 6px 12px;
-    font-size: 11px;
+    font-size: 12px;
+    line-height: 1;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-brown);
@@ -1565,8 +1566,9 @@
   .hm-app .hm-sector-tbl th:last-child { border-right: none; }
   .hm-app .hm-sector-tbl td {
     padding: 6px 12px;
+    font-size: 12px;
+    line-height: 1;
     text-align: right;
-    font-size: 13px;
     font-weight: 600;
     color: var(--hm-dark);
     border-bottom: 1px solid var(--hm-border);
@@ -1596,7 +1598,7 @@
     flex-shrink: 0;
   }
   .hm-app .hm-sector-tbl .hm-sector-name { vertical-align: middle; }
-  .hm-app .hm-sector-tbl .hm-ticker { font-size: 11px; color: var(--hm-muted); margin-left: 6px; }
+  .hm-app .hm-sector-tbl .hm-ticker { font-size: 10px; color: var(--hm-muted); margin-left: 6px; }
   .hm-app .hm-sector-tbl .hm-scb {
     -webkit-appearance: none;
     appearance: none;
@@ -1620,7 +1622,7 @@
   }
   .hm-app .hm-vs-select {
     font-family: 'Karla', sans-serif;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--hm-brown);
     background: var(--hm-bg-warm);
@@ -1656,15 +1658,15 @@
     -webkit-overflow-scrolling: touch;
   }
   .hm-app .hm-sector-tbl-vs { width: 140px; flex-shrink: 0; }
-  /* Lock row heights so both tables align */
+  /* Lock row heights so the main + vs-SPY tables align row-for-row. */
   .hm-app .hm-sector-tbl th,
   .hm-app .hm-sector-tbl td {
-    height: 38px;
+    height: 32px;
     box-sizing: border-box;
   }
   .hm-app .hm-sector-tbl tr.hm-spy-row th,
   .hm-app .hm-sector-tbl tr.hm-spy-row td {
-    height: 38px;
+    height: 32px;
     box-sizing: border-box;
   }
   /* vs SPY header: label left, dropdown right */
