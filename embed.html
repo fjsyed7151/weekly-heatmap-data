@@ -2380,6 +2380,51 @@
     white-space: nowrap;
   }
 
+  /* Majors Compare — 5 countries × 5 macro indicators. Simple tabular layout,
+     reuses the factors card chrome. Horizontal scroll on narrow widths. */
+  .hm-app .hm-majors-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--hm-panel);
+    font-variant-numeric: tabular-nums;
+    min-width: 640px;
+  }
+  .hm-app .hm-majors-table th,
+  .hm-app .hm-majors-table td {
+    padding: 6px 12px;
+    font-size: 12px;
+    line-height: 1;
+    text-align: right;
+    border-right: 1px solid var(--hm-border);
+    border-bottom: 1px solid var(--hm-border);
+    white-space: nowrap;
+  }
+  .hm-app .hm-majors-table th:first-child,
+  .hm-app .hm-majors-table td:first-child { text-align: left; }
+  .hm-app .hm-majors-table th:last-child,
+  .hm-app .hm-majors-table td:last-child { border-right: none; }
+  .hm-app .hm-majors-table tbody tr:last-child td { border-bottom: none; }
+  .hm-app .hm-majors-table thead th {
+    background: var(--hm-bg-warm);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--hm-brown);
+    font-size: 10px;
+    letter-spacing: 0.4px;
+  }
+  .hm-app .hm-majors-country {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+  .hm-app .hm-majors-flag { font-size: 16px; line-height: 1; }
+  /* Stale indicator: cells with data >6 months old get a muted color so
+     users don't mistake old FRED data for live signal. */
+  .hm-app .hm-majors-val.stale { color: var(--hm-muted); }
+  .hm-app .hm-majors-val.missing { color: var(--hm-muted); opacity: 0.5; }
+
   /* Thematic treemap */
   .hm-app .hm-treemap-section { margin-top: 24px; margin-bottom: 24px; }
   .hm-app .hm-treemap-header {
@@ -2863,6 +2908,7 @@
         <div id="hm-global-indexes"></div>
         <div id="hm-country-etfs"></div>
         <div id="hm-commodity-perf"></div>
+        <div id="hm-majors-compare"></div>
         <div id="hm-theme-treemap"></div>
         <div id="hm-sector-chart"></div>
 
@@ -3246,6 +3292,7 @@
       renderGlobalIndexes(cachedData);
       renderCountryEtfs(cachedData);
       renderCommodityPerf(cachedData);
+      renderMajorsCompare(cachedData);
       renderThemeTreemap(cachedData);
       if (chartState.selected.length) renderCharts();
     }
@@ -4063,6 +4110,7 @@
     { id: 'hm-global-indexes', label: 'Global Indexes',        group: 'Main column' },
     { id: 'hm-country-etfs',   label: 'Country ETFs',          group: 'Main column' },
     { id: 'hm-commodity-perf', label: 'Commodities (ranked)',  group: 'Main column' },
+    { id: 'hm-majors-compare', label: 'Majors Compare',        group: 'Main column' },
     { id: 'hm-theme-treemap',  label: 'Thematic Trends',       group: 'Main column' },
     { id: 'hm-sector-chart',   label: 'Sector Performance',    group: 'Main column' },
     { id: 'hm-heatmap-wrap',   label: 'Heat map table',        group: 'Main column' },
@@ -6608,6 +6656,126 @@
     updateRows();
   }
 
+  /* ---------- Majors Compare (US + Euro Zone + China + Japan + UK) ---------- */
+
+  /* Tooltip copy for each column header. */
+  var MAJORS_COL_TIPS = {
+    gdp_yoy:  "Real GDP year-over-year growth. Quarterly data, lags ~1 quarter. US = GDPC1; others = OECD/FRED real-GDP series (China uses nominal — real isn't on free FRED).",
+    cpi_yoy:  "Headline Consumer Price Index, year-over-year inflation. Monthly for most; Japan series is OECD-sourced and can run 3-6 months behind.",
+    policy:   "Central bank policy rate. US = Fed Funds (DFF), Euro Zone = ECB Deposit Facility, UK/Japan/China = 3M interbank rate as proxy where the policy-rate series isn't free on FRED.",
+    yield10y: "10-year government bond yield. US daily (DGS10); others monthly (OECD long-term rate indicator).",
+    jobless:  "Harmonized unemployment rate (OECD definition where available). Euro Zone series is known to lag by 1-2 years on FRED; China unemployment not available on free FRED.",
+  };
+
+  function renderMajorsCompare(data) {
+    var container = document.getElementById('hm-majors-compare');
+    if (!container || !data.majors_compare || !data.majors_compare.length) return;
+    container.innerHTML = '';
+
+    var card = document.createElement('div');
+    card.className = 'hm-factors-card';
+
+    var hdr = document.createElement('div');
+    hdr.className = 'hm-factors-header';
+    var title = document.createElement('span');
+    title.textContent = 'Majors Compare';
+    hdr.appendChild(title);
+    card.appendChild(hdr);
+
+    var scroll = document.createElement('div');
+    scroll.className = 'hm-factors-scroll';
+
+    var table = document.createElement('table');
+    table.className = 'hm-majors-table';
+
+    /* Header row */
+    var thead = document.createElement('thead');
+    var hrow  = document.createElement('tr');
+    var cols  = [
+      { key: 'country',  label: 'Country',      suffix: '',  decimals: null },
+      { key: 'gdp_yoy',  label: 'GDP YoY',      suffix: '%', decimals: 1 },
+      { key: 'cpi_yoy',  label: 'CPI YoY',      suffix: '%', decimals: 1 },
+      { key: 'policy',   label: 'Policy Rate',  suffix: '%', decimals: 2 },
+      { key: 'yield10y', label: '10Y Yield',    suffix: '%', decimals: 2 },
+      { key: 'jobless',  label: 'Jobless',      suffix: '%', decimals: 1 },
+    ];
+    cols.forEach(function (c) {
+      var th = document.createElement('th');
+      th.textContent = c.label;
+      var tip = MAJORS_COL_TIPS[c.key];
+      if (tip) {
+        th.classList.add('hm-metric-tip');
+        th.setAttribute('data-tip-title', c.label);
+        th.setAttribute('data-tip', tip);
+      }
+      hrow.appendChild(th);
+    });
+    thead.appendChild(hrow);
+    table.appendChild(thead);
+
+    /* Data rows */
+    var tbody = document.createElement('tbody');
+    var now = new Date();
+
+    function parseAsOf(s) {
+      if (!s) return null;
+      /* "Mar 2026" -> Date at mid-month */
+      var parts = s.split(' ');
+      if (parts.length !== 2) return null;
+      var months = { Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                     Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11 };
+      var m = months[parts[0]];
+      var y = parseInt(parts[1], 10);
+      if (m == null || !y) return null;
+      return new Date(y, m, 15);
+    }
+
+    data.majors_compare.forEach(function (r) {
+      var tr = document.createElement('tr');
+
+      /* Country cell with flag */
+      var tdCountry = document.createElement('td');
+      tdCountry.innerHTML =
+        '<span class="hm-majors-country">' +
+          '<span class="hm-majors-flag">' + (r.flag || '') + '</span>' +
+          r.name +
+        '</span>';
+      tr.appendChild(tdCountry);
+
+      cols.slice(1).forEach(function (c) {
+        var cell = r[c.key] || {};
+        var v = cell.v, asOf = cell.as_of;
+        var td = document.createElement('td');
+        var span = document.createElement('span');
+        span.className = 'hm-majors-val';
+        if (v == null) {
+          span.textContent = '\u2014';
+          span.classList.add('missing');
+          td.setAttribute('title', c.label + ': unavailable');
+        } else {
+          var text = (c.decimals === 2 ? v.toFixed(2) : v.toFixed(1)) + c.suffix;
+          span.textContent = text;
+          /* Staleness: if as_of older than 6 months, mark muted. */
+          var d = parseAsOf(asOf);
+          if (d && (now - d) > 180 * 24 * 3600 * 1000) {
+            span.classList.add('stale');
+          }
+          td.classList.add('hm-metric-tip');
+          td.setAttribute('data-tip-title', r.name + ' — ' + c.label);
+          td.setAttribute('data-tip', (asOf ? 'As of ' + asOf + '. ' : '') + (MAJORS_COL_TIPS[c.key] || ''));
+        }
+        td.appendChild(span);
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    scroll.appendChild(table);
+    card.appendChild(scroll);
+    container.appendChild(card);
+  }
+
   /* ---------- Thematic treemap ---------- */
   var treemapPeriod = 'm1';
 
@@ -6866,6 +7034,7 @@
       safeRender('globalIndexes',function () { renderGlobalIndexes(data); });
       safeRender('countryEtfs',  function () { renderCountryEtfs(data); });
       safeRender('commodityPerf',function () { renderCommodityPerf(data); });
+      safeRender('majorsCompare',function () { renderMajorsCompare(data); });
       safeRender('themeTreemap', function () { renderThemeTreemap(data); });
       safeRender('chartSectionVis', updateChartSectionVisibility);
       safeRender('countLabel',      updateCountLabel);
