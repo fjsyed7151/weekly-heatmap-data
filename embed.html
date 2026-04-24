@@ -1019,16 +1019,23 @@
     color: var(--hm-muted);
     padding: 4px 2px;
   }
-  .hm-app .hm-gave-grid {
+  /* Continuous 2×2 plane: four tinted backgrounds meet at the grid center
+     with zero gap, so the whole thing reads as one chart. Quadrant names
+     live as small chips in the four outer corners (away from the center
+     where the position marker sits), and a single gold dot marks the
+     current (dev_x, dev_y) anywhere on the plane. */
+  .hm-app .hm-gave-plane {
     grid-column: 2;
     grid-row: 2;
+    position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
-    gap: 4px;
-    /* Taller cells so the dot zone (bottom half) has real vertical room
-       instead of being squeezed up into the cell's text block. */
-    min-height: 240px;
+    gap: 0;
+    min-height: 260px;
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    overflow: hidden;
   }
   .hm-app .hm-gave-axis-x {
     grid-column: 2;
@@ -1042,86 +1049,80 @@
     color: var(--hm-muted);
     padding: 2px 4px 0;
   }
-  /* Quadrant cells — muted tint per regime, strong tint when active.
-     Cell text lives on top of the marker via z-index so the dot/line/label
-     never hide the title or hint, even when they land on top of each other. */
-  .hm-app .hm-gave-cell {
-    position: relative;
-    border-radius: var(--hm-r);
-    padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    cursor: help;
-    transition: background 0.15s, border-color 0.15s;
-    border: 1px solid var(--hm-border);
-    min-height: 120px;
-    overflow: hidden;  /* clip the guide-line that extends outside the box */
-  }
-  .hm-app .hm-gave-cell-name,
-  .hm-app .hm-gave-cell-hint {
-    position: relative;
-    z-index: 2;  /* text always sits on top of the marker */
-  }
-  .hm-app .hm-gave-cell.infl_bust  { background: rgba(212,42,32,0.06); }
-  .hm-app .hm-gave-cell.infl_boom  { background: rgba(230,191,102,0.10); }
-  .hm-app .hm-gave-cell.defl_bust  { background: rgba(110,120,150,0.08); }
-  .hm-app .hm-gave-cell.defl_boom  { background: rgba(26,122,66,0.08); }
-  .hm-app .hm-gave-cell.active {
-    border-color: var(--hm-gold);
-    border-width: 2px;
-    padding: 9px 11px;
-  }
-  .hm-app .hm-gave-cell.active.infl_bust  { background: rgba(212,42,32,0.14); }
-  .hm-app .hm-gave-cell.active.infl_boom  { background: rgba(230,191,102,0.22); }
-  .hm-app .hm-gave-cell.active.defl_bust  { background: rgba(110,120,150,0.18); }
-  .hm-app .hm-gave-cell.active.defl_boom  { background: rgba(26,122,66,0.16); }
-  .hm-app .hm-gave-cell-name {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--hm-dark);
-    line-height: 1.2;
-    margin-bottom: 3px;
-  }
-  .hm-app .hm-gave-cell-hint {
-    font-size: 10px;
-    color: var(--hm-brown);
-    line-height: 1.3;
-  }
-  /* Position marker: two dashed crosshair lines projecting from the cell's
-     OUTER edges (the ones touching the axis labels) inward to the actual
-     (dev_x, dev_y) position. Uses a hand-rolled repeating gradient instead
-     of `border: 1px dotted` because native dotted at 1px rendered as a
-     faint blur that looked like a glitch. 2px solid segments with 4px gaps
-     render crisply at any DPI. z-index: 1 keeps the crosshair below the
-     cell text (z-index: 2). */
-  .hm-app .hm-quad-vline,
-  .hm-app .hm-quad-hline {
+  /* Quadrant tints — the four grid tracks just carry color, no text. */
+  .hm-app .hm-gave-tint.infl_bust { background: rgba(212,42,32,0.08); }
+  .hm-app .hm-gave-tint.infl_boom { background: rgba(230,191,102,0.14); }
+  .hm-app .hm-gave-tint.defl_bust { background: rgba(110,120,150,0.10); }
+  .hm-app .hm-gave-tint.defl_boom { background: rgba(26,122,66,0.10); }
+  /* Midlines through the plane center — subtle, so the eye can read
+     position relative to the "neutral" 0 axis. */
+  .hm-app .hm-gave-midline-h,
+  .hm-app .hm-gave-midline-v {
     position: absolute;
+    background: rgba(0,0,0,0.12);
     pointer-events: none;
     z-index: 1;
   }
-  .hm-app .hm-quad-vline {
-    width: 2px;
-    transform: translateX(-1px);
-    background-image: repeating-linear-gradient(
-      to bottom,
-      var(--hm-gold) 0,
-      var(--hm-gold) 3px,
-      transparent 3px,
-      transparent 7px
-    );
+  .hm-app.dark .hm-gave-midline-h,
+  .hm-app.dark .hm-gave-midline-v { background: rgba(255,255,255,0.12); }
+  .hm-app .hm-gave-midline-h { top: 50%; left: 0; right: 0; height: 1px; }
+  .hm-app .hm-gave-midline-v { left: 50%; top: 0; bottom: 0; width: 1px; }
+  /* Quadrant name chips in the outer corners. Active chip gets a gold fill
+     so you can tell at a glance which regime is live. Chips are tight and
+     small so the marker has the whole plane to move across without collision. */
+  .hm-app .hm-gave-qname {
+    position: absolute;
+    z-index: 2;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 3px 7px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.88);
+    border: 1px solid var(--hm-border);
+    color: var(--hm-dark);
+    white-space: nowrap;
+    cursor: help;
+    max-width: calc(50% - 12px);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .hm-app .hm-quad-hline {
-    height: 2px;
-    transform: translateY(-1px);
-    background-image: repeating-linear-gradient(
-      to right,
-      var(--hm-gold) 0,
-      var(--hm-gold) 3px,
-      transparent 3px,
-      transparent 7px
-    );
+  .hm-app.dark .hm-gave-qname {
+    background: rgba(20,22,30,0.88);
+    color: var(--hm-white);
+  }
+  .hm-app .hm-gave-qname.tl { top: 6px;    left: 6px; }
+  .hm-app .hm-gave-qname.tr { top: 6px;    right: 6px; }
+  .hm-app .hm-gave-qname.bl { bottom: 6px; left: 6px; }
+  .hm-app .hm-gave-qname.br { bottom: 6px; right: 6px; }
+  .hm-app .hm-gave-qname.active {
+    background: var(--hm-gold);
+    border-color: var(--hm-gold);
+    color: var(--hm-white);
+  }
+  /* Position marker: a single gold dot, clean. Padded to the 15–85% range
+     of the plane so it stays visually clear of the corner chips. */
+  .hm-app .hm-gave-marker {
+    position: absolute;
+    z-index: 3;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--hm-gold);
+    border: 3px solid var(--hm-panel);
+    box-shadow: 0 0 0 1.5px var(--hm-gold), 0 2px 6px rgba(0,0,0,0.3);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  /* Active quadrant's hint text displayed below the plane. Replaces the
+     per-cell hint text that lived inside each cell in the old design. */
+  .hm-app .hm-gave-active-hint {
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: var(--hm-brown);
+    line-height: 1.4;
+    font-style: italic;
+    text-align: center;
   }
 
   /* Gave companion charts — three ratio lines with 7y MA overlay, rendered
@@ -1255,16 +1256,19 @@
     color: var(--hm-muted);
     padding: 4px 2px;
   }
-  .hm-app .hm-mc-grid {
+  /* Continuous 2×2 plane for Credit × Policy — same pattern as Gave. */
+  .hm-app .hm-mc-plane {
     grid-column: 2;
     grid-row: 2;
+    position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
-    gap: 4px;
-    /* Reserve enough vertical space so the dot can live in the bottom half
-       of each cell without bumping into the trade-list text. */
-    min-height: 280px;
+    gap: 0;
+    min-height: 260px;
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    overflow: hidden;
   }
   .hm-app .hm-mc-axis-x {
     grid-column: 2;
@@ -1278,49 +1282,74 @@
     color: var(--hm-muted);
     padding: 2px 4px 0;
   }
-  .hm-app .hm-mc-cell {
-    position: relative;
-    border-radius: var(--hm-r);
-    padding: 10px 12px;
-    border: 1px solid var(--hm-border);
-    background: var(--hm-bg-alt);
-    transition: background 0.15s, border-color 0.15s;
-    min-height: 140px;
-    overflow: hidden;  /* clip marker line edges */
+  .hm-app .hm-mc-tint.q1 { background: rgba(110,120,150,0.10); }
+  .hm-app .hm-mc-tint.q2 { background: rgba(26,122,66,0.10); }
+  .hm-app .hm-mc-tint.q3 { background: rgba(230,191,102,0.14); }
+  .hm-app .hm-mc-tint.q4 { background: rgba(212,42,32,0.08); }
+  .hm-app .hm-mc-midline-h,
+  .hm-app .hm-mc-midline-v {
+    position: absolute;
+    background: rgba(0,0,0,0.12);
+    pointer-events: none;
+    z-index: 1;
   }
-  .hm-app .hm-mc-cell-name,
-  .hm-app .hm-mc-trades {
-    position: relative;
-    z-index: 2;  /* text sits on top of the position marker */
-  }
-  .hm-app .hm-mc-cell.q1 { background: rgba(110,120,150,0.06); }
-  .hm-app .hm-mc-cell.q2 { background: rgba(26,122,66,0.07); }
-  .hm-app .hm-mc-cell.q3 { background: rgba(230,191,102,0.09); }
-  .hm-app .hm-mc-cell.q4 { background: rgba(212,42,32,0.06); }
-  .hm-app .hm-mc-cell.active {
-    border-color: var(--hm-gold);
-    border-width: 2px;
-    padding: 9px 11px;
-  }
-  .hm-app .hm-mc-cell.active.q1 { background: rgba(110,120,150,0.15); }
-  .hm-app .hm-mc-cell.active.q2 { background: rgba(26,122,66,0.14); }
-  .hm-app .hm-mc-cell.active.q3 { background: rgba(230,191,102,0.20); }
-  .hm-app .hm-mc-cell.active.q4 { background: rgba(212,42,32,0.13); }
-  .hm-app .hm-mc-cell-name {
-    font-size: 11.5px;
+  .hm-app.dark .hm-mc-midline-h,
+  .hm-app.dark .hm-mc-midline-v { background: rgba(255,255,255,0.12); }
+  .hm-app .hm-mc-midline-h { top: 50%; left: 0; right: 0; height: 1px; }
+  .hm-app .hm-mc-midline-v { left: 50%; top: 0; bottom: 0; width: 1px; }
+  .hm-app .hm-mc-qname {
+    position: absolute;
+    z-index: 2;
+    font-size: 10.5px;
     font-weight: 700;
-    color: var(--hm-dark);
     line-height: 1.2;
-    margin-bottom: 6px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.88);
+    border: 1px solid var(--hm-border);
+    color: var(--hm-dark);
+    white-space: nowrap;
+    max-width: calc(50% - 12px);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .hm-app .hm-mc-trades {
+  .hm-app.dark .hm-mc-qname {
+    background: rgba(20,22,30,0.88);
+    color: var(--hm-white);
+  }
+  .hm-app .hm-mc-qname.tl { top: 6px;    left: 6px; }
+  .hm-app .hm-mc-qname.tr { top: 6px;    right: 6px; }
+  .hm-app .hm-mc-qname.bl { bottom: 6px; left: 6px; }
+  .hm-app .hm-mc-qname.br { bottom: 6px; right: 6px; }
+  .hm-app .hm-mc-qname.active {
+    background: var(--hm-gold);
+    border-color: var(--hm-gold);
+    color: var(--hm-white);
+  }
+  .hm-app .hm-mc-marker {
+    position: absolute;
+    z-index: 3;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--hm-gold);
+    border: 3px solid var(--hm-panel);
+    box-shadow: 0 0 0 1.5px var(--hm-gold), 0 2px 6px rgba(0,0,0,0.3);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  /* Active quadrant's LONG/SHORT trade list rendered below the plane, full
+     width. Only the current regime's trades are shown — cleaner than packing
+     all four into the quadrants. */
+  .hm-app .hm-mc-active-trades {
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
   .hm-app .hm-mc-trade-line {
-    font-size: 10.5px;
-    line-height: 1.3;
+    font-size: 11px;
+    line-height: 1.35;
     color: var(--hm-brown);
   }
   .hm-app .hm-mc-trade-tag {
@@ -1328,14 +1357,12 @@
     font-size: 9.5px;
     font-weight: 800;
     letter-spacing: 0.3px;
-    padding: 1px 5px;
+    padding: 1px 6px;
     border-radius: 3px;
-    margin-right: 4px;
+    margin-right: 6px;
   }
   .hm-app .hm-mc-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
   .hm-app .hm-mc-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
-  /* Credit × Policy active-cell position marker shares the .hm-gave-*
-     marker styling above (line + dot + label, z-index: 1 below text). */
   .hm-app .hm-mc-footer {
     display: flex;
     gap: 24px;
@@ -1367,7 +1394,6 @@
   .hm-app .hm-mc-stat-sub.up   { color: var(--hm-green); }
   .hm-app .hm-mc-stat-sub.down { color: var(--hm-red); }
   @media (max-width: 700px) {
-    .hm-app .hm-mc-trades { display: none; }
     .hm-app .hm-mc-footer { gap: 12px; }
   }
 
@@ -4094,7 +4120,7 @@
         '<span class="hm-gave-state">' + g.label + '</span></span>';
     card.appendChild(top);
 
-    /* Frame: axis labels + 2x2 grid */
+    /* Frame: axis labels + continuous plane */
     var frame = document.createElement('div');
     frame.className = 'hm-gave-frame';
 
@@ -4103,53 +4129,51 @@
     axisY.innerHTML = '<span>Good currency</span><span>Bad currency</span>';
     frame.appendChild(axisY);
 
-    var grid = document.createElement('div');
-    grid.className = 'hm-gave-grid';
+    var plane = document.createElement('div');
+    plane.className = 'hm-gave-plane';
 
-    /* Sort by row,col so they appear in visual order. Active cell holds the dot. */
-    var cells = GAVE_CELLS.slice().sort(function (a, b) {
+    /* Four tinted backgrounds in a gapless 2x2 — plus midlines showing 0 on each axis. */
+    var sortedTints = GAVE_CELLS.slice().sort(function (a, b) {
       return (a.row - b.row) || (a.col - b.col);
     });
-    cells.forEach(function (c) {
-      var cell = document.createElement('div');
-      cell.className = 'hm-gave-cell ' + c.key + (c.key === g.quadrant ? ' active' : '');
-      cell.setAttribute('title', c.hint);
-      cell.innerHTML =
-        '<div class="hm-gave-cell-name">' + c.name + '</div>' +
-        '<div class="hm-gave-cell-hint">' + c.hint + '</div>';
-
-      /* Drop the position dot inside the active cell. dev_x / dev_y are in
-         [-1, +1] where +1 = right/top edge, -1 = left/bottom edge. Map into
-         cell's own coordinate space, with padding to avoid hugging edges. */
-      if (c.key === g.quadrant) {
-        /* Dotted crosshair. Each line projects from the cell's OUTER edge
-           (the one touching its axis label) inward to the (dev_x, dev_y)
-           coordinate. For left-column cells the horizontal line grows from
-           the left edge rightward; for right-column cells it grows from
-           the right edge leftward. Vertical line analogous for row. */
-        var inX = Math.abs(g.dev_x);
-        var inY = Math.abs(g.dev_y);
-        /* Within the cell: inX=1 means AT the outer edge, inX=0 at grid center. */
-        var leftPct = c.col === 0 ? (90 - inX * 80) : (10 + inX * 80);
-        var topPct  = c.row === 0 ? (90 - inY * 80) : (10 + inY * 80);
-
-        var vLine = document.createElement('div');
-        vLine.className = 'hm-quad-vline';
-        vLine.style.left = leftPct + '%';
-        if (c.row === 0) { vLine.style.top = '0';            vLine.style.height = topPct + '%'; }
-        else             { vLine.style.top = topPct + '%';   vLine.style.bottom = '0';          }
-        cell.appendChild(vLine);
-
-        var hLine = document.createElement('div');
-        hLine.className = 'hm-quad-hline';
-        hLine.style.top = topPct + '%';
-        if (c.col === 0) { hLine.style.left = '0';           hLine.style.width = leftPct + '%'; }
-        else             { hLine.style.left = leftPct + '%'; hLine.style.right = '0';           }
-        cell.appendChild(hLine);
-      }
-      grid.appendChild(cell);
+    sortedTints.forEach(function (c) {
+      var tint = document.createElement('div');
+      tint.className = 'hm-gave-tint ' + c.key;
+      plane.appendChild(tint);
     });
-    frame.appendChild(grid);
+
+    var midH = document.createElement('div');
+    midH.className = 'hm-gave-midline-h';
+    plane.appendChild(midH);
+    var midV = document.createElement('div');
+    midV.className = 'hm-gave-midline-v';
+    plane.appendChild(midV);
+
+    /* Corner chips. Each chip is placed at the outer corner of its own
+       quadrant (row=0 → top, col=0 → left, etc.), away from the plane
+       center where the marker sits. Active chip gets a gold fill. */
+    GAVE_CELLS.forEach(function (c) {
+      var cornerClass = (c.row === 0 ? 't' : 'b') + (c.col === 0 ? 'l' : 'r');
+      var chip = document.createElement('span');
+      chip.className = 'hm-gave-qname ' + cornerClass + (c.key === g.quadrant ? ' active' : '');
+      chip.textContent = c.name;
+      chip.setAttribute('title', c.hint);
+      plane.appendChild(chip);
+    });
+
+    /* Single position marker at (dev_x, dev_y). dev_x / dev_y ∈ [-1, +1]
+       where +1 = energy efficient (right) / bad currency (top). Mapped into
+       the inner 15–85% of the plane so the marker never sits on a corner
+       chip. */
+    var leftPct = 50 + g.dev_x * 35;  /* -1 → 15%, +1 → 85% */
+    var topPct  = 50 - g.dev_y * 35;  /* invert: +1 → 15% (up), -1 → 85% (down) */
+    var marker = document.createElement('div');
+    marker.className = 'hm-gave-marker';
+    marker.style.left = leftPct + '%';
+    marker.style.top  = topPct  + '%';
+    plane.appendChild(marker);
+
+    frame.appendChild(plane);
 
     var axisX = document.createElement('div');
     axisX.className = 'hm-gave-axis-x';
@@ -4158,15 +4182,24 @@
 
     card.appendChild(frame);
 
-    /* Ratio readings with MAs used to live here as a footer, but the 3 line
-       charts rendered directly below this card already cover that ground
-       with full time-series context. Removed to avoid duplication. */
+    /* Active quadrant's hint displayed below the plane (replaces the old
+       per-cell hint text that lived inside each cell). */
+    var activeCell = null;
+    for (var i = 0; i < GAVE_CELLS.length; i++) {
+      if (GAVE_CELLS[i].key === g.quadrant) { activeCell = GAVE_CELLS[i]; break; }
+    }
+    if (activeCell) {
+      var activeHint = document.createElement('div');
+      activeHint.className = 'hm-gave-active-hint';
+      activeHint.textContent = activeCell.hint;
+      card.appendChild(activeHint);
+    }
 
-    /* Methodology note — be honest that our MA window differs from Gavekal's. */
+    /* Methodology note */
     var note = document.createElement('div');
     note.className = 'hm-gave-note';
     note.textContent = 'Proxy: Yahoo IEF (7\u201310y Treasury ETF, since 2002) as the bond-total-return input. ' +
-      'Dot placement uses Z-score vs own 7y std \u2014 reflects historical extremity, not absolute levels.';
+      'Marker placement uses Z-score vs own 7y std \u2014 reflects historical extremity, not absolute levels.';
     card.appendChild(note);
 
     container.appendChild(card);
@@ -4381,51 +4414,45 @@
     axisY.innerHTML = '<span>Net tightening</span><span>Net easing</span>';
     frame.appendChild(axisY);
 
-    var grid = document.createElement('div');
-    grid.className = 'hm-mc-grid';
+    var plane = document.createElement('div');
+    plane.className = 'hm-mc-plane';
 
-    var cells = MC_CELLS.slice().sort(function (a, b) {
+    /* Four tinted backgrounds in a gapless 2x2 grid. */
+    var sortedTints = MC_CELLS.slice().sort(function (a, b) {
       return (a.row - b.row) || (a.col - b.col);
     });
-    cells.forEach(function (c) {
-      var cell = document.createElement('div');
-      cell.className = 'hm-mc-cell ' + c.key + (c.key === m.quadrant ? ' active' : '');
-
-      var longs  = c.longs.join(', ');
-      var shorts = c.shorts.join(', ');
-
-      cell.innerHTML =
-        '<div class="hm-mc-cell-name">' + c.name + '</div>' +
-        '<div class="hm-mc-trades">' +
-          '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>' + longs + '</div>' +
-          '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag short">SHORT</span>' + shorts + '</div>' +
-        '</div>';
-
-      if (c.key === m.quadrant) {
-        /* Dotted crosshair projecting inward from the cell's outer edges,
-           same design as the Gave quadrant above. */
-        var inX = Math.abs(m.dev_x);
-        var inY = Math.abs(m.dev_y);
-        var leftPct = c.col === 0 ? (90 - inX * 80) : (10 + inX * 80);
-        var topPct  = c.row === 0 ? (90 - inY * 80) : (10 + inY * 80);
-
-        var vLine = document.createElement('div');
-        vLine.className = 'hm-quad-vline';
-        vLine.style.left = leftPct + '%';
-        if (c.row === 0) { vLine.style.top = '0';            vLine.style.height = topPct + '%'; }
-        else             { vLine.style.top = topPct + '%';   vLine.style.bottom = '0';          }
-        cell.appendChild(vLine);
-
-        var hLine = document.createElement('div');
-        hLine.className = 'hm-quad-hline';
-        hLine.style.top = topPct + '%';
-        if (c.col === 0) { hLine.style.left = '0';           hLine.style.width = leftPct + '%'; }
-        else             { hLine.style.left = leftPct + '%'; hLine.style.right = '0';           }
-        cell.appendChild(hLine);
-      }
-      grid.appendChild(cell);
+    sortedTints.forEach(function (c) {
+      var tint = document.createElement('div');
+      tint.className = 'hm-mc-tint ' + c.key;
+      plane.appendChild(tint);
     });
-    frame.appendChild(grid);
+
+    var midH = document.createElement('div');
+    midH.className = 'hm-mc-midline-h';
+    plane.appendChild(midH);
+    var midV = document.createElement('div');
+    midV.className = 'hm-mc-midline-v';
+    plane.appendChild(midV);
+
+    /* Corner chips — quadrant names in the outer corners of the plane. */
+    MC_CELLS.forEach(function (c) {
+      var cornerClass = (c.row === 0 ? 't' : 'b') + (c.col === 0 ? 'l' : 'r');
+      var chip = document.createElement('span');
+      chip.className = 'hm-mc-qname ' + cornerClass + (c.key === m.quadrant ? ' active' : '');
+      chip.textContent = c.name;
+      plane.appendChild(chip);
+    });
+
+    /* Position marker, padded to inner 15–85% of the plane. */
+    var leftPct = 50 + m.dev_x * 35;
+    var topPct  = 50 - m.dev_y * 35;
+    var marker = document.createElement('div');
+    marker.className = 'hm-mc-marker';
+    marker.style.left = leftPct + '%';
+    marker.style.top  = topPct  + '%';
+    plane.appendChild(marker);
+
+    frame.appendChild(plane);
 
     var axisX = document.createElement('div');
     axisX.className = 'hm-mc-axis-x';
@@ -4433,6 +4460,20 @@
     frame.appendChild(axisX);
 
     card.appendChild(frame);
+
+    /* Active quadrant's LONG/SHORT trade list below the plane. */
+    var activeCell = null;
+    for (var i = 0; i < MC_CELLS.length; i++) {
+      if (MC_CELLS[i].key === m.quadrant) { activeCell = MC_CELLS[i]; break; }
+    }
+    if (activeCell) {
+      var trades = document.createElement('div');
+      trades.className = 'hm-mc-active-trades';
+      trades.innerHTML =
+        '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + activeCell.longs.join(', ')  + '</div>' +
+        '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag short">SHORT</span>' + activeCell.shorts.join(', ') + '</div>';
+      card.appendChild(trades);
+    }
 
     var footer = document.createElement('div');
     footer.className = 'hm-mc-footer';
