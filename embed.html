@@ -587,7 +587,9 @@
   }
   .hm-app .hm-table th,
   .hm-app .hm-table td {
-    padding: 8px 12px;
+    padding: 6px 12px;
+    font-size: 12px;
+    line-height: 1;
     text-align: right;
     white-space: nowrap;
     border-right: 1px solid var(--hm-border);
@@ -641,7 +643,7 @@
     min-width: 40px;
     max-width: 40px;
     text-align: center;
-    padding: 8px 12px;
+    padding: 6px 12px;
     position: -webkit-sticky;
     position: sticky;
     left: 0;
@@ -660,7 +662,7 @@
     left: 40px;
     background: var(--hm-panel);
     z-index: 2;
-    min-width: 220px;
+    min-width: 200px;
   }
   .hm-app .hm-table th.hm-metric {
     background: var(--hm-gold);
@@ -732,9 +734,9 @@
     background: var(--hm-bg-warm);
     color: var(--hm-gold);
     font-weight: 700;
-    font-size: 11px;
+    font-size: 12px;
     text-transform: uppercase;
-    padding: 8px 12px;
+    padding: 6px 12px;
     border-bottom: 2px solid var(--hm-border);
     border-right: none;
   }
@@ -761,8 +763,8 @@
   }
   .hm-app .hm-table td.hm-pct-cell,
   .hm-app .hm-table th.hm-pct-header {
-    border-left: 3px solid var(--hm-border);
-    border-right: 3px solid var(--hm-border);
+    border-left: 2px solid var(--hm-border);
+    border-right: 2px solid var(--hm-border);
   }
   .hm-app .hm-table tr.hm-section td.hm-pct-cell {
     border-left: none;
@@ -2513,11 +2515,11 @@
     .hm-app .hm-topbar { padding: 0 0 8px 0; }
   }
   @media (max-width: 700px) {
-    .hm-app { font-size: 13px; }
+    .hm-app { font-size: 12px; }
     .hm-app .hm-inner { padding: 16px 16px 64px; }
-    .hm-app .hm-table th, .hm-app .hm-table td { padding: 6px 8px; }
+    .hm-app .hm-table th, .hm-app .hm-table td { padding: 4px 8px; }
     .hm-app .hm-table th.hm-metric, .hm-app .hm-table td.hm-metric { min-width: 180px; }
-    .hm-app .hm-table td.hm-section-label { padding: 6px 8px; }
+    .hm-app .hm-table td.hm-section-label { padding: 4px 8px; }
     .hm-app .hm-legend { gap: 12px; font-size: 10px; }
     .hm-app .hm-chart-canvas-wrap { height: 300px; }
     .hm-app .hm-legend-row { padding: 6px 8px; }
