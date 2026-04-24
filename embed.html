@@ -2898,15 +2898,24 @@
   <div class="hm-inner">
     <div class="hm-topbar">
       <span class="hm-topbar-title">Market Dashboard</span>
-      <!-- Edit Layout toggle: while active, grid shows drag grips + resize
-           handles on every panel + a dashed gold outline. Default is OFF
-           (view mode). State persists via localStorage. -->
+      <!-- Edit Layout toggle: while active, the whole panel becomes a drag
+           handle + all 4 edges/corners are resizable, with a dashed gold
+           outline as the affordance. Default OFF. State persists via
+           localStorage. -->
       <button class="hm-btn" id="hm-edit-layout-toggle" type="button" aria-label="Edit layout" title="Edit layout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <rect x="3" y="3" width="7" height="7"/>
           <rect x="14" y="3" width="7" height="7"/>
           <rect x="3" y="14" width="7" height="7"/>
           <rect x="14" y="14" width="7" height="7"/>
+        </svg>
+      </button>
+      <!-- Reset layout: clears saved positions/sizes + reloads to defaults.
+           Confirms first so users don't nuke their layout by accident. -->
+      <button class="hm-btn" id="hm-reset-layout" type="button" aria-label="Reset layout" title="Reset layout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12a9 9 0 1 0 3-6.7"/>
+          <polyline points="3 4 3 10 9 10"/>
         </svg>
       </button>
       <div class="hm-info-wrap">
@@ -7363,6 +7372,16 @@
     btn.addEventListener('click', function () {
       setEditMode(!document.getElementById('hm-app').classList.contains('hm-grid-editing'));
     });
+    /* Reset button: confirm → clear saved layout + edit mode → reload. */
+    var rbtn = document.getElementById('hm-reset-layout');
+    if (rbtn) {
+      rbtn.addEventListener('click', function () {
+        if (!window.confirm('Reset dashboard to default layout? Your custom arrangement will be cleared.')) return;
+        try { localStorage.removeItem(LAYOUT_KEY); } catch (e) {}
+        try { localStorage.removeItem(EDIT_MODE_KEY); } catch (e) {}
+        window.location.reload();
+      });
+    }
     /* Apply saved state on load (before grid init — class is set, init will
        pick up setStatic via init-time check). */
     if (isEditMode()) {
