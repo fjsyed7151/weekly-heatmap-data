@@ -2240,6 +2240,76 @@
     white-space: nowrap;
   }
 
+  /* Country ETFs rankings — 4-column regional panel (Americas / Europe /
+     Asia-Pacific / Mideast-Africa). Same chrome as factors/FI/GI. */
+  .hm-app .hm-ce-body {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 0;
+    min-width: 720px;
+  }
+  .hm-app .hm-ce-col {
+    border-right: 1px solid var(--hm-border);
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-ce-col:last-child { border-right: none; }
+  .hm-app .hm-ce-col-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--hm-gold);
+    background: var(--hm-bg-warm);
+    padding: 6px 12px;
+    border-bottom: 2px solid var(--hm-border);
+  }
+  .hm-app .hm-ce-list {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .hm-app .hm-ce-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--hm-border);
+    font-variant-numeric: tabular-nums;
+    transition: outline 80ms;
+  }
+  .hm-app .hm-ce-row:last-child { border-bottom: none; }
+  @media (hover: hover) {
+    .hm-app .hm-ce-row:hover {
+      outline: 2px solid var(--hm-gold);
+      outline-offset: -2px;
+      position: relative;
+      z-index: 1;
+    }
+  }
+  .hm-app .hm-ce-name {
+    font-size: 12px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hm-app .hm-ce-row .hm-ticker {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--hm-brown);
+    margin-left: 6px;
+    opacity: 0.75;
+  }
+  .hm-app .hm-ce-ret {
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
   /* Thematic treemap */
   .hm-app .hm-treemap-section { margin-top: 24px; margin-bottom: 24px; }
   .hm-app .hm-treemap-header {
@@ -2721,6 +2791,7 @@
         <div id="hm-factors"></div>
         <div id="hm-fixed-income"></div>
         <div id="hm-global-indexes"></div>
+        <div id="hm-country-etfs"></div>
         <div id="hm-theme-treemap"></div>
         <div id="hm-sector-chart"></div>
 
@@ -3102,6 +3173,7 @@
       renderFactors(cachedData);
       renderFixedIncome(cachedData);
       renderGlobalIndexes(cachedData);
+      renderCountryEtfs(cachedData);
       renderThemeTreemap(cachedData);
       if (chartState.selected.length) renderCharts();
     }
@@ -3917,6 +3989,7 @@
     { id: 'hm-factors',        label: 'Factors (vs S&P 500)',  group: 'Main column' },
     { id: 'hm-fixed-income',   label: 'Fixed Income',          group: 'Main column' },
     { id: 'hm-global-indexes', label: 'Global Indexes',        group: 'Main column' },
+    { id: 'hm-country-etfs',   label: 'Country ETFs',          group: 'Main column' },
     { id: 'hm-theme-treemap',  label: 'Thematic Trends',       group: 'Main column' },
     { id: 'hm-sector-chart',   label: 'Sector Performance',    group: 'Main column' },
     { id: 'hm-heatmap-wrap',   label: 'Heat map table',        group: 'Main column' },
@@ -6145,6 +6218,175 @@
     updateRows();
   }
 
+  /* ---------- Country-ETF rankings (Koyfin-style 4-col regional) ---------- */
+  var cePeriod = 'y1';
+
+  /* Tooltip copy for each country ETF. Issuer-ticker-scope style so the
+     reader knows what they're looking at (iShares MSCI vs Vanguard vs Global X). */
+  var COUNTRY_ETF_TIPS = {
+    SPY:  "SPDR S&P 500. US large-cap benchmark — stands in for 'United States' in regional comparisons.",
+    EWC:  "iShares MSCI Canada. ~90 Canadian large + mid-caps. Heavy energy + financials weighting.",
+    GXG:  "Global X MSCI Colombia. Colombian equity exposure. Small cap of tracked markets; high FX sensitivity.",
+    EWW:  "iShares MSCI Mexico. Mexican large + mid-caps. Consumer staples, banks, telecom heavy.",
+    EWZ:  "iShares MSCI Brazil. Brazilian large-caps. Commodity + financials-heavy; BRL-exposed.",
+    ECH:  "iShares MSCI Chile. Chilean large + mid-caps. Mining (copper) + financials tilt.",
+    ARGT: "Global X MSCI Argentina. Argentine equities + ADRs. Small basket, highly volatile on policy + FX swings.",
+    EPU:  "iShares MSCI Peru. Peruvian equities, mining-heavy (copper, silver, gold). Small fund, thin liquidity.",
+    EFNL: "iShares MSCI Finland. Finnish large + mid-caps. Nokia, Kone, industrials.",
+    EWL:  "iShares MSCI Switzerland. Swiss large-caps. Defensive tilt (Nestlé, Novartis, Roche dominate).",
+    EWK:  "iShares MSCI Belgium. Belgian equities, concentrated in a few names (AB InBev, KBC).",
+    ENOR: "iShares MSCI Norway. Norwegian equities, Equinor and seafood/aquaculture concentrated.",
+    GREK: "Global X MSCI Greece. Greek equities, banks-heavy. High beta to EU periphery sentiment.",
+    EWQ:  "iShares MSCI France. French large + mid-caps. Luxury (LVMH) + banks + energy.",
+    EWO:  "iShares MSCI Austria. Austrian equities, banks + industrials + CEE exposure.",
+    EWU:  "iShares MSCI United Kingdom. UK large + mid-caps. Commodities + financials, sterling-denominated.",
+    EWG:  "iShares MSCI Germany. German large + mid-caps. Auto + industrials + chemicals.",
+    EWD:  "iShares MSCI Sweden. Swedish equities. Industrials + banks + H&M/Ericsson.",
+    EWI:  "iShares MSCI Italy. Italian equities. Banks-heavy, cyclical.",
+    EDEN: "iShares MSCI Denmark. Danish equities. Novo Nordisk dominates index weight.",
+    EWN:  "iShares MSCI Netherlands. Dutch equities. ASML, Shell (until 2022), global names.",
+    EWP:  "iShares MSCI Spain. Spanish equities. Banks + utilities + telecom heavy.",
+    EIRL: "iShares MSCI Ireland. Irish equities, small universe, banks + building materials.",
+    EPOL: "iShares MSCI Poland. Polish equities. CEE financials + energy exposure.",
+    EWA:  "iShares MSCI Australia. Australian large + mid-caps. Miners (BHP, Rio) + banks.",
+    EWJ:  "iShares MSCI Japan. Japanese large + mid-caps. Broad Japan equity exposure.",
+    EWS:  "iShares MSCI Singapore. Singapore equities, REITs and banks concentrated.",
+    PIN:  "Invesco India ETF. Indian large + mid-caps. Tech services, banks, energy.",
+    EWH:  "iShares MSCI Hong Kong. Hong Kong-listed equities. Real estate + banks heavy (not mainland China exposure).",
+    ENZL: "iShares MSCI New Zealand. New Zealand equities. Utilities + healthcare + agribusiness.",
+    VNM:  "VanEck Vietnam ETF. Vietnamese equities. Banks + real estate + consumer.",
+    GXC:  "SPDR S&P China. Broad China equity exposure — both mainland and HK-listed.",
+    EWT:  "iShares MSCI Taiwan. Taiwanese equities. TSMC dominates weight; tech-heavy.",
+    EIDO: "iShares MSCI Indonesia. Indonesian equities. Banks + commodities + consumer.",
+    EWY:  "iShares MSCI South Korea. South Korean equities. Samsung dominates; tech + autos.",
+    EIS:  "iShares MSCI Israel. Israeli equities. Tech + banks + pharma (Teva).",
+    QAT:  "iShares MSCI Qatar. Qatari equities. Banks + energy-services heavy.",
+    TUR:  "iShares MSCI Turkey. Turkish equities. Banks + industrials; very FX-sensitive.",
+    KSA:  "iShares MSCI Saudi Arabia. Saudi equities. Banks + petrochemicals dominate weight.",
+    UAE:  "iShares MSCI UAE. UAE equities (Abu Dhabi + Dubai exchanges). Banks + real estate.",
+    EZA:  "iShares MSCI South Africa. South African equities. Miners + banks + Naspers.",
+  };
+
+  function renderCountryEtfs(data) {
+    var container = document.getElementById('hm-country-etfs');
+    if (!container || !data.country_etfs || !data.country_etfs.length) return;
+    container.innerHTML = '';
+
+    var card = document.createElement('div');
+    card.className = 'hm-factors-card';
+
+    var hdr = document.createElement('div');
+    hdr.className = 'hm-factors-header';
+    var title = document.createElement('span');
+    title.textContent = 'Country ETF Performance';
+    hdr.appendChild(title);
+
+    var btnWrap = document.createElement('div');
+    btnWrap.className = 'hm-factors-periods';
+    FI_PERIODS.forEach(function (p) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-factors-period-btn' + (cePeriod === p.key ? ' active' : '');
+      btn.textContent = p.label;
+      btn.addEventListener('click', function () {
+        cePeriod = p.key;
+        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        updateRows();
+      });
+      btnWrap.appendChild(btn);
+    });
+    hdr.appendChild(btnWrap);
+    card.appendChild(hdr);
+
+    var body = document.createElement('div');
+    body.className = 'hm-ce-body';
+
+    var allRows = [];
+
+    data.country_etfs.forEach(function (group) {
+      var col = document.createElement('div');
+      col.className = 'hm-ce-col';
+
+      var colHdr = document.createElement('div');
+      colHdr.className = 'hm-ce-col-header';
+      colHdr.textContent = group.name;
+      col.appendChild(colHdr);
+
+      var list = document.createElement('div');
+      list.className = 'hm-ce-list';
+      col.appendChild(list);
+
+      (group.rows || []).forEach(function (f) {
+        var row = document.createElement('div');
+        row.className = 'hm-ce-row';
+        var tip = COUNTRY_ETF_TIPS[f.ticker];
+        if (tip) {
+          row.classList.add('hm-metric-tip');
+          row.setAttribute('data-tip', tip);
+          row.setAttribute('data-tip-title', f.name + ' (' + f.ticker + ')');
+        } else {
+          row.setAttribute('title', f.name + ' (' + f.ticker + ')');
+        }
+        row.innerHTML =
+          '<span class="hm-ce-name">' + f.name +
+            '<span class="hm-ticker">' + f.ticker + '</span>' +
+          '</span>' +
+          '<span class="hm-ce-ret"></span>';
+        row._data = f;
+        row._list = list;
+        allRows.push(row);
+        list.appendChild(row);
+      });
+
+      body.appendChild(col);
+    });
+
+    var scroll = document.createElement('div');
+    scroll.className = 'hm-factors-scroll';
+    scroll.appendChild(body);
+    card.appendChild(scroll);
+    container.appendChild(card);
+
+    function updateRows() {
+      var th = getTheme();
+      var byList = new Map();
+      allRows.forEach(function (r) {
+        if (!byList.has(r._list)) byList.set(r._list, []);
+        byList.get(r._list).push(r);
+      });
+      byList.forEach(function (rows, list) {
+        rows.sort(function (a, b) {
+          var av = a._data[cePeriod], bv = b._data[cePeriod];
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          return bv - av;
+        });
+        rows.forEach(function (r) { list.appendChild(r); });
+      });
+      allRows.forEach(function (row) {
+        var f = row._data;
+        var v = f[cePeriod];
+        var retEl = row.querySelector('.hm-ce-ret');
+        if (v == null) {
+          retEl.textContent = '\u2014';
+          row.style.background = '';
+          row.style.color = '';
+          return;
+        }
+        var sign = v >= 0 ? '+' : '';
+        retEl.textContent = sign + v.toFixed(1) + '%';
+        var paint = perfCellPaint(v, th);
+        row.style.background = paint.bg;
+        row.style.color = paint.fg;
+      });
+    }
+
+    updateRows();
+  }
+
   /* ---------- Thematic treemap ---------- */
   var treemapPeriod = 'm1';
 
@@ -6401,6 +6643,7 @@
       safeRender('factors',      function () { renderFactors(data); });
       safeRender('fixedIncome',  function () { renderFixedIncome(data); });
       safeRender('globalIndexes',function () { renderGlobalIndexes(data); });
+      safeRender('countryEtfs',  function () { renderCountryEtfs(data); });
       safeRender('themeTreemap', function () { renderThemeTreemap(data); });
       safeRender('chartSectionVis', updateChartSectionVisibility);
       safeRender('countLabel',      updateCountLabel);
