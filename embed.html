@@ -7429,14 +7429,31 @@
     /* Exposed globally so the customize-view + edit-mode toggle can mutate it. */
     window.gridInstance = gridInstance;
 
-    if (saved && Array.isArray(saved) && saved.length) {
+    var hasSaved = !!(saved && Array.isArray(saved) && saved.length);
+    if (hasSaved) {
       /* Apply saved positions/sizes without re-creating DOM. */
       try { gridInstance.load(saved, false); }
       catch (e) { console.warn('[gridstack] failed to restore saved layout:', e); }
+    } else {
+      /* No saved layout → hardcoded gs-h values are approximations that often
+         don't match real content height (charts render async, tables vary by
+         data volume). One-time content-fit pass at 1.5s establishes sane
+         defaults. Doesn't re-run on subsequent loads so user resizes stick. */
+      setTimeout(function () {
+        /* Temporarily suppress the 'change' persister during the auto-fit
+           pass — otherwise we'd save the auto-sized layout as if the user
+           set it, and every future load would treat it as customized. */
+        gridInstance._suppressSave = true;
+        document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+          try { gridInstance.resizeToContent(item); } catch (e) {}
+        });
+        gridInstance._suppressSave = false;
+      }, 1500);
     }
 
     /* Persist layout on every change (drag end, resize end, item removed). */
     gridInstance.on('change removed added', function () {
+      if (gridInstance._suppressSave) return;
       try {
         var layout = gridInstance.save(false);  /* false: positions only, no content */
         localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
