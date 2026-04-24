@@ -2094,6 +2094,77 @@
     white-space: nowrap;
   }
 
+  /* Fixed Income rankings panel — reuses the factors card chrome (header,
+     period pills, scroll wrapper) but has 4 columns and shows raw period
+     returns (no vs-benchmark). */
+  .hm-app .hm-fi-body {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(190px, 1fr));
+    gap: 0;
+    min-width: 760px;  /* 4 cols × 190px floor triggers horizontal scroll */
+  }
+  .hm-app .hm-fi-col {
+    border-right: 1px solid var(--hm-border);
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-fi-col:last-child { border-right: none; }
+  .hm-app .hm-fi-col-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--hm-gold);
+    background: var(--hm-bg-warm);
+    padding: 6px 12px;
+    border-bottom: 2px solid var(--hm-border);
+  }
+  .hm-app .hm-fi-list {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .hm-app .hm-fi-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--hm-border);
+    font-variant-numeric: tabular-nums;
+    transition: outline 80ms;
+  }
+  .hm-app .hm-fi-row:last-child { border-bottom: none; }
+  @media (hover: hover) {
+    .hm-app .hm-fi-row:hover {
+      outline: 2px solid var(--hm-gold);
+      outline-offset: -2px;
+      position: relative;
+      z-index: 1;
+    }
+  }
+  .hm-app .hm-fi-name {
+    font-size: 12px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hm-app .hm-fi-row .hm-ticker {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--hm-brown);
+    margin-left: 6px;
+    opacity: 0.75;
+  }
+  .hm-app .hm-fi-ret {
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
   /* Thematic treemap */
   .hm-app .hm-treemap-section { margin-top: 24px; margin-bottom: 24px; }
   .hm-app .hm-treemap-header {
@@ -2573,6 +2644,7 @@
         <div id="hm-macrocompass"></div>
         <div id="hm-stylefactor"></div>
         <div id="hm-factors"></div>
+        <div id="hm-fixed-income"></div>
         <div id="hm-theme-treemap"></div>
         <div id="hm-sector-chart"></div>
 
@@ -2952,6 +3024,7 @@
       renderSectorChart(cachedData);
       renderStyleFactor(cachedData);
       renderFactors(cachedData);
+      renderFixedIncome(cachedData);
       renderThemeTreemap(cachedData);
       if (chartState.selected.length) renderCharts();
     }
@@ -3765,6 +3838,7 @@
     { id: 'hm-macrocompass',   label: 'Credit \u00d7 Policy',  group: 'Main column' },
     { id: 'hm-stylefactor',    label: 'Size vs Value',         group: 'Main column' },
     { id: 'hm-factors',        label: 'Factors (vs S&P 500)',  group: 'Main column' },
+    { id: 'hm-fixed-income',   label: 'Fixed Income',          group: 'Main column' },
     { id: 'hm-theme-treemap',  label: 'Thematic Trends',       group: 'Main column' },
     { id: 'hm-sector-chart',   label: 'Sector Performance',    group: 'Main column' },
     { id: 'hm-heatmap-wrap',   label: 'Heat map table',        group: 'Main column' },
@@ -5662,6 +5736,175 @@
     updateFactorRows();
   }
 
+  /* ---------- Fixed Income rankings panel (Koyfin-style 4-col) ---------- */
+  var FI_PERIODS = [
+    { key: 'mtd', label: 'MTD' },
+    { key: 'm1',  label: '1M'  },
+    { key: 'qtd', label: 'QTD' },
+    { key: 'm3',  label: '3M'  },
+    { key: 'm6',  label: '6M'  },
+    { key: 'ytd', label: 'YTD' },
+    { key: 'y1',  label: '1Y'  },
+    { key: 'y3',  label: '3Y'  },
+    { key: 'y5',  label: '5Y'  },
+    { key: 'y10', label: '10Y' },
+  ];
+  var fiPeriod = 'y1';
+
+  /* Tooltip copy for each bond ETF, keyed by ticker. Concise, factual, no em-dashes. */
+  var FIXED_INCOME_TIPS = {
+    SHV:  "iShares Short Treasury Bond. 0-1y duration. Effectively a cash-equivalent with minimal rate risk.",
+    SHY:  "iShares 1-3 Year Treasury Bond. Short end of the curve; moves mainly on Fed policy expectations.",
+    IEI:  "iShares 3-7 Year Treasury Bond. Belly of the curve; sensitive to medium-term growth + inflation expectations.",
+    IEF:  "iShares 7-10 Year Treasury Bond. The benchmark duration bucket for typical macro hedges.",
+    PLW:  "Invesco 1-30 Year Laddered Treasury. Equal weights across the curve; smooths duration across maturities.",
+    TLH:  "iShares 10-20 Year Treasury Bond. Long-end duration with less convexity than TLT.",
+    TLT:  "iShares 20+ Year Treasury Bond. Classic long-duration macro hedge; highly rate-sensitive.",
+    TIP:  "iShares TIPS Bond. Treasury Inflation-Protected Securities across the curve. Real yield + CPI exposure.",
+    MUB:  "iShares National Muni Bond. Broad US municipal bond exposure. Tax-equivalent yields often rival taxable IG.",
+    SUB:  "iShares Short-Term National Muni. 1-3y muni duration for tax-advantaged cash management.",
+    AGZ:  "iShares Agency Bond. US government agency debt (Fannie Mae, Freddie Mac). Slightly higher yields than Treasuries.",
+    GOVT: "iShares US Treasury Bond. Broad Treasury exposure across the curve.",
+    GNMA: "iShares GNMA Bond. Ginnie Mae mortgage-backed securities backed by the full faith and credit of the US government.",
+    MBB:  "iShares MBS. Broad investment-grade mortgage-backed securities; prepayment risk + rate sensitivity.",
+    MINT: "PIMCO Enhanced Short Maturity. Active ultra-short corporate bond fund. Cash-plus yield target.",
+    FLOT: "iShares Floating Rate Bond. Investment-grade floating-rate notes. Near-zero duration, yield resets with short rates.",
+    PFF:  "iShares Preferred & Income Securities. Preferred stock + hybrid securities. High yield with equity-like tail risk.",
+    CWB:  "SPDR Bloomberg Convertible Securities. Convertible bonds with equity upside optionality plus bond floor.",
+    BKLN: "Invesco Senior Loan. Leveraged loans / senior bank debt. Floating rate, sub-IG, lower recovery than HY.",
+    AGG:  "iShares Core US Aggregate Bond. The flagship US IG bond benchmark. Treasuries + agencies + IG corp + MBS.",
+    HYG:  "iShares iBoxx High Yield Corporate. Broad US high-yield corporate bonds. Spread-sensitive, equity-correlated in stress.",
+    LQD:  "iShares iBoxx Investment Grade Corporate. Broad IG corporate bond exposure.",
+    BNDX: "Vanguard Total International Bond. Broad ex-US IG bond exposure, USD-hedged.",
+    IGOV: "iShares International Treasury Bond. Ex-US developed market sovereign bonds, USD-hedged.",
+    EMB:  "iShares JPM USD Emerging Markets Bond. Dollar-denominated EM sovereign debt. Spread product with FX resilience.",
+    EMLC: "VanEck JPM EM Local Currency Bond. Local-currency EM sovereign debt. Higher yield plus direct EM FX exposure.",
+  };
+
+  function renderFixedIncome(data) {
+    var container = document.getElementById('hm-fixed-income');
+    if (!container || !data.fixed_income || !data.fixed_income.length) return;
+    container.innerHTML = '';
+
+    var card = document.createElement('div');
+    card.className = 'hm-factors-card';
+
+    /* Header: title + period pills. Reuses .hm-factors-* chrome. */
+    var hdr = document.createElement('div');
+    hdr.className = 'hm-factors-header';
+    var title = document.createElement('span');
+    title.textContent = 'Fixed Income Performance';
+    hdr.appendChild(title);
+
+    var btnWrap = document.createElement('div');
+    btnWrap.className = 'hm-factors-periods';
+    FI_PERIODS.forEach(function (p) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-factors-period-btn' + (fiPeriod === p.key ? ' active' : '');
+      btn.textContent = p.label;
+      btn.addEventListener('click', function () {
+        fiPeriod = p.key;
+        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        updateRows();
+      });
+      btnWrap.appendChild(btn);
+    });
+    hdr.appendChild(btnWrap);
+    card.appendChild(hdr);
+
+    var body = document.createElement('div');
+    body.className = 'hm-fi-body';
+
+    var allRows = [];
+
+    data.fixed_income.forEach(function (group) {
+      var col = document.createElement('div');
+      col.className = 'hm-fi-col';
+
+      var colHdr = document.createElement('div');
+      colHdr.className = 'hm-fi-col-header';
+      colHdr.textContent = group.name;
+      col.appendChild(colHdr);
+
+      var list = document.createElement('div');
+      list.className = 'hm-fi-list';
+      col.appendChild(list);
+
+      (group.rows || []).forEach(function (f) {
+        var row = document.createElement('div');
+        row.className = 'hm-fi-row';
+        var tip = FIXED_INCOME_TIPS[f.ticker];
+        if (tip) {
+          row.classList.add('hm-metric-tip');
+          row.setAttribute('data-tip', tip);
+          row.setAttribute('data-tip-title', f.name + ' (' + f.ticker + ')');
+        } else {
+          row.setAttribute('title', f.name + ' (' + f.ticker + ')');
+        }
+        row.innerHTML =
+          '<span class="hm-fi-name">' + f.name +
+            '<span class="hm-ticker">' + f.ticker + '</span>' +
+          '</span>' +
+          '<span class="hm-fi-ret"></span>';
+        row._data = f;
+        row._list = list;
+        allRows.push(row);
+        list.appendChild(row);
+      });
+
+      body.appendChild(col);
+    });
+
+    /* Scroll wrapper for when the main column is narrower than the 4-col body. */
+    var scroll = document.createElement('div');
+    scroll.className = 'hm-factors-scroll';
+    scroll.appendChild(body);
+    card.appendChild(scroll);
+    container.appendChild(card);
+
+    function updateRows() {
+      var th = getTheme();
+      /* Sort each column's rows by the active period's raw return (best at top). */
+      var byList = new Map();
+      allRows.forEach(function (r) {
+        if (!byList.has(r._list)) byList.set(r._list, []);
+        byList.get(r._list).push(r);
+      });
+      byList.forEach(function (rows, list) {
+        rows.sort(function (a, b) {
+          var av = a._data[fiPeriod], bv = b._data[fiPeriod];
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          return bv - av;
+        });
+        rows.forEach(function (r) { list.appendChild(r); });
+      });
+      /* Paint each row's return cell based on raw value (no vs-benchmark here). */
+      allRows.forEach(function (row) {
+        var f = row._data;
+        var v = f[fiPeriod];
+        var retEl = row.querySelector('.hm-fi-ret');
+        if (v == null) {
+          retEl.textContent = '\u2014';
+          row.style.background = '';
+          row.style.color = '';
+          return;
+        }
+        var sign = v >= 0 ? '+' : '';
+        retEl.textContent = sign + v.toFixed(1) + '%';
+        var paint = perfCellPaint(v, th);
+        row.style.background = paint.bg;
+        row.style.color = paint.fg;
+      });
+    }
+
+    updateRows();
+  }
+
   /* ---------- Thematic treemap ---------- */
   var treemapPeriod = 'm1';
 
@@ -5916,6 +6159,7 @@
       safeRender('sectorChart',  function () { renderSectorChart(data); });
       safeRender('styleFactor',  function () { renderStyleFactor(data); });
       safeRender('factors',      function () { renderFactors(data); });
+      safeRender('fixedIncome',  function () { renderFixedIncome(data); });
       safeRender('themeTreemap', function () { renderThemeTreemap(data); });
       safeRender('chartSectionVis', updateChartSectionVisibility);
       safeRender('countLabel',      updateCountLabel);
