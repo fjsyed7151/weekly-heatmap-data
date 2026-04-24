@@ -1100,9 +1100,11 @@
     border-color: var(--hm-gold);
     color: var(--hm-white);
   }
-  /* Position marker: a single gold dot, clean. Padded to the 15–85% range
-     of the plane so it stays visually clear of the corner chips. */
-  .hm-app .hm-gave-marker {
+  /* Position marker: a single gold dot with a pulsing outer ring so the
+     eye catches it immediately. Padded to the 15–85% range of the plane
+     so it stays clear of the corner chips. */
+  .hm-app .hm-gave-marker,
+  .hm-app .hm-mc-marker {
     position: absolute;
     z-index: 3;
     width: 14px;
@@ -1113,6 +1115,20 @@
     box-shadow: 0 0 0 1.5px var(--hm-gold), 0 2px 6px rgba(0,0,0,0.3);
     transform: translate(-50%, -50%);
     pointer-events: none;
+  }
+  .hm-app .hm-gave-marker::after,
+  .hm-app .hm-mc-marker::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid rgba(218,165,32,0.55);
+    animation: hm-marker-pulse 2.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes hm-marker-pulse {
+    0%, 100% { transform: scale(1);   opacity: 0.65; }
+    50%      { transform: scale(1.4); opacity: 0.1;  }
   }
   /* Active quadrant's hint text displayed below the plane. Replaces the
      per-cell hint text that lived inside each cell in the old design. */
@@ -1326,18 +1342,6 @@
     border-color: var(--hm-gold);
     color: var(--hm-white);
   }
-  .hm-app .hm-mc-marker {
-    position: absolute;
-    z-index: 3;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--hm-gold);
-    border: 3px solid var(--hm-panel);
-    box-shadow: 0 0 0 1.5px var(--hm-gold), 0 2px 6px rgba(0,0,0,0.3);
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
   /* Active quadrant's LONG/SHORT trade list rendered below the plane, full
      width. Only the current regime's trades are shown — cleaner than packing
      all four into the quadrants. */
@@ -1363,39 +1367,6 @@
   }
   .hm-app .hm-mc-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
   .hm-app .hm-mc-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
-  .hm-app .hm-mc-footer {
-    display: flex;
-    gap: 24px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--hm-border);
-    font-size: 11px;
-    flex-wrap: wrap;
-  }
-  .hm-app .hm-mc-stat { display: flex; flex-direction: column; gap: 2px; }
-  .hm-app .hm-mc-stat-name {
-    font-size: 9.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    color: var(--hm-muted);
-  }
-  .hm-app .hm-mc-stat-val {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--hm-dark);
-    font-variant-numeric: tabular-nums;
-  }
-  .hm-app .hm-mc-stat-sub {
-    font-size: 10.5px;
-    color: var(--hm-muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .hm-app .hm-mc-stat-sub.up   { color: var(--hm-green); }
-  .hm-app .hm-mc-stat-sub.down { color: var(--hm-red); }
-  @media (max-width: 700px) {
-    .hm-app .hm-mc-footer { gap: 12px; }
-  }
 
   /* Top index cards */
   .hm-app .hm-indexes {
@@ -4151,13 +4122,16 @@
 
     /* Corner chips. Each chip is placed at the outer corner of its own
        quadrant (row=0 → top, col=0 → left, etc.), away from the plane
-       center where the marker sits. Active chip gets a gold fill. */
+       center where the marker sits. Active chip gets a gold fill. Hover
+       the chip to see the regime's description (same text that used to
+       live inline in each cell). */
     GAVE_CELLS.forEach(function (c) {
       var cornerClass = (c.row === 0 ? 't' : 'b') + (c.col === 0 ? 'l' : 'r');
       var chip = document.createElement('span');
-      chip.className = 'hm-gave-qname ' + cornerClass + (c.key === g.quadrant ? ' active' : '');
+      chip.className = 'hm-gave-qname hm-metric-tip ' + cornerClass + (c.key === g.quadrant ? ' active' : '');
       chip.textContent = c.name;
-      chip.setAttribute('title', c.hint);
+      chip.setAttribute('data-tip-title', c.name);
+      chip.setAttribute('data-tip', c.hint);
       plane.appendChild(chip);
     });
 
@@ -4434,12 +4408,20 @@
     midV.className = 'hm-mc-midline-v';
     plane.appendChild(midV);
 
-    /* Corner chips — quadrant names in the outer corners of the plane. */
+    /* Corner chips — quadrant names in the outer corners of the plane.
+       Hover reveals the LONG/SHORT trade lists for every regime, not just
+       the active one. Rendered as HTML in the tooltip body so the colored
+       LONG/SHORT tags still carry their visual meaning. */
     MC_CELLS.forEach(function (c) {
       var cornerClass = (c.row === 0 ? 't' : 'b') + (c.col === 0 ? 'l' : 'r');
       var chip = document.createElement('span');
-      chip.className = 'hm-mc-qname ' + cornerClass + (c.key === m.quadrant ? ' active' : '');
+      chip.className = 'hm-mc-qname hm-metric-tip ' + cornerClass + (c.key === m.quadrant ? ' active' : '');
       chip.textContent = c.name;
+      var tipBody =
+        '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + c.longs.join(', ')  + '</div>' +
+        '<div class="hm-mc-trade-line" style="margin-top:4px"><span class="hm-mc-trade-tag short">SHORT</span>' + c.shorts.join(', ') + '</div>';
+      chip.setAttribute('data-tip-title', c.name);
+      chip.setAttribute('data-tip', tipBody);
       plane.appendChild(chip);
     });
 
@@ -4475,35 +4457,12 @@
       card.appendChild(trades);
     }
 
-    var footer = document.createElement('div');
-    footer.className = 'hm-mc-footer';
-
-    var impulseSign = m.impulse >= 0;
-    var stanceSign  = m.stance >= 0;
-
-    footer.innerHTML =
-      '<div class="hm-mc-stat">' +
-        '<span class="hm-mc-stat-name">Credit Impulse (M2 YoY vs 3m avg)</span>' +
-        '<span class="hm-mc-stat-val">' + (impulseSign ? '+' : '') + m.impulse.toFixed(2) + ' pp</span>' +
-        '<span class="hm-mc-stat-sub ' + (impulseSign ? 'up' : 'down') + '">' +
-          (impulseSign ? '\u25B2 Accelerating' : '\u25BC Decelerating') +
-        '</span>' +
-      '</div>' +
-      '<div class="hm-mc-stat">' +
-        '<span class="hm-mc-stat-name">Policy Stance (10y real \u2212 R*)</span>' +
-        '<span class="hm-mc-stat-val">' + (stanceSign ? '+' : '') + m.stance.toFixed(2) + ' pp</span>' +
-        '<span class="hm-mc-stat-sub ' + (stanceSign ? 'down' : 'up') + '">' +
-          (stanceSign ? '\u25BC Tightening' : '\u25B2 Easing') +
-        '</span>' +
-      '</div>';
-    card.appendChild(footer);
-
-    /* Methodology note — explicit about proxies since BIS G5 credit impulse
-       and NY Fed HLW R* aren't accessible via free APIs. */
+    /* Methodology note — explicit about the two proxies since BIS G5 credit
+       impulse and NY Fed HLW R* aren't accessible via free APIs. */
     var note = document.createElement('div');
     note.className = 'hm-mc-note';
-    note.textContent = 'Proxies: M2 YoY vs 3m trend (BIS G5 credit impulse is paywalled); R* fixed at 0.5% ' +
-      '(NY Fed HLW consensus fluctuates 0.3\u20130.8%). Dot placement uses Z-score vs own 7y std.';
+    note.textContent = 'Axes: X = credit impulse (M2 YoY vs 3m trend). Y = policy stance (10y real minus R* at 0.5%). ' +
+      'Marker uses Z-score vs own 7y std.';
     card.appendChild(note);
 
     container.appendChild(card);
