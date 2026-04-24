@@ -177,67 +177,29 @@
     border: 2px dashed var(--hm-gold);
     border-radius: var(--hm-r);
   }
-  /* Resize handle, bottom-right. Visible gold corner triangle so users
-     know each panel is resizable. */
-  .hm-app .grid-stack-item > .ui-resizable-se,
+  /* Resize handles — invisible hit zones only. Cursor changes do the
+     signalling (n/s/e/w/ne/nw/se/sw-resize). No gold bars/triangles. */
   .hm-app .grid-stack-item > .ui-resizable-handle {
-    filter: none;
-    opacity: 0.55;
-    transition: opacity 120ms;
-  }
-  .hm-app .grid-stack-item:hover > .ui-resizable-handle { opacity: 1; }
-  /* Drag grip — top-right corner of each panel. Only visible in edit mode. */
-  .hm-app .hm-grid-grip {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 22px;
-    height: 22px;
     display: none;
-    align-items: center;
-    justify-content: center;
-    cursor: move;
-    color: var(--hm-gold);
-    background: rgba(255,255,255,0.9);
-    border: 1px solid var(--hm-gold);
-    border-radius: 3px;
-    z-index: 10;
-    opacity: 0.85;
-    transition: opacity 120ms;
+    background: transparent;
+    opacity: 0;
   }
-  .hm-app .hm-grid-grip:hover { opacity: 1; }
-  .hm-app .hm-grid-grip svg { width: 16px; height: 16px; display: block; }
-  .hm-app.dark .hm-grid-grip {
-    background: rgba(20,22,30,0.9);
-  }
-  /* Width-resize handle: a visible gold vertical bar on the east edge,
-     shown only in edit mode. (We removed south + southeast handles —
-     users can only resize width; height auto-fits to content.) */
-  .hm-app .grid-stack-item > .ui-resizable-e {
-    display: none;
-    width: 6px;
-    top: 20%;
-    bottom: 20%;
-    right: 0;
-    background: var(--hm-gold);
-    opacity: 0.55;
-    border-radius: 3px;
-    cursor: ew-resize;
-    transition: opacity 120ms;
-  }
-  .hm-app .grid-stack-item:hover > .ui-resizable-e { opacity: 1; }
-  /* Edit-mode flips all the affordances on. */
-  .hm-app.hm-grid-editing .hm-grid-grip { display: inline-flex; }
-  .hm-app.hm-grid-editing .grid-stack-item > .ui-resizable-e { display: block; }
+  /* Edit-mode: whole panel becomes draggable (grab cursor), and resize
+     hit zones on every edge are activated. Cursor tells the story — no
+     visible icons or bars. */
   .hm-app.hm-grid-editing .grid-stack-item > .grid-stack-item-content {
     outline: 1.5px dashed rgba(218,165,32,0.45);
     outline-offset: -2px;
     border-radius: var(--hm-r);
-    cursor: default;
+    cursor: grab;
   }
   .hm-app.hm-grid-editing .grid-stack-item:hover > .grid-stack-item-content {
     outline-color: var(--hm-gold);
   }
+  .hm-app.hm-grid-editing .grid-stack-item.ui-draggable-dragging > .grid-stack-item-content {
+    cursor: grabbing;
+  }
+  .hm-app.hm-grid-editing .grid-stack-item > .ui-resizable-handle { display: block; }
   /* Active-state ring on the edit-layout button so users know it's on. */
   .hm-app #hm-edit-layout-toggle.active {
     background: var(--hm-gold);
@@ -7421,36 +7383,18 @@
       if (raw) saved = JSON.parse(raw);
     } catch (e) {}
 
-    /* INJECT GRIPS BEFORE GridStack.init — Gridstack binds drag handlers
-       at init time using the configured `draggable.handle` selector. If the
-       handle elements don't exist yet, drag won't bind. */
-    document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-      if (item.querySelector('.hm-grid-grip')) return;
-      var grip = document.createElement('div');
-      grip.className = 'hm-grid-grip';
-      grip.setAttribute('title', 'Drag to move');
-      grip.innerHTML =
-        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
-          '<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/>' +
-          '<circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/>' +
-          '<circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>' +
-        '</svg>';
-      item.appendChild(grip);
-    });
-
     gridInstance = GridStack.init({
       column: 12,
-      cellHeight: 40,                          /* smaller cell so content-fit is finer */
+      cellHeight: 40,
       margin: 8,
       float: false,                            /* items compact upward — no gaps */
-      alwaysShowResizeHandle: true,            /* always visible in edit mode */
-      /* Width-only resize via the east edge handle. The S/SE handles are
-         deliberately omitted. Combined with sizeToContent below, this kills
-         whitespace — height is content-driven, not user-driven. */
-      resizable: { handles: 'e' },
-      /* Drag only by the dedicated grip element added to every panel. Avoids
-         accidental drags when users interact with charts/buttons inside panels. */
-      draggable: { handle: '.hm-grid-grip' },
+      alwaysShowResizeHandle: true,
+      /* Resize from every edge/corner — Gridstack default is 'se' only,
+         but user wants free resize anywhere they grab. */
+      resizable: { handles: 'n, e, s, w, ne, nw, se, sw' },
+      /* No handle filter → drag from anywhere on the panel. Cursor
+         (grab/grabbing) is the only affordance. Edit mode still gates
+         interactivity via enableMove, so content clicks work outside it. */
       animate: true,
       disableOneColumnMode: false,
       minRow: 1,
@@ -7458,7 +7402,6 @@
          enableMove/enableResize are "no-op for static grids" — initializing
          static makes runtime toggle unreliable. Init non-static, then
          enableMove(false)+enableResize(false) immediately for view mode. */
-      sizeToContent: true,
     }, '#hm-grid');
     /* Apply initial view/edit state via enable* (proper runtime toggle path). */
     var startInEdit = isEditMode();
@@ -7466,18 +7409,6 @@
     gridInstance.enableResize(startInEdit);
     /* Exposed globally so the customize-view + edit-mode toggle can mutate it. */
     window.gridInstance = gridInstance;
-
-    /* Height auto-fit handled by Gridstack's sizeToContent: true (above).
-       It measures each item's content on init and whenever content changes,
-       so we don't need a DIY fit pass anymore. It also works after user
-       interaction, so the whitespace issue is solved at the source. */
-    /* Second pass at 1.5s to catch late-paint content (Chart.js animation
-       finishing, tables fully populated). */
-    setTimeout(function () {
-      document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-        try { gridInstance.resizeToContent(item); } catch (e) {}
-      });
-    }, 1500);
 
     if (saved && Array.isArray(saved) && saved.length) {
       /* Apply saved positions/sizes without re-creating DOM. */
@@ -7514,52 +7445,6 @@
           }
         });
       });
-    });
-  }
-
-  /* Measure each grid item's natural content height, snap to grid cells, and
-     set BOTH gs-h (current height) AND maxH (upper cap) to that value. The
-     maxH cap is the key to "no whitespace" — users can still shrink (content
-     scrolls / clips), but they physically can't drag taller than the fit. */
-  function fitGridItemsToContent() {
-    if (!gridInstance) return;
-    var cellH = 40;
-    var marginPx = 8;
-    var items = document.querySelectorAll('#hm-grid > .grid-stack-item');
-    items.forEach(function (item) {
-      var node = item.gridstackNode;
-      if (!node) return;
-      var contentWrap = item.querySelector('.grid-stack-item-content');
-      if (!contentWrap) return;
-      /* Measure the wrapped inner panel's natural (un-capped) height. */
-      var inner = contentWrap.firstElementChild;
-      if (!inner) return;
-      var contentH = inner.getBoundingClientRect().height;
-      /* scrollHeight handles panels whose visible box is capped by another
-         overflow rule (e.g. heat map); use the larger of the two for safety. */
-      contentH = Math.max(contentH, inner.scrollHeight);
-      if (contentH < 40) return;  /* skip empty / not-yet-rendered */
-      /* Convert px → grid-row units. Each row = cellH + margin. */
-      var rows = Math.ceil((contentH + marginPx) / (cellH + marginPx));
-      rows = Math.max(1, rows);
-      /* Only update if different from current, to avoid noisy "change" events. */
-      if (rows !== node.h || node.maxH !== rows) {
-        gridInstance.update(item, { h: rows, maxH: rows });
-      }
-    });
-  }
-
-  /* For returning users (saved layout exists), their layout's h values are
-     the "right" sizes. Enforce them as maxH so resize can't exceed. */
-  function applySavedAsMaxH() {
-    if (!gridInstance) return;
-    var items = document.querySelectorAll('#hm-grid > .grid-stack-item');
-    items.forEach(function (item) {
-      var node = item.gridstackNode;
-      if (!node) return;
-      if (node.maxH !== node.h) {
-        gridInstance.update(item, { maxH: node.h });
-      }
     });
   }
 
