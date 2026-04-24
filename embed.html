@@ -7385,9 +7385,12 @@
     var btn = document.getElementById('hm-edit-layout-toggle');
     if (btn) btn.classList.toggle('active', !!on);
     try { localStorage.setItem(EDIT_MODE_KEY, on ? '1' : '0'); } catch (e) {}
-    /* Enable/disable Gridstack interactivity at runtime. */
+    /* Use enableMove + enableResize (not setStatic) per Gridstack v12 docs.
+       These are the proper runtime on/off toggle; setStatic is a heavier
+       structural change that's flaky to reverse. */
     if (gridInstance) {
-      gridInstance.setStatic(!on);
+      gridInstance.enableMove(!!on);
+      gridInstance.enableResize(!!on);
     }
   }
 
@@ -7418,34 +7421,9 @@
       if (raw) saved = JSON.parse(raw);
     } catch (e) {}
 
-    gridInstance = GridStack.init({
-      column: 12,
-      cellHeight: 40,                          /* smaller cell so content-fit is finer */
-      margin: 8,
-      float: false,                            /* items compact upward — no gaps */
-      alwaysShowResizeHandle: true,            /* always visible in edit mode */
-      /* Width-only resize: users can drag the east edge to change column span
-         but can't drag south to grow taller than content. The S/SE handles are
-         deliberately omitted. Combined with sizeToContent below, this is what
-         kills whitespace — height is always determined by content, not user. */
-      resizable: { handles: 'e' },
-      /* Drag only by the dedicated grip element added to every panel. Avoids
-         accidental drags when users interact with charts/buttons inside panels. */
-      draggable: { handle: '.hm-grid-grip' },
-      animate: true,
-      disableOneColumnMode: false,
-      minRow: 1,
-      staticGrid: !isEditMode(),               /* view mode = no interactivity */
-      /* Auto-fit each item's height to its content. Gridstack measures on
-         init + whenever content changes, eliminating the whitespace issue
-         entirely. Users resize WIDTH only; height is content-driven. */
-      sizeToContent: true,
-    }, '#hm-grid');
-    /* Exposed globally so the customize-view + edit-mode toggle can mutate it. */
-    window.gridInstance = gridInstance;
-
-    /* Inject a drag grip into every grid item's top-right corner. Only
-       visible in edit mode. The grip is the Gridstack drag handle. */
+    /* INJECT GRIPS BEFORE GridStack.init — Gridstack binds drag handlers
+       at init time using the configured `draggable.handle` selector. If the
+       handle elements don't exist yet, drag won't bind. */
     document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
       if (item.querySelector('.hm-grid-grip')) return;
       var grip = document.createElement('div');
@@ -7459,6 +7437,35 @@
         '</svg>';
       item.appendChild(grip);
     });
+
+    gridInstance = GridStack.init({
+      column: 12,
+      cellHeight: 40,                          /* smaller cell so content-fit is finer */
+      margin: 8,
+      float: false,                            /* items compact upward — no gaps */
+      alwaysShowResizeHandle: true,            /* always visible in edit mode */
+      /* Width-only resize via the east edge handle. The S/SE handles are
+         deliberately omitted. Combined with sizeToContent below, this kills
+         whitespace — height is content-driven, not user-driven. */
+      resizable: { handles: 'e' },
+      /* Drag only by the dedicated grip element added to every panel. Avoids
+         accidental drags when users interact with charts/buttons inside panels. */
+      draggable: { handle: '.hm-grid-grip' },
+      animate: true,
+      disableOneColumnMode: false,
+      minRow: 1,
+      /* IMPORTANT: do NOT set staticGrid here. Per Gridstack v12 docs,
+         enableMove/enableResize are "no-op for static grids" — initializing
+         static makes runtime toggle unreliable. Init non-static, then
+         enableMove(false)+enableResize(false) immediately for view mode. */
+      sizeToContent: true,
+    }, '#hm-grid');
+    /* Apply initial view/edit state via enable* (proper runtime toggle path). */
+    var startInEdit = isEditMode();
+    gridInstance.enableMove(startInEdit);
+    gridInstance.enableResize(startInEdit);
+    /* Exposed globally so the customize-view + edit-mode toggle can mutate it. */
+    window.gridInstance = gridInstance;
 
     /* Height auto-fit handled by Gridstack's sizeToContent: true (above).
        It measures each item's content on init and whenever content changes,
