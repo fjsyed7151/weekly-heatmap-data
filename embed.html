@@ -1088,12 +1088,13 @@
     color: var(--hm-brown);
     line-height: 1.3;
   }
-  /* Position marker: two dotted crosshair lines projecting from the cell's
+  /* Position marker: two dashed crosshair lines projecting from the cell's
      OUTER edges (the ones touching the axis labels) inward to the actual
-     (dev_x, dev_y) position. Reads like a coordinate read-out: horizontal
-     line along the Y value, vertical line along the X value. No dot, no
-     label — lines alone convey position and z-index: 1 keeps them behind
-     the cell text (z-index: 2) so nothing gets obscured. */
+     (dev_x, dev_y) position. Uses a hand-rolled repeating gradient instead
+     of `border: 1px dotted` because native dotted at 1px rendered as a
+     faint blur that looked like a glitch. 2px solid segments with 4px gaps
+     render crisply at any DPI. z-index: 1 keeps the crosshair below the
+     cell text (z-index: 2). */
   .hm-app .hm-quad-vline,
   .hm-app .hm-quad-hline {
     position: absolute;
@@ -1101,14 +1102,26 @@
     z-index: 1;
   }
   .hm-app .hm-quad-vline {
-    width: 0;
-    border-left: 1px dotted var(--hm-gold);
-    transform: translateX(-0.5px);
+    width: 2px;
+    transform: translateX(-1px);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--hm-gold) 0,
+      var(--hm-gold) 3px,
+      transparent 3px,
+      transparent 7px
+    );
   }
   .hm-app .hm-quad-hline {
-    height: 0;
-    border-top: 1px dotted var(--hm-gold);
-    transform: translateY(-0.5px);
+    height: 2px;
+    transform: translateY(-1px);
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--hm-gold) 0,
+      var(--hm-gold) 3px,
+      transparent 3px,
+      transparent 7px
+    );
   }
 
   /* Gave companion charts — three ratio lines with 7y MA overlay, rendered
@@ -1772,22 +1785,27 @@
     border: 1px solid var(--hm-border);
     border-top: none;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
-    /* Horizontal scroll when the sidebar is narrower than the grid floor.
-       Prevents cards from squeezing into unreadable wraps. */
+    overflow: hidden;
+  }
+  /* Horizontal scroll moved to the section level so the header bar + subheads
+     + cards all stretch to the same min-width and scroll in unison. Scrolling
+     only the body would leave the yellow header clipped behind scrolled cards,
+     which looks broken. */
+  .hm-app .hm-econ-section {
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
   }
-  .hm-app .hm-econ-body > .hm-econ-grid,
-  .hm-app .hm-econ-body > .hm-econ-subhead {
+  .hm-app .hm-econ-section > .hm-econ-header,
+  .hm-app .hm-econ-section > .hm-econ-body {
     min-width: 300px;
   }
-  .hm-app .hm-econ-body::-webkit-scrollbar { height: 8px; }
-  .hm-app .hm-econ-body::-webkit-scrollbar-thumb {
+  .hm-app .hm-econ-section::-webkit-scrollbar { height: 8px; }
+  .hm-app .hm-econ-section::-webkit-scrollbar-thumb {
     background: var(--hm-border);
     border-radius: 4px;
   }
-  .hm-app .hm-econ-body::-webkit-scrollbar-track {
+  .hm-app .hm-econ-section::-webkit-scrollbar-track {
     background: var(--hm-bg-warm);
   }
   .hm-app .hm-econ-subhead {
