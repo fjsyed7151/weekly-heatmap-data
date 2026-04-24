@@ -100,6 +100,70 @@
   }
   .hm-app .hm-main > * { max-width: 100%; }
 
+  /* Pinned-to-top bar — sticks below the topbar. Pinned panels get full width
+     and natural height (Gridstack's absolute positioning is overridden). */
+  .hm-app .hm-pinned-bar {
+    position: sticky;
+    top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px));
+    z-index: 8;
+    background: var(--hm-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--hm-border);
+    max-height: calc(100vh - var(--hm-header-offset, 0px) - var(--hm-topbar-h, 52px) - 24px);
+    overflow-y: auto;
+  }
+  .hm-app .hm-pinned-bar:empty {
+    display: none;
+  }
+  /* Override Gridstack's absolute positioning when an item lives in the
+     pinned bar — let it flow naturally, full-width, intrinsic height. */
+  .hm-app .hm-pinned-bar > .grid-stack-item {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    transform: none !important;
+  }
+  .hm-app .hm-pinned-bar > .grid-stack-item > .grid-stack-item-content {
+    position: static !important;
+    height: auto !important;
+  }
+
+  /* Right-click context menu on grid panels. */
+  .hm-app .hm-context-menu {
+    position: fixed;
+    z-index: 1000;
+    background: var(--hm-panel);
+    border: 1px solid var(--hm-border-strong);
+    border-radius: var(--hm-r);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    padding: 4px;
+    min-width: 140px;
+  }
+  .hm-app .hm-context-menu[hidden] { display: none; }
+  .hm-app .hm-context-item {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: 0;
+    border-radius: calc(var(--hm-r) - 2px);
+    color: var(--hm-dark);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+  }
+  .hm-app .hm-context-item:hover {
+    background: var(--hm-bg-alt);
+    color: var(--hm-gold);
+  }
+
   /* Gridstack POC: minimal chrome so the panels look like they did before,
      with drag handles (top edge) + a visible resize corner. */
   .hm-app .grid-stack {
@@ -2967,6 +3031,13 @@
            items alongside the rest, draggable + resizable like everything
            else. Heat map + metrics chart stay OUTSIDE the grid below. -->
       <div class="hm-main">
+        <!-- Pinned-to-top bar. Sticky below the topbar. Right-click any panel →
+             "Pin to top" moves it here; "Unpin" sends it back to the grid. -->
+        <div class="hm-pinned-bar" id="hm-pinned-bar"></div>
+        <!-- Custom context menu for grid panels. Hidden by default. -->
+        <div class="hm-context-menu" id="hm-context-menu" hidden>
+          <button class="hm-context-item" data-action="toggle-pin" type="button"></button>
+        </div>
         <div class="grid-stack" id="hm-grid">
           <!-- Sidebar panels promoted into the grid. Default arrangement:
                commodities + currencies on row 1 (6 cols each), then calendar
@@ -7241,6 +7312,11 @@
     /* gs-h values in the HTML are calibrated to match natural content height,
        so no auto-fit pass is needed — first paint is correct, no flicker. */
 
+    /* Restore pinned panels: any item whose id is in the pinned list gets
+       removed from gridstack tracking and moved into #hm-pinned-bar. Done
+       AFTER load(saved) so saved positions are honored before pinning. */
+    restorePinnedFromStorage();
+
     /* Persist layout on every change (drag end, resize end, item removed). */
     gridInstance.on('change removed added', function () {
       try {
@@ -7284,6 +7360,128 @@
       window.location.reload();
     }
   }
+
+  /* ---------- Pin to top ---------- */
+  /* Right-click any panel → context menu offers "Pin to top". Pinned panels
+     are detached from Gridstack and moved into #hm-pinned-bar (sticky below
+     topbar). DOM nodes are preserved so Chart.js instances inside keep
+     working. State persists in localStorage. */
+  var PINNED_KEY = 'hm-pinned-ids';
+
+  function getPinned() {
+    try {
+      var arr = JSON.parse(localStorage.getItem(PINNED_KEY) || '[]');
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+  function savePinned(ids) {
+    try { localStorage.setItem(PINNED_KEY, JSON.stringify(ids)); } catch (e) {}
+  }
+  function isPinned(id) { return getPinned().indexOf(id) >= 0; }
+
+  function pinItemById(id) {
+    if (!gridInstance) return;
+    /* Idempotent move: only act if the item is still in the grid. (On
+       initial restore, the localStorage list already contains the id —
+       the DOM move is what's missing.) */
+    var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
+    if (!item) return;
+    /* Save current size so we can restore on unpin. */
+    var node = item.gridstackNode;
+    if (node) {
+      item.dataset.unpinW = node.w;
+      item.dataset.unpinH = node.h;
+    }
+    /* Remove from gridstack tracking but keep DOM (second arg = removeDOM=false). */
+    try { gridInstance.removeWidget(item, false, false); } catch (e) {}
+    /* Strip Gridstack's inline positioning so CSS in .hm-pinned-bar can
+       lay it out as a regular block element. */
+    item.style.left = '';
+    item.style.top = '';
+    item.style.width = '';
+    item.style.height = '';
+    item.style.transform = '';
+    var bar = document.getElementById('hm-pinned-bar');
+    if (bar) bar.appendChild(item);
+    /* Persist if not already there. */
+    var pinned = getPinned();
+    if (pinned.indexOf(id) < 0) {
+      pinned.push(id);
+      savePinned(pinned);
+    }
+  }
+
+  function unpinItemById(id) {
+    if (!gridInstance) return;
+    var item = document.querySelector('#hm-pinned-bar > .grid-stack-item[gs-id="' + id + '"]');
+    if (!item) return;
+    var w = parseInt(item.dataset.unpinW || item.getAttribute('gs-w') || 12, 10);
+    var h = parseInt(item.dataset.unpinH || item.getAttribute('gs-h') || 4, 10);
+    item.setAttribute('gs-w', w);
+    item.setAttribute('gs-h', h);
+    var grid = document.getElementById('hm-grid');
+    if (grid) grid.appendChild(item);
+    try { gridInstance.makeWidget(item); } catch (e) {}
+    var pinned = getPinned().filter(function (p) { return p !== id; });
+    savePinned(pinned);
+  }
+
+  function restorePinnedFromStorage() {
+    var pinned = getPinned();
+    pinned.forEach(function (id) { pinItemById(id); });
+  }
+
+  /* Context menu wiring — single shared menu element, positioned per click. */
+  (function setupContextMenu() {
+    var menu = document.getElementById('hm-context-menu');
+    var btn = menu && menu.querySelector('.hm-context-item[data-action="toggle-pin"]');
+    if (!menu || !btn) return;
+    var activeId = null;
+
+    function closeMenu() {
+      menu.hidden = true;
+      activeId = null;
+    }
+    function openMenu(x, y, id) {
+      activeId = id;
+      btn.textContent = isPinned(id) ? 'Unpin from top' : 'Pin to top';
+      menu.hidden = false;
+      /* Clamp to viewport so menu doesn't render off-screen. */
+      var rect = menu.getBoundingClientRect();
+      var maxX = window.innerWidth - rect.width - 4;
+      var maxY = window.innerHeight - rect.height - 4;
+      menu.style.left = Math.max(4, Math.min(x, maxX)) + 'px';
+      menu.style.top = Math.max(4, Math.min(y, maxY)) + 'px';
+    }
+
+    /* Delegate contextmenu on document — fires for items in #hm-grid AND
+       in #hm-pinned-bar. */
+    document.addEventListener('contextmenu', function (e) {
+      var item = e.target.closest && e.target.closest('.grid-stack-item[gs-id]');
+      if (!item) { closeMenu(); return; }
+      /* Only handle items inside our two containers. */
+      var inGrid = !!item.closest('#hm-grid');
+      var inBar = !!item.closest('#hm-pinned-bar');
+      if (!inGrid && !inBar) { closeMenu(); return; }
+      e.preventDefault();
+      openMenu(e.clientX, e.clientY, item.getAttribute('gs-id'));
+    });
+
+    btn.addEventListener('click', function () {
+      if (!activeId) return;
+      if (isPinned(activeId)) unpinItemById(activeId);
+      else pinItemById(activeId);
+      closeMenu();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (menu.hidden) return;
+      if (e.target.closest('#hm-context-menu')) return;
+      closeMenu();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
+    window.addEventListener('scroll', closeMenu, { passive: true });
+  })();
 
   fetch(HEATMAP_URL + "?t=" + Math.floor(Date.now() / 600000))
     .then(function (r) {
