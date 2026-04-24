@@ -96,7 +96,7 @@
   .hm-app .hm-main {
     min-width: 0;
     overflow: hidden;
-    padding: 0 16px;
+    padding: 0;
   }
   .hm-app .hm-main > * { max-width: 100%; }
 
@@ -171,22 +171,82 @@
     min-height: 800px;
   }
   .hm-app .grid-stack-item-content {
-    /* Panels already have their own card chrome (borders, bg, padding).
-       The grid item content wrapper just provides the bounding box for
-       Gridstack — let the panel's native CSS show through. */
+    /* Flex column: injected .hm-panel-header sits on top (fixed height),
+       the panel's card content fills the rest. */
     background: transparent;
     border-radius: var(--hm-r);
     overflow: visible;  /* Chart.js tooltips, dropdowns etc. can escape */
     padding: 0;
     box-sizing: border-box;
-    /* Fill-height: panel container fills the grid item so charts inside can
-       react to user-driven height changes. Each panel decides via its own
-       internal CSS whether content stretches (charts) or stays put (tables). */
+    display: flex;
+    flex-direction: column;
     height: 100%;
   }
-  .hm-app .grid-stack-item-content > * {
-    height: 100%;
+  .hm-app .grid-stack-item-content > .hm-panel-header {
+    flex: 0 0 auto;
   }
+  .hm-app .grid-stack-item-content > *:not(.hm-panel-header) {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  /* Windows-style panel header — always visible, thin (28px). Left side is
+     the drag handle (the ONLY way to drag a panel now). Right side holds
+     pin + reset buttons. Title shown in the middle (muted, since the panel's
+     own header usually repeats it). */
+  .hm-app .hm-panel-header {
+    display: flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 6px 0 8px;
+    background: transparent;
+    cursor: grab;
+    user-select: none;
+    gap: 6px;
+    color: var(--hm-muted, #8a7e5e);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.55;
+    transition: opacity 120ms;
+  }
+  .hm-app .grid-stack-item:hover > .grid-stack-item-content > .hm-panel-header {
+    opacity: 1;
+  }
+  .hm-app .hm-panel-header:active { cursor: grabbing; }
+  .hm-app .hm-panel-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hm-app .hm-panel-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    color: inherit;
+    cursor: pointer;
+    transition: background 120ms, color 120ms, border-color 120ms;
+  }
+  .hm-app .hm-panel-btn:hover {
+    background: rgba(218,165,32,0.12);
+    color: var(--hm-gold);
+    border-color: var(--hm-gold);
+  }
+  .hm-app .hm-panel-btn.active {
+    color: var(--hm-gold);
+    border-color: var(--hm-gold);
+  }
+  .hm-app .hm-panel-btn svg { width: 14px; height: 14px; display: block; }
   /* Chart panels: opt-in fill chain from grid item → canvas wrap. Adding a
      class wouldn't propagate without DOM changes in renderers, so target
      existing structure by ID/class. resizestop pokes Chart.js so canvases
@@ -252,28 +312,9 @@
     background: transparent;
     opacity: 0;
   }
-  /* Edit-mode: whole panel becomes draggable (grab cursor), and resize
-     hit zones on every edge are activated. Cursor tells the story — no
-     visible icons or bars. */
-  .hm-app.hm-grid-editing .grid-stack-item > .grid-stack-item-content {
-    outline: 1.5px dashed rgba(218,165,32,0.45);
-    outline-offset: -2px;
-    border-radius: var(--hm-r);
-    cursor: grab;
-  }
-  .hm-app.hm-grid-editing .grid-stack-item:hover > .grid-stack-item-content {
-    outline-color: var(--hm-gold);
-  }
-  .hm-app.hm-grid-editing .grid-stack-item.ui-draggable-dragging > .grid-stack-item-content {
-    cursor: grabbing;
-  }
-  .hm-app.hm-grid-editing .grid-stack-item > .ui-resizable-handle { display: block; }
-  /* Active-state ring on the edit-layout button so users know it's on. */
-  .hm-app #hm-edit-layout-toggle.active {
-    background: var(--hm-gold);
-    color: var(--hm-white);
-    border-color: var(--hm-gold);
-  }
+  /* Drag is always active via the .hm-panel-header handle; no edit mode.
+     Resize handles are always hit-testable on the edges (cursor changes). */
+  .hm-app .grid-stack-item > .ui-resizable-handle { display: block; }
 
   @media (max-width: 1100px) {
     .hm-app .hm-main {
@@ -2916,18 +2957,6 @@
   <div class="hm-inner">
     <div class="hm-topbar">
       <span class="hm-topbar-title">Market Dashboard</span>
-      <!-- Edit Layout toggle: while active, the whole panel becomes a drag
-           handle + all 4 edges/corners are resizable, with a dashed gold
-           outline as the affordance. Default OFF. State persists via
-           localStorage. -->
-      <button class="hm-btn" id="hm-edit-layout-toggle" type="button" aria-label="Edit layout" title="Edit layout">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="7"/>
-          <rect x="14" y="3" width="7" height="7"/>
-          <rect x="3" y="14" width="7" height="7"/>
-          <rect x="14" y="14" width="7" height="7"/>
-        </svg>
-      </button>
       <!-- Reset layout: clears saved positions/sizes + reloads to defaults.
            Confirms first so users don't nuke their layout by accident. -->
       <button class="hm-btn" id="hm-reset-layout" type="button" aria-label="Reset layout" title="Reset layout">
@@ -3039,36 +3068,20 @@
           <button class="hm-context-item" data-action="toggle-pin" type="button"></button>
         </div>
         <div class="grid-stack" id="hm-grid">
-          <!-- Sidebar panels promoted into the grid. Default arrangement:
-               commodities + currencies on row 1 (6 cols each), then calendar
-               + economy on row 2 (6 cols each). Users can drag these
-               anywhere just like the main panels. -->
-          <div class="grid-stack-item" gs-id="hm-commodities" gs-w="6" gs-h="22">
-            <div class="grid-stack-item-content">
-              <div id="hm-commodities"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-currencies" gs-w="6" gs-h="20">
-            <div class="grid-stack-item-content">
-              <div id="hm-currencies"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-calendar" gs-w="6" gs-h="14">
-            <div class="grid-stack-item-content">
-              <div id="hm-calendar"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-economy" gs-w="6" gs-h="20">
-            <div class="grid-stack-item-content">
-              <div id="hm-economy"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-indexes" gs-w="12" gs-h="4">
-            <div class="grid-stack-item-content">
-              <div id="hm-indexes"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-gave-wrap" gs-w="12" gs-h="17">
+          <!-- Default layout: 3-6-3 like the original. Left column (x=0..2)
+               holds Commodities + Currencies. Right column (x=9..11) holds
+               Economic Calendar + Economic Indicators. Middle column
+               (x=3..8) holds the main analytical panels. Users can drag
+               anything anywhere; this is just the reset-to-default state. -->
+          <!-- LEFT COLUMN -->
+          <div class="grid-stack-item" gs-id="hm-commodities"   gs-x="0" gs-y="0"  gs-w="3" gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currencies"    gs-x="0" gs-y="22" gs-w="3" gs-h="20"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
+          <!-- RIGHT COLUMN -->
+          <div class="grid-stack-item" gs-id="hm-calendar"      gs-x="9" gs-y="0"  gs-w="3" gs-h="14"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-economy"       gs-x="9" gs-y="14" gs-w="3" gs-h="20"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <!-- MIDDLE COLUMN -->
+          <div class="grid-stack-item" gs-id="hm-indexes"       gs-x="3" gs-y="0"   gs-w="6" gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-gave-wrap"     gs-x="3" gs-y="4"   gs-w="6" gs-h="17">
             <div class="grid-stack-item-content">
               <div class="hm-gave-wrap" id="hm-gave-wrap">
                 <div id="hm-gave-quadrant"></div>
@@ -3076,61 +3089,18 @@
               </div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-macrocompass" gs-w="12" gs-h="11">
-            <div class="grid-stack-item-content">
-              <div id="hm-macrocompass"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-stylefactor" gs-w="6" gs-h="7">
-            <div class="grid-stack-item-content">
-              <div id="hm-stylefactor"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-factors" gs-w="6" gs-h="9">
-            <div class="grid-stack-item-content">
-              <div id="hm-factors"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-fixed-income" gs-w="12" gs-h="9">
-            <div class="grid-stack-item-content">
-              <div id="hm-fixed-income"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-w="12" gs-h="10">
-            <div class="grid-stack-item-content">
-              <div id="hm-global-indexes"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-country-etfs" gs-w="12" gs-h="15">
-            <div class="grid-stack-item-content">
-              <div id="hm-country-etfs"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-w="12" gs-h="8">
-            <div class="grid-stack-item-content">
-              <div id="hm-commodity-perf"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-majors-compare" gs-w="12" gs-h="6">
-            <div class="grid-stack-item-content">
-              <div id="hm-majors-compare"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-w="12" gs-h="9">
-            <div class="grid-stack-item-content">
-              <div id="hm-currency-matrix"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-theme-treemap" gs-w="12" gs-h="15">
-            <div class="grid-stack-item-content">
-              <div id="hm-theme-treemap"></div>
-            </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-sector-chart" gs-w="12" gs-h="22">
-            <div class="grid-stack-item-content">
-              <div id="hm-sector-chart"></div>
-            </div>
-          </div>
+          <div class="grid-stack-item" gs-id="hm-macrocompass"  gs-x="3" gs-y="21"  gs-w="6" gs-h="11"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-stylefactor"   gs-x="3" gs-y="32"  gs-w="3" gs-h="7"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-factors"       gs-x="6" gs-y="32"  gs-w="3" gs-h="7"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-fixed-income"  gs-x="3" gs-y="39"  gs-w="6" gs-h="9"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
+          <!-- After y=42 both sidebars have ended — panels below go full-width (w=12, x=0). -->
+          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-x="0" gs-y="48"  gs-w="12" gs-h="10"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="0" gs-y="58"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="0" gs-y="73"  gs-w="12" gs-h="8"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-majors-compare" gs-x="0" gs-y="81"  gs-w="12" gs-h="6"><div class="grid-stack-item-content"><div id="hm-majors-compare"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="0" gs-y="87" gs-w="12" gs-h="9"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="0" gs-y="96"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="111" gs-w="12" gs-h="22"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
         </div>
 
         <!-- Metrics chart (appears when metrics selected) -->
@@ -7216,53 +7186,46 @@
 
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   var LAYOUT_KEY = 'hm-grid-layout-v2';
-  var EDIT_MODE_KEY = 'hm-grid-editing';
   var gridInstance = null;
 
-  /* Edit mode: drag + resize handles visible, dashed outlines. Off by
-     default so casual viewing stays uncluttered. Persist across reloads. */
-  function isEditMode() {
-    try { return localStorage.getItem(EDIT_MODE_KEY) === '1'; } catch (e) { return false; }
-  }
-  function setEditMode(on) {
-    var app = document.getElementById('hm-app');
-    if (!app) return;
-    app.classList.toggle('hm-grid-editing', !!on);
-    var btn = document.getElementById('hm-edit-layout-toggle');
-    if (btn) btn.classList.toggle('active', !!on);
-    try { localStorage.setItem(EDIT_MODE_KEY, on ? '1' : '0'); } catch (e) {}
-    /* Use enableMove + enableResize (not setStatic) per Gridstack v12 docs.
-       These are the proper runtime on/off toggle; setStatic is a heavier
-       structural change that's flaky to reverse. */
-    if (gridInstance) {
-      gridInstance.enableMove(!!on);
-      gridInstance.enableResize(!!on);
-    }
-  }
+  /* Per-panel default x/y/w/h captured BEFORE GridStack.init (init mutates
+     the HTML attributes once saved layouts are applied). The reset button
+     in each panel header uses this map to restore the original size. */
+  var DEFAULT_LAYOUT = {};
 
-  /* Wire the edit-layout button immediately (no need to wait for data). */
+  /* Display titles shown in each panel's window-style header. Kept in sync
+     with TOGGLEABLE_BLOCKS (below) — duplicated here because this runs
+     before that list exists in the IIFE. */
+  var PANEL_TITLES = {
+    'hm-commodities':    'Commodities',
+    'hm-currencies':     'Currencies',
+    'hm-calendar':       'Economic Calendar',
+    'hm-economy':        'Economic Indicators',
+    'hm-indexes':        'Index Snapshot',
+    'hm-gave-wrap':      'Macro Regime',
+    'hm-macrocompass':   'Credit \u00d7 Policy',
+    'hm-stylefactor':    'Size vs Value',
+    'hm-factors':        'Factors vs S&P 500',
+    'hm-fixed-income':   'Fixed Income',
+    'hm-global-indexes': 'Global Equity Indexes',
+    'hm-country-etfs':   'Country ETFs',
+    'hm-commodity-perf': 'Commodities (ranked)',
+    'hm-majors-compare': 'Majors Compare',
+    'hm-currency-matrix':'Currency Matrix',
+    'hm-theme-treemap':  'Thematic Trends',
+    'hm-sector-chart':   'Sector Performance',
+  };
+
+  /* Reset-layout button (topbar) — clears saved layout + pins, reloads. */
   (function () {
-    var btn = document.getElementById('hm-edit-layout-toggle');
-    if (!btn) return;
-    btn.addEventListener('click', function () {
-      setEditMode(!document.getElementById('hm-app').classList.contains('hm-grid-editing'));
-    });
-    /* Reset button: confirm → clear saved layout + edit mode → reload. */
     var rbtn = document.getElementById('hm-reset-layout');
-    if (rbtn) {
-      rbtn.addEventListener('click', function () {
-        if (!window.confirm('Reset dashboard to default layout? Your custom arrangement will be cleared.')) return;
-        try { localStorage.removeItem(LAYOUT_KEY); } catch (e) {}
-        try { localStorage.removeItem(EDIT_MODE_KEY); } catch (e) {}
-        window.location.reload();
-      });
-    }
-    /* Apply saved state on load (before grid init — class is set, init will
-       pick up setStatic via init-time check). */
-    if (isEditMode()) {
-      document.getElementById('hm-app').classList.add('hm-grid-editing');
-      btn.classList.add('active');
-    }
+    if (!rbtn) return;
+    rbtn.addEventListener('click', function () {
+      if (!window.confirm('Reset dashboard to default layout? Your custom arrangement will be cleared.')) return;
+      try { localStorage.removeItem(LAYOUT_KEY); } catch (e) {}
+      try { localStorage.removeItem('hm-pinned-ids'); } catch (e) {}
+      window.location.reload();
+    });
   })();
 
   function initGridStack() {
@@ -7277,31 +7240,65 @@
       if (raw) saved = JSON.parse(raw);
     } catch (e) {}
 
+    /* Capture default x/y/w/h from the HTML attrs BEFORE Gridstack rewrites
+       them based on saved layout, so the reset button has a ground truth. */
+    document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+      var id = item.getAttribute('gs-id');
+      if (!id) return;
+      DEFAULT_LAYOUT[id] = {
+        x: parseInt(item.getAttribute('gs-x') || 0, 10),
+        y: parseInt(item.getAttribute('gs-y') || 0, 10),
+        w: parseInt(item.getAttribute('gs-w') || 12, 10),
+        h: parseInt(item.getAttribute('gs-h') || 4, 10),
+      };
+    });
+
+    /* Inject Windows-style header bar into every grid-stack-item. Must happen
+       BEFORE GridStack.init — the draggable.handle selector is bound at
+       init time, so the handle elements need to exist already. */
+    document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+      var content = item.querySelector('.grid-stack-item-content');
+      if (!content || content.querySelector('.hm-panel-header')) return;
+      var id = item.getAttribute('gs-id') || '';
+      var title = PANEL_TITLES[id] || '';
+      var header = document.createElement('div');
+      header.className = 'hm-panel-header';
+      header.innerHTML =
+        '<span class="hm-panel-title">' + title + '</span>' +
+        '<button class="hm-panel-btn hm-panel-pin" type="button" data-action="pin" title="Pin to top" aria-label="Pin to top">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/></svg>' +
+        '</button>' +
+        '<button class="hm-panel-btn hm-panel-reset" type="button" data-action="reset" title="Reset size" aria-label="Reset size">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>' +
+        '</button>';
+      /* Prepend so the header sits above the panel's own content. */
+      content.insertBefore(header, content.firstChild);
+    });
+
     gridInstance = GridStack.init({
       column: 12,
       cellHeight: 40,
-      margin: 8,
-      float: false,                            /* items compact upward — no gaps */
+      margin: 12,                              /* 12px per item border → 24px total gap between items */
+      /* float: true preserves explicit gs-y positions (no auto-compact).
+         We set gs-x/gs-y on every item to build the 3-6-3 default layout —
+         compacting would break the side-by-side columns by pulling main
+         panels up into the sidebar's empty rows. */
+      float: true,
       alwaysShowResizeHandle: true,
-      /* Resize from every edge/corner — Gridstack default is 'se' only,
-         but user wants free resize anywhere they grab. */
+      /* Resize from every edge/corner — Gridstack default is 'se' only. */
       resizable: { handles: 'n, e, s, w, ne, nw, se, sw' },
-      /* No handle filter → drag from anywhere on the panel. Cursor
-         (grab/grabbing) is the only affordance. Edit mode still gates
-         interactivity via enableMove, so content clicks work outside it. */
+      /* Drag ONLY from the window-style header bar — prevents accidental
+         drags when users interact with charts/tables inside panels. */
+      draggable: { handle: '.hm-panel-header' },
       animate: true,
       disableOneColumnMode: false,
       minRow: 1,
-      /* IMPORTANT: do NOT set staticGrid here. Per Gridstack v12 docs,
-         enableMove/enableResize are "no-op for static grids" — initializing
-         static makes runtime toggle unreliable. Init non-static, then
-         enableMove(false)+enableResize(false) immediately for view mode. */
     }, '#hm-grid');
-    /* Apply initial view/edit state via enable* (proper runtime toggle path). */
-    var startInEdit = isEditMode();
-    gridInstance.enableMove(startInEdit);
-    gridInstance.enableResize(startInEdit);
-    /* Exposed globally so the customize-view + edit-mode toggle can mutate it. */
+    /* Drag + resize are always enabled — the narrow header and hit-zoned
+       resize edges make accidental manipulation unlikely. */
+    gridInstance.enableMove(true);
+    gridInstance.enableResize(true);
+    /* Exposed globally so other modules (pin, reset, customize) can use it. */
     window.gridInstance = gridInstance;
 
     if (saved && Array.isArray(saved) && saved.length) {
@@ -7316,6 +7313,35 @@
        removed from gridstack tracking and moved into #hm-pinned-bar. Done
        AFTER load(saved) so saved positions are honored before pinning. */
     restorePinnedFromStorage();
+    refreshAllPinIcons();
+
+    /* Wire header button clicks via delegation — works for items in both
+       #hm-grid and #hm-pinned-bar. stopPropagation prevents the click from
+       being interpreted as the start of a drag. */
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.hm-panel-btn');
+      if (!btn) return;
+      var item = btn.closest('.grid-stack-item');
+      if (!item) return;
+      var id = item.getAttribute('gs-id');
+      if (!id) return;
+      e.stopPropagation();
+      var action = btn.getAttribute('data-action');
+      if (action === 'pin') {
+        if (isPinned(id)) unpinItemById(id);
+        else pinItemById(id);
+        refreshAllPinIcons();
+      } else if (action === 'reset') {
+        resetItemSize(id);
+      }
+    });
+    /* Header buttons swallow mousedown so Gridstack's drag-start handler
+       doesn't treat a click on the button as the start of a drag. */
+    document.addEventListener('mousedown', function (e) {
+      if (e.target.closest && e.target.closest('.hm-panel-btn')) {
+        e.stopPropagation();
+      }
+    }, true);
 
     /* Persist layout on every change (drag end, resize end, item removed). */
     gridInstance.on('change removed added', function () {
@@ -7429,6 +7455,34 @@
   function restorePinnedFromStorage() {
     var pinned = getPinned();
     pinned.forEach(function (id) { pinItemById(id); });
+  }
+
+  /* Update the pin-button active state on every panel's header so the icon
+     reflects current pin state. Called after any pin/unpin. */
+  function refreshAllPinIcons() {
+    document.querySelectorAll('.grid-stack-item[gs-id]').forEach(function (item) {
+      var id = item.getAttribute('gs-id');
+      var btn = item.querySelector('.hm-panel-pin');
+      if (!btn) return;
+      var pinned = isPinned(id);
+      btn.classList.toggle('active', pinned);
+      btn.setAttribute('title', pinned ? 'Unpin from top' : 'Pin to top');
+    });
+  }
+
+  /* Reset a single panel to its default size (and return to grid if pinned). */
+  function resetItemSize(id) {
+    if (!gridInstance) return;
+    var def = DEFAULT_LAYOUT[id];
+    if (!def) return;
+    /* If currently pinned, unpin first so the panel is back in the grid. */
+    if (isPinned(id)) {
+      unpinItemById(id);
+      refreshAllPinIcons();
+    }
+    var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
+    if (!item) return;
+    try { gridInstance.update(item, { w: def.w, h: def.h }); } catch (e) {}
   }
 
   /* Context menu wiring — single shared menu element, positioned per click. */
