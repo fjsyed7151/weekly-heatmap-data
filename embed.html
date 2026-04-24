@@ -2169,6 +2169,77 @@
     white-space: nowrap;
   }
 
+  /* Global Indexes rankings — reuses the factors card chrome (header + period
+     pills + horizontal scroll wrap); 4-column body (Americas / Europe /
+     Mid-East+Africa / Asia+Pacific). */
+  .hm-app .hm-gi-body {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    gap: 0;
+    min-width: 660px;
+  }
+  .hm-app .hm-gi-col {
+    border-right: 1px solid var(--hm-border);
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-gi-col:last-child { border-right: none; }
+  .hm-app .hm-gi-col-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--hm-gold);
+    background: var(--hm-bg-warm);
+    padding: 6px 12px;
+    border-bottom: 2px solid var(--hm-border);
+  }
+  .hm-app .hm-gi-list {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .hm-app .hm-gi-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--hm-border);
+    font-variant-numeric: tabular-nums;
+    transition: outline 80ms;
+  }
+  .hm-app .hm-gi-row:last-child { border-bottom: none; }
+  @media (hover: hover) {
+    .hm-app .hm-gi-row:hover {
+      outline: 2px solid var(--hm-gold);
+      outline-offset: -2px;
+      position: relative;
+      z-index: 1;
+    }
+  }
+  .hm-app .hm-gi-name {
+    font-size: 12px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hm-app .hm-gi-row .hm-ticker {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--hm-brown);
+    margin-left: 6px;
+    opacity: 0.75;
+  }
+  .hm-app .hm-gi-ret {
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
   /* Thematic treemap */
   .hm-app .hm-treemap-section { margin-top: 24px; margin-bottom: 24px; }
   .hm-app .hm-treemap-header {
@@ -2649,6 +2720,7 @@
         <div id="hm-stylefactor"></div>
         <div id="hm-factors"></div>
         <div id="hm-fixed-income"></div>
+        <div id="hm-global-indexes"></div>
         <div id="hm-theme-treemap"></div>
         <div id="hm-sector-chart"></div>
 
@@ -3029,6 +3101,7 @@
       renderStyleFactor(cachedData);
       renderFactors(cachedData);
       renderFixedIncome(cachedData);
+      renderGlobalIndexes(cachedData);
       renderThemeTreemap(cachedData);
       if (chartState.selected.length) renderCharts();
     }
@@ -3843,6 +3916,7 @@
     { id: 'hm-stylefactor',    label: 'Size vs Value',         group: 'Main column' },
     { id: 'hm-factors',        label: 'Factors (vs S&P 500)',  group: 'Main column' },
     { id: 'hm-fixed-income',   label: 'Fixed Income',          group: 'Main column' },
+    { id: 'hm-global-indexes', label: 'Global Indexes',        group: 'Main column' },
     { id: 'hm-theme-treemap',  label: 'Thematic Trends',       group: 'Main column' },
     { id: 'hm-sector-chart',   label: 'Sector Performance',    group: 'Main column' },
     { id: 'hm-heatmap-wrap',   label: 'Heat map table',        group: 'Main column' },
@@ -5919,6 +5993,158 @@
     updateRows();
   }
 
+  /* ---------- Global Equity Indexes rankings (Koyfin-style 4-col) ---------- */
+  var giPeriod = 'y1';
+
+  /* Tooltip copy for each index, keyed by Bloomberg-style display ticker. */
+  var GLOBAL_INDEX_TIPS = {
+    SPX:     "S&P 500. 500 largest US listed companies weighted by market cap. Benchmark for US large-cap equities.",
+    CCMP:    "NASDAQ Composite. All stocks listed on the NASDAQ exchange (~3000 names). Tech-heavy; more growth-tilt than SPX.",
+    INDU:    "Dow Jones Industrial Average. 30 price-weighted US blue-chip stocks. Oldest major US index; less market-representative than SPX.",
+    SPTSX:   "S&P/TSX Composite. Canadian large + mid-cap benchmark. Heavy energy + financials weighting.",
+    IBOV:    "Ibovespa. Brazilian equity benchmark (~80 largest names on B3). Commodity + Brazilian-consumer proxy.",
+    MEXBOL:  "S&P/BMV IPC. Mexican equity benchmark (~35 largest names on BMV). Financials + consumer-staples heavy.",
+    SMI:     "Swiss Market Index. 20 largest Swiss blue-chips. Defensive tilt (Nestlé, Novartis, Roche dominate weights).",
+    CAC:     "CAC 40. 40 largest French equities. Heavy luxury + energy + banks.",
+    FTSEMIB: "FTSE MIB. 40 largest Italian equities. Banks-heavy, cyclical benchmark.",
+    DAX:     "DAX 40. 40 largest German listed companies. Export/manufacturing cyclical proxy.",
+    UKX:     "FTSE 100. 100 largest UK listed companies. Commodities + financials heavy, sterling-denominated.",
+    IBEX:    "IBEX 35. 35 most-liquid Spanish equities. Banks-heavy, domestic + Latin America exposure.",
+    AEX:     "Amsterdam Exchange Index. 25 largest Dutch listed companies. Global names (ASML, Unilever, Shell until 2022).",
+    TA125:   "Tel Aviv 125. Top 125 Israeli equities. Tech + banking + defense tilt.",
+    XU100:   "Borsa Istanbul 100. 100 largest Turkish equities. Highly volatile, affected by FX moves.",
+    TWSE:    "Taiwan Weighted Stock Index. Taiwan Stock Exchange benchmark. TSMC + tech manufacturing dominate weights.",
+    NKY:     "NIKKEI 225. Price-weighted 225 largest Japanese equities. Export/tech-heavy benchmark.",
+    HSI:     "Hang Seng. 80 largest Hong Kong + China listings. China policy proxy, high volatility.",
+    FSSTI:   "Straits Times Index. 30 largest Singapore Exchange stocks. Financials-heavy, ASEAN proxy.",
+    SHSZ300: "CSI 300. 300 largest Shanghai + Shenzhen listings. Mainland China broad-market benchmark.",
+    SHCOMP:  "Shanghai Composite. All stocks on Shanghai exchange. Broader than CSI 300, retail-investor driven.",
+    AS200:   "ASX 200. 200 largest Australian equities. Miners + banks heavy.",
+    NIFTY:   "NIFTY 50. 50 largest Indian equities on NSE. Core India large-cap benchmark.",
+    JCI:     "Jakarta Composite. Indonesia Stock Exchange broad benchmark. Commodity + domestic-consumer tilt.",
+  };
+
+  function renderGlobalIndexes(data) {
+    var container = document.getElementById('hm-global-indexes');
+    if (!container || !data.global_indexes || !data.global_indexes.length) return;
+    container.innerHTML = '';
+
+    var card = document.createElement('div');
+    card.className = 'hm-factors-card';
+
+    var hdr = document.createElement('div');
+    hdr.className = 'hm-factors-header';
+    var title = document.createElement('span');
+    title.textContent = 'Global Equity Indexes';
+    hdr.appendChild(title);
+
+    var btnWrap = document.createElement('div');
+    btnWrap.className = 'hm-factors-periods';
+    /* Same period set as Fixed Income panel. */
+    FI_PERIODS.forEach(function (p) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-factors-period-btn' + (giPeriod === p.key ? ' active' : '');
+      btn.textContent = p.label;
+      btn.addEventListener('click', function () {
+        giPeriod = p.key;
+        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        updateRows();
+      });
+      btnWrap.appendChild(btn);
+    });
+    hdr.appendChild(btnWrap);
+    card.appendChild(hdr);
+
+    var body = document.createElement('div');
+    body.className = 'hm-gi-body';
+
+    var allRows = [];
+
+    data.global_indexes.forEach(function (group) {
+      var col = document.createElement('div');
+      col.className = 'hm-gi-col';
+
+      var colHdr = document.createElement('div');
+      colHdr.className = 'hm-gi-col-header';
+      colHdr.textContent = group.name;
+      col.appendChild(colHdr);
+
+      var list = document.createElement('div');
+      list.className = 'hm-gi-list';
+      col.appendChild(list);
+
+      (group.rows || []).forEach(function (f) {
+        var row = document.createElement('div');
+        row.className = 'hm-gi-row';
+        var tip = GLOBAL_INDEX_TIPS[f.ticker];
+        if (tip) {
+          row.classList.add('hm-metric-tip');
+          row.setAttribute('data-tip', tip);
+          row.setAttribute('data-tip-title', f.name + ' (' + f.ticker + ')');
+        } else {
+          row.setAttribute('title', f.name + ' (' + f.ticker + ')');
+        }
+        row.innerHTML =
+          '<span class="hm-gi-name">' + f.name +
+            '<span class="hm-ticker">' + f.ticker + '</span>' +
+          '</span>' +
+          '<span class="hm-gi-ret"></span>';
+        row._data = f;
+        row._list = list;
+        allRows.push(row);
+        list.appendChild(row);
+      });
+
+      body.appendChild(col);
+    });
+
+    var scroll = document.createElement('div');
+    scroll.className = 'hm-factors-scroll';
+    scroll.appendChild(body);
+    card.appendChild(scroll);
+    container.appendChild(card);
+
+    function updateRows() {
+      var th = getTheme();
+      var byList = new Map();
+      allRows.forEach(function (r) {
+        if (!byList.has(r._list)) byList.set(r._list, []);
+        byList.get(r._list).push(r);
+      });
+      byList.forEach(function (rows, list) {
+        rows.sort(function (a, b) {
+          var av = a._data[giPeriod], bv = b._data[giPeriod];
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          return bv - av;
+        });
+        rows.forEach(function (r) { list.appendChild(r); });
+      });
+      allRows.forEach(function (row) {
+        var f = row._data;
+        var v = f[giPeriod];
+        var retEl = row.querySelector('.hm-gi-ret');
+        if (v == null) {
+          retEl.textContent = '\u2014';
+          row.style.background = '';
+          row.style.color = '';
+          return;
+        }
+        var sign = v >= 0 ? '+' : '';
+        retEl.textContent = sign + v.toFixed(1) + '%';
+        var paint = perfCellPaint(v, th);
+        row.style.background = paint.bg;
+        row.style.color = paint.fg;
+      });
+    }
+
+    updateRows();
+  }
+
   /* ---------- Thematic treemap ---------- */
   var treemapPeriod = 'm1';
 
@@ -6174,6 +6400,7 @@
       safeRender('styleFactor',  function () { renderStyleFactor(data); });
       safeRender('factors',      function () { renderFactors(data); });
       safeRender('fixedIncome',  function () { renderFixedIncome(data); });
+      safeRender('globalIndexes',function () { renderGlobalIndexes(data); });
       safeRender('themeTreemap', function () { renderThemeTreemap(data); });
       safeRender('chartSectionVis', updateChartSectionVisibility);
       safeRender('countLabel',      updateCountLabel);
