@@ -1714,11 +1714,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
   .hm-app .hm-cal-sub {
     font-size: 10px;
     font-weight: 600;
     opacity: 0.8;
+    white-space: nowrap;
   }
   .hm-app .hm-cal-body {
     background: var(--hm-panel);
@@ -1773,12 +1776,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;  /* freq label drops to a new line if the sidebar is too narrow */
   }
   .hm-app .hm-econ-freq {
     font-size: 10px;
     font-weight: 600;
-
     opacity: 0.8;
+    white-space: nowrap;
   }
   .hm-app .hm-econ-section { margin-bottom: 0; }
   .hm-app .hm-econ-body {
