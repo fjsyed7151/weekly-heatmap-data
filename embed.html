@@ -1132,8 +1132,8 @@
     0%, 100% { transform: scale(1);    opacity: 0.65; }
     50%      { transform: scale(1.35); opacity: 0.15; }
   }
-  .hm-app .hm-gave-label,
-  .hm-app .hm-mc-label {
+  .hm-app .hm-gave-now,
+  .hm-app .hm-mc-now {
     position: absolute;
     transform: translate(-50%, 14px);
     font-size: 9px;
@@ -1147,8 +1147,8 @@
     pointer-events: none;
     z-index: 1;
   }
-  .hm-app.dark .hm-gave-label,
-  .hm-app.dark .hm-mc-label {
+  .hm-app.dark .hm-gave-now,
+  .hm-app.dark .hm-mc-now {
     background: rgba(11,13,18,0.8);
     color: var(--hm-white);
   }
@@ -4133,7 +4133,7 @@
         cell.appendChild(dot);
 
         var label = document.createElement('span');
-        label.className = 'hm-gave-label';
+        label.className = 'hm-gave-now';
         label.textContent = 'NOW';
         label.style.left = leftPct + '%';
         label.style.top  = topPct  + '%';
@@ -4414,7 +4414,7 @@
         cell.appendChild(dot);
 
         var label = document.createElement('span');
-        label.className = 'hm-mc-label';
+        label.className = 'hm-mc-now';
         label.textContent = 'NOW';
         label.style.left = leftPct + '%';
         label.style.top  = topPct  + '%';
