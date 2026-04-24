@@ -90,59 +90,7 @@
     position: relative;
   }
   .hm-app .hm-layout {
-    display: grid;
-    grid-template-columns: var(--hm-left-w, 22%) 1fr var(--hm-right-w, 22%);
-    gap: 0;
-    align-items: flex-start;
-  }
-  .hm-app.hm-left-hidden .hm-layout { grid-template-columns: 0 1fr var(--hm-right-w, 22%); }
-  .hm-app.hm-right-hidden .hm-layout { grid-template-columns: var(--hm-left-w, 22%) 1fr 0; }
-  .hm-app.hm-left-hidden.hm-right-hidden .hm-layout { grid-template-columns: 0 1fr 0; }
-
-  .hm-app .hm-col-left,
-  .hm-app .hm-col-right {
-    position: sticky;
-    /* Stick BELOW: admin bar (if any) + our own topbar. Both measured in JS. */
-    top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px));
-    max-height: calc(100vh - var(--hm-header-offset, 0px) - var(--hm-topbar-h, 52px) - 24px);
-    overflow-y: auto;
-    /* Explicit overflow-x: hidden. Without this, setting overflow-y implies
-       overflow-x: auto too, which creates a rogue horizontal scrollbar at the
-       sidebar level whenever any child is wider than the sidebar. */
-    overflow-x: hidden;
-    overscroll-behavior: contain;
-    min-width: 0;
-    scrollbar-width: thin;
-    scrollbar-color: var(--hm-border-strong) transparent;
-  }
-  /* Small 6px gutter on the scrollbar-facing side of each sidebar so the
-     scrollbar reads as attached to the table without crowding it. */
-  .hm-app .hm-col-left  { padding-right: 6px;  padding-bottom: 48px; }
-  .hm-app .hm-col-right { padding-left: 16px; padding-right: 6px; padding-bottom: 48px; }
-  .hm-app .hm-col-left::-webkit-scrollbar,
-  .hm-app .hm-col-right::-webkit-scrollbar { width: 10px; }
-  .hm-app .hm-col-left::-webkit-scrollbar-track,
-  .hm-app .hm-col-right::-webkit-scrollbar-track {
-    background: var(--hm-bg-alt);
-    border-radius: 5px;
-  }
-  .hm-app .hm-col-left::-webkit-scrollbar-thumb,
-  .hm-app .hm-col-right::-webkit-scrollbar-thumb {
-    background-color: var(--hm-border-strong);
-    border-radius: 5px;
-  }
-  .hm-app .hm-col-left::-webkit-scrollbar-thumb:hover,
-  .hm-app .hm-col-right::-webkit-scrollbar-thumb:hover {
-    background-color: var(--hm-gold);
-  }
-  .hm-app .hm-col-right > * + *,
-  .hm-app .hm-col-left > * + * { margin-top: 24px; }
-  .hm-app.hm-left-hidden .hm-col-left,
-  .hm-app.hm-right-hidden .hm-col-right {
-    visibility: hidden;
-    overflow: hidden;
-    padding: 0;
-    pointer-events: none;
+    display: block;
   }
 
   .hm-app .hm-main {
@@ -151,8 +99,6 @@
     padding: 0 16px;
   }
   .hm-app .hm-main > * { max-width: 100%; }
-  .hm-app.hm-left-hidden .hm-main { padding-left: 0; }
-  .hm-app.hm-right-hidden .hm-main { padding-right: 0; }
 
   /* Gridstack POC: minimal chrome so the panels look like they did before,
      with drag handles (top edge) + a visible resize corner. */
@@ -169,6 +115,64 @@
     overflow: visible;  /* Chart.js tooltips, dropdowns etc. can escape */
     padding: 0;
     box-sizing: border-box;
+    /* Fill-height: panel container fills the grid item so charts inside can
+       react to user-driven height changes. Each panel decides via its own
+       internal CSS whether content stretches (charts) or stays put (tables). */
+    height: 100%;
+  }
+  .hm-app .grid-stack-item-content > * {
+    height: 100%;
+  }
+  /* Chart panels: opt-in fill chain from grid item → canvas wrap. Adding a
+     class wouldn't propagate without DOM changes in renderers, so target
+     existing structure by ID/class. resizestop pokes Chart.js so canvases
+     remeasure on drag-end. */
+  .hm-app #hm-sector-chart {
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app #hm-sector-chart > .hm-sector-section {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-sector-section > .hm-sector-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app #hm-sector-chart-area {
+    flex: 1 1 auto;
+    min-height: 200px;
+    position: relative;
+  }
+  .hm-app .hm-sector-canvas-wrap {
+    position: absolute;
+    inset: 0;
+  }
+  /* Gave four-quadrants panel: the wrap holds quadrant + three mini-charts
+     in a column. Let the mini-charts row stretch when the panel grows. */
+  .hm-app #hm-gave-wrap {
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app #hm-gave-charts {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .hm-app .hm-gave-charts {
+    height: 100%;
+  }
+  .hm-app .hm-gave-chart {
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-gave-chart-canvas {
+    flex: 1 1 auto;
+    min-height: 100px;
+    position: relative;
   }
   /* While dragging: highlight the ghost placeholder (the faint outline
      showing where the item will drop). */
@@ -207,69 +211,15 @@
     border-color: var(--hm-gold);
   }
 
-  /* Draggable resize handles */
-  .hm-app .hm-resize-handle {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 6px;
-    cursor: col-resize;
-    z-index: 10;
-    background: transparent;
-    transition: background 120ms;
-  }
-  .hm-app .hm-resize-handle:hover,
-  .hm-app .hm-resize-handle.dragging { background: #F2DFB3; }
-  .hm-app.hm-left-hidden .hm-resize-handle-left,
-  .hm-app.hm-right-hidden .hm-resize-handle-right { display: none; }
-
-  /* Column toggle buttons */
-  .hm-app .hm-col-toggle {
-    width: 32px;
-    height: 32px;
-    padding: 6px;
-    border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
-    background: var(--hm-panel);
-    color: var(--hm-dark);
-    cursor: pointer;
-    transition: background 120ms, border-color 120ms;
-  }
-  .hm-app .hm-col-toggle:hover { border-color: var(--hm-border-strong); }
-  .hm-app .hm-col-toggle.active { background: var(--hm-gold); color: var(--hm-white); border-color: var(--hm-gold); }
-  .hm-app .hm-col-toggle svg { width: 18px; height: 18px; display: block; margin: auto; }
-
   @media (max-width: 1100px) {
-    .hm-app .hm-layout {
-      display: flex !important;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .hm-app .hm-col-left,
-    .hm-app .hm-col-right,
     .hm-app .hm-main {
       width: 100%;
       max-width: 100%;
-      position: static;
-      max-height: none;
-      overflow-y: visible;
       padding: 0;
     }
-    .hm-app .hm-col-right {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-    }
-    .hm-app .hm-col-right > * + *,
-    .hm-app .hm-col-left > * + * { margin-top: 0; }
-    .hm-app .hm-resize-handle,
-    .hm-app .hm-col-toggle { display: none; }
-    .hm-app.hm-left-hidden .hm-col-left { display: block; }
-    .hm-app.hm-right-hidden .hm-col-right { display: grid; }
   }
   @media (max-width: 600px) {
     .hm-app .hm-inner { padding: 16px 12px 48px; }
-    .hm-app .hm-col-right { grid-template-columns: 1fr; }
   }
   /* Sector tables always stay side by side — main scrolls, vs SPY stays pinned */
   /* Responsive: sector chart toolbar wraps */
@@ -1561,10 +1511,14 @@
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 16px;
     overflow-x: auto;
+    /* Flex column so #hm-sector-chart-area can flex:1 and fill the body. */
+    display: flex;
+    flex-direction: column;
   }
   .hm-app .hm-sector-canvas-wrap {
     position: relative;
-    height: 320px;
+    flex: 1 1 auto;
+    min-height: 320px;       /* Floor — never smaller than original design */
     margin-bottom: 8px;
   }
   .hm-app .hm-sector-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
@@ -3008,26 +2962,42 @@
 
     <div class="hm-layout-wrap" id="hm-layout-wrap">
     <div class="hm-layout" id="hm-layout">
-      <!-- LEFT COLUMN -->
-      <div class="hm-col-left">
-        <div id="hm-commodities"></div>
-        <div id="hm-currencies"></div>
-      </div>
-
-      <!-- MAIN CONTENT — Gridstack-driven 12-column layout. Each .grid-stack-item
-           can be dragged (via .grid-stack-item-content drag cursor) and resized
-           (via bottom-right handle). Layout persists to localStorage. The chart
-           section and heat map below stay OUTSIDE the grid — they have special
-           behavior (conditional visibility + sticky header) that doesn't mix
-           well with grid resizing. -->
+      <!-- MAIN CONTENT — single-column Gridstack-driven 12-col layout. Sidebar
+           panels (commodities, currencies, calendar, economy) are now grid
+           items alongside the rest, draggable + resizable like everything
+           else. Heat map + metrics chart stay OUTSIDE the grid below. -->
       <div class="hm-main">
         <div class="grid-stack" id="hm-grid">
-          <div class="grid-stack-item" gs-id="hm-indexes" gs-w="12" gs-h="3">
+          <!-- Sidebar panels promoted into the grid. Default arrangement:
+               commodities + currencies on row 1 (6 cols each), then calendar
+               + economy on row 2 (6 cols each). Users can drag these
+               anywhere just like the main panels. -->
+          <div class="grid-stack-item" gs-id="hm-commodities" gs-w="6" gs-h="22">
+            <div class="grid-stack-item-content">
+              <div id="hm-commodities"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-currencies" gs-w="6" gs-h="20">
+            <div class="grid-stack-item-content">
+              <div id="hm-currencies"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-calendar" gs-w="6" gs-h="14">
+            <div class="grid-stack-item-content">
+              <div id="hm-calendar"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-economy" gs-w="6" gs-h="20">
+            <div class="grid-stack-item-content">
+              <div id="hm-economy"></div>
+            </div>
+          </div>
+          <div class="grid-stack-item" gs-id="hm-indexes" gs-w="12" gs-h="4">
             <div class="grid-stack-item-content">
               <div id="hm-indexes"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-gave-wrap" gs-w="12" gs-h="8">
+          <div class="grid-stack-item" gs-id="hm-gave-wrap" gs-w="12" gs-h="17">
             <div class="grid-stack-item-content">
               <div class="hm-gave-wrap" id="hm-gave-wrap">
                 <div id="hm-gave-quadrant"></div>
@@ -3035,32 +3005,32 @@
               </div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-macrocompass" gs-w="12" gs-h="7">
+          <div class="grid-stack-item" gs-id="hm-macrocompass" gs-w="12" gs-h="11">
             <div class="grid-stack-item-content">
               <div id="hm-macrocompass"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-stylefactor" gs-w="6" gs-h="5">
+          <div class="grid-stack-item" gs-id="hm-stylefactor" gs-w="6" gs-h="7">
             <div class="grid-stack-item-content">
               <div id="hm-stylefactor"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-factors" gs-w="6" gs-h="8">
+          <div class="grid-stack-item" gs-id="hm-factors" gs-w="6" gs-h="9">
             <div class="grid-stack-item-content">
               <div id="hm-factors"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-fixed-income" gs-w="12" gs-h="10">
+          <div class="grid-stack-item" gs-id="hm-fixed-income" gs-w="12" gs-h="9">
             <div class="grid-stack-item-content">
               <div id="hm-fixed-income"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-w="12" gs-h="8">
+          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-w="12" gs-h="10">
             <div class="grid-stack-item-content">
               <div id="hm-global-indexes"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-country-etfs" gs-w="12" gs-h="12">
+          <div class="grid-stack-item" gs-id="hm-country-etfs" gs-w="12" gs-h="15">
             <div class="grid-stack-item-content">
               <div id="hm-country-etfs"></div>
             </div>
@@ -3070,22 +3040,22 @@
               <div id="hm-commodity-perf"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-majors-compare" gs-w="12" gs-h="3">
+          <div class="grid-stack-item" gs-id="hm-majors-compare" gs-w="12" gs-h="6">
             <div class="grid-stack-item-content">
               <div id="hm-majors-compare"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-w="12" gs-h="8">
+          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-w="12" gs-h="9">
             <div class="grid-stack-item-content">
               <div id="hm-currency-matrix"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-theme-treemap" gs-w="12" gs-h="10">
+          <div class="grid-stack-item" gs-id="hm-theme-treemap" gs-w="12" gs-h="15">
             <div class="grid-stack-item-content">
               <div id="hm-theme-treemap"></div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-sector-chart" gs-w="12" gs-h="10">
+          <div class="grid-stack-item" gs-id="hm-sector-chart" gs-w="12" gs-h="22">
             <div class="grid-stack-item-content">
               <div id="hm-sector-chart"></div>
             </div>
@@ -3115,16 +3085,7 @@
         </div>
         <div id="hm-mtip"></div>
       </div>
-
-      <!-- RIGHT COLUMN -->
-      <div class="hm-col-right">
-        <div id="hm-calendar"></div>
-        <div id="hm-economy"></div>
-      </div>
     </div>
-    <!-- Resize handles outside the grid so they don't become grid items -->
-    <div class="hm-resize-handle hm-resize-handle-left" data-resize="left"></div>
-    <div class="hm-resize-handle hm-resize-handle-right" data-resize="right"></div>
     </div>
 
   </div>
@@ -3189,170 +3150,13 @@
   window.addEventListener('resize', syncStickyOffsets);
   window.addEventListener('scroll', syncStickyOffsets, { passive: true });
 
-  /* ---------- Column toggles + resize ---------- */
-  var COL_STATE_KEY = 'hm-col-state';
-  /* Mirror of the resize constraints below. Reclamp saved widths on load so
-     sessions saved under the old (looser) 45% cap can't render out of bounds. */
-  function clampSavedWidth(w) {
-    if (!w || typeof w !== 'string' || !w.endsWith('%')) return w;
-    var pct = parseFloat(w);
-    if (isNaN(pct)) return w;
-    /* Loose upper clamp so wide saved sessions still load; the drag handler
-       enforces the precise joint constraint on the next interaction. */
-    if (pct > 45) pct = 45;
-    if (pct < 14) pct = 14;
-    return pct.toFixed(2) + '%';
-  }
-  function loadColState() {
-    try {
-      var s = JSON.parse(localStorage.getItem(COL_STATE_KEY) || '{}');
-      if (s.leftW)  app.style.setProperty('--hm-left-w',  clampSavedWidth(s.leftW));
-      if (s.rightW) app.style.setProperty('--hm-right-w', clampSavedWidth(s.rightW));
-      if (s.leftHidden) app.classList.add('hm-left-hidden');
-      if (s.rightHidden) app.classList.add('hm-right-hidden');
-    } catch (e) {}
-    updateToggleButtons();
-  }
-  function saveColState(partial) {
-    try {
-      var cur = JSON.parse(localStorage.getItem(COL_STATE_KEY) || '{}');
-      Object.keys(partial).forEach(function (k) { cur[k] = partial[k]; });
-      localStorage.setItem(COL_STATE_KEY, JSON.stringify(cur));
-    } catch (e) {}
-  }
-  function updateToggleButtons() {
-    var leftBtn = document.getElementById('hm-toggle-left');
-    var rightBtn = document.getElementById('hm-toggle-right');
-    if (leftBtn) leftBtn.classList.toggle('active', !app.classList.contains('hm-left-hidden'));
-    if (rightBtn) rightBtn.classList.toggle('active', !app.classList.contains('hm-right-hidden'));
-  }
-
-  /* Shared helper: re-run everything that depends on layout column widths. */
+  /* Sidebar columns flattened into the grid — column resize/toggle code
+     and column-state localStorage are no longer needed. Sticky-header
+     resync still runs on layout changes via afterLayoutChange below. */
   function afterLayoutChange() {
-    positionResizeHandles();
     if (typeof syncStickyColumnWidths === 'function') syncStickyColumnWidths();
     if (typeof updateStickyHeader === 'function') updateStickyHeader();
   }
-
-  var leftToggle = document.getElementById('hm-toggle-left');
-  var rightToggle = document.getElementById('hm-toggle-right');
-  if (leftToggle) {
-    leftToggle.addEventListener('click', function () {
-      app.classList.toggle('hm-left-hidden');
-      saveColState({ leftHidden: app.classList.contains('hm-left-hidden') });
-      updateToggleButtons();
-      setTimeout(afterLayoutChange, 0);
-    });
-  }
-  if (rightToggle) {
-    rightToggle.addEventListener('click', function () {
-      app.classList.toggle('hm-right-hidden');
-      saveColState({ rightHidden: app.classList.contains('hm-right-hidden') });
-      updateToggleButtons();
-      setTimeout(afterLayoutChange, 0);
-    });
-  }
-
-  /* Draggable resize handles */
-  function positionResizeHandles() {
-    var wrap = document.getElementById('hm-layout-wrap');
-    if (!wrap) return;
-    var leftHandle = wrap.querySelector('.hm-resize-handle-left');
-    var rightHandle = wrap.querySelector('.hm-resize-handle-right');
-    var leftCol = wrap.querySelector('.hm-col-left');
-    var rightCol = wrap.querySelector('.hm-col-right');
-    if (leftHandle && leftCol) {
-      /* Position at the RIGHT edge of the left column */
-      var lw = leftCol.offsetWidth;
-      leftHandle.style.left = (lw - 3) + 'px';
-      leftHandle.style.right = 'auto';
-    }
-    if (rightHandle && rightCol) {
-      /* Position at the LEFT edge of the right column */
-      var rw = rightCol.offsetWidth;
-      rightHandle.style.right = (rw - 3) + 'px';
-      rightHandle.style.left = 'auto';
-    }
-  }
-  window.addEventListener('resize', positionResizeHandles);
-
-  (function setupResize() {
-    var wrap = document.getElementById('hm-layout-wrap');
-    var layout = document.getElementById('hm-layout');
-    if (!wrap || !layout) return;
-    var handles = wrap.querySelectorAll('.hm-resize-handle');
-    var dragging = null;
-    var startX = 0;
-    var startLeft = 0;
-    var startRight = 0;
-
-    function onDown(e) {
-      dragging = e.currentTarget.getAttribute('data-resize');
-      startX = e.clientX;
-      startLeft = wrap.querySelector('.hm-col-left').offsetWidth;
-      startRight = wrap.querySelector('.hm-col-right').offsetWidth;
-      e.currentTarget.classList.add('dragging');
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-      e.preventDefault();
-    }
-    /* Resize constraints.
-       Instead of a fixed px ceiling per sidebar, we scale with the window:
-         - MIN_SIDEBAR_PX   : hard readability floor (fixed)
-         - SIDEBAR_CEIL_PX  : absolute sanity cap for any reasonable screen
-         - MAIN_FLOOR_PCT   : main column must always get ≥ this % of total
-       Effective max per sidebar = min(ceiling, total - other_side - main_floor).
-       On wide screens (≥1500) either sidebar can hit ~640px so the commodity
-       / currency tables show fully. On narrower screens the joint constraint
-       tightens automatically without pinching the main column. */
-    var MIN_SIDEBAR_PX  = 248;
-    var SIDEBAR_CEIL_PX = 640;
-    var MAIN_FLOOR_PCT  = 0.40;
-
-    function effectiveSidebarMax(total, otherSideW) {
-      var floor = total * MAIN_FLOOR_PCT;
-      return Math.max(MIN_SIDEBAR_PX, Math.min(SIDEBAR_CEIL_PX, total - otherSideW - floor));
-    }
-
-    function onMove(e) {
-      if (!dragging) return;
-      var total = layout.offsetWidth;
-      var dx = e.clientX - startX;
-      if (dragging === 'left') {
-        var maxL = effectiveSidebarMax(total, startRight);
-        var newW = Math.max(MIN_SIDEBAR_PX, Math.min(maxL, startLeft + dx));
-        var pct = (newW / total) * 100;
-        app.style.setProperty('--hm-left-w', pct.toFixed(2) + '%');
-        saveColState({ leftW: pct.toFixed(2) + '%' });
-      } else if (dragging === 'right') {
-        var maxR = effectiveSidebarMax(total, startLeft);
-        var newW2 = Math.max(MIN_SIDEBAR_PX, Math.min(maxR, startRight - dx));
-        var pct2 = (newW2 / total) * 100;
-        app.style.setProperty('--hm-right-w', pct2.toFixed(2) + '%');
-        saveColState({ rightW: pct2.toFixed(2) + '%' });
-      }
-      /* Cloned metrics sticky header needs its width + column widths resynced
-         as the main column resizes live; afterLayoutChange covers both. */
-      afterLayoutChange();
-    }
-    function onUp(e) {
-      if (!dragging) return;
-      var h = wrap.querySelector('.hm-resize-handle.dragging');
-      if (h) h.classList.remove('dragging');
-      dragging = null;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    }
-    handles.forEach(function (h) { h.addEventListener('mousedown', onDown); });
-  })();
-
-  loadColState();
-  /* Position handles after initial render */
-  setTimeout(positionResizeHandles, 100);
 
   function destroyStickyHeader() {
     if (stickyWrapper) { stickyWrapper.remove(); stickyWrapper = null; stickyScroll = null; }
@@ -4296,12 +4100,12 @@
     { id: 'hm-theme-treemap',  label: 'Thematic Trends',       group: 'Main column' },
     { id: 'hm-sector-chart',   label: 'Sector Performance',    group: 'Main column' },
     { id: 'hm-heatmap-wrap',   label: 'Heat map table',        group: 'Main column' },
-    // Left sidebar
-    { id: 'hm-commodities',    label: 'Commodities',           group: 'Left sidebar' },
-    { id: 'hm-currencies',     label: 'Currencies',            group: 'Left sidebar' },
-    // Right sidebar
-    { id: 'hm-calendar',       label: 'Economic calendar',     group: 'Right sidebar' },
-    { id: 'hm-economy',        label: 'Economic indicators',   group: 'Right sidebar' },
+    /* Sidebar panels — now grid items alongside the rest. Group label kept
+       distinct in the customize panel so users still recognize them. */
+    { id: 'hm-commodities',    label: 'Commodities',           group: 'Reference panels' },
+    { id: 'hm-currencies',     label: 'Currencies',            group: 'Reference panels' },
+    { id: 'hm-calendar',       label: 'Economic calendar',     group: 'Reference panels' },
+    { id: 'hm-economy',        label: 'Economic indicators',   group: 'Reference panels' },
   ];
   var HIDDEN_KEY = 'hm-hidden-blocks';
 
@@ -7429,31 +7233,16 @@
     /* Exposed globally so the customize-view + edit-mode toggle can mutate it. */
     window.gridInstance = gridInstance;
 
-    var hasSaved = !!(saved && Array.isArray(saved) && saved.length);
-    if (hasSaved) {
+    if (saved && Array.isArray(saved) && saved.length) {
       /* Apply saved positions/sizes without re-creating DOM. */
       try { gridInstance.load(saved, false); }
       catch (e) { console.warn('[gridstack] failed to restore saved layout:', e); }
-    } else {
-      /* No saved layout → hardcoded gs-h values are approximations that often
-         don't match real content height (charts render async, tables vary by
-         data volume). One-time content-fit pass at 1.5s establishes sane
-         defaults. Doesn't re-run on subsequent loads so user resizes stick. */
-      setTimeout(function () {
-        /* Temporarily suppress the 'change' persister during the auto-fit
-           pass — otherwise we'd save the auto-sized layout as if the user
-           set it, and every future load would treat it as customized. */
-        gridInstance._suppressSave = true;
-        document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-          try { gridInstance.resizeToContent(item); } catch (e) {}
-        });
-        gridInstance._suppressSave = false;
-      }, 1500);
     }
+    /* gs-h values in the HTML are calibrated to match natural content height,
+       so no auto-fit pass is needed — first paint is correct, no flicker. */
 
     /* Persist layout on every change (drag end, resize end, item removed). */
     gridInstance.on('change removed added', function () {
-      if (gridInstance._suppressSave) return;
       try {
         var layout = gridInstance.save(false);  /* false: positions only, no content */
         localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
