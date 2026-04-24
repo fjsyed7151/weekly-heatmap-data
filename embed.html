@@ -5896,6 +5896,31 @@
     catch (e) { console.error('[' + label + '] render failed:', e); }
   }
 
+  /* Iframe auto-resize: when this widget is embedded in an iframe (e.g. on a
+     WordPress page via Oxygen Code Block), post the current document height
+     to the parent so it can grow the iframe to fit content. No-op when loaded
+     standalone. Parent needs a tiny 'message' listener (see deploy snippet). */
+  (function () {
+    if (window.parent === window) return;
+    var lastH = 0;
+    function postHeight() {
+      var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+      if (h !== lastH) {
+        lastH = h;
+        window.parent.postMessage({ type: 'hm-embed-height', height: h }, '*');
+      }
+    }
+    window.addEventListener('load',   postHeight);
+    window.addEventListener('resize', postHeight);
+    if (typeof ResizeObserver === 'function') {
+      try { new ResizeObserver(postHeight).observe(document.documentElement); } catch (e) {}
+      try { new ResizeObserver(postHeight).observe(document.body); } catch (e) {}
+    }
+    /* Belt + suspenders: poll every 500ms to catch any growth the observer misses
+       (Chart.js animations, late-arriving sector heights, etc.). Cheap. */
+    setInterval(postHeight, 500);
+  })();
+
   fetch(HEATMAP_URL + "?t=" + Math.floor(Date.now() / 600000))
     .then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
