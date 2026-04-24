@@ -2425,6 +2425,55 @@
   .hm-app .hm-majors-val.stale { color: var(--hm-muted); }
   .hm-app .hm-majors-val.missing { color: var(--hm-muted); opacity: 0.5; }
 
+  /* Currency matrix — N×N pairwise performance grid. Row = base, col = quote;
+     cell shows base's % return vs quote over selected period. Diagonal cells
+     are muted gray (identity). Reuses the factors card chrome. */
+  .hm-app .hm-cm-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--hm-panel);
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-app .hm-cm-table th,
+  .hm-app .hm-cm-table td {
+    padding: 6px 12px;
+    font-size: 12px;
+    line-height: 1;
+    text-align: right;
+    border-right: 1px solid var(--hm-border);
+    border-bottom: 1px solid var(--hm-border);
+    white-space: nowrap;
+    min-width: 64px;
+  }
+  .hm-app .hm-cm-table th:first-child,
+  .hm-app .hm-cm-table td:first-child {
+    text-align: center;
+    font-weight: 700;
+    color: var(--hm-brown);
+    background: var(--hm-bg-warm);
+    min-width: 56px;
+  }
+  .hm-app .hm-cm-table th:last-child,
+  .hm-app .hm-cm-table td:last-child { border-right: none; }
+  .hm-app .hm-cm-table tbody tr:last-child td { border-bottom: none; }
+  .hm-app .hm-cm-table thead th {
+    background: var(--hm-bg-warm);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--hm-brown);
+    font-size: 10px;
+    letter-spacing: 0.4px;
+    text-align: center;
+  }
+  .hm-app .hm-cm-diag {
+    background: var(--hm-bg-alt);
+    color: var(--hm-muted);
+  }
+  .hm-app .hm-cm-empty {
+    color: var(--hm-muted);
+    opacity: 0.5;
+  }
+
   /* Thematic treemap */
   .hm-app .hm-treemap-section { margin-top: 24px; margin-bottom: 24px; }
   .hm-app .hm-treemap-header {
@@ -2909,6 +2958,7 @@
         <div id="hm-country-etfs"></div>
         <div id="hm-commodity-perf"></div>
         <div id="hm-majors-compare"></div>
+        <div id="hm-currency-matrix"></div>
         <div id="hm-theme-treemap"></div>
         <div id="hm-sector-chart"></div>
 
@@ -3293,6 +3343,7 @@
       renderCountryEtfs(cachedData);
       renderCommodityPerf(cachedData);
       renderMajorsCompare(cachedData);
+      renderCurrencyMatrix(cachedData);
       renderThemeTreemap(cachedData);
       if (chartState.selected.length) renderCharts();
     }
@@ -4111,6 +4162,7 @@
     { id: 'hm-country-etfs',   label: 'Country ETFs',          group: 'Main column' },
     { id: 'hm-commodity-perf', label: 'Commodities (ranked)',  group: 'Main column' },
     { id: 'hm-majors-compare', label: 'Majors Compare',        group: 'Main column' },
+    { id: 'hm-currency-matrix',label: 'Currency Matrix',       group: 'Main column' },
     { id: 'hm-theme-treemap',  label: 'Thematic Trends',       group: 'Main column' },
     { id: 'hm-sector-chart',   label: 'Sector Performance',    group: 'Main column' },
     { id: 'hm-heatmap-wrap',   label: 'Heat map table',        group: 'Main column' },
@@ -6776,6 +6828,123 @@
     container.appendChild(card);
   }
 
+  /* ---------- Currency Performance Matrix (N×N cross-returns) ---------- */
+  var cmPeriod = 'y1';
+
+  function renderCurrencyMatrix(data) {
+    var container = document.getElementById('hm-currency-matrix');
+    if (!container || !data.currency_matrix || !data.currency_matrix.codes) return;
+    container.innerHTML = '';
+    var cm = data.currency_matrix;
+    var codes = cm.codes;
+    var vs = cm.vs_usd || {};
+
+    var card = document.createElement('div');
+    card.className = 'hm-factors-card';
+
+    var hdr = document.createElement('div');
+    hdr.className = 'hm-factors-header';
+    var title = document.createElement('span');
+    title.textContent = 'Currency Performance';
+    hdr.appendChild(title);
+
+    var btnWrap = document.createElement('div');
+    btnWrap.className = 'hm-factors-periods';
+    FI_PERIODS.forEach(function (p) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-factors-period-btn' + (cmPeriod === p.key ? ' active' : '');
+      btn.textContent = p.label;
+      btn.addEventListener('click', function () {
+        cmPeriod = p.key;
+        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        updateCells();
+      });
+      btnWrap.appendChild(btn);
+    });
+    hdr.appendChild(btnWrap);
+    card.appendChild(hdr);
+
+    /* Horizontal scroll for narrow containers — table has N+1 columns at
+       ~72px each, so ~790px wide for 10 currencies. */
+    var scroll = document.createElement('div');
+    scroll.className = 'hm-factors-scroll';
+
+    var table = document.createElement('table');
+    table.className = 'hm-cm-table';
+
+    /* Header: corner + column labels */
+    var thead = document.createElement('thead');
+    var hrow  = document.createElement('tr');
+    hrow.appendChild(document.createElement('th')); /* corner */
+    codes.forEach(function (c) {
+      var th = document.createElement('th');
+      th.textContent = c;
+      hrow.appendChild(th);
+    });
+    thead.appendChild(hrow);
+    table.appendChild(thead);
+
+    /* Body: row label + N cells */
+    var tbody = document.createElement('tbody');
+    var cells = [];  /* [{ tr, td, row, col }] for repaint */
+
+    codes.forEach(function (rowCode) {
+      var tr = document.createElement('tr');
+      var rowLabel = document.createElement('th');
+      rowLabel.textContent = rowCode;
+      tr.appendChild(rowLabel);
+      codes.forEach(function (colCode) {
+        var td = document.createElement('td');
+        if (rowCode === colCode) {
+          td.classList.add('hm-cm-diag');
+          td.textContent = '\u2014';
+        } else {
+          td._row = rowCode;
+          td._col = colCode;
+          cells.push(td);
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    scroll.appendChild(table);
+    card.appendChild(scroll);
+    container.appendChild(card);
+
+    function updateCells() {
+      var th = getTheme();
+      cells.forEach(function (td) {
+        var rVs = vs[td._row] && vs[td._row][cmPeriod];
+        var cVs = vs[td._col] && vs[td._col][cmPeriod];
+        if (rVs == null || cVs == null) {
+          td.textContent = '\u2014';
+          td.classList.add('hm-cm-empty');
+          td.style.background = '';
+          td.style.color = '';
+          td.removeAttribute('title');
+          return;
+        }
+        td.classList.remove('hm-cm-empty');
+        /* r_X_vs_Y = (1 + r_X) / (1 + r_Y) - 1, each r in % */
+        var rx = rVs / 100, ry = cVs / 100;
+        var cross = ((1 + rx) / (1 + ry) - 1) * 100;
+        var sign = cross >= 0 ? '+' : '';
+        td.textContent = sign + cross.toFixed(1) + '%';
+        var paint = perfCellPaint(cross, th);
+        td.style.background = paint.bg;
+        td.style.color = paint.fg;
+        td.setAttribute('title', td._row + ' vs ' + td._col + ': ' + sign + cross.toFixed(2) + '%');
+      });
+    }
+
+    updateCells();
+  }
+
   /* ---------- Thematic treemap ---------- */
   var treemapPeriod = 'm1';
 
@@ -7035,6 +7204,7 @@
       safeRender('countryEtfs',  function () { renderCountryEtfs(data); });
       safeRender('commodityPerf',function () { renderCommodityPerf(data); });
       safeRender('majorsCompare',function () { renderMajorsCompare(data); });
+      safeRender('currencyMatrix',function () { renderCurrencyMatrix(data); });
       safeRender('themeTreemap', function () { renderThemeTreemap(data); });
       safeRender('chartSectionVis', updateChartSectionVisibility);
       safeRender('countLabel',      updateCountLabel);
