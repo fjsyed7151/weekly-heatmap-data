@@ -206,17 +206,21 @@
     padding: 0;
     box-sizing: border-box;
     scrollbar-width: thin;
-    scrollbar-color: var(--hm-border-strong) transparent;
+    scrollbar-color: var(--hm-gold) var(--hm-bg-alt);
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-thumb {
-    background: var(--hm-border-strong);
-    border-radius: 3px;
+    background: var(--hm-gold);
+    border-radius: 4px;
+  }
+  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-thumb:hover {
+    background: #b08824;
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--hm-bg-alt);
+    border-radius: 4px;
   }
 
   /* Window-style panel header — thin (24px), title-less. Whole bar is the
@@ -2103,11 +2107,20 @@
   }
   .hm-app .hm-factors-scroll::-webkit-scrollbar { height: 8px; }
   .hm-app .hm-factors-scroll::-webkit-scrollbar-thumb {
-    background: var(--hm-border);
+    background: var(--hm-gold);
     border-radius: 4px;
   }
+  .hm-app .hm-factors-scroll::-webkit-scrollbar-thumb:hover {
+    background: #b08824;
+  }
   .hm-app .hm-factors-scroll::-webkit-scrollbar-track {
-    background: var(--hm-bg-warm);
+    background: var(--hm-bg-alt);
+    border-radius: 4px;
+  }
+  /* Firefox horizontal scrollbar styling for the same factors-scroll wrapper. */
+  .hm-app .hm-factors-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--hm-gold) var(--hm-bg-alt);
   }
   .hm-app .hm-factors-header {
     font-size: 12px;
