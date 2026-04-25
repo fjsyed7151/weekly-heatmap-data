@@ -943,7 +943,21 @@
 
   /* Commodities table — matches metrics table styling */
   .hm-app .hm-commod-section,
-  .hm-app .hm-fx-section { margin-top: 0; }
+  .hm-app .hm-fx-section {
+    margin-top: 0;
+    /* Flex column so the inner wrap (.hm-commod-wrap / .hm-fx-wrap) can
+       flex:1 and fill any extra height the card got from applyCardFillHeights.
+       Without this, when the cell is taller than the table's natural
+       height the wrap stays at natural and an empty band appears below
+       it INSIDE the card border. */
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-commod-wrap,
+  .hm-app .hm-fx-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
   /* Sidebar table wrappers scroll horizontally when the sidebar is narrower
      than the table's natural width. `overflow-x: auto` exposes a scrollbar
      only when needed; the table's min-width triggers overflow. */
@@ -1864,7 +1878,11 @@
   /* Economy indicator cards (monthly data) */
   /* Economic calendar — compact density matching the commodity / currency
      sidebar tables (6/12 header, 4/12 rows, 10-11px fonts). */
-  .hm-app .hm-cal-section { }
+  .hm-app .hm-cal-section {
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-cal-section > .hm-cal-body { flex: 1 1 auto; min-height: 0; }
   .hm-app .hm-cal-header {
     font-size: 11px;
     font-weight: 700;
@@ -1948,7 +1966,12 @@
     opacity: 0.8;
     white-space: nowrap;
   }
-  .hm-app .hm-econ-section { margin-bottom: 0; }
+  .hm-app .hm-econ-section {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-econ-section > .hm-econ-body { flex: 1 1 auto; min-height: 0; }
   .hm-app .hm-econ-body {
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
@@ -7380,11 +7403,6 @@
     gridInstance = GridStack.init({
       column: 12,
       cellHeight: 40,
-      /* Symmetric margin: 12 sides + 6 top/bottom. Total horizontal gap
-         between adjacent panels = 24px, vertical = 12px. Gridstack's
-         internal row sizing math has been observed to misbehave with
-         marginTop:12 / marginBottom:0 (cells render taller than
-         h * cellHeight), so we use balanced values. */
       marginLeft: 12, marginRight: 12, marginTop: 6, marginBottom: 6,
       /* float: true preserves explicit gs-y positions (no auto-compact).
          Critical here because our 3-6-3 default has gaps below the
