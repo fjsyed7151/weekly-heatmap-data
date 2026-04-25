@@ -7587,9 +7587,10 @@
       });
       safeRender('gridstack', initGridStack);
       /* After Gridstack is initialized AND all renderers have populated
-         their panels, fit each grid item's height to its content. This
-         is the one-time pass that makes panel heights match content size
-         exactly — no empty unbordered space, no clipped content. */
+         their panels, fit each grid item's height to its content AND set
+         maxH to that height so users can't drag-resize taller than the
+         actual content. (Width and shrinking still work; growing past
+         content would just produce empty space.) */
       safeRender('fitToContent', function () {
         if (!window.gridInstance) return;
         /* Two passes: immediate, plus one at 1500ms to catch late-paint
@@ -7599,7 +7600,18 @@
           document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
             try { window.gridInstance.resizeToContent(item); } catch (e) {}
           });
-          window.gridInstance._suppressSave = false;
+          /* After the resizeToContent pass settled the new h, lock maxH
+             to that h so the resize handles can't drag taller than the
+             content's natural height. Done in a second tick to ensure
+             gridstackNode.h reflects the post-fit value. */
+          setTimeout(function () {
+            document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+              var node = item.gridstackNode;
+              if (!node) return;
+              try { window.gridInstance.update(item, { maxH: node.h }); } catch (e) {}
+            });
+            window.gridInstance._suppressSave = false;
+          }, 0);
         }
         fitAll();
         setTimeout(fitAll, 1500);
