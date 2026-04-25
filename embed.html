@@ -3947,6 +3947,28 @@
     return;
   }
 
+  /* Measure each panel's "header band" (window-style panel-header + the
+     panel's own gold title row) and return that as a per-cell minH.
+     Prevents the user from dragging a panel shorter than its visible
+     chrome — there's no point and the result looks broken. */
+  function computePanelMinH(item) {
+    var DEFAULT_MIN = 70;
+    var panelHeader = item.querySelector('.hm-panel-header');
+    var phH = panelHeader ? panelHeader.getBoundingClientRect().height : 24;
+    /* Find the first child of the panel's outer card that looks like
+       a header (gold title bar): hm-*-header / hm-*-top classes. */
+    var card = item.querySelector(CARD_SELECTORS);
+    var goldHeader = null;
+    if (card) {
+      goldHeader = card.querySelector(
+        '.hm-factors-header, .hm-cal-header, .hm-econ-header, ' +
+        '.hm-sector-header, .hm-mc-top, .hm-gave-top, .hm-stylefactor-header'
+      );
+    }
+    var ghH = goldHeader ? goldHeader.getBoundingClientRect().height : 0;
+    return Math.max(DEFAULT_MIN, Math.round(phH + ghH + 8));
+  }
+
   /* Re-run resizeToContent + maxH lock for the metrics chart panel.
      Called after the canvases inside it change so the cell tracks the
      new content size. Clears maxH first because Gridstack's
@@ -7812,12 +7834,19 @@
           document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
             try { window.gridInstance.resizeToContent(item); } catch (e) {}
           });
-          /* Lock maxH on the next tick so it picks up the post-fit h. */
+          /* Lock maxH on the next tick so it picks up the post-fit h.
+             Also set minH so the user can't shrink a panel below its
+             window-style header (24px) plus the panel's own gold header
+             (~32-44px depending on the panel). minH is computed by
+             measuring the panel-header + the first non-header child
+             inside the card (the gold title bar). 70px minimum keeps
+             "no header" panels (index sparklines) usable. */
           setTimeout(function () {
             document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
               var node = item.gridstackNode;
               if (!node) return;
-              try { window.gridInstance.update(item, { maxH: node.h }); } catch (e) {}
+              var minH = computePanelMinH(item);
+              try { window.gridInstance.update(item, { maxH: node.h, minH: minH }); } catch (e) {}
             });
             window.gridInstance._suppressSave = false;
           }, 0);
