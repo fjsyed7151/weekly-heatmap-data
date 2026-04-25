@@ -206,12 +206,13 @@
     padding: 0;
     box-sizing: border-box;
   }
-  /* Panel wrap also extends with wide content so the sticky panel header
-     (pin/reset/close icons) stretches across the whole scrollable area
-     instead of stopping at the original cell width. */
+  /* Panel wrap stays at cell width — no max-content. With max-content
+     here, Chart.js responsive canvases (sector / macro regime / index
+     sparklines) fed back into a width-grow loop because a chart's
+     measured parent grew when the canvas drew, which made the canvas
+     re-measure, etc. We accept that a wide table's gold header stops
+     at cell width when scrolled right. */
   .hm-app .hm-panel-wrap {
-    width: max-content;
-    min-width: 100%;
     box-sizing: border-box;
     background: var(--hm-bg);  /* opaque so content under the sticky header doesn't show through */
     scrollbar-width: thin;
@@ -1593,10 +1594,9 @@
   /* Sector performance chart + table */
   .hm-app .hm-sector-section {
     margin-bottom: 0; /* Gridstack handles spacing */
-    /* Same as .hm-factors-card: extend with wide content so the gold
-       header bar follows when user scrolls horizontally. */
-    width: max-content;
-    min-width: 100%;
+    /* No width: max-content here — sector chart canvas (Chart.js
+       responsive) feeds back into a horizontal grow loop with
+       max-content parents. Section stays at cell width. */
     box-sizing: border-box;
   }
   .hm-app .hm-sector-header {
