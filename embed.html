@@ -193,18 +193,30 @@
     background: transparent;
     min-height: 800px;
   }
-  /* High specificity to win against Gridstack's default rule. Clip
-     overflow when the user shrinks a panel below its content height —
-     without this the card content visually escapes the cell border and
-     it looks like the resize didn't take. (Chart.js tooltips use
-     fixed-positioned portals attached to body, so they still appear
-     fine on top of the clipped panel.) */
+  /* High specificity to win against Gridstack's default rule. When the
+     user shrinks a panel below its content height, the cell scrolls
+     vertically so the clipped rows are still reachable. At default size
+     the cell exactly matches content (fitToContent + maxH cap), so the
+     scrollbar is invisible most of the time. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content {
     background: transparent;
     border-radius: var(--hm-r);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 0;
     box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--hm-border-strong) transparent;
+  }
+  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-thumb {
+    background: var(--hm-border-strong);
+    border-radius: 3px;
+  }
+  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-track {
+    background: transparent;
   }
 
   /* Window-style panel header — thin (24px), title-less. Whole bar is the
