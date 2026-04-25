@@ -193,16 +193,16 @@
     background: transparent;
     min-height: 800px;
   }
-  /* High specificity to win against Gridstack's default
-     `.grid-stack > .grid-stack-item > .grid-stack-item-content` rule
-     which forces `overflow-x: hidden; overflow-y: auto` and creates a
-     spurious scrollbar when content overshoots the cell by even 1px. */
+  /* High specificity to win against Gridstack's default rule. Clip
+     overflow when the user shrinks a panel below its content height —
+     without this the card content visually escapes the cell border and
+     it looks like the resize didn't take. (Chart.js tooltips use
+     fixed-positioned portals attached to body, so they still appear
+     fine on top of the clipped panel.) */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content {
-    /* Plain block container — children flow naturally so sizeToContent
-       can measure the intrinsic height of header + panel card. */
     background: transparent;
     border-radius: var(--hm-r);
-    overflow: visible;  /* Chart.js tooltips, dropdowns etc. can escape */
+    overflow: hidden;
     padding: 0;
     box-sizing: border-box;
   }
@@ -298,13 +298,7 @@
   .hm-app .grid-stack-item-content {
     z-index: 1;
   }
-  /* North handle specifically — shrink its hit zone so it doesn't reach
-     down into the header's button row. Default Gridstack height is 10px
-     starting at the very top edge; trim to 5px and pull it slightly above
-     the panel. */
-  .hm-app .grid-stack-item > .ui-resizable-n {
-    height: 5px;
-  }
+  /* No north handle — top edge is drag-only via the header. */
 
   @media (max-width: 1100px) {
     .hm-app .hm-main {
@@ -7281,10 +7275,12 @@
          with float: true — Gridstack pushes other items aside on drop. */
       float: true,
       alwaysShowResizeHandle: true,
-      /* Resize from edges + bottom corners only. North corners (ne/nw) sit
-         in the same 20×20 box as the close/reset/pin buttons in the panel
-         header, so dropping them leaves the icons fully clickable. */
-      resizable: { handles: 'n, e, s, w, se, sw' },
+      /* Resize from left, right, bottom, and bottom corners only. The top
+         edge (and top corners) are reserved for the header — that's the
+         drag handle, not a resize zone. Avoids the muscle-memory mistake
+         of grabbing the title bar to "move" the panel and instead doing
+         a vertical resize. */
+      resizable: { handles: 'e, s, w, se, sw' },
       /* Drag ONLY from the window-style header bar — prevents accidental
          drags when users interact with charts/tables inside panels. */
       draggable: { handle: '.hm-panel-header' },
