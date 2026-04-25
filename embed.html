@@ -216,63 +216,59 @@
     min-height: 0;
   }
 
-  /* Windows-style panel header — always visible, thin (28px). Left side is
-     the drag handle (the ONLY way to drag a panel now). Right side holds
-     pin + reset buttons. Title shown in the middle (muted, since the panel's
-     own header usually repeats it). */
+  /* Window-style panel header — thin (24px), title-less. Whole bar is the
+     drag handle (cursor: grab). Right side holds pin / reset / close. The
+     panel's own card already shows its title; we don't repeat it here. */
   .hm-app .hm-panel-header {
     display: flex;
     align-items: center;
-    height: 28px;
-    padding: 0 6px 0 8px;
-    background: transparent;
+    justify-content: flex-end;
+    height: 24px;
+    padding: 0 4px;
+    /* Subtle background so the bar reads as window chrome but doesn't
+       compete with content. Different shade in dark mode. */
+    background: rgba(0, 0, 0, 0.025);
+    border-radius: var(--hm-r) var(--hm-r) 0 0;
     cursor: grab;
     user-select: none;
-    gap: 6px;
+    gap: 2px;
     color: var(--hm-muted, #8a7e5e);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    opacity: 0.55;
-    transition: opacity 120ms;
   }
-  .hm-app .grid-stack-item:hover > .grid-stack-item-content > .hm-panel-header {
-    opacity: 1;
+  .hm-app.dark .hm-panel-header {
+    background: rgba(255, 255, 255, 0.04);
   }
   .hm-app .hm-panel-header:active { cursor: grabbing; }
-  .hm-app .hm-panel-title {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
   .hm-app .hm-panel-btn {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     padding: 0;
     background: transparent;
-    border: 1px solid transparent;
+    border: 0;
     border-radius: 3px;
     color: inherit;
     cursor: pointer;
-    transition: background 120ms, color 120ms, border-color 120ms;
+    opacity: 0.5;
+    transition: background 120ms, color 120ms, opacity 120ms;
   }
+  .hm-app .grid-stack-item:hover .hm-panel-btn { opacity: 0.85; }
   .hm-app .hm-panel-btn:hover {
-    background: rgba(218,165,32,0.12);
+    opacity: 1;
+    background: rgba(218,165,32,0.16);
     color: var(--hm-gold);
-    border-color: var(--hm-gold);
   }
   .hm-app .hm-panel-btn.active {
+    opacity: 1;
     color: var(--hm-gold);
-    border-color: var(--hm-gold);
   }
-  .hm-app .hm-panel-btn svg { width: 14px; height: 14px; display: block; }
+  .hm-app .hm-panel-close:hover {
+    background: rgba(220, 53, 69, 0.18);
+    color: #c0392b;
+  }
+  .hm-app .hm-panel-btn svg { width: 13px; height: 13px; display: block; }
   /* Chart panels: opt-in fill chain from grid item → canvas wrap so the
      canvas grows when users resize a panel taller. resizestop pokes
      Chart.js so canvases remeasure on drag-end. */
@@ -1508,7 +1504,7 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 0; /* Gridstack handles spacing */
   }
   @media (max-width: 1100px) {
     .hm-app .hm-indexes { grid-template-columns: repeat(2, 1fr); }
@@ -1569,7 +1565,7 @@
   .hm-app .hm-idx-spark svg { display: block; width: 100%; height: 100%; }
 
   /* Sector performance chart + table */
-  .hm-app .hm-sector-section { margin-bottom: 24px; }
+  .hm-app .hm-sector-section { margin-bottom: 0; /* Gridstack handles spacing */ }
   .hm-app .hm-sector-header {
     font-size: 12px;
     font-weight: 700;
@@ -2023,7 +2019,7 @@
      below with its own 3-column Koyfin-style layout. */
   .hm-app .hm-stylefactor {
     display: block;
-    margin-top: 24px;
+    /* margin-top removed: Gridstack handles inter-panel spacing in the grid layout. */
   }
   .hm-app .hm-stylefactor-panel {
     width: 100%;
@@ -2113,7 +2109,10 @@
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
-    margin-top: 24px;
+    /* No margin-top: in the grid, Gridstack handles inter-panel spacing
+       via its `margin` option. The old 24px top margin was for the
+       pre-grid stacking layout and now creates a visible gap above each
+       panel's gold header. */
     overflow: hidden;
   }
   /* Horizontal scroll wrapper around the 3-column body. When the main column
@@ -2610,7 +2609,8 @@
   }
 
   /* Thematic treemap */
-  .hm-app .hm-treemap-section { margin-top: 24px; margin-bottom: 24px; }
+  /* margin-top/bottom removed — Gridstack handles spacing in the grid. */
+  .hm-app .hm-treemap-section { margin-top: 0; margin-bottom: 0; }
   .hm-app .hm-treemap-header {
     font-size: 12px;
     font-weight: 700;
@@ -2706,7 +2706,7 @@
   }
 
   /* Sector / Theme performance grid */
-  .hm-app .hm-perf-section { margin-top: 24px; }
+  .hm-app .hm-perf-section { margin-top: 0; /* Gridstack handles spacing */ }
   .hm-app .hm-perf-title {
     font-size: 12px;
     font-weight: 700;
@@ -3116,10 +3116,9 @@
           <div class="grid-stack-item" gs-id="hm-global-indexes" gs-x="0" gs-y="48"  gs-w="12" gs-h="10"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="0" gs-y="58"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="0" gs-y="73"  gs-w="12" gs-h="8"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-majors-compare" gs-x="0" gs-y="81"  gs-w="12" gs-h="6"><div class="grid-stack-item-content"><div id="hm-majors-compare"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="0" gs-y="87" gs-w="12" gs-h="9"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="0" gs-y="96"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="111" gs-w="12" gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="0" gs-y="81" gs-w="12" gs-h="9"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="0" gs-y="90"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="105" gs-w="12" gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
         </div>
 
         <!-- Metrics chart (appears when metrics selected) -->
@@ -3336,7 +3335,6 @@
       renderGlobalIndexes(cachedData);
       renderCountryEtfs(cachedData);
       renderCommodityPerf(cachedData);
-      renderMajorsCompare(cachedData);
       renderCurrencyMatrix(cachedData);
       renderThemeTreemap(cachedData);
       if (chartState.selected.length) renderCharts();
@@ -4155,7 +4153,6 @@
     { id: 'hm-global-indexes', label: 'Global Indexes',        group: 'Main column' },
     { id: 'hm-country-etfs',   label: 'Country ETFs',          group: 'Main column' },
     { id: 'hm-commodity-perf', label: 'Commodities (ranked)',  group: 'Main column' },
-    { id: 'hm-majors-compare', label: 'Majors Compare',        group: 'Main column' },
     { id: 'hm-currency-matrix',label: 'Currency Matrix',       group: 'Main column' },
     { id: 'hm-theme-treemap',  label: 'Thematic Trends',       group: 'Main column' },
     { id: 'hm-sector-chart',   label: 'Sector Performance',    group: 'Main column' },
@@ -7229,7 +7226,6 @@
     'hm-global-indexes': 'Global Equity Indexes',
     'hm-country-etfs':   'Country ETFs',
     'hm-commodity-perf': 'Commodities (ranked)',
-    'hm-majors-compare': 'Majors Compare',
     'hm-currency-matrix':'Currency Matrix',
     'hm-theme-treemap':  'Thematic Trends',
     'hm-sector-chart':   'Sector Performance',
@@ -7278,17 +7274,19 @@
     document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
       var content = item.querySelector('.grid-stack-item-content');
       if (!content || content.querySelector('.hm-panel-header')) return;
-      var id = item.getAttribute('gs-id') || '';
-      var title = PANEL_TITLES[id] || '';
       var header = document.createElement('div');
       header.className = 'hm-panel-header';
+      /* Icons only — the panel's own card already shows its title, so a
+         second title here would just be visual noise. */
       header.innerHTML =
-        '<span class="hm-panel-title">' + title + '</span>' +
         '<button class="hm-panel-btn hm-panel-pin" type="button" data-action="pin" title="Pin to top" aria-label="Pin to top">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/></svg>' +
         '</button>' +
         '<button class="hm-panel-btn hm-panel-reset" type="button" data-action="reset" title="Reset size" aria-label="Reset size">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>' +
+        '</button>' +
+        '<button class="hm-panel-btn hm-panel-close" type="button" data-action="close" title="Hide panel (re-add via Customize view)" aria-label="Hide panel">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>' +
         '</button>';
       /* Prepend so the header sits above the panel's own content. */
       content.insertBefore(header, content.firstChild);
@@ -7299,9 +7297,10 @@
       cellHeight: 40,
       margin: 12,                              /* 12px per item border → 24px total gap between items */
       /* float: true preserves explicit gs-y positions (no auto-compact).
-         We set gs-x/gs-y on every item to build the 3-6-3 default layout —
-         compacting would break the side-by-side columns by pulling main
-         panels up into the sidebar's empty rows. */
+         Critical here because our 3-6-3 default has gaps below the
+         sidebar columns; with float: false those gaps would pull main
+         panels up into them, breaking the layout. Drag-drop still works
+         with float: true — Gridstack pushes other items aside on drop. */
       float: true,
       alwaysShowResizeHandle: true,
       /* Resize from every edge/corner — Gridstack default is 'se' only. */
@@ -7352,6 +7351,16 @@
         refreshAllPinIcons();
       } else if (action === 'reset') {
         resetItemSize(id);
+      } else if (action === 'close') {
+        /* Hide the panel via the existing customize-view system so the
+           Customize panel checkbox reflects state and re-add works. If the
+           panel is currently pinned, unpin first so it's back in the grid
+           when applyBlockVisibility runs. */
+        if (isPinned(id)) {
+          unpinItemById(id);
+          refreshAllPinIcons();
+        }
+        if (typeof setBlockHidden === 'function') setBlockHidden(id, true);
       }
     });
     /* Header buttons swallow mousedown so Gridstack's drag-start handler
@@ -7584,7 +7593,6 @@
       safeRender('globalIndexes',function () { renderGlobalIndexes(data); });
       safeRender('countryEtfs',  function () { renderCountryEtfs(data); });
       safeRender('commodityPerf',function () { renderCommodityPerf(data); });
-      safeRender('majorsCompare',function () { renderMajorsCompare(data); });
       safeRender('currencyMatrix',function () { renderCurrencyMatrix(data); });
       safeRender('themeTreemap', function () { renderThemeTreemap(data); });
       safeRender('chartSectionVis', updateChartSectionVisibility);
