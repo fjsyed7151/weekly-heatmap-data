@@ -3942,19 +3942,9 @@
      stretching the quadrant card pushes the mini charts past the cell. */
   var SKIP_FILL_IDS = { 'hm-gave-wrap': 1 };
   function applyCardFillHeights() {
-    document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-      if (SKIP_FILL_IDS[item.getAttribute('gs-id')]) return;
-      var content = item.querySelector('.grid-stack-item-content');
-      var card = item.querySelector(CARD_SELECTORS);
-      if (!content || !card) return;
-      /* Reset first so we measure the natural height (not last fill's
-         stretched value), then conditionally apply only when there's
-         actually empty space below the card. */
-      card.style.minHeight = '';
-      var natural = card.scrollHeight;
-      var available = content.clientHeight - 24;  /* minus 24px panel header */
-      if (available > natural + 4) card.style.minHeight = available + 'px';
-    });
+    /* No-op under cellHeight: 1 — fitToContent now gives exact cell
+       heights, so the card naturally matches without min-height stretch. */
+    return;
   }
 
   /* Re-run resizeToContent + maxH lock for the metrics chart panel.
@@ -3988,7 +3978,7 @@
          are added/removed. Two-step because update with combined keys
          processes h first against the OLD maxH and clamps growth. */
       try {
-        window.gridInstance.update(item, { maxH: 50 });
+        window.gridInstance.update(item, { maxH: 2000 }); /* ≈2000px @ cellH=1 */
         if (rows !== node.h) window.gridInstance.update(item, { h: rows });
       } catch (e) {}
       window.gridInstance._suppressSave = false;
@@ -7302,7 +7292,13 @@
      and updates on content changes (charts rendering, etc.) automatically. */
 
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
-  var LAYOUT_KEY = 'hm-grid-layout-v2';
+  /* v3: cellHeight changed from 40 → 1 (and HTML gs-h/gs-y values are
+     scaled by 40 below) so fitToContent's `ceil((wrap+inset)/cellHeight)`
+     gives an EXACT cell height match instead of rounding up to a 40px
+     multiple. Old v2 layouts saved at h=10-style values would render
+     10px tall under v3, so invalidate them on first load. */
+  var LAYOUT_KEY = 'hm-grid-layout-v3';
+  var GS_SCALE = 40;
   var gridInstance = null;
 
   /* Per-panel default x/y/w/h captured BEFORE GridStack.init (init mutates
@@ -7357,16 +7353,22 @@
       if (raw) saved = JSON.parse(raw);
     } catch (e) {}
 
-    /* Capture default x/y/w/h from the HTML attrs BEFORE Gridstack rewrites
-       them based on saved layout, so the reset button has a ground truth. */
+    /* Scale HTML gs-h / gs-y by GS_SCALE (40) so the same visual layout
+       applies under cellHeight: 1 (1px row resolution = exact-fit cells). */
     document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
       var id = item.getAttribute('gs-id');
       if (!id) return;
+      var hOrig = parseInt(item.getAttribute('gs-h') || 4, 10);
+      var yOrig = parseInt(item.getAttribute('gs-y') || 0, 10);
+      var hNew = hOrig * GS_SCALE;
+      var yNew = yOrig * GS_SCALE;
+      item.setAttribute('gs-h', hNew);
+      item.setAttribute('gs-y', yNew);
       DEFAULT_LAYOUT[id] = {
         x: parseInt(item.getAttribute('gs-x') || 0, 10),
-        y: parseInt(item.getAttribute('gs-y') || 0, 10),
+        y: yNew,
         w: parseInt(item.getAttribute('gs-w') || 12, 10),
-        h: parseInt(item.getAttribute('gs-h') || 4, 10),
+        h: hNew,
       };
     });
 
@@ -7402,7 +7404,11 @@
 
     gridInstance = GridStack.init({
       column: 12,
-      cellHeight: 40,
+      /* 1px row resolution. With cellHeight: 1, fitToContent's
+         ceil((wrap+inset)/cellHeight) gives EXACT cell heights — no
+         rounding overshoot. HTML gs-h/gs-y values were pre-scaled by
+         GS_SCALE (40) above to keep the visual layout identical. */
+      cellHeight: 1,
       marginLeft: 12, marginRight: 12, marginTop: 6, marginBottom: 6,
       /* float: true preserves explicit gs-y positions (no auto-compact).
          Critical here because our 3-6-3 default has gaps below the
