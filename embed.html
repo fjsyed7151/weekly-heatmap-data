@@ -7777,17 +7777,18 @@
          content would just produce empty space.) */
       safeRender('fitToContent', function () {
         if (!window.gridInstance) return;
-        /* Two passes: immediate, plus one at 1500ms to catch late-paint
-           charts (Chart.js animation finishing, etc.) */
+        /* Single immediate pass — the previous 1500ms second pass was
+           re-measuring everything well after layout settled, causing
+           visible "things shift for no reason" jumps a second after
+           the user clicked Reset. Charts that paint async still get
+           proper sizing because Chart.js's responsive: true adapts to
+           whatever container size we set here. */
         function fitAll() {
           window.gridInstance._suppressSave = true;
           document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
             try { window.gridInstance.resizeToContent(item); } catch (e) {}
           });
-          /* After the resizeToContent pass settled the new h, lock maxH
-             to that h so the resize handles can't drag taller than the
-             content's natural height. Done in a second tick to ensure
-             gridstackNode.h reflects the post-fit value. */
+          /* Lock maxH on the next tick so it picks up the post-fit h. */
           setTimeout(function () {
             document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
               var node = item.gridstackNode;
@@ -7798,18 +7799,12 @@
           }, 0);
         }
         fitAll();
-        setTimeout(fitAll, 1500);
         /* Apply the no-selection state once gridInstance is live: this
            removes the empty metrics-chart panel from the grid until a
            user picks rows from the heat map. */
         updateChartSectionVisibility();
-        /* Visual workaround for the cell-vs-content height gap: after
-           layout settles, stretch each panel's outer card via min-height
-           so the visible card border fills the cell. The auto-fit math
-           is supposed to make these match exactly but Gridstack renders
-           cells taller than h * cellHeight in some configurations and
-           the underlying cause hasn't been isolated. */
-        setTimeout(applyCardFillHeights, 1700);
+        /* Visual workaround for the cell-vs-content height gap. */
+        setTimeout(applyCardFillHeights, 200);
         if (window.gridInstance) {
           /* Only re-run on user-driven resize/drag END — NOT on every
              'change' event. 'change' fires for size adjustments triggered
