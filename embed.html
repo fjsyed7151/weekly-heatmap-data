@@ -294,6 +294,37 @@
     flex: 1 1 auto;
     min-height: 320px;
   }
+  /* Each panel's outer card fills the grid cell so its border tracks the
+     user's resize. Without this, resizing a grid item taller leaves the
+     card sitting at the top with empty space below where the card's
+     border *should* be — looks like a layout bug. With height:100% the
+     card stretches; surplus is empty padding INSIDE the card border. */
+  .hm-app .hm-commod-section,
+  .hm-app .hm-fx-section,
+  .hm-app .hm-cal-section,
+  .hm-app .hm-econ-section,
+  .hm-app .hm-gave,
+  .hm-app .hm-factors-card,
+  .hm-app .hm-stylefactor,
+  .hm-app .hm-mc {
+    height: 100%;
+    /* Flex column so scrollable inner sections (.hm-factors-scroll, etc.)
+       can stretch to fill via flex:1. Cards without scroll wrappers just
+       show empty space at the bottom inside the border — fine. */
+    display: flex;
+    flex-direction: column;
+  }
+  /* Internal scroll wrapper inside .hm-factors-card grows to fill. */
+  .hm-app .hm-factors-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  /* Indexes is a CSS grid (4 sparkline cards) — preserve that layout, just
+     stretch the wrapper to the grid cell height. */
+  .hm-app .hm-indexes {
+    height: 100%;
+  }
+
   /* Gave four-quadrants panel: the wrap holds quadrant + three mini-charts
      in a column. Let the mini-charts row stretch when the panel grows. */
   .hm-app #hm-gave-wrap {
