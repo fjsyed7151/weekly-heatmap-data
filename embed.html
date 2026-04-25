@@ -314,16 +314,25 @@
      so its icons stay clickable even when a handle's hit zone overlaps. */
   .hm-app .grid-stack-item > .ui-resizable-handle { display: block; z-index: 0; }
   /* Push edge handles into the Gridstack inset, OUTSIDE the cell's
-     content area (where scrollbars live). The default handle is 10px
-     offset by var(--gs-item-margin-*) so it sits inside the cell and
-     overlaps the scrollbar zone. We pin them to the cell edge and size
-     them to match the inset (12px horizontal, 6px vertical) so they
-     fill the gap and never enter content space. */
+     content area (where scrollbars live). The horizontal margin (12px)
+     is split equally between adjacent panels, so left/right handles
+     are pinned width:12 to fill that inset. The bottom margin is now
+     loaded entirely on the TOP of each cell (marginTop: 12,
+     marginBottom: 0) so the horizontal scrollbar pins flush to the
+     cell's bottom edge — meaning the south edge has no inset of its
+     own. The south handle moves to the TOP of the next cell's gutter
+     instead: pinned to the top of the next item's 12px top inset by
+     using its own slim band at the very edge of the cell bottom which
+     OVERLAPS the next cell's gutter (no scrollbar conflict because the
+     next cell is a separate scroll container). */
   .hm-app .grid-stack-item > .ui-resizable-e { right: 0; width: 12px; }
   .hm-app .grid-stack-item > .ui-resizable-w { left: 0; width: 12px; }
-  .hm-app .grid-stack-item > .ui-resizable-s { bottom: 0; height: 6px; }
-  .hm-app .grid-stack-item > .ui-resizable-se { right: 0; bottom: 0; width: 12px; height: 6px; }
-  .hm-app .grid-stack-item > .ui-resizable-sw { left: 0; bottom: 0; width: 12px; height: 6px; }
+  /* South handle hangs BELOW the cell — into the next item's top
+     gutter (12px) — so it doesn't fight with the bottom-pinned
+     scrollbar of THIS cell. Only the bottom-edge corners are exempt. */
+  .hm-app .grid-stack-item > .ui-resizable-s { bottom: -8px; height: 8px; }
+  .hm-app .grid-stack-item > .ui-resizable-se { right: 0; bottom: -6px; width: 14px; height: 10px; }
+  .hm-app .grid-stack-item > .ui-resizable-sw { left: 0; bottom: -6px; width: 14px; height: 10px; }
   /* Force a stacking context on the content so the header (z-index: 2)
      wins over the resize handle siblings (z-index: 0). */
   .hm-app .grid-stack-item-content {
@@ -7293,11 +7302,12 @@
       column: 12,
       cellHeight: 40,
       /* Asymmetric margin: 12px sides → 24px horizontal gap between panels;
-         6px top/bottom → 12px vertical gap. Smaller vertical because the
-         injected window-style header bar already adds visual breathing
-         room at the top of each panel — at 24px vertical the page felt
-         too "loose" stacked. */
-      marginLeft: 12, marginRight: 12, marginTop: 6, marginBottom: 6,
+         12px top + 0 bottom → 12px vertical gap, but loaded entirely on
+         the TOP of each cell. This pushes the bottom of every cell flush
+         with the item edge so the horizontal scrollbar (which lives at
+         the bottom of the cell content) sits flat against the cell's
+         bottom border with no visible gutter below. */
+      marginLeft: 12, marginRight: 12, marginTop: 12, marginBottom: 0,
       /* float: true preserves explicit gs-y positions (no auto-compact).
          Critical here because our 3-6-3 default has gaps below the
          sidebar columns; with float: false those gaps would pull main
