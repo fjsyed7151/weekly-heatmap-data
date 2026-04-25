@@ -7409,6 +7409,78 @@
         });
       });
     });
+
+    /* Edge auto-scroll while dragging: when the cursor approaches the top
+       or bottom of the (parent) viewport during a drag, scroll the page
+       proportionally so the user can drop the panel anywhere on the
+       dashboard without having to manually scroll mid-drag.
+       Standard pattern used in Trello/Linear/Asana drag-drop. */
+    setupDragAutoScroll();
+  }
+
+  function setupDragAutoScroll() {
+    var HOT_ZONE = 80;       /* px from edge that triggers scroll */
+    var MAX_SPEED = 14;      /* max px per frame at the very edge */
+    var dragging = false;
+    var mouseY = 0;
+    var rafId = null;
+    /* iframe-resizer (when running embedded in WordPress) caches parent
+       page geometry here so we can compute the cursor's position in the
+       PARENT viewport and scroll the parent — not the iframe. */
+    var pageInfo = null;
+    if (window.parentIFrame && typeof parentIFrame.getPageInfo === 'function') {
+      try { parentIFrame.getPageInfo(function (info) { pageInfo = info; }); }
+      catch (e) {}
+    }
+
+    function onMouseMove(e) { mouseY = e.clientY; }
+
+    function tick() {
+      if (!dragging) { rafId = null; return; }
+      var topDist, bottomDist, vh;
+      if (pageInfo && window.parentIFrame) {
+        /* In parent-viewport coords. iframe top in parent viewport =
+           iframe doc offset - parent scroll. */
+        var iframeTopInParent = pageInfo.offsetTop - pageInfo.scrollTop;
+        var cursorInParent = mouseY + iframeTopInParent;
+        topDist = cursorInParent;
+        bottomDist = pageInfo.windowHeight - cursorInParent;
+        vh = pageInfo.windowHeight;
+      } else {
+        topDist = mouseY;
+        bottomDist = window.innerHeight - mouseY;
+        vh = window.innerHeight;
+      }
+      var speed = 0;
+      if (topDist < HOT_ZONE) {
+        speed = -Math.ceil(MAX_SPEED * (1 - Math.max(0, topDist) / HOT_ZONE));
+      } else if (bottomDist < HOT_ZONE) {
+        speed = Math.ceil(MAX_SPEED * (1 - Math.max(0, bottomDist) / HOT_ZONE));
+      }
+      if (speed !== 0) {
+        if (window.parentIFrame && typeof parentIFrame.scrollBy === 'function') {
+          try { parentIFrame.scrollBy(0, speed); } catch (e) { window.scrollBy(0, speed); }
+        } else {
+          window.scrollBy(0, speed);
+        }
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function startDrag() {
+      if (dragging) return;
+      dragging = true;
+      document.addEventListener('mousemove', onMouseMove, true);
+      if (rafId == null) rafId = requestAnimationFrame(tick);
+    }
+    function stopDrag() {
+      dragging = false;
+      document.removeEventListener('mousemove', onMouseMove, true);
+      if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+    }
+
+    gridInstance.on('dragstart resizestart', startDrag);
+    gridInstance.on('dragstop resizestop', stopDrag);
   }
 
   /* Expose a reset function for the customize panel "Show all" button to clear
