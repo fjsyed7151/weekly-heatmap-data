@@ -3952,11 +3952,20 @@
      Prevents the user from dragging a panel shorter than its visible
      chrome — there's no point and the result looks broken. */
   function computePanelMinH(item) {
+    /* Cell h is the OUTER pixel height. To make sure the user always
+       sees the entire window-header + the panel's gold title row, we
+       need to account for:
+         - 12px inset (6 top + 6 bottom from Gridstack margin)
+         - 24px panel-header
+         - measured gold-header height
+         - 4px small breathing room
+       Without the 12px inset the user could shrink the cell into the
+       gold band — that was the cut-off bug. */
+    var INSET = 12;
+    var BUFFER = 4;
     var DEFAULT_MIN = 70;
     var panelHeader = item.querySelector('.hm-panel-header');
     var phH = panelHeader ? panelHeader.getBoundingClientRect().height : 24;
-    /* Find the first child of the panel's outer card that looks like
-       a header (gold title bar): hm-*-header / hm-*-top classes. */
     var card = item.querySelector(CARD_SELECTORS);
     var goldHeader = null;
     if (card) {
@@ -3966,7 +3975,7 @@
       );
     }
     var ghH = goldHeader ? goldHeader.getBoundingClientRect().height : 0;
-    return Math.max(DEFAULT_MIN, Math.round(phH + ghH + 8));
+    return Math.max(DEFAULT_MIN, Math.round(INSET + phH + ghH + BUFFER));
   }
 
   /* Re-run resizeToContent + maxH lock for the metrics chart panel.
