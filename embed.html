@@ -193,7 +193,11 @@
     background: transparent;
     min-height: 800px;
   }
-  .hm-app .grid-stack-item-content {
+  /* High specificity to win against Gridstack's default
+     `.grid-stack > .grid-stack-item > .grid-stack-item-content` rule
+     which forces `overflow-x: hidden; overflow-y: auto` and creates a
+     spurious scrollbar when content overshoots the cell by even 1px. */
+  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content {
     /* Plain block container — children flow naturally so sizeToContent
        can measure the intrinsic height of header + panel card. */
     background: transparent;
@@ -1832,8 +1836,9 @@
     border: 1px solid var(--hm-border);
     border-top: none;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
-    max-height: 280px;
-    overflow-y: auto;
+    /* No max-height / overflow: the grid item auto-fits to content via
+       resizeToContent + maxH cap, so the calendar list grows naturally
+       to its full row count instead of being scrolled inside a 280px box. */
   }
   .hm-app .hm-cal-row {
     display: flex;
