@@ -206,18 +206,18 @@
     padding: 0;
     box-sizing: border-box;
     scrollbar-width: thin;
-    scrollbar-color: var(--hm-gold) var(--hm-bg-alt);
+    scrollbar-color: #F2DFB3 var(--hm-bg-alt);
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-thumb {
-    background: var(--hm-gold);
+    background: #F2DFB3;
     border-radius: 4px;
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-thumb:hover {
-    background: #b08824;
+    background: #e8ce8e;
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-track {
     background: var(--hm-bg-alt);
@@ -313,6 +313,17 @@
      The header sits above the handles via stacking context (see below)
      so its icons stay clickable even when a handle's hit zone overlaps. */
   .hm-app .grid-stack-item > .ui-resizable-handle { display: block; z-index: 0; }
+  /* Push edge handles into the Gridstack inset, OUTSIDE the cell's
+     content area (where scrollbars live). The default handle is 10px
+     offset by var(--gs-item-margin-*) so it sits inside the cell and
+     overlaps the scrollbar zone. We pin them to the cell edge and size
+     them to match the inset (12px horizontal, 6px vertical) so they
+     fill the gap and never enter content space. */
+  .hm-app .grid-stack-item > .ui-resizable-e { right: 0; width: 12px; }
+  .hm-app .grid-stack-item > .ui-resizable-w { left: 0; width: 12px; }
+  .hm-app .grid-stack-item > .ui-resizable-s { bottom: 0; height: 6px; }
+  .hm-app .grid-stack-item > .ui-resizable-se { right: 0; bottom: 0; width: 12px; height: 6px; }
+  .hm-app .grid-stack-item > .ui-resizable-sw { left: 0; bottom: 0; width: 12px; height: 6px; }
   /* Force a stacking context on the content so the header (z-index: 2)
      wins over the resize handle siblings (z-index: 0). */
   .hm-app .grid-stack-item-content {
