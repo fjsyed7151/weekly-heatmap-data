@@ -461,15 +461,15 @@
   .hm-app .hm-cb:focus-visible { outline: 2px solid var(--hm-gold); outline-offset: 2px; }
   .hm-app .hm-cb:disabled { opacity: 0.35; cursor: not-allowed; }
 
-  /* Chart section */
+  /* Chart section — fills its grid panel cell so the visible card border
+     tracks resize, just like the other panels. */
   .hm-app .hm-chart-section {
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     background: var(--hm-panel);
     padding: 16px;
-    margin-bottom: 24px;
+    /* margin removed: Gridstack handles inter-panel spacing now. */
   }
-  .hm-app .hm-chart-section[hidden] { display: none; }
 
   .hm-app .hm-chart-toolbar {
     display: flex;
@@ -736,7 +736,10 @@
   .hm-app .hm-table td:last-child { border-right: none; }
   .hm-app .hm-table tbody tr:last-child td { border-bottom: none; }
 
-  /* Thead = the gold "metric header" row. */
+  /* Thead = the gold "metric header" row. position: sticky pins the row
+     to the top of the cell's scroll container while user scrolls the
+     table inside its grid panel — same behavior the old JS-cloned
+     sticky header gave, now CSS-native. */
   .hm-app .hm-table thead th {
     font-weight: 700;
     font-size: 12px;
@@ -746,6 +749,9 @@
     background: var(--hm-gold);
     border-bottom: 1px solid var(--hm-gold);
     border-right: 1px solid rgba(255, 255, 255, 0.25);
+    position: sticky;
+    top: 0;
+    z-index: 5;
   }
   .hm-app .hm-table thead th:last-child { border-right: none; }
 
@@ -3119,29 +3125,38 @@
           <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="0" gs-y="81" gs-w="12" gs-h="9"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="0" gs-y="90"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="105" gs-w="12" gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
-        </div>
-
-        <!-- Metrics chart (appears when metrics selected) -->
-        <div class="hm-chart-section" id="hm-chart-section" hidden>
-          <div class="hm-chart-toolbar">
-            <span class="hm-chart-note"><b id="hm-chart-count">0</b>/6 metrics selected</span>
-            <button class="hm-btn" id="hm-chart-combined" type="button" aria-label="Combined view" title="Combined">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 14 9 10 13 13 21 7"/></svg>
-            </button>
-            <button class="hm-btn" id="hm-chart-separated" type="button" aria-label="Separated view" title="Separated">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
-            </button>
-            <button class="hm-btn" id="hm-chart-download" type="button" aria-label="Download chart" title="Download">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </button>
+          <!-- Metrics chart panel (always present in grid; shows empty state
+               of "0/6 metrics selected" until user picks rows from the heat map). -->
+          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="135" gs-w="12" gs-h="11">
+            <div class="grid-stack-item-content">
+              <div class="hm-chart-section" id="hm-chart-section">
+                <div class="hm-chart-toolbar">
+                  <span class="hm-chart-note"><b id="hm-chart-count">0</b>/6 metrics selected</span>
+                  <button class="hm-btn" id="hm-chart-combined" type="button" aria-label="Combined view" title="Combined">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 14 9 10 13 13 21 7"/></svg>
+                  </button>
+                  <button class="hm-btn" id="hm-chart-separated" type="button" aria-label="Separated view" title="Separated">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+                  </button>
+                  <button class="hm-btn" id="hm-chart-download" type="button" aria-label="Download chart" title="Download">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                </div>
+                <div class="hm-chart-canvases combined" id="hm-chart-canvases"></div>
+              </div>
+            </div>
           </div>
-          <div class="hm-chart-canvases combined" id="hm-chart-canvases"></div>
+          <!-- Weekly heat map table panel. -->
+          <div class="grid-stack-item" gs-id="hm-heatmap-wrap"   gs-x="0" gs-y="146" gs-w="12" gs-h="22">
+            <div class="grid-stack-item-content">
+              <div class="hm-scroll" id="hm-heatmap-wrap">
+                <table class="hm-table" id="hm-table"></table>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Weekly heat map table -->
-        <div class="hm-scroll" id="hm-heatmap-wrap">
-          <table class="hm-table" id="hm-table"></table>
-        </div>
+        <!-- Metric tooltip overlay — outside the grid since it's a popover. -->
         <div id="hm-mtip"></div>
       </div>
     </div>
@@ -3217,96 +3232,16 @@
     if (typeof updateStickyHeader === 'function') updateStickyHeader();
   }
 
-  function destroyStickyHeader() {
-    if (stickyWrapper) { stickyWrapper.remove(); stickyWrapper = null; stickyScroll = null; }
-  }
-
-  function buildStickyHeader() {
-    destroyStickyHeader();
-    var origScroll = document.querySelector('.hm-app .hm-scroll');
-    var origTable  = origScroll && origScroll.querySelector('.hm-table');
-    var origThead  = origTable && origTable.querySelector('thead');
-    if (!origThead) return;
-
-    // Theme-aware wrapper so .hm-app.dark descendant selectors work inside the clone.
-    var wrapper = document.createElement('div');
-    wrapper.id = 'hm-sticky-wrapper';
-    wrapper.className = 'hm-app' + (getTheme() === 'dark' ? ' dark' : '');
-
-    var scroll = document.createElement('div');
-    scroll.className = 'hm-scroll';
-
-    var table = document.createElement('table');
-    table.className = 'hm-table';
-    table.appendChild(origThead.cloneNode(true));
-
-    scroll.appendChild(table);
-    wrapper.appendChild(scroll);
-    document.body.appendChild(wrapper);
-
-    stickyWrapper = wrapper;
-    stickyScroll  = scroll;
-    syncStickyColumnWidths();
-  }
-
-  function syncStickyColumnWidths() {
-    if (!stickyScroll) return;
-    var origScroll = document.querySelector('.hm-app .hm-scroll');
-    if (!origScroll) return;
-    var origTable = origScroll.querySelector('.hm-table');
-    var cloneTable = stickyScroll.querySelector('.hm-table');
-    if (!origTable || !cloneTable) return;
-
-    /* Use getBoundingClientRect for sub-pixel accuracy. */
-    var tableRect = origTable.getBoundingClientRect();
-    cloneTable.style.width = tableRect.width + 'px';
-    cloneTable.style.tableLayout = 'fixed';
-
-    var origCells = origScroll.querySelectorAll('thead th');
-    var cloneCells = stickyScroll.querySelectorAll('thead th');
-    for (var i = 0; i < origCells.length && i < cloneCells.length; i++) {
-      var w = origCells[i].getBoundingClientRect().width;
-      cloneCells[i].style.width = w + 'px';
-      cloneCells[i].style.minWidth = w + 'px';
-      cloneCells[i].style.maxWidth = w + 'px';
-    }
-  }
-
-  function updateStickyHeader() {
-    var origScroll = document.querySelector('.hm-app .hm-scroll');
-    if (!origScroll) { if (stickyWrapper) stickyWrapper.style.display = 'none'; return; }
-
-    if (!stickyWrapper) buildStickyHeader();
-    if (!stickyWrapper) return;
-
-    var rect = origScroll.getBoundingClientRect();
-    /* Stick below admin bar + our topbar so both stay visible. Measured live
-       so this stays accurate across WP login states, resizes, or font tweaks. */
-    var topbarEl = app.querySelector('.hm-topbar');
-    var topbarH = topbarEl ? topbarEl.offsetHeight : 52;
-    var offset = getAdminBarOffset() + topbarH;
-    var origThead = origScroll.querySelector('thead');
-    var theadH = origThead ? origThead.offsetHeight : 40;
-
-    if (rect.top < offset && rect.bottom > offset + theadH) {
-      stickyWrapper.style.display = 'block';
-      stickyWrapper.style.top = offset + 'px';
-      stickyWrapper.style.left = rect.left + 'px';
-      stickyWrapper.style.width = rect.width + 'px';
-      stickyScroll.scrollLeft = origScroll.scrollLeft;
-    } else {
-      stickyWrapper.style.display = 'none';
-    }
-  }
-
-  function syncStickyTheme() {
-    if (stickyWrapper) {
-      stickyWrapper.className = 'hm-app' + (getTheme() === 'dark' ? ' dark' : '');
-    }
-  }
-
-  window.addEventListener('scroll', updateStickyHeader, { passive: true });
-  window.addEventListener('resize', function () { syncStickyColumnWidths(); updateStickyHeader(); });
+  /* Old viewport-fixed sticky header (a body-level cloned copy of thead)
+     is no longer needed: the heat map now lives inside a grid-stack-item
+     scroll container, and `position: sticky` on the thead pins the row
+     natively to the top of the cell as the user scrolls inside it.
+     Functions kept as no-ops so existing call sites don't blow up. */
+  function destroyStickyHeader() {}
+  function buildStickyHeader() {}
+  function syncStickyColumnWidths() {}
+  function updateStickyHeader() {}
+  function syncStickyTheme() {}
 
 
   /* ---------- Theme ---------- */
@@ -3600,9 +3535,12 @@
   }
 
   function updateChartSectionVisibility() {
-    var section = document.getElementById("hm-chart-section");
-    if (chartState.selected.length > 0) section.removeAttribute("hidden");
-    else section.setAttribute("hidden", "");
+    /* The metrics chart panel is now always present in the grid — the
+       inner section's `hidden` toggle is the only thing this function
+       used to do. We hide just the canvases area when no rows are
+       selected so the toolbar with "0/6 metrics selected" still shows. */
+    var canvases = document.getElementById('hm-chart-canvases');
+    if (canvases) canvases.style.display = chartState.selected.length > 0 ? '' : 'none';
   }
   function updateCheckboxAvailability() {
     var atMax = chartState.selected.length >= MAX_METRICS;
@@ -7229,6 +7167,8 @@
     'hm-currency-matrix':'Currency Matrix',
     'hm-theme-treemap':  'Thematic Trends',
     'hm-sector-chart':   'Sector Performance',
+    'hm-chart-section':  'Metrics Chart',
+    'hm-heatmap-wrap':   'Weekly Heat Map',
   };
 
   /* Reset-layout button (topbar) — clears saved layout + pins, reloads. */
@@ -7617,15 +7557,8 @@
       safeRender('chartSectionVis', updateChartSectionVisibility);
       safeRender('countLabel',      updateCountLabel);
       safeRender('charts',          renderCharts);
-      safeRender('stickyHeader', function () {
-        buildStickyHeader();
-        var origScroll = document.querySelector('.hm-app .hm-scroll');
-        if (origScroll) {
-          origScroll.addEventListener('scroll', function () {
-            if (stickyScroll) stickyScroll.scrollLeft = origScroll.scrollLeft;
-          }, { passive: true });
-        }
-      });
+      /* Sticky thead is now CSS-native (position: sticky on .hm-table thead th)
+         since the heat map lives inside a grid panel scroll container. */
       safeRender('gridstack', initGridStack);
       /* After Gridstack is initialized AND all renderers have populated
          their panels, fit each grid item's height to its content AND set
