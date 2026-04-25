@@ -705,10 +705,12 @@
     transform: rotate(45deg);
   }
 
-  /* Scroll container + table */
+  /* Heat map outer wrapper. overflow:visible because the parent grid
+     panel cell handles BOTH axes' overflow now — keeping overflow:auto
+     here would create a separate sticky containing block and trap the
+     thead inside this element (where it has nowhere to stick to). */
   .hm-app .hm-scroll {
-    overflow-x: auto;
-    overflow-y: visible;
+    overflow: visible;
     -webkit-overflow-scrolling: touch;
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
@@ -3825,7 +3827,10 @@
     container.classList.toggle('combined',  chartState.viewMode === 'combined');
     container.classList.toggle('separated', chartState.viewMode === 'separated');
     container.innerHTML = '';
-    if (chartState.selected.length === 0) return;
+    if (chartState.selected.length === 0) {
+      refitChartSection();
+      return;
+    }
 
     if (chartState.viewMode === 'combined') {
       buildChartUnit(chartState.selected, container, false);
@@ -3834,6 +3839,47 @@
         buildChartUnit([entry], container, true);
       });
     }
+    /* Re-fit the chart-section grid panel to its new content height
+       (canvases just appeared / were removed). Without this the panel
+       stays at whatever h it was auto-sized to when canvases were
+       hidden — which is the empty-toolbar height — and the user can't
+       resize it taller because maxH is locked there. */
+    refitChartSection();
+  }
+
+  /* Re-run resizeToContent + maxH lock for the metrics chart panel.
+     Called after the canvases inside it change so the cell tracks the
+     new content size. Clears maxH first because Gridstack's
+     resizeToContent clamps the proposed h to maxH — without clearing
+     it, the panel can never grow past whatever it was at when the
+     last fit ran (e.g. 3 rows when canvases were empty). */
+  function refitChartSection() {
+    /* Wait for Chart.js to paint, then measure + resize. setTimeout
+       beats rAF here because Chart.js layout completes async and rAF
+       fires before that's settled — chart canvas would still be 0px. */
+    setTimeout(function () {
+      if (!window.gridInstance) return;
+      var item = document.querySelector('.grid-stack-item[gs-id="hm-chart-section"]');
+      if (!item) return;
+      var node = item.gridstackNode;
+      if (!node) return;
+      var wrap = item.querySelector('.hm-panel-wrap');
+      if (!wrap) return;
+      var cellH = window.gridInstance.getCellHeight(true) || 40;
+      var natural = wrap.scrollHeight;
+      if (!natural) return;
+      var rows = Math.max(1, Math.ceil(natural / cellH));
+      if (rows === node.h) return;
+      window.gridInstance._suppressSave = true;
+      /* Two-step: raise maxH FIRST so the subsequent h update isn't
+         clamped against the old (smaller) cap. Combined update with
+         both keys processes h first and rejects the growth. */
+      try {
+        window.gridInstance.update(item, { maxH: rows });
+        window.gridInstance.update(item, { h: rows });
+      } catch (e) {}
+      window.gridInstance._suppressSave = false;
+    }, 50);
   }
 
   /* ---------- Legend row ---------- */
