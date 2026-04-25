@@ -3894,6 +3894,37 @@
     refitChartSection();
   }
 
+  /* Visual workaround for the cell-vs-content height mismatch: walk every
+     grid item, measure the cell's content area, and set min-height on
+     the inner panel card so its visible border extends to the cell's
+     bottom edge. Without this, when Gridstack renders a cell taller
+     than its h * cellHeight should give (cause not yet pinpointed), a
+     bare empty area shows below the card with no border. */
+  var CARD_SELECTORS = [
+    '.hm-factors-card',
+    '.hm-cal-section',
+    '.hm-econ-section',
+    '.hm-commod-section',
+    '.hm-fx-section',
+    '.hm-mc',
+    '.hm-stylefactor',
+    '.hm-gave',
+    '.hm-indexes',
+    '.hm-scroll',
+    '.hm-sector-section',
+    '.hm-chart-section',
+  ].join(',');
+  function applyCardFillHeights() {
+    document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+      var content = item.querySelector('.grid-stack-item-content');
+      var card = item.querySelector(CARD_SELECTORS);
+      if (!content || !card) return;
+      /* Cell area minus the 24px panel header. */
+      var available = content.clientHeight - 24;
+      if (available > 0) card.style.minHeight = available + 'px';
+    });
+  }
+
   /* Re-run resizeToContent + maxH lock for the metrics chart panel.
      Called after the canvases inside it change so the cell tracks the
      new content size. Clears maxH first because Gridstack's
@@ -7763,6 +7794,18 @@
            removes the empty metrics-chart panel from the grid until a
            user picks rows from the heat map. */
         updateChartSectionVisibility();
+        /* Visual workaround for the cell-vs-content height gap: after
+           layout settles, stretch each panel's outer card via min-height
+           so the visible card border fills the cell. The auto-fit math
+           is supposed to make these match exactly but Gridstack renders
+           cells taller than h * cellHeight in some configurations and
+           the underlying cause hasn't been isolated. */
+        setTimeout(applyCardFillHeights, 1700);
+        if (window.gridInstance) {
+          gridInstance.on('change resizestop dragstop', function () {
+            requestAnimationFrame(applyCardFillHeights);
+          });
+        }
       });
     })
     .catch(function (err) {
