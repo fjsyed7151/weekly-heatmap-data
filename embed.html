@@ -238,22 +238,24 @@
     /* Right padding pulls the close button slightly inboard so it never
        lands on the east-edge resize hit zone. */
     padding: 0 8px 0 4px;
-    /* Subtle background so the bar reads as window chrome but doesn't
-       compete with content. Different shade in dark mode. */
-    background: rgba(0, 0, 0, 0.025);
+    /* Solid background so the bar reads cleanly when content scrolls
+       behind it. Different shade in dark mode. */
+    background: var(--hm-bg-alt, #efece2);
     border-radius: var(--hm-r) var(--hm-r) 0 0;
     cursor: grab;
     user-select: none;
     gap: 2px;
     color: var(--hm-muted, #8a7e5e);
-    /* Sit above any resize handles that overlap the top of the panel
-       (n / ne edge zones), so clicks on the icons hit the buttons, not
-       the resize cursor underneath. */
-    position: relative;
-    z-index: 2;
+    /* Sticky to the top of the panel cell scroll container so the
+       drag/pin/reset/close icons are always visible no matter how far
+       the user has scrolled inside a shrunk panel. z-index sits above
+       resize handles AND the sticky thead inside the heat map. */
+    position: sticky;
+    top: 0;
+    z-index: 6;
   }
   .hm-app.dark .hm-panel-header {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--hm-bg-alt, #232027);
   }
   .hm-app .hm-panel-header:active { cursor: grabbing; }
   .hm-app .hm-panel-btn {
@@ -708,13 +710,18 @@
   /* Heat map outer wrapper. overflow:visible because the parent grid
      panel cell handles BOTH axes' overflow now — keeping overflow:auto
      here would create a separate sticky containing block and trap the
-     thead inside this element (where it has nowhere to stick to). */
+     thead inside this element (where it has nowhere to stick to).
+     width: max-content extends the card border with a wide table so
+     scrolling right keeps the bordered card visually intact. */
   .hm-app .hm-scroll {
     overflow: visible;
     -webkit-overflow-scrolling: touch;
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     background: var(--hm-panel);
+    width: max-content;
+    min-width: 100%;
+    box-sizing: border-box;
   }
   .hm-app .hm-table {
     border-collapse: separate;
@@ -1586,7 +1593,14 @@
   .hm-app .hm-idx-spark svg { display: block; width: 100%; height: 100%; }
 
   /* Sector performance chart + table */
-  .hm-app .hm-sector-section { margin-bottom: 0; /* Gridstack handles spacing */ }
+  .hm-app .hm-sector-section {
+    margin-bottom: 0; /* Gridstack handles spacing */
+    /* Same as .hm-factors-card: extend with wide content so the gold
+       header bar follows when user scrolls horizontally. */
+    width: max-content;
+    min-width: 100%;
+    box-sizing: border-box;
+  }
   .hm-app .hm-sector-header {
     font-size: 12px;
     font-weight: 700;
@@ -2123,12 +2137,15 @@
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
-    /* No margin-top: in the grid, Gridstack handles inter-panel spacing
-       via its `margin` option.
-       overflow: visible (default): horizontal scroll lives at the panel
-       cell level (.grid-stack-item-content) so the bar stays pinned to
-       the cell's bottom edge as the user vertical-scrolls inside it.
-       Card visually extends with the wide content; the cell clips. */
+    /* width: max-content + min-width: 100% — when the inner table is
+       wider than the panel cell, the card extends with the table so its
+       gold title bar follows. Otherwise (table narrower than cell) the
+       card fills the cell width via min-width. Without this, the header
+       bar stayed at cell width and the wide table content overflowed
+       past it, leaving a dark gap to the right of the header. */
+    width: max-content;
+    min-width: 100%;
+    box-sizing: border-box;
   }
   /* Horizontal scroll wrapper around the 3-column body. When the main column
      is narrower than the body's min-width, the user can scroll sideways
@@ -3552,6 +3569,18 @@
       if (!item.gridstackNode) {
         window.gridInstance._suppressSave = true;
         item.style.display = '';
+        /* Default-position the chart panel directly ABOVE the heat map
+           so it appears in the user's current view (where they just
+           clicked a row), not below where they'd have to scroll to. */
+        var heatmap = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-heatmap-wrap"]');
+        if (heatmap && heatmap.gridstackNode) {
+          var hY = heatmap.gridstackNode.y;
+          var chartH = parseInt(item.getAttribute('gs-h') || 12, 10);
+          item.setAttribute('gs-y', Math.max(0, hY));
+          item.setAttribute('gs-x', heatmap.gridstackNode.x);
+          /* Bump heat map down to make room. */
+          try { window.gridInstance.update(heatmap, { y: hY + chartH }); } catch (e) {}
+        }
         try { window.gridInstance.makeWidget(item); } catch (e) {}
         window.gridInstance._suppressSave = false;
       }
@@ -4151,6 +4180,10 @@
   var TOGGLEABLE_BLOCKS = [
     // Main column
     { id: 'hm-indexes',        label: 'Index cards',           group: 'Main column' },
+    /* hm-gave-wrap is the actual grid panel; the inner gave-quadrant
+       and gave-charts entries below toggle just their own DOM nodes
+       (kept for backward compatibility with older saved hidden lists). */
+    { id: 'hm-gave-wrap',      label: 'Macro Regime (Gave)',   group: 'Main column' },
     { id: 'hm-gave-quadrant',  label: 'Gave Four Quadrants',   group: 'Main column' },
     { id: 'hm-gave-charts',    label: 'Gave companion charts', group: 'Main column' },
     { id: 'hm-macrocompass',   label: 'Credit \u00d7 Policy',  group: 'Main column' },
@@ -7245,7 +7278,6 @@
     var rbtn = document.getElementById('hm-reset-layout');
     if (!rbtn) return;
     rbtn.addEventListener('click', function () {
-      if (!window.confirm('Reset dashboard to default layout? Your custom arrangement will be cleared.')) return;
       try { localStorage.removeItem(LAYOUT_KEY); } catch (e) {}
       try { localStorage.removeItem('hm-pinned-ids'); } catch (e) {}
       window.location.reload();
