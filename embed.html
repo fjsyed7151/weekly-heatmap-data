@@ -2036,6 +2036,21 @@
      by the outer frame border. */
   .hm-app .hm-econ-grid > .hm-econ-card:last-child { border-bottom: none; }
   .hm-app .hm-econ-grid-1 > .hm-econ-card { border-right: none; }
+  /* Strip the LAST-COLUMN border-right so the body's outer border doesn't
+     stack with the card's = double-line look the user reported. Default
+     2-col layout: every other card is last-col. 3-col variant: every 3rd. */
+  .hm-app .hm-econ-grid > .hm-econ-card:nth-child(2n) { border-right: none; }
+  .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(3n) { border-right: none; }
+  /* Container-query overrides (3-col → 2-col → 1-col) need their own
+     last-col stripping when the grid template changes at runtime. */
+  @container (max-width: 360px) {
+    .hm-app .hm-econ-grid-3 > .hm-econ-card { border-right: 1px solid var(--hm-border); }
+    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(2n) { border-right: none; }
+  }
+  @container (max-width: 260px) {
+    .hm-app .hm-econ-grid > .hm-econ-card,
+    .hm-app .hm-econ-grid-3 > .hm-econ-card { border-right: none; }
+  }
   .hm-app .hm-econ-name {
     font-size: 11px;
     font-weight: 600;
@@ -2088,7 +2103,7 @@
     color: var(--hm-white);
     background: var(--hm-gold);
     padding: 8px 12px;
-    border-radius: var(--hm-r) var(--hm-r) 0 0;
+    border-radius: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -2769,7 +2784,7 @@
     color: var(--hm-white);
     background: var(--hm-gold);
     padding: 8px 12px;
-    border-radius: var(--hm-r) var(--hm-r) 0 0;
+    border-radius: 0;
   }
   .hm-app .hm-perf-table {
     width: 100%;
@@ -3983,7 +3998,8 @@
     if (card) {
       goldHeader = card.querySelector(
         '.hm-factors-header, .hm-cal-header, .hm-econ-header, ' +
-        '.hm-sector-header, .hm-mc-top, .hm-gave-top, .hm-stylefactor-header'
+        '.hm-sector-header, .hm-mc-top, .hm-gave-top, .hm-sf-header, ' +
+        '.hm-treemap-header'
       );
     }
     var ghH = goldHeader ? goldHeader.getBoundingClientRect().height : 0;
