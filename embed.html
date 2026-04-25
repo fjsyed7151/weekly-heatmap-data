@@ -3914,14 +3914,23 @@
     '.hm-sector-section',
     '.hm-chart-section',
   ].join(',');
+  /* Panels whose internal layout doesn't tolerate a stretched outer card.
+     gave-wrap stacks two side-by-side cards (quadrant + 3 mini charts);
+     stretching the quadrant card pushes the mini charts past the cell. */
+  var SKIP_FILL_IDS = { 'hm-gave-wrap': 1 };
   function applyCardFillHeights() {
     document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+      if (SKIP_FILL_IDS[item.getAttribute('gs-id')]) return;
       var content = item.querySelector('.grid-stack-item-content');
       var card = item.querySelector(CARD_SELECTORS);
       if (!content || !card) return;
-      /* Cell area minus the 24px panel header. */
-      var available = content.clientHeight - 24;
-      if (available > 0) card.style.minHeight = available + 'px';
+      /* Reset first so we measure the natural height (not last fill's
+         stretched value), then conditionally apply only when there's
+         actually empty space below the card. */
+      card.style.minHeight = '';
+      var natural = card.scrollHeight;
+      var available = content.clientHeight - 24;  /* minus 24px panel header */
+      if (available > natural + 4) card.style.minHeight = available + 'px';
     });
   }
 
