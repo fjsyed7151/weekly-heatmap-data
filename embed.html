@@ -3869,14 +3869,17 @@
       var natural = wrap.scrollHeight;
       if (!natural) return;
       var rows = Math.max(1, Math.ceil(natural / cellH));
-      if (rows === node.h) return;
       window.gridInstance._suppressSave = true;
-      /* Two-step: raise maxH FIRST so the subsequent h update isn't
-         clamped against the old (smaller) cap. Combined update with
-         both keys processes h first and rejects the growth. */
+      /* Chart panel is a special case: don't lock maxH at content height
+         like other panels. Users want to drag the chart taller for better
+         trend visibility, even when the natural canvas size is small.
+         Set maxH wide-open (50 rows = 2000px) so resize is unconstrained,
+         and bump h to the natural so the panel sizes itself when metrics
+         are added/removed. Two-step because update with combined keys
+         processes h first against the OLD maxH and clamps growth. */
       try {
-        window.gridInstance.update(item, { maxH: rows });
-        window.gridInstance.update(item, { h: rows });
+        window.gridInstance.update(item, { maxH: 50 });
+        if (rows !== node.h) window.gridInstance.update(item, { h: rows });
       } catch (e) {}
       window.gridInstance._suppressSave = false;
     }, 50);
