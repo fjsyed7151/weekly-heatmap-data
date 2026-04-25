@@ -251,6 +251,8 @@
     /* Solid background so the bar reads cleanly when content scrolls
        behind it. Different shade in dark mode. */
     background: var(--hm-bg-alt, #efece2);
+    /* Top corners rounded to match the cell's outer radius; bottom
+       corners square so the navbar sits flush against the gold header. */
     border-radius: var(--hm-r) var(--hm-r) 0 0;
     cursor: grab;
     user-select: none;
@@ -743,6 +745,11 @@
   .hm-app .hm-table th:last-child,
   .hm-app .hm-table td:last-child { border-right: none; }
   .hm-app .hm-table tbody tr:last-child td { border-bottom: none; }
+  /* Round the last-row corner cells so the table fills the .hm-scroll
+     wrapper's rounded bottom corners cleanly (otherwise the cell's
+     square background painted past the rounded border = visible cut). */
+  .hm-app .hm-table tbody tr:last-child td:first-child { border-bottom-left-radius: var(--hm-r); }
+  .hm-app .hm-table tbody tr:last-child td:last-child { border-bottom-right-radius: var(--hm-r); }
 
   /* Thead = the gold "metric header" row. position: sticky pins the row
      to the top of the cell's scroll container while user scrolls the
@@ -1620,7 +1627,7 @@
     color: var(--hm-white);
     background: var(--hm-gold);
     padding: 8px 12px;
-    border-radius: var(--hm-r) var(--hm-r) 0 0;
+    border-radius: 0;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1890,7 +1897,7 @@
     color: var(--hm-white);
     background: var(--hm-gold);
     padding: 6px 12px;
-    border-radius: var(--hm-r) var(--hm-r) 0 0;
+    border-radius: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1953,7 +1960,7 @@
     color: var(--hm-white);
     background: var(--hm-gold);
     padding: 8px 12px;
-    border-radius: var(--hm-r) var(--hm-r) 0 0;
+    border-radius: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1993,7 +2000,7 @@
     letter-spacing: 0.4px;
     padding: 8px 12px;
     border-top: 1px solid var(--hm-border);
-    border-bottom: 2px solid var(--hm-border);
+    border-bottom: 1px solid var(--hm-border);  /* single line, was 2px */
   }
   .hm-app .hm-econ-body > .hm-econ-subhead:first-child { border-top: none; }
   /* Grids use explicit column counts (not auto-fit) so 4-item groups like
@@ -2187,6 +2194,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-radius: 0;  /* square top corners — sits flush below panel header */
   }
   .hm-app .hm-factors-periods { display: flex; gap: 4px; }
   .hm-app .hm-factors-period-btn {
@@ -2664,7 +2672,7 @@
     color: var(--hm-white);
     background: var(--hm-gold);
     padding: 8px 12px;
-    border-radius: var(--hm-r) var(--hm-r) 0 0;
+    border-radius: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -3155,19 +3163,23 @@
             </div>
           </div>
           <div class="grid-stack-item" gs-id="hm-macrocompass"  gs-x="3" gs-y="21"  gs-w="6" gs-h="11"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-stylefactor"   gs-x="3" gs-y="32"  gs-w="3" gs-h="7"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-factors"       gs-x="6" gs-y="32"  gs-w="3" gs-h="7"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-fixed-income"  gs-x="3" gs-y="39"  gs-w="6" gs-h="9"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
-          <!-- After y=42 both sidebars have ended — panels below go full-width (w=12, x=0). -->
-          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-x="0" gs-y="48"  gs-w="12" gs-h="10"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="0" gs-y="58"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="0" gs-y="73"  gs-w="12" gs-h="8"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="0" gs-y="81" gs-w="12" gs-h="9"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="0" gs-y="90"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="105" gs-w="12" gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
+          <!-- Middle col (still w=6 so it fits between the two w=3 sidebars).
+               stylefactor + factors stay in the middle column stacked vertically. -->
+          <div class="grid-stack-item" gs-id="hm-stylefactor"   gs-x="3" gs-y="32"  gs-w="6" gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-factors"       gs-x="3" gs-y="41"  gs-w="6" gs-h="11"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
+          <!-- Below sidebars (y>=42 left ends; y>=34 right ends) panels go
+               half-width (w=6) and pair up. No more full-page-width panels
+               by default. -->
+          <div class="grid-stack-item" gs-id="hm-fixed-income"  gs-x="0" gs-y="52"  gs-w="6" gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-x="6" gs-y="52" gs-w="6" gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="0" gs-y="63" gs-w="6" gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="6" gs-y="63" gs-w="6" gs-h="15"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="0" gs-y="78" gs-w="6" gs-h="11"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="6" gs-y="78" gs-w="6" gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="93" gs-w="6" gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
           <!-- Metrics chart panel (always present in grid; shows empty state
                of "0/6 metrics selected" until user picks rows from the heat map). -->
-          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="135" gs-w="12" gs-h="11">
+          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="123" gs-w="12" gs-h="11">
             <div class="grid-stack-item-content">
               <div class="hm-chart-section" id="hm-chart-section">
                 <div class="hm-chart-toolbar">
@@ -3187,7 +3199,7 @@
             </div>
           </div>
           <!-- Weekly heat map table panel. -->
-          <div class="grid-stack-item" gs-id="hm-heatmap-wrap"   gs-x="0" gs-y="146" gs-w="12" gs-h="22">
+          <div class="grid-stack-item" gs-id="hm-heatmap-wrap"   gs-x="0" gs-y="134" gs-w="12" gs-h="22">
             <div class="grid-stack-item-content">
               <div class="hm-scroll" id="hm-heatmap-wrap">
                 <table class="hm-table" id="hm-table"></table>
@@ -7323,12 +7335,10 @@
      and updates on content changes (charts rendering, etc.) automatically. */
 
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
-  /* v3: cellHeight changed from 40 → 1 (and HTML gs-h/gs-y values are
-     scaled by 40 below) so fitToContent's `ceil((wrap+inset)/cellHeight)`
-     gives an EXACT cell height match instead of rounding up to a 40px
-     multiple. Old v2 layouts saved at h=10-style values would render
-     10px tall under v3, so invalidate them on first load. */
-  var LAYOUT_KEY = 'hm-grid-layout-v3';
+  /* v4: default panel widths and pairings changed (factors / fixed-income /
+     global-indexes / etc. moved from full-width to half-width pairs).
+     Invalidate v3 so users get the new defaults on first load. */
+  var LAYOUT_KEY = 'hm-grid-layout-v4';
   var GS_SCALE = 40;
   var gridInstance = null;
 
