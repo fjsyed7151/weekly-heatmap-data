@@ -194,26 +194,13 @@
     min-height: 800px;
   }
   .hm-app .grid-stack-item-content {
-    /* Flex column: injected .hm-panel-header sits on top (fixed height),
-       the panel's card content fills the rest. NOTE: Gridstack positions
-       this via `top:12; bottom:12` (inset). Don't set `height: 100%` here —
-       that combined with top+bottom over-constrains the box and the
-       content overflows the outer grid-stack-item by 12px, eating the
-       vertical gap between panels. */
+    /* Plain block container — children flow naturally so sizeToContent
+       can measure the intrinsic height of header + panel card. */
     background: transparent;
     border-radius: var(--hm-r);
     overflow: visible;  /* Chart.js tooltips, dropdowns etc. can escape */
     padding: 0;
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-  }
-  .hm-app .grid-stack-item-content > .hm-panel-header {
-    flex: 0 0 auto;
-  }
-  .hm-app .grid-stack-item-content > *:not(.hm-panel-header) {
-    flex: 1 1 auto;
-    min-height: 0;
   }
 
   /* Window-style panel header — thin (24px), title-less. Whole bar is the
@@ -276,77 +263,13 @@
     color: #c0392b;
   }
   .hm-app .hm-panel-btn svg { width: 13px; height: 13px; display: block; }
-  /* Chart panels: opt-in fill chain from grid item → canvas wrap so the
-     canvas grows when users resize a panel taller. resizestop pokes
-     Chart.js so canvases remeasure on drag-end. */
-  .hm-app #hm-sector-chart,
-  .hm-app #hm-sector-chart > .hm-sector-section {
-    display: flex;
-    flex-direction: column;
-  }
-  .hm-app #hm-sector-chart > .hm-sector-section {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  .hm-app #hm-sector-chart-area {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 320px;
-  }
-  /* Each panel's outer card fills the grid cell so its border tracks the
-     user's resize. Without this, resizing a grid item taller leaves the
-     card sitting at the top with empty space below where the card's
-     border *should* be — looks like a layout bug. With height:100% the
-     card stretches; surplus is empty padding INSIDE the card border. */
-  .hm-app .hm-commod-section,
-  .hm-app .hm-fx-section,
-  .hm-app .hm-cal-section,
-  .hm-app .hm-econ-section,
-  .hm-app .hm-gave,
-  .hm-app .hm-factors-card,
-  .hm-app .hm-stylefactor,
-  .hm-app .hm-mc {
-    height: 100%;
-    /* Flex column so scrollable inner sections (.hm-factors-scroll, etc.)
-       can stretch to fill via flex:1. Cards without scroll wrappers just
-       show empty space at the bottom inside the border — fine. */
-    display: flex;
-    flex-direction: column;
-  }
-  /* Internal scroll wrapper inside .hm-factors-card grows to fill. */
-  .hm-app .hm-factors-scroll {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  /* Indexes is a CSS grid (4 sparkline cards) — preserve that layout, just
-     stretch the wrapper to the grid cell height. */
-  .hm-app .hm-indexes {
-    height: 100%;
-  }
+  /* Panel cards take their natural content height. Grid items auto-fit
+     to match via Gridstack's sizeToContent option, so the grid cell and
+     the card border are always exactly the size of the rendered content
+     — no empty unbordered space below the card. */
 
-  /* Gave four-quadrants panel: the wrap holds quadrant + three mini-charts
-     in a column. Let the mini-charts row stretch when the panel grows. */
-  .hm-app #hm-gave-wrap {
-    display: flex;
-    flex-direction: column;
-  }
-  .hm-app #hm-gave-charts {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  .hm-app .hm-gave-charts {
-    height: 100%;
-  }
-  .hm-app .hm-gave-chart {
-    display: flex;
-    flex-direction: column;
-  }
-  .hm-app .hm-gave-chart-canvas {
-    flex: 1 1 auto;
-    min-height: 100px;
-    position: relative;
-  }
+  /* Gave four-quadrants panel: natural-height stack of quadrant + three
+     mini charts. sizeToContent on the grid measures the full stack. */
   /* While dragging: highlight the ghost placeholder (the faint outline
      showing where the item will drop). */
   .hm-app .grid-stack > .grid-stack-placeholder > .placeholder-content {
@@ -1678,19 +1601,11 @@
     border-top: none;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 16px;
-    /* Flex column so #hm-sector-chart-area can flex:1 and fill the body.
-       overflow auto so if user resizes panel smaller than content fits,
-       content scrolls inside the panel instead of overflowing past its
-       bottom edge (which was bleeding into the panel below). */
-    display: flex;
-    flex-direction: column;
-    overflow: auto;
-    min-height: 0;
+    overflow-x: auto;
   }
   .hm-app .hm-sector-canvas-wrap {
     position: relative;
-    flex: 1 1 auto;
-    min-height: 320px;       /* Floor — never smaller than original design */
+    height: 320px;
     margin-bottom: 8px;
   }
   .hm-app .hm-sector-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
@@ -7322,14 +7237,19 @@
 
     /* Inject Windows-style header bar into every grid-stack-item. Must happen
        BEFORE GridStack.init — the draggable.handle selector is bound at
-       init time, so the handle elements need to exist already. */
+       init time, so the handle elements need to exist already. We wrap
+       header + panel content in a single .hm-panel-wrap so that
+       Gridstack's resizeToContent (which measures
+       .grid-stack-item-content's firstElementChild) sees the FULL height
+       — header + content — instead of just the 24px header. */
     document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
       var content = item.querySelector('.grid-stack-item-content');
-      if (!content || content.querySelector('.hm-panel-header')) return;
+      if (!content || content.querySelector('.hm-panel-wrap')) return;
+      var existing = Array.from(content.children);
+      var wrap = document.createElement('div');
+      wrap.className = 'hm-panel-wrap';
       var header = document.createElement('div');
       header.className = 'hm-panel-header';
-      /* Icons only — the panel's own card already shows its title, so a
-         second title here would just be visual noise. */
       header.innerHTML =
         '<button class="hm-panel-btn hm-panel-pin" type="button" data-action="pin" title="Pin to top" aria-label="Pin to top">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/></svg>' +
@@ -7340,8 +7260,9 @@
         '<button class="hm-panel-btn hm-panel-close" type="button" data-action="close" title="Hide panel (re-add via Customize view)" aria-label="Hide panel">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>' +
         '</button>';
-      /* Prepend so the header sits above the panel's own content. */
-      content.insertBefore(header, content.firstChild);
+      wrap.appendChild(header);
+      existing.forEach(function (el) { wrap.appendChild(el); });
+      content.appendChild(wrap);
     });
 
     gridInstance = GridStack.init({
@@ -7425,8 +7346,11 @@
       }
     }, true);
 
-    /* Persist layout on every change (drag end, resize end, item removed). */
+    /* Persist layout on every change (drag end, resize end, item removed).
+       Skipped while the post-load fit-to-content pass runs so the auto
+       sizing isn't persisted as a user customization. */
     gridInstance.on('change removed added', function () {
+      if (gridInstance._suppressSave) return;
       try {
         var layout = gridInstance.save(false);  /* false: positions only, no content */
         localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
@@ -7662,6 +7586,24 @@
         }
       });
       safeRender('gridstack', initGridStack);
+      /* After Gridstack is initialized AND all renderers have populated
+         their panels, fit each grid item's height to its content. This
+         is the one-time pass that makes panel heights match content size
+         exactly — no empty unbordered space, no clipped content. */
+      safeRender('fitToContent', function () {
+        if (!window.gridInstance) return;
+        /* Two passes: immediate, plus one at 1500ms to catch late-paint
+           charts (Chart.js animation finishing, etc.) */
+        function fitAll() {
+          window.gridInstance._suppressSave = true;
+          document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+            try { window.gridInstance.resizeToContent(item); } catch (e) {}
+          });
+          window.gridInstance._suppressSave = false;
+        }
+        fitAll();
+        setTimeout(fitAll, 1500);
+      });
     })
     .catch(function (err) {
       document.getElementById("hm-table").innerHTML =
