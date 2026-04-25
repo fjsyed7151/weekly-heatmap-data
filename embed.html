@@ -3537,12 +3537,32 @@
   }
 
   function updateChartSectionVisibility() {
-    /* The metrics chart panel is now always present in the grid — the
-       inner section's `hidden` toggle is the only thing this function
-       used to do. We hide just the canvases area when no rows are
-       selected so the toolbar with "0/6 metrics selected" still shows. */
+    /* When no metrics are selected, fully remove the chart panel from the
+       grid so other panels reflow up to fill the gap (and the empty
+       "0/6 metrics selected" toolbar isn't taking space). On the next
+       selection, makeWidget re-attaches the same DOM node so any saved
+       layout/position is preserved without re-rendering charts. */
+    if (!window.gridInstance) return;
+    var item = document.querySelector('.grid-stack-item[gs-id="hm-chart-section"]');
+    if (!item) return;
+    var hasSelection = chartState.selected.length > 0;
     var canvases = document.getElementById('hm-chart-canvases');
-    if (canvases) canvases.style.display = chartState.selected.length > 0 ? '' : 'none';
+    if (canvases) canvases.style.display = hasSelection ? '' : 'none';
+    if (hasSelection) {
+      if (!item.gridstackNode) {
+        window.gridInstance._suppressSave = true;
+        item.style.display = '';
+        try { window.gridInstance.makeWidget(item); } catch (e) {}
+        window.gridInstance._suppressSave = false;
+      }
+    } else {
+      if (item.gridstackNode) {
+        window.gridInstance._suppressSave = true;
+        try { window.gridInstance.removeWidget(item, false, false); } catch (e) {}
+        item.style.display = 'none';
+        window.gridInstance._suppressSave = false;
+      }
+    }
   }
   function updateCheckboxAvailability() {
     var atMax = chartState.selected.length >= MAX_METRICS;
@@ -7710,6 +7730,10 @@
         }
         fitAll();
         setTimeout(fitAll, 1500);
+        /* Apply the no-selection state once gridInstance is live: this
+           removes the empty metrics-chart panel from the grid until a
+           user picks rows from the heat map. */
+        updateChartSectionVisibility();
       });
     })
     .catch(function (err) {
