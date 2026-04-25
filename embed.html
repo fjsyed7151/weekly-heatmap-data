@@ -7267,7 +7267,12 @@
     gridInstance = GridStack.init({
       column: 12,
       cellHeight: 40,
-      margin: 12,                              /* 12px per item border → 24px total gap between items */
+      /* Asymmetric margin: 12px sides → 24px horizontal gap between panels;
+         6px top/bottom → 12px vertical gap. Smaller vertical because the
+         injected window-style header bar already adds visual breathing
+         room at the top of each panel — at 24px vertical the page felt
+         too "loose" stacked. */
+      marginLeft: 12, marginRight: 12, marginTop: 6, marginBottom: 6,
       /* float: true preserves explicit gs-y positions (no auto-compact).
          Critical here because our 3-6-3 default has gaps below the
          sidebar columns; with float: false those gaps would pull main
