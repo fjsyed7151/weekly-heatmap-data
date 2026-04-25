@@ -193,16 +193,16 @@
     background: transparent;
     min-height: 800px;
   }
-  /* High specificity to win against Gridstack's default rule. When the
-     user shrinks a panel below its content height, the cell scrolls
-     vertically so the clipped rows are still reachable. At default size
-     the cell exactly matches content (fitToContent + maxH cap), so the
-     scrollbar is invisible most of the time. */
+  /* High specificity to win against Gridstack's default rule. The cell
+     handles BOTH overflow directions, so the horizontal scrollbar pins
+     to the panel's bottom edge regardless of how far the user has
+     scrolled vertically (industry-standard sticky-scrollbar pattern,
+     same as Bloomberg / Koyfin / Linear data tables). At default size
+     content matches cell exactly so scrollbars stay hidden. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content {
     background: transparent;
     border-radius: var(--hm-r);
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: auto;
     padding: 0;
     box-sizing: border-box;
     scrollbar-width: thin;
@@ -210,6 +210,7 @@
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-thumb {
     background: var(--hm-gold);
@@ -221,6 +222,9 @@
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-track {
     background: var(--hm-bg-alt);
     border-radius: 4px;
+  }
+  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-corner {
+    background: var(--hm-bg-alt);
   }
 
   /* Window-style panel header — thin (24px), title-less. Whole bar is the
@@ -2092,35 +2096,20 @@
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     /* No margin-top: in the grid, Gridstack handles inter-panel spacing
-       via its `margin` option. The old 24px top margin was for the
-       pre-grid stacking layout and now creates a visible gap above each
-       panel's gold header. */
-    overflow: hidden;
+       via its `margin` option.
+       overflow: visible (default): horizontal scroll lives at the panel
+       cell level (.grid-stack-item-content) so the bar stays pinned to
+       the cell's bottom edge as the user vertical-scrolls inside it.
+       Card visually extends with the wide content; the cell clips. */
   }
   /* Horizontal scroll wrapper around the 3-column body. When the main column
      is narrower than the body's min-width, the user can scroll sideways
      instead of the rightmost column being clipped. */
+  /* Horizontal overflow handled by the outer panel cell — no inner scroll
+     wrapper here. Wide tables extend the card visually; the cell scrollbar
+     stays pinned at the bottom edge of the visible panel. */
   .hm-app .hm-factors-scroll {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-  .hm-app .hm-factors-scroll::-webkit-scrollbar { height: 8px; }
-  .hm-app .hm-factors-scroll::-webkit-scrollbar-thumb {
-    background: var(--hm-gold);
-    border-radius: 4px;
-  }
-  .hm-app .hm-factors-scroll::-webkit-scrollbar-thumb:hover {
-    background: #b08824;
-  }
-  .hm-app .hm-factors-scroll::-webkit-scrollbar-track {
-    background: var(--hm-bg-alt);
-    border-radius: 4px;
-  }
-  /* Firefox horizontal scrollbar styling for the same factors-scroll wrapper. */
-  .hm-app .hm-factors-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: var(--hm-gold) var(--hm-bg-alt);
+    overflow: visible;
   }
   .hm-app .hm-factors-header {
     font-size: 12px;
