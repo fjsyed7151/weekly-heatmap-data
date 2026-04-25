@@ -7802,7 +7802,15 @@
            the underlying cause hasn't been isolated. */
         setTimeout(applyCardFillHeights, 1700);
         if (window.gridInstance) {
-          gridInstance.on('change resizestop dragstop', function () {
+          /* Only re-run on user-driven resize/drag END — NOT on every
+             'change' event. 'change' fires for size adjustments triggered
+             by the fill itself (or by Chart.js responsive resize), and
+             that creates a feedback loop where charts (sector / gave /
+             index sparklines) infinitely scroll/resize horizontally. */
+          gridInstance.on('resizestop', function () {
+            requestAnimationFrame(applyCardFillHeights);
+          });
+          gridInstance.on('dragstop', function () {
             requestAnimationFrame(applyCardFillHeights);
           });
         }
