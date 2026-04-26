@@ -2035,12 +2035,13 @@
     position: relative;
   }
   /* Strip trailing bottom border so the last row's cards sit flush with the
-     body's bottom edge. Right-border stripping by nth-child doesn't work with
-     auto-fit (column count varies), so we keep a border-right on every card
-     and let the body's own border-right on the rightmost column be obscured
-     by the outer frame border. */
+     body's bottom edge. Strip right border on the LAST column so the card
+     border doesn't double-up with the section's outer right edge (was
+     making M2 YOY's right border look thick / its left look missing). */
   .hm-app .hm-econ-grid > .hm-econ-card:last-child { border-bottom: none; }
   .hm-app .hm-econ-grid-1 > .hm-econ-card { border-right: none; }
+  .hm-app .hm-econ-grid > .hm-econ-card:nth-child(2n) { border-right: none; }
+  .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(3n) { border-right: none; }
   /* Strip the LAST-COLUMN border-right so the body's outer border doesn't
      stack with the card's = double-line look the user reported. Default
      2-col layout: every other card is last-col. 3-col variant: every 3rd. */
@@ -3180,7 +3181,21 @@
              10. METRICS CHART (hidden until rows picked)
              11. HEAT MAP (bottom deep dive)               — full width
           -->
-          <div class="grid-stack-item" gs-id="hm-indexes"        gs-x="0" gs-y="0"   gs-w="12" gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
+          <!--
+            DEFAULT LAYOUT (v7):
+              y=0   Indexes(w=6) | Calendar(w=3) | Economy(w=3)
+              y=4   Gave(w=6)
+              y=14                | Stylefactor(w=3) — 1/4 page width
+              y=20                |                  | (economy ends)
+              y=24  Macrocompass(w=6) | Factors(w=6)
+              y=38-65: Fixed-income / Global / Country / Commodity perf — full width
+              y=65  Sector(w=6) | Currency-matrix(w=6) + Theme-treemap stacked
+              y=...: Commodities(w=6) | Currencies(w=6)
+              y=...: Heatmap(w=12)
+          -->
+          <div class="grid-stack-item" gs-id="hm-indexes"        gs-x="0" gs-y="0"   gs-w="6"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-calendar"       gs-x="6" gs-y="0"   gs-w="3"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-economy"        gs-x="9" gs-y="0"   gs-w="3"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-gave-wrap"      gs-x="0" gs-y="4"   gs-w="6"  gs-h="20">
             <div class="grid-stack-item-content">
               <div class="hm-gave-wrap" id="hm-gave-wrap">
@@ -3189,23 +3204,22 @@
               </div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-macrocompass"   gs-x="6" gs-y="4"   gs-w="6"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-stylefactor"    gs-x="0" gs-y="24"  gs-w="6"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-stylefactor"    gs-x="6" gs-y="14"  gs-w="3"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-macrocompass"   gs-x="0" gs-y="24"  gs-w="6"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-factors"        gs-x="6" gs-y="24"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="35"  gs-w="6"  gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-fixed-income"   gs-x="6" gs-y="35"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-x="6" gs-y="46"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="6" gs-y="57"  gs-w="6"  gs-h="8"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="0" gs-y="65"  gs-w="6"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="6" gs-y="65" gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="6" gs-y="76"  gs-w="6"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodities"    gs-x="0" gs-y="80"  gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currencies"     gs-x="6" gs-y="91"  gs-w="6"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-calendar"       gs-x="0" gs-y="102" gs-w="6"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-economy"        gs-x="6" gs-y="111" gs-w="6"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <!-- Wide ranking tables — full width so all columns are visible. -->
+          <div class="grid-stack-item" gs-id="hm-fixed-income"   gs-x="0" gs-y="38"  gs-w="12" gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-x="0" gs-y="49"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="6" gs-y="49" gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="0" gs-y="60"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="0" gs-y="75"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="90"  gs-w="6"  gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="6" gs-y="90"  gs-w="6"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-commodities"    gs-x="6" gs-y="105" gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currencies"     gs-x="0" gs-y="120" gs-w="6"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
           <!-- Metrics chart panel (always present in grid; shows empty state
                of "0/6 metrics selected" until user picks rows from the heat map). -->
-          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="131" gs-w="12" gs-h="11">
+          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="140" gs-w="12" gs-h="11">
             <div class="grid-stack-item-content">
               <div class="hm-chart-section" id="hm-chart-section">
                 <div class="hm-chart-toolbar">
@@ -3225,7 +3239,7 @@
             </div>
           </div>
           <!-- Weekly heat map table panel. -->
-          <div class="grid-stack-item" gs-id="hm-heatmap-wrap"   gs-x="0" gs-y="142" gs-w="12" gs-h="22">
+          <div class="grid-stack-item" gs-id="hm-heatmap-wrap"   gs-x="0" gs-y="151" gs-w="12" gs-h="22">
             <div class="grid-stack-item-content">
               <div class="hm-scroll" id="hm-heatmap-wrap">
                 <table class="hm-table" id="hm-table"></table>
@@ -7362,12 +7376,9 @@
      and updates on content changes (charts rendering, etc.) automatically. */
 
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
-  /* v6: logical default layout — top-down read order from market overview
-     (indexes) through regime context (gave + macrocompass), equity factors,
-     sector deep dive, cross-asset rankings, asset-class tables, calendar/
-     economy, then heat map at the bottom. All panels paired w=6 except
-     indexes and heat map (full width). Invalidate older saved layouts. */
-  var LAYOUT_KEY = 'hm-grid-layout-v6';
+  /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
+     to full width so all columns are visible. */
+  var LAYOUT_KEY = 'hm-grid-layout-v7';
   var GS_SCALE = 40;
   var gridInstance = null;
 
