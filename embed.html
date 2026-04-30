@@ -1068,6 +1068,43 @@
     vertical-align: middle;
   }
   .hm-app .hm-commod-spark svg { display: block; width: 100%; height: 100%; }
+  /* Small subtitle row above each table — shows data freshness. */
+  .hm-app .hm-tbl-caption {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--hm-muted);
+    text-align: right;
+    padding: 2px 4px 4px;
+    letter-spacing: 0.2px;
+  }
+  .hm-app .hm-tbl-caption-note {
+    margin-left: 8px;
+    font-style: italic;
+    opacity: 0.85;
+  }
+  /* 52-week range bar — replaces the numeric "% 52W High" column. Track is
+     a neutral grey line, dot marks where `last` sits between the 52w low
+     (left) and high (right). Dot is heat-painted by the same score as the
+     old numeric cell, so green = at high, red = at low. For inverse FX
+     pairs (X/USD) the dot color is flipped so green always = USD strong. */
+  .hm-app .hm-w52-bar {
+    display: inline-block;
+    width: 80px;
+    height: 12px;
+    vertical-align: middle;
+  }
+  .hm-app .hm-w52-bar svg { display: block; width: 100%; height: 100%; }
+  .hm-app .hm-unit {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--hm-muted);
+    margin-left: 4px;
+    opacity: 0.8;
+  }
+  /* Anomaly cell: dimmed dash. Used when a contract rollover or feed
+     glitch produced an impossible daily change (see _is_anomalous in
+     build.py). Hides the bogus number rather than flashing -98%. */
+  .hm-app .hm-anom { color: var(--hm-muted); opacity: 0.6; }
 
   /* Currencies table — shares all styling with commodities */
   .hm-app .hm-fx-wrap {
@@ -5189,6 +5226,63 @@
     container.appendChild(grid);
   }
 
+  /* ---------- Shared helpers for currency / commodity tables ---------- */
+
+  /* Sparkline SVG from an array of numbers. Used by both tables. */
+  function _buildSparkSvg(spark, isUp) {
+    if (!spark || spark.length < 2) return '';
+    var mn = Math.min.apply(null, spark);
+    var mx = Math.max.apply(null, spark);
+    var range = mx - mn || 1;
+    var w = 60, h = 20;
+    var stepX = w / (spark.length - 1);
+    var points = spark.map(function (v, i) {
+      return (i * stepX).toFixed(1) + ',' + (h - ((v - mn) / range) * h).toFixed(1);
+    }).join(' ');
+    var sparkColor = isUp ? '#1a7a42' : '#d42a20';
+    return (
+      '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+        '<polyline points="' + points + '" fill="none" stroke="' + sparkColor + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+      '</svg>'
+    );
+  }
+
+  /* 52-week range bar — neutral track + heat-colored dot at the current
+     position. `score` drives dot color (already flipped for inverse FX
+     pairs by the caller). */
+  function _build52wRangeSvg(low, high, last, score, theme) {
+    var w = 80, h = 12;
+    var paint = cellPaint(score, theme, 'pos');
+    var pos = (high > low) ? Math.max(0, Math.min(1, (last - low) / (high - low))) : 0.5;
+    var x = pos * w;
+    var trackColor = theme === 'dark' ? '#2a2f3a' : '#e5e1d6';
+    var dotColor = paint.bg || (score >= 0 ? '#1a7a42' : '#d42a20');
+    return (
+      '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+        '<line x1="2" y1="' + (h / 2) + '" x2="' + (w - 2) + '" y2="' + (h / 2) +
+          '" stroke="' + trackColor + '" stroke-width="3" stroke-linecap="round"/>' +
+        '<circle cx="' + x.toFixed(1) + '" cy="' + (h / 2) + '" r="3" fill="' + dotColor +
+          '" stroke="rgba(255,255,255,0.85)" stroke-width="0.8"/>' +
+      '</svg>'
+    );
+  }
+
+  /* Format YTD or % Chg with sign, return [html, cls]. Dash for null/anomaly. */
+  function _fmtPct(v) {
+    if (v === null || v === undefined) return ['<span class="hm-anom">—</span>', ''];
+    var sign = v >= 0 ? '+' : '';
+    var cls = v >= 0 ? 'up' : 'down';
+    return [sign + v.toFixed(2) + '%', cls];
+  }
+
+  /* "X/USD" pairs are USD-quote — when the rate goes up, USD WEAKENS. So for
+     the heat-color score we flip the sign so green always = USD strong,
+     red always = USD weak. USDJPY-style pairs (USD-base) keep the original
+     score (rate up = USD strong). */
+  function _isUsdQuote(pairLabel) {
+    return /\/USD$/.test(pairLabel || '');
+  }
+
   function renderCommodities(data) {
     var container = document.getElementById('hm-commodities');
     if (!container || !data.commodities || !data.commodities.length) return;
@@ -5198,67 +5292,72 @@
     var section = document.createElement('div');
     section.className = 'hm-commod-section';
 
+    /* Subtitle: data freshness + honest label about what these prices are.
+       Yahoo's =F tickers are continuous front-month, NOT a specific contract,
+       so don't pretend otherwise. */
+    var caption = document.createElement('div');
+    caption.className = 'hm-tbl-caption';
+    caption.innerHTML =
+      'Daily close · ' + (data.as_of || '—') +
+      '<span class="hm-tbl-caption-note">Front-month continuous</span>';
+    section.appendChild(caption);
+
     var wrap = document.createElement('div');
     wrap.className = 'hm-commod-wrap';
 
     var table = document.createElement('table');
     table.className = 'hm-commod-tbl';
-    /* All headers in one gold bar (like metrics table) */
     table.innerHTML =
       '<thead><tr>' +
         '<th>Commodity</th>' +
         '<th>Last</th>' +
         '<th>Chg</th>' +
         '<th>% Chg</th>' +
-        '<th>% 52W High</th>' +
+        '<th>YTD</th>' +
+        '<th>52W Range</th>' +
         '<th>Trend</th>' +
       '</tr></thead>';
 
     var tbody = document.createElement('tbody');
 
     data.commodities.forEach(function (group) {
-      /* Category row matching metrics table section rows */
       var catTr = document.createElement('tr');
       catTr.className = 'hm-commod-cat';
-      catTr.innerHTML = '<td colspan="6">' + group.name + '</td>';
+      catTr.innerHTML = '<td colspan="7">' + group.name + '</td>';
       tbody.appendChild(catTr);
 
       group.items.forEach(function (c) {
         var tr = document.createElement('tr');
-        var sign = c.change >= 0 ? '+' : '';
-        var cls = c.change >= 0 ? 'up' : 'down';
+        var isUp = (c.change_pct || 0) >= 0;
+        var sparkSvg = _buildSparkSvg(c.sparkline || [], isUp);
 
-        /* Build sparkline SVG */
-        var spark = c.sparkline || [];
-        var sparkSvg = '';
-        if (spark.length >= 2) {
-          var mn = Math.min.apply(null, spark);
-          var mx = Math.max.apply(null, spark);
-          var range = mx - mn || 1;
-          var w = 60, h = 20;
-          var stepX = w / (spark.length - 1);
-          var points = spark.map(function (v, i) {
-            return (i * stepX).toFixed(1) + ',' + (h - ((v - mn) / range) * h).toFixed(1);
-          }).join(' ');
-          var sparkColor = c.change >= 0 ? '#1a7a42' : '#d42a20';
-          sparkSvg =
-            '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
-              '<polyline points="' + points + '" fill="none" stroke="' + sparkColor + '" stroke-width="1.5" stroke-linejoin="round"/>' +
-            '</svg>';
-        }
-
-        /* Heat-map color for % of 52W High
-           Normalize: 100 = at high (full green), 50 = mid (neutral), 0 = bottom (full red)
-           Score = (pct - 50) / 50, range -1 to +1 */
+        /* Heat score: where in 52w range. -1 = at low, +1 = at high. */
         var pctScore = Math.max(-1, Math.min(1, (c.pct_of_high - 50) / 50));
-        var paint = cellPaint(pctScore, theme, 'pos');
+        var rangeSvg = _build52wRangeSvg(c.w52_low, c.w52_high, c.price, pctScore, theme);
+
+        /* Change cells: show dash for anomalies. */
+        var chgHtml, chgPctHtml, chgCls;
+        if (c.anomaly || c.change === null || c.change === undefined) {
+          chgHtml = '<span class="hm-anom">—</span>';
+          chgPctHtml = '<span class="hm-anom">—</span>';
+          chgCls = '';
+        } else {
+          var sign = c.change >= 0 ? '+' : '';
+          chgCls = c.change >= 0 ? 'up' : 'down';
+          chgHtml = sign + c.change.toFixed(2);
+          chgPctHtml = sign + c.change_pct.toFixed(2) + '%';
+        }
+        var ytd = _fmtPct(c.ytd_pct);
+
+        var unitHtml = c.unit ? '<span class="hm-unit">' + c.unit + '</span>' : '';
 
         tr.innerHTML =
-          '<td>' + c.name + '<span class="hm-ticker">' + c.ticker + '</span></td>' +
+          '<td>' + c.name + '<span class="hm-ticker">' + c.ticker + '</span>' + unitHtml + '</td>' +
           '<td>' + c.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>' +
-          '<td class="hm-commod-chg ' + cls + '">' + sign + c.change.toFixed(2) + '</td>' +
-          '<td class="hm-commod-chg ' + cls + '">' + sign + c.change_pct.toFixed(2) + '%</td>' +
-          '<td class="hm-pct-keep" style="background:' + paint.bg + ';color:' + paint.fg + '">' + c.pct_of_high.toFixed(1) + '%</td>' +
+          '<td class="hm-commod-chg ' + chgCls + '">' + chgHtml + '</td>' +
+          '<td class="hm-commod-chg ' + chgCls + '">' + chgPctHtml + '</td>' +
+          '<td class="hm-commod-chg ' + ytd[1] + '">' + ytd[0] + '</td>' +
+          '<td><span class="hm-w52-bar">' + rangeSvg + '</span></td>' +
           '<td><span class="hm-commod-spark">' + sparkSvg + '</span></td>';
 
         tbody.appendChild(tr);
@@ -5280,6 +5379,14 @@
     var section = document.createElement('div');
     section.className = 'hm-fx-section';
 
+    /* Subtitle: data freshness + USD-perspective color note. */
+    var caption = document.createElement('div');
+    caption.className = 'hm-tbl-caption';
+    caption.innerHTML =
+      'Daily close · ' + (data.as_of || '—') +
+      '<span class="hm-tbl-caption-note">Color: green = USD strong, red = USD weak</span>';
+    section.appendChild(caption);
+
     var wrap = document.createElement('div');
     wrap.className = 'hm-fx-wrap';
 
@@ -5291,7 +5398,8 @@
         '<th>Last</th>' +
         '<th>Chg</th>' +
         '<th>% Chg</th>' +
-        '<th>% 52W High</th>' +
+        '<th>YTD</th>' +
+        '<th>52W Range</th>' +
         '<th>Trend</th>' +
       '</tr></thead>';
 
@@ -5300,42 +5408,43 @@
     data.currencies.forEach(function (group) {
       var catTr = document.createElement('tr');
       catTr.className = 'hm-fx-cat';
-      catTr.innerHTML = '<td colspan="6">' + group.name + '</td>';
+      catTr.innerHTML = '<td colspan="7">' + group.name + '</td>';
       tbody.appendChild(catTr);
 
       group.items.forEach(function (c) {
         var tr = document.createElement('tr');
-        var sign = c.change >= 0 ? '+' : '';
-        var cls = c.change >= 0 ? 'up' : 'down';
         var dec = c.decimals || 4;
+        var isUp = (c.change_pct || 0) >= 0;
+        var sparkSvg = _buildSparkSvg(c.sparkline || [], isUp);
 
-        var spark = c.sparkline || [];
-        var sparkSvg = '';
-        if (spark.length >= 2) {
-          var mn = Math.min.apply(null, spark);
-          var mx = Math.max.apply(null, spark);
-          var range = mx - mn || 1;
-          var w = 60, h = 20;
-          var stepX = w / (spark.length - 1);
-          var points = spark.map(function (v, i) {
-            return (i * stepX).toFixed(1) + ',' + (h - ((v - mn) / range) * h).toFixed(1);
-          }).join(' ');
-          var sparkColor = c.change >= 0 ? '#1a7a42' : '#d42a20';
-          sparkSvg =
-            '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
-              '<polyline points="' + points + '" fill="none" stroke="' + sparkColor + '" stroke-width="1.5" stroke-linejoin="round"/>' +
-            '</svg>';
-        }
-
+        /* Heat score: where in 52w range, then flipped for inverse pairs
+           (X/USD) so the dot color is always from a USD perspective —
+           green = USD strong, red = USD weak — regardless of pair direction. */
         var pctScore = Math.max(-1, Math.min(1, (c.pct_of_high - 50) / 50));
-        var paint = cellPaint(pctScore, theme, 'pos');
+        if (_isUsdQuote(c.ticker)) pctScore = -pctScore;
+        var rangeSvg = _build52wRangeSvg(c.w52_low, c.w52_high, c.price, pctScore, theme);
+
+        /* Change cells: dash on anomaly. */
+        var chgHtml, chgPctHtml, chgCls;
+        if (c.anomaly || c.change === null || c.change === undefined) {
+          chgHtml = '<span class="hm-anom">—</span>';
+          chgPctHtml = '<span class="hm-anom">—</span>';
+          chgCls = '';
+        } else {
+          var sign = c.change >= 0 ? '+' : '';
+          chgCls = c.change >= 0 ? 'up' : 'down';
+          chgHtml = sign + c.change.toFixed(dec);
+          chgPctHtml = sign + c.change_pct.toFixed(2) + '%';
+        }
+        var ytd = _fmtPct(c.ytd_pct);
 
         tr.innerHTML =
           '<td>' + c.name + '<span class="hm-ticker">' + c.ticker + '</span></td>' +
           '<td>' + c.price.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec }) + '</td>' +
-          '<td class="hm-fx-chg ' + cls + '">' + sign + c.change.toFixed(dec) + '</td>' +
-          '<td class="hm-fx-chg ' + cls + '">' + sign + c.change_pct.toFixed(2) + '%</td>' +
-          '<td class="hm-pct-keep" style="background:' + paint.bg + ';color:' + paint.fg + '">' + c.pct_of_high.toFixed(1) + '%</td>' +
+          '<td class="hm-fx-chg ' + chgCls + '">' + chgHtml + '</td>' +
+          '<td class="hm-fx-chg ' + chgCls + '">' + chgPctHtml + '</td>' +
+          '<td class="hm-fx-chg ' + ytd[1] + '">' + ytd[0] + '</td>' +
+          '<td><span class="hm-w52-bar">' + rangeSvg + '</span></td>' +
           '<td><span class="hm-fx-spark">' + sparkSvg + '</span></td>';
 
         tbody.appendChild(tr);
