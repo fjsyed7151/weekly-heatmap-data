@@ -1098,7 +1098,7 @@
   .hm-app .hm-w52-track {
     flex: 1 1 auto;
     display: block;
-    height: 14px;
+    height: 18px;
     min-width: 28px;
   }
   .hm-app .hm-w52-track svg { display: block; width: 100%; height: 100%; }
@@ -5298,7 +5298,14 @@
      itself is the data, color isn't carrying meaning. */
   function _build52wRangeBar(low, high, last, decimals, theme) {
     var pos = (high > low) ? Math.max(0, Math.min(1, (last - low) / (high - low))) : 0.5;
-    var x = (pos * 100).toFixed(1);
+    /* Position range is inset to [3, 97] (viewBox units) so the 5px round
+       cap on the marker stroke (2.5px past each endpoint, in screen px)
+       stays fully inside the SVG even when the marker sits at the 52w
+       low (pos=0) or high (pos=1). Track is inset to match so the
+       marker's left-most position aligns with the track's left cap. */
+    var INSET = 3;
+    var trackEnd = 100 - INSET;
+    var x = (INSET + pos * (trackEnd - INSET)).toFixed(1);
     var trackColor = theme === 'dark' ? '#2a2f3a' : '#e5e1d6';
     var fmt = function (v) {
       return v.toLocaleString(undefined, {
@@ -5306,14 +5313,16 @@
         maximumFractionDigits: decimals,
       });
     };
+    /* viewBox height 18 leaves room for the 5px round cap at the marker's
+       top/bottom (2.5px past each endpoint). Track at y=9 (vertical center). */
     return (
       '<span class="hm-w52-lo">' + fmt(low) + '</span>' +
       '<span class="hm-w52-track">' +
-        '<svg viewBox="0 0 100 14" preserveAspectRatio="none">' +
-          '<line x1="0" y1="7" x2="100" y2="7" stroke="' + trackColor +
-            '" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
-          '<line x1="' + x + '" y1="1" x2="' + x + '" y2="13" stroke="#daa520' +
-            '" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+        '<svg viewBox="0 0 100 18" preserveAspectRatio="none">' +
+          '<line x1="' + INSET + '" y1="9" x2="' + trackEnd + '" y2="9" stroke="' + trackColor +
+            '" stroke-width="5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+          '<line x1="' + x + '" y1="3" x2="' + x + '" y2="15" stroke="#daa520' +
+            '" stroke-width="5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
         '</svg>' +
       '</span>' +
       '<span class="hm-w52-hi">' + fmt(high) + '</span>'
