@@ -2821,17 +2821,19 @@
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 12px;
   }
-  /* Treemap grid is a vertical stack of category rows. Each row has its
-     own label + horizontal block strip. With single-column layout, each
-     category gets its own row regardless of tile count — no awkward
-     side-by-side group wrapping that creates the "label floats over a
-     gap" alignment issue. */
+  /* Treemap grid is a flex-wrap row of category groups. At wider panel
+     widths, multiple groups sit side-by-side; at narrower widths they
+     wrap to new rows. Larger row/col gaps (14/16px) so adjacent groups
+     read as separate units without needing dividers. */
   .hm-app .hm-treemap-grid {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    flex-wrap: wrap;
+    row-gap: 14px;
+    column-gap: 16px;
   }
   .hm-app .hm-treemap-group {
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -2849,13 +2851,13 @@
     flex-wrap: wrap;
     gap: 4px;
   }
-  /* Tiles flex-grow to fill the row. No max-width: a single-tile category
-     fills the row rather than leaving rigid empty space to the right.
-     Multi-tile categories share the row equally. min-width: 78px keeps
+  /* Tiles flex-grow within a group, capped at 140px so single-tile
+     categories don't blow out to fill the whole row. min-width keeps
      the ticker + return readable; the row wraps when more tiles than fit. */
   .hm-app .hm-treemap-block {
     flex: 1 1 78px;
     min-width: 78px;
+    max-width: 140px;
     height: 92px;
     padding: 8px 8px 6px;
     border-radius: var(--hm-r);
@@ -2898,24 +2900,15 @@
   /* Mode toggle (Abs / vs SPY) — paired buttons with active-state styling
      matching the period buttons. Visually grouped as one control so the
      user reads them as a single binary toggle, not as four buttons.
-     Uses the same 4px inter-button gap as the period group. */
+     Spacing is symmetric around the divider: parent flex gap (4px) +
+     margin-left (4px) = 8px from 1Y to the divider, matching the 8px
+     padding-left from the divider to Abs. */
   .hm-app .hm-treemap-toggle {
     display: inline-flex;
     gap: 4px;
-    margin-left: 8px;
+    margin-left: 4px;
     border-left: 1px solid var(--hm-border);
     padding-left: 8px;
-  }
-  /* Subtle dimming on the relative-mode subtitle so it doesn't fight the
-     header. Only shown when the toggle is in vs-SPY mode. */
-  .hm-app .hm-treemap-mode-note {
-    margin-left: 8px;
-    font-size: 9.5px;
-    font-weight: 500;
-    text-transform: none;
-    letter-spacing: 0;
-    opacity: 0.65;
-    font-style: italic;
   }
   @media (max-width: 700px) {
     .hm-app .hm-treemap-block { min-width: 70px; }
@@ -7513,12 +7506,12 @@
     var section = document.createElement('div');
     section.className = 'hm-treemap-section';
 
-    /* Header with period + mode toggle */
+    /* Header with period + mode toggle. No mode-note subtitle next to the
+       title — the active-state of the toggle button is the source of
+       truth for which mode is on. */
     var hdr = document.createElement('div');
     hdr.className = 'hm-treemap-header';
-    var hdrTitle = document.createElement('span');
-    hdrTitle.innerHTML = 'Thematic Trends<span class="hm-treemap-mode-note" id="hm-tm-modenote"></span>';
-    hdr.appendChild(hdrTitle);
+    hdr.innerHTML = '<span>Thematic Trends</span>';
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-treemap-period-btns';
@@ -7618,11 +7611,6 @@
     /* Color all blocks based on current (period, mode) */
     function updateTreemapColors() {
       var theme = getTheme();
-      /* Header subtitle reflects current mode so the user always knows
-         what they're looking at without parsing the toggle state. */
-      var noteEl = document.getElementById('hm-tm-modenote');
-      if (noteEl) noteEl.textContent = (treemapMode === 'rel') ? '· vs SPY' : '';
-
       /* Re-sort blocks within each category group by current value */
       var groups = grid.querySelectorAll('.hm-treemap-blocks');
       groups.forEach(function (blocksEl) {
