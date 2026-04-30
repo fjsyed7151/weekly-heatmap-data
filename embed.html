@@ -1075,18 +1075,33 @@
     vertical-align: middle;
   }
   .hm-app .hm-commod-spark svg { display: block; width: 100%; height: 100%; }
-  /* 52-week range bar — horizontal slider that fills the column width.
-     Track runs left (low) to right (high); a vertical TICK LINE marks
-     the current price's position. Tiny tick marks at left and right
-     anchor the range visually. Marker carries the heat color (green
-     = near 52w high, red = near 52w low; for inverse FX pairs the score
-     is flipped so green always = USD strong). */
+  /* 52-week range bar — flex row: [52w-low price] | [horizontal slider] |
+     [52w-high price]. Track is a horizontal line, marker is a gold
+     vertical line at the current price's position. Low/high price labels
+     anchor the ends visually so no separate tick marks are needed. */
   .hm-app .hm-w52-bar {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     width: 100%;
-    height: 14px;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--hm-muted);
+    font-variant-numeric: tabular-nums;
   }
-  .hm-app .hm-w52-bar svg { display: block; width: 100%; height: 100%; }
+  .hm-app .hm-w52-lo,
+  .hm-app .hm-w52-hi {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    opacity: 0.85;
+  }
+  .hm-app .hm-w52-track {
+    flex: 1 1 auto;
+    display: block;
+    height: 14px;
+    min-width: 28px;
+  }
+  .hm-app .hm-w52-track svg { display: block; width: 100%; height: 100%; }
   .hm-app .hm-unit {
     font-size: 9.5px;
     font-weight: 600;
@@ -5272,37 +5287,36 @@
     );
   }
 
-  /* 52-week range bar — HORIZONTAL slider with a vertical-line MARKER.
-     Track is a horizontal line from low (left) to high (right). Marker
-     is a vertical line at the current price's normalized position.
-     Tiny vertical tick marks at left/right anchor the ends.
+  /* 52-week range bar — full HTML for the cell. Returns:
+     <span class="hm-w52-lo">low</span>
+     <span class="hm-w52-track"><svg>...</svg></span>
+     <span class="hm-w52-hi">high</span>
 
-     viewBox is 100×14 where 100 represents "% of container width". The
-     SVG fills the column via preserveAspectRatio=none; vector-effect=
-     non-scaling-stroke keeps strokes pixel-fixed regardless of the
-     non-uniform scaling. */
-  function _build52wRangeSvg(low, high, last, score, theme) {
-    var paint = cellPaint(score, theme, 'pos');
+     The SVG inside .hm-w52-track is just track + gold marker. End ticks
+     removed — the low/high price labels anchor the ends visually. Marker
+     color is fixed gold (#daa520) regardless of position; the position
+     itself is the data, color isn't carrying meaning. */
+  function _build52wRangeBar(low, high, last, decimals, theme) {
     var pos = (high > low) ? Math.max(0, Math.min(1, (last - low) / (high - low))) : 0.5;
     var x = (pos * 100).toFixed(1);
     var trackColor = theme === 'dark' ? '#2a2f3a' : '#e5e1d6';
-    var tickColor  = theme === 'dark' ? '#5a6070' : '#bcb4a0';
-    var markerColor = paint.bg || (score >= 0 ? '#1a7a42' : '#d42a20');
+    var fmt = function (v) {
+      return v.toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    };
     return (
-      '<svg viewBox="0 0 100 14" preserveAspectRatio="none">' +
-        /* Track */
-        '<line x1="0" y1="7" x2="100" y2="7" stroke="' + trackColor +
-          '" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
-        /* Low tick (left) */
-        '<line x1="0" y1="3" x2="0" y2="11" stroke="' + tickColor +
-          '" stroke-width="1" vector-effect="non-scaling-stroke"/>' +
-        /* High tick (right) */
-        '<line x1="100" y1="3" x2="100" y2="11" stroke="' + tickColor +
-          '" stroke-width="1" vector-effect="non-scaling-stroke"/>' +
-        /* Current-position marker (vertical line) */
-        '<line x1="' + x + '" y1="1" x2="' + x + '" y2="13" stroke="' + markerColor +
-          '" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
-      '</svg>'
+      '<span class="hm-w52-lo">' + fmt(low) + '</span>' +
+      '<span class="hm-w52-track">' +
+        '<svg viewBox="0 0 100 14" preserveAspectRatio="none">' +
+          '<line x1="0" y1="7" x2="100" y2="7" stroke="' + trackColor +
+            '" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+          '<line x1="' + x + '" y1="1" x2="' + x + '" y2="13" stroke="#daa520' +
+            '" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+        '</svg>' +
+      '</span>' +
+      '<span class="hm-w52-hi">' + fmt(high) + '</span>'
     );
   }
 
@@ -5340,10 +5354,9 @@
         '<p><b>Daily close</b> · ' + asOf + '</p>' +
         '<p><b>Front-month continuous</b>: prices are Yahoo\'s =F tickers, ' +
           'which auto-roll between contracts. Specific contract month is not exposed.</p>' +
-        '<p><b>52W Range</b>: vertical bar shows where the current price sits ' +
-          'between its 52-week low (bottom tick) and high (top tick). ' +
-          'Marker color: <span class="hm-color-good">green</span> = at/near high, ' +
-          '<span class="hm-color-bad">red</span> = at/near low.</p>' +
+        '<p><b>52W Range</b>: horizontal slider with the 52-week low on the left ' +
+          'and high on the right. Gold marker shows where the current price sits ' +
+          'between them.</p>' +
         '<p><b>Anomalies</b>: rows with impossible daily moves (>50% or scale ' +
           'shift >5x) show — to suppress contract-rollover artifacts.</p>'
       );
@@ -5381,9 +5394,7 @@
         var isUp = (c.change_pct || 0) >= 0;
         var sparkSvg = _buildSparkSvg(c.sparkline || [], isUp);
 
-        /* Heat score: where in 52w range. -1 = at low, +1 = at high. */
-        var pctScore = Math.max(-1, Math.min(1, (c.pct_of_high - 50) / 50));
-        var rangeSvg = _build52wRangeSvg(c.w52_low, c.w52_high, c.price, pctScore, theme);
+        var rangeBar = _build52wRangeBar(c.w52_low, c.w52_high, c.price, 2, theme);
 
         /* Change cells: show dash for anomalies. */
         var chgHtml, chgPctHtml, chgCls;
@@ -5407,7 +5418,7 @@
           '<td class="hm-commod-chg ' + chgCls + '">' + chgHtml + '</td>' +
           '<td class="hm-commod-chg ' + chgCls + '">' + chgPctHtml + '</td>' +
           '<td class="hm-commod-chg ' + ytd[1] + '">' + ytd[0] + '</td>' +
-          '<td><span class="hm-w52-bar">' + rangeSvg + '</span></td>' +
+          '<td><span class="hm-w52-bar">' + rangeBar + '</span></td>' +
           '<td><span class="hm-commod-spark">' + sparkSvg + '</span></td>';
 
         tbody.appendChild(tr);
@@ -5433,14 +5444,12 @@
     window.PANEL_INFO_HTML['hm-currencies'] = function () {
       return (
         '<p><b>Daily close</b> · ' + asOf + '</p>' +
-        '<p><b>Color logic</b>: heat color is from a USD perspective — ' +
-          '<span class="hm-color-good">green</span> = USD strong, ' +
-          '<span class="hm-color-bad">red</span> = USD weak. ' +
-          'Inverse pairs (X/USD like EUR/USD) get the score flipped so ' +
-          'the meaning stays consistent across the table.</p>' +
-        '<p><b>52W Range</b>: vertical bar shows where the current rate sits ' +
-          'between its 52-week low (bottom tick) and high (top tick). ' +
-          'Marker color follows the USD-perspective rule above.</p>'
+        '<p><b>Pair convention</b>: USD-base pairs (USD/X) read "X per dollar" — ' +
+          'rate up = USD strong. Inverse pairs (X/USD like EUR/USD) read the ' +
+          'opposite — rate up = USD weak.</p>' +
+        '<p><b>52W Range</b>: horizontal slider with the 52-week low on the left ' +
+          'and high on the right. Gold marker shows where the current rate sits ' +
+          'between them.</p>'
       );
     };
     var fxItem = document.querySelector('.grid-stack-item[gs-id="hm-currencies"]');
@@ -5476,12 +5485,7 @@
         var isUp = (c.change_pct || 0) >= 0;
         var sparkSvg = _buildSparkSvg(c.sparkline || [], isUp);
 
-        /* Heat score: where in 52w range, then flipped for inverse pairs
-           (X/USD) so the dot color is always from a USD perspective —
-           green = USD strong, red = USD weak — regardless of pair direction. */
-        var pctScore = Math.max(-1, Math.min(1, (c.pct_of_high - 50) / 50));
-        if (_isUsdQuote(c.ticker)) pctScore = -pctScore;
-        var rangeSvg = _build52wRangeSvg(c.w52_low, c.w52_high, c.price, pctScore, theme);
+        var rangeBar = _build52wRangeBar(c.w52_low, c.w52_high, c.price, dec, theme);
 
         /* Change cells: dash on anomaly. */
         var chgHtml, chgPctHtml, chgCls;
@@ -5503,7 +5507,7 @@
           '<td class="hm-fx-chg ' + chgCls + '">' + chgHtml + '</td>' +
           '<td class="hm-fx-chg ' + chgCls + '">' + chgPctHtml + '</td>' +
           '<td class="hm-fx-chg ' + ytd[1] + '">' + ytd[0] + '</td>' +
-          '<td><span class="hm-w52-bar">' + rangeSvg + '</span></td>' +
+          '<td><span class="hm-w52-bar">' + rangeBar + '</span></td>' +
           '<td><span class="hm-fx-spark">' + sparkSvg + '</span></td>';
 
         tbody.appendChild(tr);
