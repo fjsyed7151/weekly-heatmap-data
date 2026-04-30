@@ -73,21 +73,16 @@
     font-size: 14px;
     line-height: 1.55;
     color: var(--hm-dark);
-    /* Dotted grid pattern so it reads visually as a grid the user can
-       rearrange. Darker enough to be seen on the default bg without
-       competing with content. */
+    /* Solid bg only — measurable grid lives on .grid-stack so it aligns
+       exactly with the 12-column geometry and the cell row height. */
     background-color: var(--hm-bg);
-    background-image:
-      radial-gradient(circle, rgba(138, 126, 94, 0.32) 1.3px, transparent 1.5px);
-    background-size: 22px 22px;
-    background-position: 0 0;
+    background-image: none;
     -webkit-font-smoothing: antialiased;
     width: 100%;
     overflow-anchor: none;
   }
   .hm-app.dark {
-    background-image:
-      radial-gradient(circle, rgba(255, 255, 255, 0.10) 1.3px, transparent 1.5px);
+    background-image: none;
   }
   .hm-app button { font-family: 'Karla', sans-serif; }
 
@@ -190,8 +185,25 @@
   /* Gridstack POC: minimal chrome so the panels look like they did before,
      with drag handles (top edge) + a visible resize corner. */
   .hm-app .grid-stack {
-    background: transparent;
+    /* Measurable grid backdrop — spreadsheet-style. Vertical lines at every
+       1/12 of grid width (= 1 gs-w column-unit) and horizontal lines every
+       40px (= 1 gs-h row-unit, since GS_SCALE=40 and cellHeight=1). To pick
+       a default size: count squares across × down. E.g. "6 wide × 4 tall"
+       → in the HTML set gs-w="6" gs-h="4". Lines drawn at 2px / 50% black
+       to be unambiguously visible behind the panel chrome. */
+    background-color: transparent !important;
+    background-image:
+      linear-gradient(to right, rgba(0, 0, 0, 0.5) 2px, transparent 2px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 2px, transparent 2px) !important;
+    background-size: calc(100% / 12) 100%, 100% 40px !important;
+    background-position: 0 0, 0 0 !important;
+    background-repeat: repeat, repeat !important;
     min-height: 800px;
+  }
+  .hm-app.dark .grid-stack {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.45) 2px, transparent 2px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.45) 2px, transparent 2px) !important;
   }
   /* High specificity to win against Gridstack's default rule. The cell
      handles BOTH overflow directions, so the horizontal scrollbar pins
@@ -3207,12 +3219,16 @@
           <div class="grid-stack-item" gs-id="hm-stylefactor"    gs-x="6" gs-y="14"  gs-w="3"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-macrocompass"   gs-x="0" gs-y="24"  gs-w="6"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-factors"        gs-x="6" gs-y="24"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-          <!-- Wide ranking tables — full width so all columns are visible. -->
-          <div class="grid-stack-item" gs-id="hm-fixed-income"   gs-x="0" gs-y="38"  gs-w="12" gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
+          <!-- Ranking tables — sized JUST OVER each panel's content min-width
+               barrier so all columns are visible without horizontal scroll, but
+               not full-width either. Cell widths under the 12-col grid (margin
+               24px) are 108.75n − 24, so 7 cols = 737px (clears 720px floors
+               for 4-col bodies) and 9 cols = 955px (clears 900px FI floor). -->
+          <div class="grid-stack-item" gs-id="hm-fixed-income"   gs-x="0" gs-y="38"  gs-w="9"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-global-indexes" gs-x="0" gs-y="49"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="6" gs-y="49" gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="0" gs-y="60"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="0" gs-y="75"  gs-w="12" gs-h="15"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="0" gs-y="60"  gs-w="7"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="0" gs-y="75"  gs-w="7"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="90"  gs-w="6"  gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="6" gs-y="90"  gs-w="6"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-commodities"    gs-x="6" gs-y="105" gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
@@ -7378,9 +7394,16 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v7';
+  var LAYOUT_KEY = 'hm-grid-layout-v8';
   var GS_SCALE = 40;
   var gridInstance = null;
+
+  /* Snapshot of each panel's settled cell h taken AFTER the initial fitAll
+     pass and any async paint (Chart.js sparklines etc.) — so it reflects
+     exactly what the user sees on a fresh page load. The per-panel reset
+     button uses this directly; no re-measurement at click time, so reset
+     is guaranteed identical to first paint. */
+  var INITIAL_H = {};
 
   /* Per-panel default x/y/w/h captured BEFORE GridStack.init (init mutates
      the HTML attributes once saved layouts are applied). The reset button
@@ -7675,6 +7698,19 @@
 
     gridInstance.on('dragstart resizestart', startDrag);
     gridInstance.on('dragstop resizestop', stopDrag);
+
+    /* Safety nets: if Gridstack ever fires dragstart/resizestart without a
+       matching stop (drag canceled, pointer capture lost, tab blurred, etc.),
+       the mousemove listener would stay attached and the page would auto-scroll
+       on every cursor movement near the edges — exactly the "scrolls by mouse
+       hover" bug. These listeners ensure stopDrag fires no matter what. */
+    window.addEventListener('mouseup',     stopDrag, true);
+    window.addEventListener('pointerup',   stopDrag, true);
+    window.addEventListener('pointercancel', stopDrag, true);
+    window.addEventListener('blur',        stopDrag);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopDrag();
+    });
   }
 
   /* Expose a reset function for the customize panel "Show all" button to clear
@@ -7778,7 +7814,16 @@
     });
   }
 
-  /* Reset a single panel to its default size (and return to grid if pinned). */
+  /* Reset a single panel to its default size (and return to grid if pinned).
+     Both w and h are restored verbatim from snapshots:
+       - w  comes from DEFAULT_LAYOUT (raw HTML gs-w, doesn't change post-init)
+       - h  comes from INITIAL_H (post-fitAll, post-async-paint settled value)
+     No re-measurement at click time — the snapshot IS what the user saw on
+     fresh load, so reset is guaranteed identical to first paint. Earlier
+     versions called resizeToContent here, but that re-measured wrap.scrollHeight
+     against a possibly-different DOM state and produced a slightly shorter
+     value than initial fit (root cause not pinpointed; likely Chart.js
+     responsive canvases reflowing differently the second time). */
   function resetItemSize(id) {
     if (!gridInstance) return;
     var def = DEFAULT_LAYOUT[id];
@@ -7790,7 +7835,18 @@
     }
     var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
-    try { gridInstance.update(item, { w: def.w, h: def.h }); } catch (e) {}
+    /* Use the post-init snapshot if available, else fall back to the
+       pre-fit gs-h × GS_SCALE value (still better than nothing). */
+    var targetH = (INITIAL_H[id] != null) ? INITIAL_H[id] : def.h;
+    var minH = computePanelMinH(item);
+    try {
+      /* Unlock maxH first so we can grow back up if needed, then apply the
+         exact target h, then re-lock maxH at that h. Three-step because
+         passing { maxH, h } in one update may clamp h against the OLD maxH. */
+      gridInstance.update(item, { maxH: 4000, minH: 1 });
+      gridInstance.update(item, { w: def.w, h: targetH });
+      gridInstance.update(item, { maxH: targetH, minH: minH });
+    } catch (e) {}
   }
 
   /* Context menu wiring — single shared menu element, positioned per click. */
@@ -7906,9 +7962,24 @@
               if (!node) return;
               var minH = computePanelMinH(item);
               try { window.gridInstance.update(item, { maxH: node.h, minH: minH }); } catch (e) {}
+              /* Initial snapshot — what the user sees right now. */
+              var id = item.getAttribute('gs-id');
+              if (id) INITIAL_H[id] = node.h;
             });
             window.gridInstance._suppressSave = false;
           }, 0);
+          /* Second snapshot 800ms later: by now Chart.js sparklines and any
+             other async-paint content has settled, so node.h reflects the
+             "what's actually on screen, considered correct" state — which
+             is exactly what we want the per-panel reset button to restore. */
+          setTimeout(function () {
+            document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+              var node = item.gridstackNode;
+              if (!node) return;
+              var id = item.getAttribute('gs-id');
+              if (id) INITIAL_H[id] = node.h;
+            });
+          }, 800);
         }
         fitAll();
         /* Apply the no-selection state once gridInstance is live: this
