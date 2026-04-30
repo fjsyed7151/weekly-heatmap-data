@@ -5138,20 +5138,31 @@
     container.appendChild(grid);
   }
 
-  /* ---------- Credit × Policy quadrants ---------- */
+  /* ---------- Credit × Policy quadrants ----------
+     Backend convention (build_macrocompass):
+       dev_x > 0  →  credit accelerating (impulse ≥ 0)  →  RIGHT half
+       dev_y > 0  →  policy tightening (stance ≥ 0)     →  TOP half
+     The marker code uses `topPct = 50 - dev_y * 35` so positive dev_y
+     visually goes UP. The four quadrants must therefore be placed:
+       Q3 (credit accel + tightening, dev_x≥0 dev_y≥0)  →  top-right (row 0, col 1)
+       Q2 (credit accel + easing,     dev_x≥0 dev_y<0)  →  bottom-right (row 1, col 1)
+       Q4 (credit decel + tightening, dev_x<0 dev_y≥0)  →  top-left  (row 0, col 0)
+       Q1 (credit decel + easing,     dev_x<0 dev_y<0)  →  bottom-left (row 1, col 0)
+     Earlier this was inverted vertically — chip ended up in q2's box
+     while the marker landed at top-right. Now consistent. */
   var MC_CELLS = [
-    { key: 'q1', row: 0, col: 0, name: 'Q1: Secular trends',
-      longs:  ['Fixed income 10y+', 'Growth stocks', 'DM vs EM'],
-      shorts: ['EM equities/FX', 'Industrial commodities', 'Value vs growth'] },
-    { key: 'q2', row: 0, col: 1, name: 'Q2: Risk-on paradise',
-      longs:  ['Equities', 'Real estate', 'Credit spreads', 'Gold'],
-      shorts: ['DXY / cash', 'Volatility (VIX)'] },
-    { key: 'q4', row: 1, col: 0, name: 'Q4: Strong defenders',
+    { key: 'q4', row: 0, col: 0, name: 'Q4: Strong defenders',
       longs:  ['DXY / cash', 'Volatility (VIX)', 'Puts on risk'],
       shorts: ['All risk assets'] },
-    { key: 'q3', row: 1, col: 1, name: 'Q3: Cyclical rally',
+    { key: 'q3', row: 0, col: 1, name: 'Q3: Cyclical rally',
       longs:  ['EM equities/FX', 'Cyclical stocks', 'Industrial commodities'],
       shorts: ['Fixed Income / TIPS', 'Gold', 'Growth vs value'] },
+    { key: 'q1', row: 1, col: 0, name: 'Q1: Secular trends',
+      longs:  ['Fixed income 10y+', 'Growth stocks', 'DM vs EM'],
+      shorts: ['EM equities/FX', 'Industrial commodities', 'Value vs growth'] },
+    { key: 'q2', row: 1, col: 1, name: 'Q2: Risk-on paradise',
+      longs:  ['Equities', 'Real estate', 'Credit spreads', 'Gold'],
+      shorts: ['DXY / cash', 'Volatility (VIX)'] },
   ];
 
   function renderMacroCompass(data) {
@@ -5180,7 +5191,10 @@
 
     var axisY = document.createElement('div');
     axisY.className = 'hm-mc-axis-y';
-    axisY.innerHTML = '<span>Net tightening</span><span>Net easing</span>';
+    /* The CSS uses writing-mode:vertical-rl + transform:rotate(180deg) which
+       puts the SECOND span at the visual top (same trick as the Gave axis).
+       So "Net tightening" goes second to align with dev_y > 0 → up. */
+    axisY.innerHTML = '<span>Net easing</span><span>Net tightening</span>';
     frame.appendChild(axisY);
 
     var plane = document.createElement('div');
@@ -5998,17 +6012,37 @@
       data.sectors.slice(0, 3).forEach(function (s) { sectorSelected[s.ticker] = true; });
     }
 
-    /* SPY returns for table */
+    /* SPY returns for the vs-SPY column. Computed on the fly from sc.spy
+       (the weekly-close array) so we don't need to round-trip them via
+       data.spy_returns. Same 8-period set as STANDARD_PERIODS — for any
+       period whose lookback exceeds available history (e.g. 10Y when
+       SPY data only goes back ~7Y), the cell shows "--". */
     var spyRet = (function () {
-      var w = sc.spy; if (!w || w.length < 14) return {};
+      var w = sc.spy; if (!w || w.length < 5) return {};
       var last = w[w.length - 1];
+      var pct = function (n) {
+        if (w.length < n + 1) return null;
+        var prev = w[w.length - 1 - n];
+        if (prev == null || prev === 0) return null;
+        return Math.round((last / prev - 1) * 10000) / 100;
+      };
       var r = {
-        w1: w.length >= 2 ? Math.round((last / w[w.length - 2] - 1) * 10000) / 100 : null,
-        m1: w.length >= 5 ? Math.round((last / w[w.length - 5] - 1) * 10000) / 100 : null,
-        m3: w.length >= 14 ? Math.round((last / w[w.length - 14] - 1) * 10000) / 100 : null,
+        m1:  pct(4),
+        m3:  pct(13),
+        m6:  pct(26),
+        y1:  pct(52),
+        y3:  pct(156),
+        y5:  pct(260),
+        y10: pct(520),
+        ytd: null,
       };
       var yr = new Date().getFullYear();
-      for (var i = 0; i < sc.dates.length; i++) { if (sc.dates[i].substring(0, 4) === String(yr)) { r.ytd = Math.round((last / w[i] - 1) * 10000) / 100; break; } }
+      for (var i = 0; i < sc.dates.length; i++) {
+        if (sc.dates[i].substring(0, 4) === String(yr) && w[i] != null) {
+          r.ytd = Math.round((last / w[i] - 1) * 10000) / 100;
+          break;
+        }
+      }
       return r;
     })();
 
@@ -6025,7 +6059,20 @@
 
     var periodWrap = document.createElement('div');
     periodWrap.className = 'hm-sector-period-btns';
-    var periods = [{ label: '1M', weeks: 4 }, { label: '3M', weeks: 13 }, { label: '6M', weeks: 26 }, { label: 'YTD', weeks: -1 }, { label: '1Y', weeks: 52 }];
+    /* Sector chart slices its data by week count (not by JSON key, since
+       the chart renders a continuous line). Mirror the canonical 8-period
+       set with the equivalent weeks: m6=26, m3=13, etc. YTD signals -1
+       and is computed at click-time from the current calendar year. */
+    var periods = [
+      { label: '1M',  weeks: 4   },
+      { label: '3M',  weeks: 13  },
+      { label: '6M',  weeks: 26  },
+      { label: 'YTD', weeks: -1  },
+      { label: '1Y',  weeks: 52  },
+      { label: '3Y',  weeks: 156 },
+      { label: '5Y',  weeks: 260 },
+      { label: '10Y', weeks: 520 },
+    ];
     periods.forEach(function (p) {
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -6191,7 +6238,7 @@
     vsInner.appendChild(vsLbl);
     var vsSelect = document.createElement('select');
     vsSelect.className = 'hm-vs-select';
-    [{ label: '1W', key: 'w1' }, { label: '1M', key: 'm1' }, { label: '3M', key: 'm3' }, { label: 'YTD', key: 'ytd' }, { label: '1Y', key: 'y1' }].forEach(function (opt) {
+    STANDARD_PERIODS.forEach(function (opt) {
       var o = document.createElement('option');
       o.value = opt.key; o.textContent = opt.label;
       if (opt.key === 'm1') o.selected = true;
@@ -6272,11 +6319,33 @@
   /* ---------- Style Box ---------- */
   var sbPeriod = 'm1';  /* style box period */
 
-  /* Period buttons shared across style box, factors, treemap, etc. */
-  var SF_PERIODS = [
-    { label: '1W', key: 'w1' }, { label: '1M', key: 'm1' },
-    { label: '3M', key: 'm3' }, { label: 'YTD', key: 'ytd' }, { label: '1Y', key: 'y1' }
+  /* ──────────────────────────────────────────────────────────────────
+     Canonical period set. Used by EVERY period selector in the dashboard:
+       - Style Box / Factors panels
+       - Fixed Income / Global Indexes / Country ETFs / Currency Matrix /
+         Commodity Performance ranking panels
+       - Sector chart
+       - Sector treemap
+       - Thematic treemap
+     Keys map directly to the JSON fields shipped by build_performance_grid
+     and the various specific builders (build_fixed_income, build_global_indexes,
+     etc. all ship m1/m3/m6/ytd/y1/y3/y5/y10).
+     ────────────────────────────────────────────────────────────────── */
+  var STANDARD_PERIODS = [
+    { key: 'm1',  label: '1M'  },
+    { key: 'm3',  label: '3M'  },
+    { key: 'm6',  label: '6M'  },
+    { key: 'ytd', label: 'YTD' },
+    { key: 'y1',  label: '1Y'  },
+    { key: 'y3',  label: '3Y'  },
+    { key: 'y5',  label: '5Y'  },
+    { key: 'y10', label: '10Y' },
   ];
+  /* Aliases kept for variable-name-clarity in the older code paths that
+     still reference `SF_PERIODS` / `FI_PERIODS` so we don't have to chase
+     every reference. They all point at the same canonical array. */
+  var SF_PERIODS = STANDARD_PERIODS;
+  var FI_PERIODS = STANDARD_PERIODS;
 
   function renderStyleFactor(data) {
     var container = document.getElementById('hm-stylefactor');
@@ -6581,18 +6650,10 @@
   }
 
   /* ---------- Fixed Income rankings panel (Koyfin-style 4-col) ---------- */
-  var FI_PERIODS = [
-    { key: 'mtd', label: 'MTD' },
-    { key: 'm1',  label: '1M'  },
-    { key: 'qtd', label: 'QTD' },
-    { key: 'm3',  label: '3M'  },
-    { key: 'm6',  label: '6M'  },
-    { key: 'ytd', label: 'YTD' },
-    { key: 'y1',  label: '1Y'  },
-    { key: 'y3',  label: '3Y'  },
-    { key: 'y5',  label: '5Y'  },
-    { key: 'y10', label: '10Y' },
-  ];
+  /* FI_PERIODS is now an alias for STANDARD_PERIODS (defined near the top
+     of this script). Keeping the variable name to avoid touching every
+     callsite that still says `FI_PERIODS`. The MTD and QTD options that
+     used to live here were dropped per the universal 8-period spec. */
   var fiPeriod = 'y1';
 
   /* Tooltip copy for each bond ETF, keyed by ticker. Concise, factual, no em-dashes. */
@@ -7503,16 +7564,21 @@
      SPY's return for the same period. Persisted across re-renders. */
   var treemapMode = 'abs';
 
-  /* How many weeks of the 52W sparkline to show for each period. We have
-     weekly granularity, so 1W and 1M would be 1-4 points (too coarse to
-     read). For those we floor at 4 weeks so there's still a meaningful
-     shape; the period label tells the user the period for the RETURN
-     number, the sparkline is "recent path" context. */
+  /* Sparkline window per period. Weekly-granularity data ships from the
+     backend (52 weekly closes per theme); slice maps the active period
+     button to that array so the path matches the return numbers above
+     it. For periods longer than 1Y the slice just takes the full 52
+     weeks available — beyond 1Y the visual is "the last year of action"
+     rather than the literal period; acceptable trade-off vs shipping
+     5-10x more spark data. */
   function _sparkWeeksFor(period) {
-    if (period === 'w1') return 4;
-    if (period === 'm1') return 4;
-    if (period === 'm3') return 13;
-    if (period === 'y1') return 52;
+    if (period === 'm1')  return 4;
+    if (period === 'm3')  return 13;
+    if (period === 'm6')  return 26;
+    if (period === 'y1')  return 52;
+    if (period === 'y3')  return 156;   /* will cap at sparkline length */
+    if (period === 'y5')  return 260;
+    if (period === 'y10') return 520;
     if (period === 'ytd') {
       /* Weeks elapsed in the current year — anchored to the most recent
          Friday close, so this is the YTD path. Clamp to [4, 52]. */
@@ -7599,11 +7665,7 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-treemap-period-btns';
-    var periodOpts = [
-      { label: '1W', key: 'w1' }, { label: '1M', key: 'm1' },
-      { label: '3M', key: 'm3' }, { label: 'YTD', key: 'ytd' }, { label: '1Y', key: 'y1' }
-    ];
-    periodOpts.forEach(function (p) {
+    STANDARD_PERIODS.forEach(function (p) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'hm-treemap-period-btn' + (treemapPeriod === p.key ? ' active' : '');
