@@ -1075,21 +1075,18 @@
     vertical-align: middle;
   }
   .hm-app .hm-commod-spark svg { display: block; width: 100%; height: 100%; }
-  /* 52-week range bar — VERTICAL mini-chart. Replaces the numeric
-     "% 52W High" column. Track runs from low (bottom) to high (top);
-     a small horizontal marker line sits at the current price's position.
-     Marker carries the heat color: green = at 52w high, red = at low.
-     For inverse FX pairs (X/USD) the score is flipped so green always
-     = USD strong. Centered in the cell so there's no awkward left gap
-     when the column gets wide. */
+  /* 52-week range bar — horizontal slider that fills the column width.
+     Track runs left (low) to right (high); a vertical TICK LINE marks
+     the current price's position. Tiny tick marks at left and right
+     anchor the range visually. Marker carries the heat color (green
+     = near 52w high, red = near 52w low; for inverse FX pairs the score
+     is flipped so green always = USD strong). */
   .hm-app .hm-w52-bar {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: block;
     width: 100%;
-    height: 22px;
+    height: 14px;
   }
-  .hm-app .hm-w52-bar svg { display: block; width: 14px; height: 22px; }
+  .hm-app .hm-w52-bar svg { display: block; width: 100%; height: 100%; }
   .hm-app .hm-unit {
     font-size: 9.5px;
     font-weight: 600;
@@ -1101,12 +1098,12 @@
      glitch produced an impossible daily change (see _is_anomalous in
      build.py). Hides the bogus number rather than flashing -98%. */
   .hm-app .hm-anom { color: var(--hm-muted); opacity: 0.6; }
-  /* Per-panel info popup — anchored to the info button in each panel's
-     window-style header. Shows the data-freshness + table-specific notes
-     that used to live in a caption row above the table. Uses position:fixed
-     and is appended to <body> so it can extend beyond the (overflow:auto)
-     cell content without being clipped. */
-  .hm-panel-info-popup {
+  /* Per-panel info popup. Anchored to the info button in each panel's
+     header. position:fixed (viewport-relative) so it can extend beyond
+     the panel's overflow:auto boundary without being clipped. Appended
+     to .hm-app at click time (NOT body) so the --hm-* CSS custom
+     properties resolve and the popup renders solid, not transparent. */
+  .hm-app .hm-panel-info-popup {
     position: fixed;
     width: 280px;
     max-width: calc(100vw - 32px);
@@ -1114,29 +1111,24 @@
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     padding: 10px 12px;
-    z-index: 50;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    z-index: 9999;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
     font-size: 11px;
     line-height: 1.5;
     color: var(--hm-dark);
     font-weight: 500;
   }
-  body.hm-dark .hm-panel-info-popup,
   .hm-app.dark .hm-panel-info-popup {
     box-shadow: 0 6px 18px rgba(0,0,0,0.5);
-    color: #d0d0d0;
-    background: #1c2029;
-    border-color: #3a3f4e;
   }
-  .hm-panel-info-popup[hidden] { display: none; }
-  .hm-panel-info-popup p { margin: 0 0 6px 0; }
-  .hm-panel-info-popup p:last-child { margin-bottom: 0; }
-  .hm-panel-info-popup b {
+  .hm-app .hm-panel-info-popup p { margin: 0 0 6px 0; }
+  .hm-app .hm-panel-info-popup p:last-child { margin-bottom: 0; }
+  .hm-app .hm-panel-info-popup b {
     font-weight: 700;
-    color: #daa520;
+    color: var(--hm-gold);
   }
-  .hm-panel-info-popup .hm-color-good { color: #1a7a42; font-weight: 700; }
-  .hm-panel-info-popup .hm-color-bad { color: #d42a20; font-weight: 700; }
+  .hm-app .hm-panel-info-popup .hm-color-good { color: var(--hm-green); font-weight: 700; }
+  .hm-app .hm-panel-info-popup .hm-color-bad { color: var(--hm-red); font-weight: 700; }
 
   /* Currencies table — shares all styling with commodities */
   .hm-app .hm-fx-wrap {
@@ -5280,37 +5272,36 @@
     );
   }
 
-  /* 52-week range bar — VERTICAL mini-chart. Track from y=2 (high, top) to
-     y=20 (low, bottom). Marker = a horizontal line crossing the track at
-     the current price's position. Tiny "high" tick at top, "low" tick at
-     bottom, so the orientation is unambiguous even without labels.
-     `score` drives marker color (already flipped for inverse FX pairs
-     by the caller). */
+  /* 52-week range bar — HORIZONTAL slider with a vertical-line MARKER.
+     Track is a horizontal line from low (left) to high (right). Marker
+     is a vertical line at the current price's normalized position.
+     Tiny vertical tick marks at left/right anchor the ends.
+
+     viewBox is 100×14 where 100 represents "% of container width". The
+     SVG fills the column via preserveAspectRatio=none; vector-effect=
+     non-scaling-stroke keeps strokes pixel-fixed regardless of the
+     non-uniform scaling. */
   function _build52wRangeSvg(low, high, last, score, theme) {
-    var w = 14, h = 22;
-    var topY = 2, botY = 20;       /* track range — leaves 2px breathing room each end */
-    var trackH = botY - topY;
     var paint = cellPaint(score, theme, 'pos');
-    /* Position 0..1 within range. 1 = at high → marker at top. */
     var pos = (high > low) ? Math.max(0, Math.min(1, (last - low) / (high - low))) : 0.5;
-    var markerY = botY - pos * trackH;
+    var x = (pos * 100).toFixed(1);
     var trackColor = theme === 'dark' ? '#2a2f3a' : '#e5e1d6';
     var tickColor  = theme === 'dark' ? '#5a6070' : '#bcb4a0';
     var markerColor = paint.bg || (score >= 0 ? '#1a7a42' : '#d42a20');
     return (
-      '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid meet">' +
+      '<svg viewBox="0 0 100 14" preserveAspectRatio="none">' +
         /* Track */
-        '<line x1="' + (w / 2) + '" y1="' + topY + '" x2="' + (w / 2) + '" y2="' + botY +
-          '" stroke="' + trackColor + '" stroke-width="3" stroke-linecap="round"/>' +
-        /* High tick (top) */
-        '<line x1="3" y1="' + topY + '" x2="' + (w - 3) + '" y2="' + topY +
-          '" stroke="' + tickColor + '" stroke-width="1"/>' +
-        /* Low tick (bottom) */
-        '<line x1="3" y1="' + botY + '" x2="' + (w - 3) + '" y2="' + botY +
-          '" stroke="' + tickColor + '" stroke-width="1"/>' +
-        /* Current-price marker line */
-        '<line x1="1" y1="' + markerY.toFixed(1) + '" x2="' + (w - 1) + '" y2="' + markerY.toFixed(1) +
-          '" stroke="' + markerColor + '" stroke-width="2.5" stroke-linecap="round"/>' +
+        '<line x1="0" y1="7" x2="100" y2="7" stroke="' + trackColor +
+          '" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+        /* Low tick (left) */
+        '<line x1="0" y1="3" x2="0" y2="11" stroke="' + tickColor +
+          '" stroke-width="1" vector-effect="non-scaling-stroke"/>' +
+        /* High tick (right) */
+        '<line x1="100" y1="3" x2="100" y2="11" stroke="' + tickColor +
+          '" stroke-width="1" vector-effect="non-scaling-stroke"/>' +
+        /* Current-position marker (vertical line) */
+        '<line x1="' + x + '" y1="1" x2="' + x + '" y2="13" stroke="' + markerColor +
+          '" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
       '</svg>'
     );
   }
@@ -5374,7 +5365,7 @@
         '<th>% Chg</th>' +
         '<th>YTD</th>' +
         '<th>52W Range</th>' +
-        '<th>Trend</th>' +
+        '<th>13W Trend</th>' +
       '</tr></thead>';
 
     var tbody = document.createElement('tbody');
@@ -5468,7 +5459,7 @@
         '<th>% Chg</th>' +
         '<th>YTD</th>' +
         '<th>52W Range</th>' +
-        '<th>Trend</th>' +
+        '<th>13W Trend</th>' +
       '</tr></thead>';
 
     var tbody = document.createElement('tbody');
@@ -7998,9 +7989,12 @@
     popup.className = 'hm-panel-info-popup';
     popup.dataset.forId = id;
     popup.innerHTML = html;
-    /* Append to body and use fixed positioning so the popup can extend
-       past the panel's overflow:auto boundary without being clipped. */
-    document.body.appendChild(popup);
+    /* Append to .hm-app (NOT body) so the --hm-* CSS custom properties
+       resolve correctly. Outside .hm-app the popup renders transparent
+       because var(--hm-panel) etc. fall back to `initial`. position:fixed
+       still anchors to the viewport regardless of parent. */
+    var hmApp = item.closest('.hm-app') || document.body;
+    hmApp.appendChild(popup);
 
     /* Position below the info button, aligned to its right edge. Clamp
        to viewport so the popup never renders off-screen. */
