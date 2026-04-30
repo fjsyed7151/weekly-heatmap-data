@@ -311,6 +311,10 @@
     background: rgba(218,165,32,0.16);
     color: var(--hm-gold);
   }
+  /* Info button hidden by default; renderers tag the grid-stack-item with
+     `hm-has-info` after registering content for that panel. */
+  .hm-app .hm-panel-info { display: none; }
+  .hm-app .grid-stack-item.hm-has-info .hm-panel-info { display: inline-flex; }
   .hm-app .hm-panel-btn.active {
     opacity: 1;
     color: var(--hm-gold);
@@ -1061,39 +1065,31 @@
   }
   .hm-app .hm-commod-chg.up { color: var(--hm-green); }
   .hm-app .hm-commod-chg.down { color: var(--hm-red); }
+  /* Sparkline trend cell: stretches to fill the cell width via
+     preserveAspectRatio="none" on the SVG. Old fixed 48px width left a
+     gap on the left at wider column widths. */
   .hm-app .hm-commod-spark {
-    width: 48px;
-    height: 16px;
-    display: inline-block;
+    display: block;
+    width: 100%;
+    height: 18px;
     vertical-align: middle;
   }
   .hm-app .hm-commod-spark svg { display: block; width: 100%; height: 100%; }
-  /* Small subtitle row above each table — shows data freshness. */
-  .hm-app .hm-tbl-caption {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--hm-muted);
-    text-align: right;
-    padding: 2px 4px 4px;
-    letter-spacing: 0.2px;
-  }
-  .hm-app .hm-tbl-caption-note {
-    margin-left: 8px;
-    font-style: italic;
-    opacity: 0.85;
-  }
-  /* 52-week range bar — replaces the numeric "% 52W High" column. Track is
-     a neutral grey line, dot marks where `last` sits between the 52w low
-     (left) and high (right). Dot is heat-painted by the same score as the
-     old numeric cell, so green = at high, red = at low. For inverse FX
-     pairs (X/USD) the dot color is flipped so green always = USD strong. */
+  /* 52-week range bar — VERTICAL mini-chart. Replaces the numeric
+     "% 52W High" column. Track runs from low (bottom) to high (top);
+     a small horizontal marker line sits at the current price's position.
+     Marker carries the heat color: green = at 52w high, red = at low.
+     For inverse FX pairs (X/USD) the score is flipped so green always
+     = USD strong. Centered in the cell so there's no awkward left gap
+     when the column gets wide. */
   .hm-app .hm-w52-bar {
-    display: inline-block;
-    width: 80px;
-    height: 12px;
-    vertical-align: middle;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 22px;
   }
-  .hm-app .hm-w52-bar svg { display: block; width: 100%; height: 100%; }
+  .hm-app .hm-w52-bar svg { display: block; width: 14px; height: 22px; }
   .hm-app .hm-unit {
     font-size: 9.5px;
     font-weight: 600;
@@ -1105,6 +1101,42 @@
      glitch produced an impossible daily change (see _is_anomalous in
      build.py). Hides the bogus number rather than flashing -98%. */
   .hm-app .hm-anom { color: var(--hm-muted); opacity: 0.6; }
+  /* Per-panel info popup — anchored to the info button in each panel's
+     window-style header. Shows the data-freshness + table-specific notes
+     that used to live in a caption row above the table. Uses position:fixed
+     and is appended to <body> so it can extend beyond the (overflow:auto)
+     cell content without being clipped. */
+  .hm-panel-info-popup {
+    position: fixed;
+    width: 280px;
+    max-width: calc(100vw - 32px);
+    background: var(--hm-panel);
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    padding: 10px 12px;
+    z-index: 50;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--hm-dark);
+    font-weight: 500;
+  }
+  body.hm-dark .hm-panel-info-popup,
+  .hm-app.dark .hm-panel-info-popup {
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    color: #d0d0d0;
+    background: #1c2029;
+    border-color: #3a3f4e;
+  }
+  .hm-panel-info-popup[hidden] { display: none; }
+  .hm-panel-info-popup p { margin: 0 0 6px 0; }
+  .hm-panel-info-popup p:last-child { margin-bottom: 0; }
+  .hm-panel-info-popup b {
+    font-weight: 700;
+    color: #daa520;
+  }
+  .hm-panel-info-popup .hm-color-good { color: #1a7a42; font-weight: 700; }
+  .hm-panel-info-popup .hm-color-bad { color: #d42a20; font-weight: 700; }
 
   /* Currencies table — shares all styling with commodities */
   .hm-app .hm-fx-wrap {
@@ -1173,7 +1205,8 @@
   }
   .hm-app .hm-fx-chg.up { color: var(--hm-green); }
   .hm-app .hm-fx-chg.down { color: var(--hm-red); }
-  .hm-app .hm-fx-spark { width: 48px; height: 16px; display: inline-block; vertical-align: middle; }
+  /* FX trend cell: stretches to fill column width, same as commod-spark. */
+  .hm-app .hm-fx-spark { display: block; width: 100%; height: 18px; vertical-align: middle; }
   .hm-app .hm-fx-spark svg { display: block; width: 100%; height: 100%; }
 
 
@@ -5247,22 +5280,37 @@
     );
   }
 
-  /* 52-week range bar — neutral track + heat-colored dot at the current
-     position. `score` drives dot color (already flipped for inverse FX
-     pairs by the caller). */
+  /* 52-week range bar — VERTICAL mini-chart. Track from y=2 (high, top) to
+     y=20 (low, bottom). Marker = a horizontal line crossing the track at
+     the current price's position. Tiny "high" tick at top, "low" tick at
+     bottom, so the orientation is unambiguous even without labels.
+     `score` drives marker color (already flipped for inverse FX pairs
+     by the caller). */
   function _build52wRangeSvg(low, high, last, score, theme) {
-    var w = 80, h = 12;
+    var w = 14, h = 22;
+    var topY = 2, botY = 20;       /* track range — leaves 2px breathing room each end */
+    var trackH = botY - topY;
     var paint = cellPaint(score, theme, 'pos');
+    /* Position 0..1 within range. 1 = at high → marker at top. */
     var pos = (high > low) ? Math.max(0, Math.min(1, (last - low) / (high - low))) : 0.5;
-    var x = pos * w;
+    var markerY = botY - pos * trackH;
     var trackColor = theme === 'dark' ? '#2a2f3a' : '#e5e1d6';
-    var dotColor = paint.bg || (score >= 0 ? '#1a7a42' : '#d42a20');
+    var tickColor  = theme === 'dark' ? '#5a6070' : '#bcb4a0';
+    var markerColor = paint.bg || (score >= 0 ? '#1a7a42' : '#d42a20');
     return (
-      '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
-        '<line x1="2" y1="' + (h / 2) + '" x2="' + (w - 2) + '" y2="' + (h / 2) +
+      '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid meet">' +
+        /* Track */
+        '<line x1="' + (w / 2) + '" y1="' + topY + '" x2="' + (w / 2) + '" y2="' + botY +
           '" stroke="' + trackColor + '" stroke-width="3" stroke-linecap="round"/>' +
-        '<circle cx="' + x.toFixed(1) + '" cy="' + (h / 2) + '" r="3" fill="' + dotColor +
-          '" stroke="rgba(255,255,255,0.85)" stroke-width="0.8"/>' +
+        /* High tick (top) */
+        '<line x1="3" y1="' + topY + '" x2="' + (w - 3) + '" y2="' + topY +
+          '" stroke="' + tickColor + '" stroke-width="1"/>' +
+        /* Low tick (bottom) */
+        '<line x1="3" y1="' + botY + '" x2="' + (w - 3) + '" y2="' + botY +
+          '" stroke="' + tickColor + '" stroke-width="1"/>' +
+        /* Current-price marker line */
+        '<line x1="1" y1="' + markerY.toFixed(1) + '" x2="' + (w - 1) + '" y2="' + markerY.toFixed(1) +
+          '" stroke="' + markerColor + '" stroke-width="2.5" stroke-linecap="round"/>' +
       '</svg>'
     );
   }
@@ -5292,15 +5340,26 @@
     var section = document.createElement('div');
     section.className = 'hm-commod-section';
 
-    /* Subtitle: data freshness + honest label about what these prices are.
-       Yahoo's =F tickers are continuous front-month, NOT a specific contract,
-       so don't pretend otherwise. */
-    var caption = document.createElement('div');
-    caption.className = 'hm-tbl-caption';
-    caption.innerHTML =
-      'Daily close · ' + (data.as_of || '—') +
-      '<span class="hm-tbl-caption-note">Front-month continuous</span>';
-    section.appendChild(caption);
+    /* Register info content for the panel-header info button. Replaces the
+       old visible caption row — clutter-free table, info available on
+       click. Function-valued so as_of stays current if data refreshes. */
+    var asOf = data.as_of || '—';
+    window.PANEL_INFO_HTML['hm-commodities'] = function () {
+      return (
+        '<p><b>Daily close</b> · ' + asOf + '</p>' +
+        '<p><b>Front-month continuous</b>: prices are Yahoo\'s =F tickers, ' +
+          'which auto-roll between contracts. Specific contract month is not exposed.</p>' +
+        '<p><b>52W Range</b>: vertical bar shows where the current price sits ' +
+          'between its 52-week low (bottom tick) and high (top tick). ' +
+          'Marker color: <span class="hm-color-good">green</span> = at/near high, ' +
+          '<span class="hm-color-bad">red</span> = at/near low.</p>' +
+        '<p><b>Anomalies</b>: rows with impossible daily moves (>50% or scale ' +
+          'shift >5x) show — to suppress contract-rollover artifacts.</p>'
+      );
+    };
+    /* Tag the gridstack item so the info button becomes visible. */
+    var commItem = document.querySelector('.grid-stack-item[gs-id="hm-commodities"]');
+    if (commItem) commItem.classList.add('hm-has-info');
 
     var wrap = document.createElement('div');
     wrap.className = 'hm-commod-wrap';
@@ -5379,13 +5438,22 @@
     var section = document.createElement('div');
     section.className = 'hm-fx-section';
 
-    /* Subtitle: data freshness + USD-perspective color note. */
-    var caption = document.createElement('div');
-    caption.className = 'hm-tbl-caption';
-    caption.innerHTML =
-      'Daily close · ' + (data.as_of || '—') +
-      '<span class="hm-tbl-caption-note">Color: green = USD strong, red = USD weak</span>';
-    section.appendChild(caption);
+    var asOf = data.as_of || '—';
+    window.PANEL_INFO_HTML['hm-currencies'] = function () {
+      return (
+        '<p><b>Daily close</b> · ' + asOf + '</p>' +
+        '<p><b>Color logic</b>: heat color is from a USD perspective — ' +
+          '<span class="hm-color-good">green</span> = USD strong, ' +
+          '<span class="hm-color-bad">red</span> = USD weak. ' +
+          'Inverse pairs (X/USD like EUR/USD) get the score flipped so ' +
+          'the meaning stays consistent across the table.</p>' +
+        '<p><b>52W Range</b>: vertical bar shows where the current rate sits ' +
+          'between its 52-week low (bottom tick) and high (top tick). ' +
+          'Marker color follows the USD-perspective rule above.</p>'
+      );
+    };
+    var fxItem = document.querySelector('.grid-stack-item[gs-id="hm-currencies"]');
+    if (fxItem) fxItem.classList.add('hm-has-info');
 
     var wrap = document.createElement('div');
     wrap.className = 'hm-fx-wrap';
@@ -7521,6 +7589,12 @@
      is guaranteed identical to first paint. */
   var INITIAL_H = {};
 
+  /* Per-panel info-popup HTML. Renderers populate this when they have
+     data-dependent notes (e.g. "Daily close · 2026-04-24"). The info
+     button in the panel header reads from here on click. Function-valued
+     so we can pull fresh `as_of` etc. at click time. */
+  window.PANEL_INFO_HTML = {};
+
   /* Per-panel default x/y/w/h captured BEFORE GridStack.init (init mutates
      the HTML attributes once saved layouts are applied). The reset button
      in each panel header uses this map to restore the original size. */
@@ -7608,6 +7682,14 @@
       var header = document.createElement('div');
       header.className = 'hm-panel-header';
       header.innerHTML =
+        /* Info button is built for ALL panels (cheap), but only OPENED on
+           click if the panel has registered info content. We add it here
+           rather than conditionally so renderers that finish later can
+           register info without re-wiring the header. The button stays
+           hidden via CSS when no info is registered. */
+        '<button class="hm-panel-btn hm-panel-info" type="button" data-action="info" title="About this panel" aria-label="About this panel">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>' +
+        '</button>' +
         '<button class="hm-panel-btn hm-panel-pin" type="button" data-action="pin" title="Pin to top" aria-label="Pin to top">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/></svg>' +
         '</button>' +
@@ -7689,6 +7771,8 @@
         refreshAllPinIcons();
       } else if (action === 'reset') {
         resetItemSize(id);
+      } else if (action === 'info') {
+        toggleInfoPopup(item, id, btn);
       } else if (action === 'close') {
         /* Hide the panel via the existing customize-view system so the
            Customize panel checkbox reflects state and re-add works. If the
@@ -7893,6 +7977,62 @@
       savePinned(pinned);
     }
   }
+
+  /* Toggle a per-panel info popup. Renderers populate
+     window.PANEL_INFO_HTML[id] (string OR function returning a string) when
+     they want to expose explanation. The popup is built fresh on each open
+     so dynamic data (e.g. as_of date) stays current. Single-popup-at-a-time:
+     opening a new one closes any other. Clicking outside or pressing Escape
+     closes. */
+  function toggleInfoPopup(item, id, anchorBtn) {
+    /* Close any open popup. If it's THIS panel's popup, return (toggle off). */
+    var existingForThis = document.querySelector('.hm-panel-info-popup[data-for-id="' + id + '"]');
+    document.querySelectorAll('.hm-panel-info-popup').forEach(function (p) { p.remove(); });
+    if (existingForThis) return;
+
+    var entry = window.PANEL_INFO_HTML && window.PANEL_INFO_HTML[id];
+    if (!entry) return;
+    var html = (typeof entry === 'function') ? entry() : String(entry);
+
+    var popup = document.createElement('div');
+    popup.className = 'hm-panel-info-popup';
+    popup.dataset.forId = id;
+    popup.innerHTML = html;
+    /* Append to body and use fixed positioning so the popup can extend
+       past the panel's overflow:auto boundary without being clipped. */
+    document.body.appendChild(popup);
+
+    /* Position below the info button, aligned to its right edge. Clamp
+       to viewport so the popup never renders off-screen. */
+    var rect = anchorBtn.getBoundingClientRect();
+    var popupW = popup.offsetWidth || 280;
+    var popupH = popup.offsetHeight || 100;
+    var top = rect.bottom + 6;
+    var left = rect.right - popupW;
+    /* Clamp horizontally */
+    left = Math.max(8, Math.min(left, window.innerWidth - popupW - 8));
+    /* If the popup would go off the bottom, flip to above the button. */
+    if (top + popupH > window.innerHeight - 8) {
+      top = rect.top - popupH - 6;
+    }
+    popup.style.top = Math.max(8, top) + 'px';
+    popup.style.left = left + 'px';
+  }
+
+  /* Close info popup on outside click / Escape. Click on the info button
+     itself is handled by the toggle (above) so we exclude that target. */
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && (
+      e.target.closest('.hm-panel-info-popup') ||
+      e.target.closest('.hm-panel-info')
+    )) return;
+    document.querySelectorAll('.hm-panel-info-popup').forEach(function (p) { p.remove(); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.hm-panel-info-popup').forEach(function (p) { p.remove(); });
+    }
+  });
 
   function unpinItemById(id) {
     if (!gridInstance) return;
