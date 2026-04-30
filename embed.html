@@ -1225,6 +1225,9 @@
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     padding: 16px;
+    /* overflow:hidden so the gold-header inserted at the top (with neg
+       margins to escape the padding) follows the card's border-radius. */
+    overflow: hidden;
     /* No margin-bottom — Gridstack handles inter-panel spacing. The 16px
        was adding to scrollHeight beyond fitToContent's measurement. */
     margin-bottom: 0;
@@ -1500,6 +1503,9 @@
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     padding: 16px;
+    /* overflow:hidden so the gold-header inserted at the top follows the
+       card's border-radius rather than poking past it. */
+    overflow: hidden;
     /* No margin-bottom — Gridstack handles spacing. The 16px was adding
        to content scrollHeight beyond fitToContent's measurement, causing
        a residual vertical scrollbar at default size. */
@@ -1986,6 +1992,57 @@
   /* Economy indicator cards (monthly data) */
   /* Economic calendar — compact density matching the commodity / currency
      sidebar tables (6/12 header, 4/12 rows, 10-11px fonts). */
+  /* Shared gold header band — used by the Index Snapshot, Macro Regime,
+     and Credit × Policy panels (and reusable by any future panel that
+     needs a title bar). Matches the existing .hm-cal-header / .hm-econ-header
+     styling so the dashboard reads as one cohesive product. Right side of
+     the header optionally carries a "Current: X" subtitle (in lighter
+     weight) for state-bearing panels like the regime quadrants. */
+  .hm-app .hm-gold-header {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--hm-white);
+    background: var(--hm-gold);
+    padding: 6px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    letter-spacing: 0.4px;
+  }
+  .hm-app .hm-gold-header .hm-gold-state {
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    opacity: 0.95;
+  }
+  .hm-app .hm-gold-header .hm-gold-state b {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-left: 4px;
+  }
+  /* When the gold header sits inside a padded card (.hm-gave-wrap, .hm-mc),
+     escape the parent's 16px padding via negative margins so the band
+     spans full width. The card's overflow:hidden + border-radius clips the
+     gold band's top corners to the card's rounded radius automatically. */
+  .hm-app .hm-gave-wrap > .hm-gold-header,
+  .hm-app .hm-mc > .hm-gold-header {
+    margin: -16px -16px 14px -16px;
+  }
+  /* Indexes wrapper — gives the gold header something to attach to without
+     touching the underlying 4-card grid layout. */
+  .hm-app .hm-indexes-section {
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-indexes-section > .hm-gold-header {
+    margin-bottom: 12px;
+    border-radius: var(--hm-r) var(--hm-r) 0 0;
+  }
+
   .hm-app .hm-cal-section {
     display: flex;
     flex-direction: column;
@@ -4122,7 +4179,9 @@
     '.hm-mc',
     '.hm-stylefactor',
     '.hm-gave',
+    '.hm-gave-wrap',
     '.hm-indexes',
+    '.hm-indexes-section',
     '.hm-scroll',
     '.hm-sector-section',
     '.hm-chart-section',
@@ -4162,7 +4221,7 @@
       goldHeader = card.querySelector(
         '.hm-factors-header, .hm-cal-header, .hm-econ-header, ' +
         '.hm-sector-header, .hm-mc-top, .hm-gave-top, .hm-sf-header, ' +
-        '.hm-treemap-header'
+        '.hm-treemap-header, .hm-gold-header'
       );
     }
     var ghH = goldHeader ? goldHeader.getBoundingClientRect().height : 0;
@@ -4804,17 +4863,25 @@
     if (!data.gave_quadrant) return;
     var g = data.gave_quadrant;
 
+    /* Gold title band attached to the parent wrap (.hm-gave-wrap) so it
+       spans the full card width above both the quadrant and the companion
+       charts. Lives on the wrap, not on the inner .hm-gave card, so it
+       doesn't move when companion charts collapse. Removed + re-added on
+       each render so "Current: X" stays fresh. */
+    var wrap = document.getElementById('hm-gave-wrap');
+    if (wrap) {
+      var existing = wrap.querySelector(':scope > .hm-gold-header');
+      if (existing) existing.remove();
+      var hdr = document.createElement('div');
+      hdr.className = 'hm-gold-header';
+      hdr.innerHTML =
+        '<span>Macro Regime &middot; Gave Four Quadrants</span>' +
+        '<span class="hm-gold-state">Current:<b>' + g.label + '</b></span>';
+      wrap.insertBefore(hdr, wrap.firstChild);
+    }
+
     var card = document.createElement('div');
     card.className = 'hm-gave';
-
-    /* Header: label + current state */
-    var top = document.createElement('div');
-    top.className = 'hm-gave-top';
-    top.innerHTML =
-      '<span class="hm-gave-label">Macro Regime &middot; Gave Four Quadrants</span>' +
-      '<span><span class="hm-gave-state-label">Current:</span>' +
-        '<span class="hm-gave-state">' + g.label + '</span></span>';
-    card.appendChild(top);
 
     /* Frame: axis labels + continuous plane */
     var frame = document.createElement('div');
@@ -5097,13 +5164,16 @@
     var card = document.createElement('div');
     card.className = 'hm-mc';
 
-    var top = document.createElement('div');
-    top.className = 'hm-mc-top';
-    top.innerHTML =
-      '<span class="hm-mc-label">Credit \u00d7 Policy Regime</span>' +
-      '<span><span class="hm-mc-state-label">Current:</span>' +
-        '<span class="hm-mc-state">' + m.label + '</span></span>';
-    card.appendChild(top);
+    /* Gold title band \u2014 replaces the old grey .hm-mc-top. Sits at the
+       very top of the .hm-mc card (negative-margin to escape the card's
+       16px padding) so it visually anchors the panel like the other
+       gold-headed panels (Calendar, Economic Indicators, Factors). */
+    var hdr = document.createElement('div');
+    hdr.className = 'hm-gold-header';
+    hdr.innerHTML =
+      '<span>Credit \u00d7 Policy Regime</span>' +
+      '<span class="hm-gold-state">Current:<b>' + m.label + '</b></span>';
+    card.appendChild(hdr);
 
     var frame = document.createElement('div');
     frame.className = 'hm-mc-frame';
@@ -5202,6 +5272,19 @@
     indexChartInstances = [];
 
     var theme = getTheme();
+
+    /* Wrap the 4-card grid inside a section that carries the gold title
+       band. The cards themselves keep their existing per-card chrome
+       (border + sparkline); the section is just structural to anchor the
+       header above. Title says "Index Snapshot" to match PANEL_TITLES. */
+    var section = document.createElement('div');
+    section.className = 'hm-indexes-section';
+
+    var hdr = document.createElement('div');
+    hdr.className = 'hm-gold-header';
+    hdr.innerHTML = '<span>Index Snapshot</span>';
+    section.appendChild(hdr);
+
     var grid = document.createElement('div');
     grid.className = 'hm-indexes';
 
@@ -5301,7 +5384,8 @@
         indexChartInstances.push(chart);
       }
     });
-    container.appendChild(grid);
+    section.appendChild(grid);
+    container.appendChild(section);
   }
 
   /* ---------- Shared helpers for currency / commodity tables ---------- */
