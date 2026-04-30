@@ -2821,38 +2821,50 @@
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 12px;
   }
+  /* Treemap grid is a vertical stack of category rows. Each row has its
+     own label + horizontal block strip. With single-column layout, each
+     category gets its own row regardless of tile count — no awkward
+     side-by-side group wrapping that creates the "label floats over a
+     gap" alignment issue. */
   .hm-app .hm-treemap-grid {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-direction: column;
+    gap: 10px;
   }
   .hm-app .hm-treemap-group {
-    flex: 1 1 auto;
-    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
   .hm-app .hm-treemap-cat {
     font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-brown);
-    padding: 0 2px 4px;
+    letter-spacing: 0.4px;
+    padding: 0 2px;
   }
   .hm-app .hm-treemap-blocks {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
   }
+  /* Tiles flex-grow to fill the row. No max-width: a single-tile category
+     fills the row rather than leaving rigid empty space to the right.
+     Multi-tile categories share the row equally. min-width: 78px keeps
+     the ticker + return readable; the row wraps when more tiles than fit. */
   .hm-app .hm-treemap-block {
-    flex: 1 1 0;
-    min-width: 72px;
-    max-width: 140px;
-    height: 76px;
-    padding: 10px 8px;
+    flex: 1 1 78px;
+    min-width: 78px;
+    height: 92px;
+    padding: 8px 8px 6px;
     border-radius: var(--hm-r);
     text-align: center;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     box-sizing: border-box;
+    position: relative;
   }
   .hm-app .hm-treemap-ticker {
     font-size: 13px;
@@ -2862,18 +2874,74 @@
   .hm-app .hm-treemap-name {
     font-size: 9px;
     font-weight: 500;
-    line-height: 1.2;
-    margin-top: 2px;
+    line-height: 1.15;
+    margin-top: 1px;
     opacity: 0.85;
   }
   .hm-app .hm-treemap-ret {
     font-size: 12px;
     font-weight: 700;
-    margin-top: 4px;
+    margin-top: 3px;
+  }
+  /* Sparkline at the bottom of each tile — single-tone (currentColor) at
+     50% opacity so it never competes with the return number. Fixed 13W
+     weekly path regardless of selected period; gives "shape of trend"
+     context without trying to match the period button. */
+  .hm-app .hm-treemap-spark {
+    display: block;
+    width: 100%;
+    height: 14px;
+    margin-top: auto;
+    opacity: 0.5;
+  }
+  .hm-app .hm-treemap-spark svg { display: block; width: 100%; height: 100%; }
+  /* AUM signal-strength indicator — 3 dots in top-right corner. Filled
+     count = tier (1=small <$1B, 2=mid $1-10B, 3=large >$10B). Native title
+     attribute carries the actual AUM number on hover so the bar isn't
+     just decorative. */
+  .hm-app .hm-treemap-aum {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    pointer-events: auto;
+  }
+  .hm-app .hm-treemap-aum .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0.55;
+    box-sizing: border-box;
+  }
+  .hm-app .hm-treemap-aum .dot.filled {
+    background: currentColor;
+    opacity: 0.85;
+  }
+  /* Mode toggle (Abs / vs SPY) — paired buttons with active-state styling
+     matching the period buttons. Visually grouped as one control so the
+     user reads them as a single binary toggle, not as four buttons. */
+  .hm-app .hm-treemap-toggle {
+    display: inline-flex;
+    margin-left: 8px;
+    border-left: 1px solid var(--hm-border);
+    padding-left: 8px;
+  }
+  /* Subtle dimming on the relative-mode subtitle so it doesn't fight the
+     header. Only shown when the toggle is in vs-SPY mode. */
+  .hm-app .hm-treemap-mode-note {
+    margin-left: 8px;
+    font-size: 9.5px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    opacity: 0.65;
+    font-style: italic;
   }
   @media (max-width: 700px) {
-    .hm-app .hm-treemap-blocks { flex-wrap: wrap; }
-    .hm-app .hm-treemap-block { min-width: 60px; }
+    .hm-app .hm-treemap-block { min-width: 70px; }
   }
 
   /* Sector / Theme performance grid */
@@ -7377,13 +7445,72 @@
     'KWEB': { title: 'China Internet (KWEB)',       body: 'KraneShares CSI China Internet ETF. Chinese internet leaders (Alibaba, Tencent, Pinduoduo, JD, Meituan, Baidu). High beta, regulatory-sensitive proxy for China-tech sentiment and EM capital flows.' },
   };
 
+  /* Toggle state — 'abs' shows absolute return, 'rel' shows return minus
+     SPY's return for the same period. Persisted across re-renders. */
+  var treemapMode = 'abs';
+
+  /* Build a tiny single-tone sparkline path from a 13W weekly close array.
+     Uses currentColor + opacity 0.5 (CSS) so it adapts to the tile's heat
+     color automatically — same hue, washed out so it doesn't compete
+     with the return number. */
+  function _buildTreemapSpark(spark) {
+    if (!spark || spark.length < 2) return '';
+    var w = 60, h = 14;
+    var mn = Math.min.apply(null, spark);
+    var mx = Math.max.apply(null, spark);
+    var range = mx - mn || 1;
+    var stepX = w / (spark.length - 1);
+    var pts = spark.map(function (v, i) {
+      return (i * stepX).toFixed(1) + ',' + (h - ((v - mn) / range) * h).toFixed(1);
+    }).join(' ');
+    return (
+      '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+        '<polyline points="' + pts + '" fill="none" stroke="currentColor" ' +
+          'stroke-width="1.2" stroke-linejoin="round"/>' +
+      '</svg>'
+    );
+  }
+
+  /* AUM signal-strength dots. Tier comes from the backend
+     (small <$1B, mid $1–10B, large >$10B). Returns 3 dot spans, with
+     the appropriate count `filled`. Title attr carries the actual AUM. */
+  function _buildAumDots(aum, tier) {
+    if (!tier) return '';   // missing AUM → render nothing rather than a fake "?"
+    var fillCount = tier === 'large' ? 3 : tier === 'mid' ? 2 : 1;
+    var aumStr = '';
+    if (typeof aum === 'number') {
+      aumStr = aum >= 1e9 ? '$' + (aum / 1e9).toFixed(1) + 'B' : '$' + (aum / 1e6).toFixed(0) + 'M';
+    }
+    var title = 'AUM: ' + aumStr + ' (' + tier + ')';
+    var html = '<div class="hm-treemap-aum" title="' + title + '">';
+    for (var i = 0; i < 3; i++) {
+      html += '<span class="dot' + (i < fillCount ? ' filled' : '') + '"></span>';
+    }
+    return html + '</div>';
+  }
+
   function renderThemeTreemap(data) {
     var container = document.getElementById('hm-theme-treemap');
     if (!container || !data.themes || !data.themes.length) return;
     container.innerHTML = '';
     var theme = getTheme();
 
-    /* Group themes by category, preserving order */
+    var spyReturns = data.spy_returns || {};
+
+    /* Resolve a theme's value for the current (period, mode). In 'rel'
+       mode subtract SPY's same-period return; if either is null, the
+       displayed value is null too (will render as `—` with tooltip). */
+    function valueFor(t) {
+      var raw = t[treemapPeriod];
+      if (treemapMode === 'rel') {
+        var sp = spyReturns[treemapPeriod];
+        if (raw == null || sp == null) return null;
+        return Math.round((raw - sp) * 100) / 100;
+      }
+      return raw;
+    }
+
+    /* Group themes by category, preserving input order */
     var catOrder = [];
     var catMap = {};
     data.themes.forEach(function (t) {
@@ -7391,23 +7518,17 @@
       if (!catMap[cat]) { catMap[cat] = []; catOrder.push(cat); }
       catMap[cat].push(t);
     });
-    /* Sort within each category by the current period (strongest first) */
-    catOrder.forEach(function (cat) {
-      catMap[cat].sort(function (a, b) {
-        var av = a[treemapPeriod], bv = b[treemapPeriod];
-        if (av == null) return 1;
-        if (bv == null) return -1;
-        return bv - av;
-      });
-    });
 
     var section = document.createElement('div');
     section.className = 'hm-treemap-section';
 
-    /* Header with period buttons */
+    /* Header with period + mode toggle */
     var hdr = document.createElement('div');
     hdr.className = 'hm-treemap-header';
-    hdr.innerHTML = '<span>Thematic Trends</span>';
+    var hdrTitle = document.createElement('span');
+    hdrTitle.innerHTML = 'Thematic Trends<span class="hm-treemap-mode-note" id="hm-tm-modenote"></span>';
+    hdr.appendChild(hdrTitle);
+
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-treemap-period-btns';
     var periodOpts = [
@@ -7427,6 +7548,32 @@
       });
       btnWrap.appendChild(btn);
     });
+
+    /* Mode toggle (Abs / vs SPY) — same button styling as period for
+       visual consistency, separated by a vertical rule so the user
+       reads it as a distinct control. */
+    var modeWrap = document.createElement('span');
+    modeWrap.className = 'hm-treemap-toggle';
+    var modeOpts = [
+      { label: 'Abs',    key: 'abs', title: 'Absolute return' },
+      { label: 'vs SPY', key: 'rel', title: 'Return minus SPY for the same period' }
+    ];
+    modeOpts.forEach(function (m) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-treemap-period-btn' + (treemapMode === m.key ? ' active' : '');
+      btn.textContent = m.label;
+      btn.title = m.title;
+      btn.addEventListener('click', function () {
+        treemapMode = m.key;
+        modeWrap.querySelectorAll('.hm-treemap-period-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        updateTreemapColors();
+      });
+      modeWrap.appendChild(btn);
+    });
+    btnWrap.appendChild(modeWrap);
+
     hdr.appendChild(btnWrap);
     section.appendChild(hdr);
 
@@ -7458,10 +7605,15 @@
           block.setAttribute('data-tip', tip.body);
         }
 
+        var sparkSvg = _buildTreemapSpark(t.sparkline || []);
+        var aumDots = _buildAumDots(t.aum, t.aum_tier);
+
         block.innerHTML =
+          aumDots +
           '<div class="hm-treemap-ticker">' + t.ticker + '</div>' +
           '<div class="hm-treemap-name">' + t.name + '</div>' +
-          '<div class="hm-treemap-ret" data-key="ret"></div>';
+          '<div class="hm-treemap-ret" data-key="ret"></div>' +
+          '<div class="hm-treemap-spark">' + sparkSvg + '</div>';
 
         block._themeData = t;
         allBlocks.push(block);
@@ -7476,35 +7628,55 @@
     section.appendChild(body);
     container.appendChild(section);
 
-    /* Color all blocks based on current period */
+    /* Color all blocks based on current (period, mode) */
     function updateTreemapColors() {
       var theme = getTheme();
-      /* Re-sort blocks within each category group */
+      /* Header subtitle reflects current mode so the user always knows
+         what they're looking at without parsing the toggle state. */
+      var noteEl = document.getElementById('hm-tm-modenote');
+      if (noteEl) noteEl.textContent = (treemapMode === 'rel') ? '· vs SPY' : '';
+
+      /* Re-sort blocks within each category group by current value */
       var groups = grid.querySelectorAll('.hm-treemap-blocks');
       groups.forEach(function (blocksEl) {
         var blocks = Array.from(blocksEl.children);
         blocks.sort(function (a, b) {
-          var av = a._themeData[treemapPeriod], bv = b._themeData[treemapPeriod];
+          var av = valueFor(a._themeData), bv = valueFor(b._themeData);
           if (av == null) return 1;
           if (bv == null) return -1;
           return bv - av;
         });
         blocks.forEach(function (b) { blocksEl.appendChild(b); });
       });
-      /* Update colors and values */
+
+      /* Update colors and return-cell text */
       allBlocks.forEach(function (block) {
         var t = block._themeData;
-        var val = t[treemapPeriod];
+        var val = valueFor(t);
         var retEl = block.querySelector('[data-key="ret"]');
         if (val == null) {
-          retEl.textContent = '--';
+          retEl.textContent = '—';
           block.style.background = 'var(--hm-bg-alt)';
           block.style.color = 'var(--hm-muted)';
+          /* Native tooltip explains the null: usually = fund's history
+             doesn't cover the selected period, OR (in rel mode) SPY data
+             missing for that period. */
+          var reason = '';
+          if (treemapMode === 'rel' && spyReturns[treemapPeriod] == null) {
+            reason = 'SPY return unavailable for this period.';
+          } else if (t.inception) {
+            reason = 'Period unavailable. Inception: ' + t.inception + '.';
+          } else {
+            reason = 'Period unavailable.';
+          }
+          block.title = reason;
         } else {
-          retEl.textContent = val.toFixed(1) + '%';
+          var sign = val >= 0 ? '+' : '';
+          retEl.textContent = sign + val.toFixed(1) + '%';
           var paint = perfCellPaint(val, theme);
           block.style.background = paint.bg;
           block.style.color = paint.fg;
+          block.title = '';
         }
       });
     }
