@@ -185,35 +185,33 @@
   /* Gridstack POC: minimal chrome so the panels look like they did before,
      with drag handles (top edge) + a visible resize corner. */
   .hm-app .grid-stack {
-    /* Measurable grid backdrop — graph-paper style with two layers:
-         MAJOR lines at 1/12 of grid width and every 40px — these are the
-                     "real" gs-w / gs-h unit boundaries. Count these for
-                     measurement: 6 majors across × 4 majors down → gs-w="6"
-                     gs-h="4" in the HTML.
-         MINOR lines every 1/24 of width and every 20px — pure visual
-                     density so the grid doesn't feel sparse. They mark
-                     half-units, useful as reference but not counted.
-       Both layers kept very subtle so panel content stays the focus. */
+    /* Wheat-kernel measurement grid. Each "kernel" (vertical gold ellipse)
+       sits at the center of one gs-w × gs-h unit, so the kernels lay out
+       on a 12-column × 40px-row lattice. Count kernels to size: e.g. 6
+       kernels across × 4 down → set gs-w="6" gs-h="4" in the HTML.
+       Kept subtle so panel content stays the focus. On-brand for the
+       bread/wheat theme — reads as scattered grain on linen rather than
+       as graph paper. */
     background-color: transparent;
     background-image:
-      linear-gradient(to right, rgba(138, 126, 94, 0.22) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(138, 126, 94, 0.22) 1px, transparent 1px),
-      linear-gradient(to right, rgba(138, 126, 94, 0.10) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(138, 126, 94, 0.10) 1px, transparent 1px);
-    background-size:
-      calc(100% / 12) 100%,
-      100% 40px,
-      calc(100% / 24) 100%,
-      100% 20px;
-    background-position: 0 0, 0 0, 0 0, 0 0;
+      radial-gradient(
+        ellipse 1.6px 2.8px at 50% 50%,
+        rgba(218, 165, 32, 0.55) 0%,
+        rgba(218, 165, 32, 0.40) 55%,
+        transparent 100%
+      );
+    background-size: calc(100% / 12) 40px;
+    background-position: 0 0;
     min-height: 800px;
   }
   .hm-app.dark .grid-stack {
     background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
-      linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      radial-gradient(
+        ellipse 1.6px 2.8px at 50% 50%,
+        rgba(218, 165, 32, 0.55) 0%,
+        rgba(218, 165, 32, 0.35) 55%,
+        transparent 100%
+      );
   }
   /* High specificity to win against Gridstack's default rule. The cell
      handles BOTH overflow directions, so the horizontal scrollbar pins
