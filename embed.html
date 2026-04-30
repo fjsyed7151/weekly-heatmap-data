@@ -6465,6 +6465,10 @@
 
   /* ---------- Factors panel (Koyfin-style, 3 grouped columns) ---------- */
   var fPeriod = 'm1';
+  /* Abs = each factor's own period return; rel = excess vs SPY for the same
+     period. Default to 'rel' since "factor" framing implies relative-to-market
+     reading (a factor's edge IS its excess return). */
+  var fMode = 'rel';
 
   /* Plain-language tooltip text for each factor ETF. Keyed by ticker since
      names can drift; ticker is the stable identifier. */
@@ -6519,7 +6523,7 @@
     var hdr = document.createElement('div');
     hdr.className = 'hm-factors-header';
     var title = document.createElement('span');
-    title.textContent = 'Factors vs. S&P 500';
+    title.textContent = 'Factors Performance';
     hdr.appendChild(title);
 
     var btnWrap = document.createElement('div');
@@ -6531,7 +6535,9 @@
       btn.textContent = p.label;
       btn.addEventListener('click', function () {
         fPeriod = p.key;
-        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+        /* Only reset period buttons inside the period group, not the
+           Abs/vs SPY toggle that lives next to it. */
+        btnWrap.querySelectorAll(':scope > .hm-factors-period-btn').forEach(function (b) {
           b.classList.remove('active');
         });
         btn.classList.add('active');
@@ -6539,6 +6545,33 @@
       });
       btnWrap.appendChild(btn);
     });
+
+    /* Mode toggle (Abs / vs SPY) — same chrome as period buttons, separated
+       by a vertical rule so it reads as a distinct binary control. Reuses
+       .hm-treemap-toggle for the divider styling. */
+    var modeWrap = document.createElement('span');
+    modeWrap.className = 'hm-treemap-toggle';
+    [
+      { label: 'Abs',    key: 'abs', title: 'Absolute return' },
+      { label: 'vs SPY', key: 'rel', title: 'Return minus SPY for the same period' }
+    ].forEach(function (m) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-factors-period-btn' + (fMode === m.key ? ' active' : '');
+      btn.textContent = m.label;
+      btn.title = m.title;
+      btn.addEventListener('click', function () {
+        fMode = m.key;
+        modeWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        updateFactorRows();
+      });
+      modeWrap.appendChild(btn);
+    });
+    btnWrap.appendChild(modeWrap);
+
     hdr.appendChild(btnWrap);
     card.appendChild(hdr);
 
@@ -6607,10 +6640,12 @@
 
     function updateFactorRows() {
       var th = getTheme();
-      var vsKey = 'vs_' + fPeriod;
+      /* Mode-driven key: 'rel' uses excess-vs-SPY (vs_m1, vs_y1, ...);
+         'abs' uses the factor's own period return (m1, y1, ...). */
+      var dataKey = (fMode === 'rel') ? ('vs_' + fPeriod) : fPeriod;
 
       /* Group rows by their list container, sort each group by current
-         period's excess vs SPY (best at top), re-append in order. */
+         (period, mode) value (best at top), re-append in order. */
       var byList = new Map();
       allRows.forEach(function (r) {
         if (!byList.has(r._list)) byList.set(r._list, []);
@@ -6618,7 +6653,7 @@
       });
       byList.forEach(function (rows, list) {
         rows.sort(function (a, b) {
-          var av = a._data[vsKey], bv = b._data[vsKey];
+          var av = a._data[dataKey], bv = b._data[dataKey];
           if (av == null) return 1;
           if (bv == null) return -1;
           return bv - av;
@@ -6626,21 +6661,20 @@
         rows.forEach(function (r) { list.appendChild(r); });
       });
 
-      /* Color + fill each row based on vs SPY (the meaningful signal since
-         "Factors vs. S&P 500" is in the title). */
+      /* Color + fill each row based on the active mode's value. */
       allRows.forEach(function (row) {
         var f = row._data;
-        var vsVal = f[vsKey];
+        var val = f[dataKey];
         var retEl = row.querySelector('.hm-factors-ret');
-        if (vsVal == null) {
+        if (val == null) {
           retEl.textContent = '\u2014';
           row.style.background = '';
           row.style.color = '';
           return;
         }
-        var sign = vsVal >= 0 ? '+' : '';
-        retEl.textContent = sign + vsVal.toFixed(1) + '%';
-        var paint = perfCellPaint(vsVal, th);
+        var sign = val >= 0 ? '+' : '';
+        retEl.textContent = sign + val.toFixed(1) + '%';
+        var paint = perfCellPaint(val, th);
         row.style.background = paint.bg;
         row.style.color = paint.fg;
       });
