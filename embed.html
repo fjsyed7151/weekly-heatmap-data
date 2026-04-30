@@ -2895,36 +2895,13 @@
     opacity: 0.5;
   }
   .hm-app .hm-treemap-spark svg { display: block; width: 100%; height: 100%; }
-  /* AUM signal-strength indicator — 3 dots in top-right corner. Filled
-     count = tier (1=small <$1B, 2=mid $1-10B, 3=large >$10B). Native title
-     attribute carries the actual AUM number on hover so the bar isn't
-     just decorative. */
-  .hm-app .hm-treemap-aum {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    display: flex;
-    gap: 2px;
-    align-items: center;
-    pointer-events: auto;
-  }
-  .hm-app .hm-treemap-aum .dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    border: 1px solid currentColor;
-    opacity: 0.55;
-    box-sizing: border-box;
-  }
-  .hm-app .hm-treemap-aum .dot.filled {
-    background: currentColor;
-    opacity: 0.85;
-  }
   /* Mode toggle (Abs / vs SPY) — paired buttons with active-state styling
      matching the period buttons. Visually grouped as one control so the
-     user reads them as a single binary toggle, not as four buttons. */
+     user reads them as a single binary toggle, not as four buttons.
+     Uses the same 4px inter-button gap as the period group. */
   .hm-app .hm-treemap-toggle {
     display: inline-flex;
+    gap: 4px;
     margin-left: 8px;
     border-left: 1px solid var(--hm-border);
     padding-left: 8px;
@@ -7449,44 +7426,58 @@
      SPY's return for the same period. Persisted across re-renders. */
   var treemapMode = 'abs';
 
-  /* Build a tiny single-tone sparkline path from a 13W weekly close array.
-     Uses currentColor + opacity 0.5 (CSS) so it adapts to the tile's heat
-     color automatically — same hue, washed out so it doesn't compete
-     with the return number. */
-  function _buildTreemapSpark(spark) {
+  /* How many weeks of the 52W sparkline to show for each period. We have
+     weekly granularity, so 1W and 1M would be 1-4 points (too coarse to
+     read). For those we floor at 4 weeks so there's still a meaningful
+     shape; the period label tells the user the period for the RETURN
+     number, the sparkline is "recent path" context. */
+  function _sparkWeeksFor(period) {
+    if (period === 'w1') return 4;
+    if (period === 'm1') return 4;
+    if (period === 'm3') return 13;
+    if (period === 'y1') return 52;
+    if (period === 'ytd') {
+      /* Weeks elapsed in the current year — anchored to the most recent
+         Friday close, so this is the YTD path. Clamp to [4, 52]. */
+      var now = new Date();
+      var jan1 = new Date(now.getFullYear(), 0, 1);
+      var weeks = Math.ceil((now - jan1) / (1000 * 60 * 60 * 24 * 7));
+      return Math.max(4, Math.min(52, weeks));
+    }
+    return 13;
+  }
+
+  /* Single-tone sparkline path from the trailing N weekly closes (where
+     N is determined by the active period). Renders with currentColor +
+     opacity 0.5 (CSS) so it adapts to the tile's heat color.
+
+     Fixes from earlier version:
+     - 1px y-padding inside the viewBox so the line doesn't clip at min/max
+     - vector-effect=non-scaling-stroke keeps stroke pixel-fixed despite
+       the viewBox stretch
+     - linecap+linejoin=round smooths sharp angles between segments */
+  function _buildTreemapSpark(spark, period) {
     if (!spark || spark.length < 2) return '';
-    var w = 60, h = 14;
-    var mn = Math.min.apply(null, spark);
-    var mx = Math.max.apply(null, spark);
+    var weeks = Math.min(_sparkWeeksFor(period), spark.length);
+    var slice = spark.slice(-weeks);
+    if (slice.length < 2) return '';
+    var w = 60, h = 16, padY = 1;
+    var mn = Math.min.apply(null, slice);
+    var mx = Math.max.apply(null, slice);
     var range = mx - mn || 1;
-    var stepX = w / (spark.length - 1);
-    var pts = spark.map(function (v, i) {
-      return (i * stepX).toFixed(1) + ',' + (h - ((v - mn) / range) * h).toFixed(1);
+    var stepX = w / (slice.length - 1);
+    var usableH = h - 2 * padY;
+    var pts = slice.map(function (v, i) {
+      return (i * stepX).toFixed(1) + ',' +
+        (h - padY - ((v - mn) / range) * usableH).toFixed(1);
     }).join(' ');
     return (
       '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
         '<polyline points="' + pts + '" fill="none" stroke="currentColor" ' +
-          'stroke-width="1.2" stroke-linejoin="round"/>' +
+          'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" ' +
+          'vector-effect="non-scaling-stroke"/>' +
       '</svg>'
     );
-  }
-
-  /* AUM signal-strength dots. Tier comes from the backend
-     (small <$1B, mid $1–10B, large >$10B). Returns 3 dot spans, with
-     the appropriate count `filled`. Title attr carries the actual AUM. */
-  function _buildAumDots(aum, tier) {
-    if (!tier) return '';   // missing AUM → render nothing rather than a fake "?"
-    var fillCount = tier === 'large' ? 3 : tier === 'mid' ? 2 : 1;
-    var aumStr = '';
-    if (typeof aum === 'number') {
-      aumStr = aum >= 1e9 ? '$' + (aum / 1e9).toFixed(1) + 'B' : '$' + (aum / 1e6).toFixed(0) + 'M';
-    }
-    var title = 'AUM: ' + aumStr + ' (' + tier + ')';
-    var html = '<div class="hm-treemap-aum" title="' + title + '">';
-    for (var i = 0; i < 3; i++) {
-      html += '<span class="dot' + (i < fillCount ? ' filled' : '') + '"></span>';
-    }
-    return html + '</div>';
   }
 
   function renderThemeTreemap(data) {
@@ -7605,15 +7596,11 @@
           block.setAttribute('data-tip', tip.body);
         }
 
-        var sparkSvg = _buildTreemapSpark(t.sparkline || []);
-        var aumDots = _buildAumDots(t.aum, t.aum_tier);
-
         block.innerHTML =
-          aumDots +
           '<div class="hm-treemap-ticker">' + t.ticker + '</div>' +
           '<div class="hm-treemap-name">' + t.name + '</div>' +
           '<div class="hm-treemap-ret" data-key="ret"></div>' +
-          '<div class="hm-treemap-spark">' + sparkSvg + '</div>';
+          '<div class="hm-treemap-spark" data-key="spark"></div>';
 
         block._themeData = t;
         allBlocks.push(block);
@@ -7649,11 +7636,16 @@
         blocks.forEach(function (b) { blocksEl.appendChild(b); });
       });
 
-      /* Update colors and return-cell text */
+      /* Update colors, return-cell text, AND the sparkline path. The
+         sparkline window matches the active period (via _sparkWeeksFor)
+         so the path you see is the path for the returns you're looking
+         at, not a fixed-13W-regardless. */
       allBlocks.forEach(function (block) {
         var t = block._themeData;
         var val = valueFor(t);
         var retEl = block.querySelector('[data-key="ret"]');
+        var sparkEl = block.querySelector('[data-key="spark"]');
+        if (sparkEl) sparkEl.innerHTML = _buildTreemapSpark(t.sparkline || [], treemapPeriod);
         if (val == null) {
           retEl.textContent = '—';
           block.style.background = 'var(--hm-bg-alt)';
