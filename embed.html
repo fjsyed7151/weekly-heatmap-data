@@ -2444,7 +2444,17 @@
     /* 3-col grid drops to 2-col here (matches grid-template-columns
        override in the layout block). Re-derive borders for the new
        layout: every card gets right + bottom by default, then strip
-       last-col right + last-row bottom for the 2-col shape. */
+       last-col right + last-row bottom for the 2-col shape.
+
+       Parity-aware row stripping: with 3 cards in a 2-col grid, layout
+       is [1][2] / [3]_  — only card 3 is in the last row. A blanket
+       :nth-last-child(-n+2) would strip card 2's border-bottom too,
+       removing the row-1/row-2 divider on the right half of the grid
+       and making card 3 look like it's missing a top border. So we
+       strip :last-child always, and only also strip :nth-last-child(2)
+       when it sits at an odd nth-child position (= left col, paired
+       with a right-col last-child = even-count grid where the last
+       row genuinely has 2 cards). */
     .hm-app .hm-econ-grid-3 > .hm-econ-card {
       border-right: 1px solid var(--hm-border) !important;
       border-bottom: 1px solid var(--hm-border) !important;
@@ -2452,7 +2462,10 @@
     .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(2n) {
       border-right: none !important;
     }
-    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(-n+2) {
+    .hm-app .hm-econ-grid-3 > .hm-econ-card:last-child {
+      border-bottom: none !important;
+    }
+    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(2):nth-child(odd) {
       border-bottom: none !important;
     }
   }
