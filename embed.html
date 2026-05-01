@@ -2815,6 +2815,30 @@
     font-weight: 700;
     white-space: nowrap;
   }
+  /* Yield + duration cluster shown between name and return cells.
+     Compact "5.4% / 8.4y" — yield in brown (income), separator faint,
+     duration in muted (rate-risk hint). Cursor:help signals there's a
+     tooltip with the freshness date. */
+  .hm-app .hm-fi-yd {
+    font-size: 10.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: help;
+    margin-right: 8px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-app .hm-fi-yld {
+    color: var(--hm-brown);
+  }
+  .hm-app .hm-fi-yd-sep {
+    color: var(--hm-muted);
+    opacity: 0.5;
+    margin: 0 3px;
+  }
+  .hm-app .hm-fi-dur {
+    color: var(--hm-muted);
+  }
 
   /* Global Indexes rankings — reuses the factors card chrome (header + period
      pills + horizontal scroll wrap); 4-column body (Americas / Europe /
@@ -7316,7 +7340,14 @@
 
   function renderFixedIncome(data) {
     var container = document.getElementById('hm-fixed-income');
-    if (!container || !data.fixed_income || !data.fixed_income.length) return;
+    if (!container || !data.fixed_income) return;
+    /* Schema normalizer: backend used to return a flat list of groups,
+       now returns {groups, ref_as_of}. Support both so a frontend deploy
+       ahead of a backend rebuild doesn't blank the panel. */
+    var fi = Array.isArray(data.fixed_income)
+      ? { groups: data.fixed_income, ref_as_of: '' }
+      : data.fixed_income;
+    if (!fi.groups || !fi.groups.length) return;
     container.innerHTML = '';
 
     var card = document.createElement('div');
@@ -7353,8 +7384,12 @@
     body.className = 'hm-fi-body';
 
     var allRows = [];
+    /* Reference data freshness banner — yield + duration are static config
+       refreshed manually each quarter, so flag the freshness in the
+       panel info-popup. */
+    var refAsOfLabel = fi.ref_as_of ? ('Yield/duration as of ' + fi.ref_as_of) : '';
 
-    data.fixed_income.forEach(function (group) {
+    fi.groups.forEach(function (group) {
       var col = document.createElement('div');
       col.className = 'hm-fi-col';
 
@@ -7378,10 +7413,27 @@
         } else {
           row.setAttribute('title', f.name + ' (' + f.ticker + ')');
         }
+        /* Yield + duration cluster: shown next to the ticker as compact
+           "Yld / Dur" pills. Price return alone is misleading without
+           the income on the position and its rate-sensitivity. */
+        var ydHtml = '';
+        if (f.yield_pct != null && f.duration_yrs != null) {
+          ydHtml =
+            '<span class="hm-fi-yd" title="' +
+              ('30-day SEC yield: ' + f.yield_pct.toFixed(1) + '%' +
+               '\nEffective duration: ' + f.duration_yrs.toFixed(1) + 'y' +
+               (refAsOfLabel ? '\n(' + refAsOfLabel + ')' : '')).replace(/"/g, '&quot;') +
+            '">' +
+              '<span class="hm-fi-yld">' + f.yield_pct.toFixed(1) + '%</span>' +
+              '<span class="hm-fi-yd-sep">/</span>' +
+              '<span class="hm-fi-dur">' + f.duration_yrs.toFixed(1) + 'y</span>' +
+            '</span>';
+        }
         row.innerHTML =
           '<span class="hm-fi-name">' + f.name +
             '<span class="hm-ticker">' + f.ticker + '</span>' +
           '</span>' +
+          ydHtml +
           '<span class="hm-fi-ret"></span>';
         row._data = f;
         row._list = list;
