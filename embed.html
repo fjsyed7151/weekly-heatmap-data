@@ -2785,7 +2785,9 @@
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
-  .hm-app .hm-fi-row:last-child { border-bottom: none; }
+  /* Keep border-bottom on last row — heat-painted cells need a visible
+     edge under them, otherwise the bottom row reads as "running off"
+     the panel without a clean bottom divider. */
   @media (hover: hover) {
     .hm-app .hm-fi-row:hover {
       outline: 2px solid var(--hm-gold);
@@ -2880,7 +2882,7 @@
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
-  .hm-app .hm-gi-row:last-child { border-bottom: none; }
+  /* (border-bottom on last row preserved — see hm-fi-row note above.) */
   @media (hover: hover) {
     .hm-app .hm-gi-row:hover {
       outline: 2px solid var(--hm-gold);
@@ -2950,7 +2952,7 @@
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
-  .hm-app .hm-ce-row:last-child { border-bottom: none; }
+  /* (border-bottom on last row preserved — see hm-fi-row note above.) */
   @media (hover: hover) {
     .hm-app .hm-ce-row:hover {
       outline: 2px solid var(--hm-gold);
@@ -3020,7 +3022,7 @@
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
-  .hm-app .hm-cp-row:last-child { border-bottom: none; }
+  /* (border-bottom on last row preserved — see hm-fi-row note above.) */
   @media (hover: hover) {
     .hm-app .hm-cp-row:hover {
       outline: 2px solid var(--hm-gold);
@@ -6826,9 +6828,11 @@
      values in a panel (instead of perfCellPaint's fixed +-10% cap, which
      made Korea +175% and Denmark +6.6% paint identical green).
 
-     Strategy: take the absolute max across all visible values as the
-     full-saturation reference, then apply a gamma-2 curve so the
-     strongest mover saturates fully and weaker ones fade noticeably.
+     Linear scale: |val| / maxAbs. Strongest cell saturates fully,
+     everything else gets a proportional gradient. Earlier version used
+     gamma 2 which pushed mid-values to gray and made ranking tables
+     read as "one outlier + a sea of gray". Linear keeps the gradient
+     visible while still letting the leader pop at full saturation.
      1% floor on max so a calm period (everything <0.5%) doesn't blast
      the panel red+green. */
   function buildHeatPaint(values, theme) {
@@ -6843,10 +6847,6 @@
       if (val == null || isNaN(val)) return { bg: '', fg: '' };
       var end = val >= 0 ? p.green : p.red;
       var k = Math.min(Math.abs(val) / maxAbs, 1);
-      /* Gamma 2: pushes mid+low values toward neutral, so the strongest
-         mover stands out clearly. A "barely positive" cell paints faint
-         instead of deep green when the panel has a big winner above it. */
-      k = k * k;
       var rgb = [0, 1, 2].map(function (i) {
         return Math.round(lerp(p.neutral[i], end[i], k));
       });
@@ -7350,6 +7350,25 @@
     if (!fi.groups || !fi.groups.length) return;
     container.innerHTML = '';
 
+    /* Register the panel info popup. */
+    window.PANEL_INFO_HTML['hm-fixed-income'] = function () {
+      var asOf = fi.ref_as_of ? (' (yield/duration as of ' + fi.ref_as_of + ')') : '';
+      return (
+        '<p><b>Bond ETF performance, sliced by exposure</b>: International credit, ' +
+          'US high-grade, US high-yield, US gov/agencies, US Treasury duration ladder.</p>' +
+        '<p><b>Yield / Duration</b>: 30-day SEC yield + effective duration shown next ' +
+          'to each ticker' + asOf + '. Price return alone is misleading without the ' +
+          'income on the position and its rate-sensitivity. Hover the pair for the ' +
+          'as-of date.</p>' +
+        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation is calibrated ' +
+          'per period to the strongest visible mover, so leaders pop without burying ' +
+          'mid-range cells in gray.</p>' +
+        '<p><b>Sort</b>: each column orders top-to-bottom by the active period\'s return.</p>'
+      );
+    };
+    var fiItem = document.querySelector('.grid-stack-item[gs-id="hm-fixed-income"]');
+    if (fiItem) fiItem.classList.add('hm-has-info');
+
     var card = document.createElement('div');
     card.className = 'hm-factors-card';
 
@@ -7555,6 +7574,23 @@
     var container = document.getElementById('hm-global-indexes');
     if (!container || !data.global_indexes || !data.global_indexes.length) return;
     container.innerHTML = '';
+
+    /* Register the panel info popup. */
+    window.PANEL_INFO_HTML['hm-global-indexes'] = function () {
+      return (
+        '<p><b>Regional equity indexes, in their local currency by default</b>: ' +
+          'Americas, Europe (incl. Turkey), Asia / Pacific.</p>' +
+        '<p><b>Local / USD toggle</b>: index returns are shipped in local currency. ' +
+          'Flip to USD to apply the local-vs-USD FX move and see what a US investor ' +
+          'would actually have earned. Critical for FX-distorted EM moves — Turkey ' +
+          'BIST in lira looks dramatically different in USD terms.</p>' +
+        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation calibrated per ' +
+          'period to the strongest visible mover.</p>' +
+        '<p><b>Sort</b>: each region orders top-to-bottom by the active period\'s return.</p>'
+      );
+    };
+    var giItem = document.querySelector('.grid-stack-item[gs-id="hm-global-indexes"]');
+    if (giItem) giItem.classList.add('hm-has-info');
 
     var card = document.createElement('div');
     card.className = 'hm-factors-card';
@@ -7776,6 +7812,24 @@
     if (!container || !data.country_etfs || !data.country_etfs.length) return;
     container.innerHTML = '';
 
+    /* Register the panel info popup. */
+    window.PANEL_INFO_HTML['hm-country-etfs'] = function () {
+      return (
+        '<p><b>Single-country ETF performance, regional split</b>: Americas, Europe, ' +
+          'Asia / Pacific, Mideast / Africa. Mostly iShares MSCI funds plus a few ' +
+          'Global X / VanEck alternatives where iShares isn\'t available.</p>' +
+        '<p><b>USD / Local toggle</b>: ETFs trade in USD so their returns are FX-' +
+          'adjusted by construction. Flip to Local to back out the local-vs-USD FX ' +
+          'move and see the underlying local-market return — useful for separating ' +
+          'currency moves from actual equity-market performance.</p>' +
+        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation calibrated per ' +
+          'period to the strongest visible mover.</p>' +
+        '<p><b>Sort</b>: each region orders top-to-bottom by the active period\'s return.</p>'
+      );
+    };
+    var ceItem = document.querySelector('.grid-stack-item[gs-id="hm-country-etfs"]');
+    if (ceItem) ceItem.classList.add('hm-has-info');
+
     var card = document.createElement('div');
     card.className = 'hm-factors-card';
 
@@ -7967,6 +8021,25 @@
     var container = document.getElementById('hm-commodity-perf');
     if (!container || !data.commodity_perf || !data.commodity_perf.length) return;
     container.innerHTML = '';
+
+    /* Register the panel info popup. */
+    window.PANEL_INFO_HTML['hm-commodity-perf'] = function () {
+      return (
+        '<p><b>Commodity performance rankings</b>: Energy, Metals, Agricultural, ' +
+          'Indices (broad-basket ETFs).</p>' +
+        '<p><b>Pricing basis pill</b> next to each ticker tells you what is actually ' +
+          'driving the row\'s return:<br>' +
+          '<b>FRONT-MONTH</b> — front-month futures contract<br>' +
+          '<b>FUTURES ETF</b> — ETF holding rolled futures (USO, GSG, DBC, BDRY)<br>' +
+          '<b>EQUITIES</b> — basket of producer/miner equities, used as a proxy where ' +
+          'no clean futures contract exists (Steel SLX, Coal COAL).</p>' +
+        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation calibrated per ' +
+          'period to the strongest visible mover.</p>' +
+        '<p><b>Sort</b>: each group orders top-to-bottom by the active period\'s return.</p>'
+      );
+    };
+    var cpItem = document.querySelector('.grid-stack-item[gs-id="hm-commodity-perf"]');
+    if (cpItem) cpItem.classList.add('hm-has-info');
 
     var card = document.createElement('div');
     card.className = 'hm-factors-card';
