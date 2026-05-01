@@ -1048,6 +1048,15 @@
   /* Alternating row bg */
   .hm-app .hm-commod-tbl tbody tr:nth-child(even) td { background: var(--hm-bg-alt); }
   .hm-app .hm-commod-tbl tbody tr:last-child td { border-bottom: none; }
+  /* Round the last row's first and last cells to match the wrap's 5px
+     bottom corner radius (same fix as the FX table — square cells were
+     clipping past the rounded wrap on the bottom row). */
+  .hm-app .hm-commod-tbl tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 5px;
+  }
+  .hm-app .hm-commod-tbl tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 5px;
+  }
   /* Row hover: matches sector / currency tables. We DO want the row-wide
      warm background on all cells EXCEPT the % 52W High cell, which carries
      its own heat-map conditional color (green/yellow/red) that shouldn't be
@@ -1211,6 +1220,16 @@
   .hm-app .hm-fx-tbl td:last-child { border-right: none; }
   .hm-app .hm-fx-tbl tbody tr:nth-child(even) td { background: var(--hm-bg-alt); }
   .hm-app .hm-fx-tbl tbody tr:last-child td { border-bottom: none; }
+  /* Round the last row's first and last cells to match the wrap's 5px
+     bottom-left/bottom-right radius — without this the square cell
+     corners poke past the rounded wrap, clipping the visual edge (most
+     visible on the bottom NOK row in the FX table). */
+  .hm-app .hm-fx-tbl tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 5px;
+  }
+  .hm-app .hm-fx-tbl tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 5px;
+  }
   /* Row hover: matches sector / commodity tables. % 52W High cell keeps its
      conditional heat-map color (marked `.hm-pct-keep` from the renderer). */
   @media (hover: hover) {
@@ -2416,18 +2435,40 @@
   .hm-app .hm-econ-grid-1 > .hm-econ-card:last-child { border-bottom: none; }
   .hm-app .hm-econ-grid:not(.hm-econ-grid-3) > .hm-econ-card:nth-last-child(-n+2) { border-bottom: none; }
   .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(-n+3) { border-bottom: none; }
-  /* Container-query overrides (3-col → 2-col → 1-col) need their own
-     last-col + last-row stripping when the grid template changes at runtime. */
+  /* Container-query overrides (3-col → 2-col → 1-col). The default rules
+     above use :nth-last-child specificity (0,2,1), so to fully reset
+     them in narrower breakpoints we either need higher specificity or
+     !important. Going with !important for clarity — these rules are an
+     intentional responsive override, not a cascade conflict. */
   @container (max-width: 360px) {
-    .hm-app .hm-econ-grid-3 > .hm-econ-card { border-right: 1px solid var(--hm-border); border-bottom: 1px solid var(--hm-border); }
-    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(2n) { border-right: none; }
-    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(-n+2) { border-bottom: none; }
+    /* 3-col grid drops to 2-col here (matches grid-template-columns
+       override in the layout block). Re-derive borders for the new
+       layout: every card gets right + bottom by default, then strip
+       last-col right + last-row bottom for the 2-col shape. */
+    .hm-app .hm-econ-grid-3 > .hm-econ-card {
+      border-right: 1px solid var(--hm-border) !important;
+      border-bottom: 1px solid var(--hm-border) !important;
+    }
+    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(2n) {
+      border-right: none !important;
+    }
+    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(-n+2) {
+      border-bottom: none !important;
+    }
   }
   @container (max-width: 260px) {
+    /* All grids drop to 1-col here. Every card stacks vertically so
+       there are no horizontal neighbors (no border-right) but every
+       card EXCEPT the last needs a horizontal divider (border-bottom). */
     .hm-app .hm-econ-grid > .hm-econ-card,
-    .hm-app .hm-econ-grid-3 > .hm-econ-card { border-right: none; }
+    .hm-app .hm-econ-grid-3 > .hm-econ-card {
+      border-right: none !important;
+      border-bottom: 1px solid var(--hm-border) !important;
+    }
     .hm-app .hm-econ-grid > .hm-econ-card:last-child,
-    .hm-app .hm-econ-grid-3 > .hm-econ-card:last-child { border-bottom: none; }
+    .hm-app .hm-econ-grid-3 > .hm-econ-card:last-child {
+      border-bottom: none !important;
+    }
   }
   .hm-app .hm-econ-name {
     font-size: 11px;
@@ -3651,7 +3692,7 @@
           <div class="grid-stack-item" gs-id="hm-indexes"         gs-x="0"  gs-y="0"   gs-w="4"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-macrocompass"    gs-x="4"  gs-y="0"   gs-w="4"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-calendar"        gs-x="8"  gs-y="0"   gs-w="2"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="10" gs-y="0"   gs-w="2"  gs-h="32"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="9"  gs-y="0"   gs-w="3"  gs-h="32"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-gave-wrap"       gs-x="0"  gs-y="4"   gs-w="4"  gs-h="24">
             <div class="grid-stack-item-content">
               <div class="hm-gave-wrap" id="hm-gave-wrap">
@@ -8453,7 +8494,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v14';
+  var LAYOUT_KEY = 'hm-grid-layout-v15';
   var GS_SCALE = 40;
   var gridInstance = null;
 
