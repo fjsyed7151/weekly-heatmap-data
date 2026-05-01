@@ -2077,20 +2077,26 @@
        resizeToContent + maxH cap, so the calendar list grows naturally
        to its full row count instead of being scrolled inside a 280px box. */
   }
-  /* Calendar row layout: 4-col grid so dot + name + datetime + prev all
-     align across rows regardless of variable string lengths.
-       col 1 = impact dot (fixed 12px)
-       col 2 = event name (flex 1fr — takes remaining width)
-       col 3 = date/time stack (date on top, time below)
-       col 4 = previous-value stack (label on top, value below, right-aligned)
+  /* Calendar row layout: 2-row "card" so the panel reads cleanly at narrow
+     widths (gs-w=2 ≈ 200px). Dot anchors the left; name sits on top; the
+     supporting metadata (date/time + prev value) sits below on its own row,
+     letting the name use the full available width and avoiding horizontal
+     squeeze on long names like "Producer Prices (PPI)".
+       col 1 = impact dot (fixed 12px, vertically centered across both rows)
+       col 2 = content (name on top, meta on bottom)
   */
   .hm-app .hm-cal-row {
     display: grid;
-    grid-template-columns: 12px 1fr auto auto;
+    grid-template-columns: 12px 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "dot name"
+      "dot meta";
     align-items: center;
-    padding: 6px 12px;
+    column-gap: 10px;
+    row-gap: 1px;
+    padding: 7px 12px;
     border-bottom: 1px solid var(--hm-border);
-    gap: 10px;
     text-decoration: none;
     color: inherit;
     transition: background 80ms;
@@ -2103,56 +2109,75 @@
   .hm-app a.hm-cal-row:hover .hm-cal-name { color: var(--hm-gold); }
   .hm-app .hm-cal-row:last-child { border-bottom: none; }
   /* Impact dot — color is set inline per row from the `impact` field.
-     8px circle inside a 12px column for vertical alignment. */
+     8px circle inside a 12px column. align-self centers it across the two
+     content rows. */
   .hm-app .hm-cal-dot {
+    grid-area: dot;
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: var(--hm-border);
     box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+    align-self: center;
   }
   .hm-app .hm-cal-dot[data-impact="high"]   { background: #d14343; }
   .hm-app .hm-cal-dot[data-impact="medium"] { background: #daa520; }
   .hm-app .hm-cal-dot[data-impact="low"]    { background: #9ca3af; }
-  /* Date / time stack: date on top, time below. Right-aligned so both this
-     stack and the prev-value stack share a clean right edge in the row. */
-  .hm-app .hm-cal-when {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    line-height: 1.15;
+  .hm-app .hm-cal-name {
+    grid-area: name;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--hm-dark);
+    text-align: left;
+    line-height: 1.25;
+    /* Keep the name on a single line so each event card stays a predictable
+       2-line height. Truncate with ellipsis if it overflows the column. */
     white-space: nowrap;
-    min-width: 50px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Meta row (below name): date/time on the left, prev value on the right.
+     Flex justify-between gives the two clusters their own edge anchor so
+     they read as distinct groups even at narrow widths. */
+  .hm-app .hm-cal-meta {
+    grid-area: meta;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  /* Date + time as inline pair, separated by a small dot. Smaller, muted
+     vs. the name above it so the eye lands on the name first. */
+  .hm-app .hm-cal-when {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    font-variant-numeric: tabular-nums;
   }
   .hm-app .hm-cal-date {
     font-size: 10px;
     font-weight: 700;
     color: var(--hm-brown);
   }
-  .hm-app .hm-cal-time {
+  .hm-app .hm-cal-when-sep {
     font-size: 9px;
+    color: var(--hm-muted, #8a7e62);
+    opacity: 0.6;
+  }
+  .hm-app .hm-cal-time {
+    font-size: 10px;
     font-weight: 600;
     color: var(--hm-muted, #8a7e62);
-    opacity: 0.85;
   }
-  .hm-app .hm-cal-name {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--hm-dark);
-    text-align: left;
-  }
-  /* Previous-value stack: tiny label on top ("YoY", "MoM", "Range"),
-     value below. Mirrors the date/time stack so rows feel symmetric.
-     Extra margin-left pushes prev further from the date/time stack so the
-     two right-side metadata columns read as distinct groups, not one blob. */
+  /* Prev value cluster: tiny uppercase unit hint ("MoM"/"YoY"/"Range")
+     before the value itself — inline so the meta row stays a single line. */
   .hm-app .hm-cal-prev {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    line-height: 1.15;
-    white-space: nowrap;
-    min-width: 48px;
-    margin-left: 14px;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    flex-shrink: 0;
   }
   .hm-app .hm-cal-prev-label {
     font-size: 9px;
@@ -3450,7 +3475,7 @@
               y=...: Heatmap(w=12)
           -->
           <div class="grid-stack-item" gs-id="hm-indexes"        gs-x="0" gs-y="0"   gs-w="6"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-calendar"       gs-x="6" gs-y="0"   gs-w="3"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-calendar"       gs-x="6" gs-y="0"   gs-w="2"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-economy"        gs-x="9" gs-y="0"   gs-w="3"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-gave-wrap"      gs-x="0" gs-y="4"   gs-w="6"  gs-h="20">
             <div class="grid-stack-item-content">
@@ -5818,18 +5843,26 @@
             '<span class="hm-cal-prev-val is-empty">\u2014</span>' +
           '</span>';
       }
-      /* Column order: dot → name → date/time → prev. Name leads (the
-         "what") so the eye lands on the release first; the supporting
-         metadata (when + last value) reads to the right of it. */
+      /* 2-line "card" layout per event:
+           [●] Event Name
+               Apr 28 · 8:30 AM ET           MoM +212k
+         Dot vertically centers across both rows; name leads on row 1;
+         supporting metadata (date/time + prev value) sits on row 2.
+         Designed to read cleanly at narrower widths (gs-w=2). */
       row.innerHTML =
         '<span class="hm-cal-dot" data-impact="' + impact + '" ' +
               'title="Impact: ' + impact.charAt(0).toUpperCase() + impact.slice(1) + '"></span>' +
         '<span class="hm-cal-name">' + e.name + '</span>' +
-        '<span class="hm-cal-when">' +
-          '<span class="hm-cal-date">' + mo + ' ' + da + '</span>' +
-          (time ? '<span class="hm-cal-time">' + time + '</span>' : '') +
-        '</span>' +
-        prevHtml;
+        '<span class="hm-cal-meta">' +
+          '<span class="hm-cal-when">' +
+            '<span class="hm-cal-date">' + mo + ' ' + da + '</span>' +
+            (time
+              ? '<span class="hm-cal-when-sep">·</span>' +
+                '<span class="hm-cal-time">' + time + '</span>'
+              : '') +
+          '</span>' +
+          prevHtml +
+        '</span>';
       body.appendChild(row);
     });
 
@@ -8044,7 +8077,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v9';
+  var LAYOUT_KEY = 'hm-grid-layout-v10';
   var GS_SCALE = 40;
   var gridInstance = null;
 
