@@ -993,7 +993,9 @@
      only when needed; the table's min-width triggers overflow. */
   .hm-app .hm-commod-wrap {
     border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
+    /* Top corners square — table thead is a gold band that should read as
+       a flat title bar like the calendar / ranking-table headers. */
+    border-radius: 0 0 var(--hm-r) var(--hm-r);
     overflow-x: auto;
     overflow-y: hidden;
     background: var(--hm-panel);
@@ -1163,7 +1165,8 @@
   /* Currencies table — shares all styling with commodities */
   .hm-app .hm-fx-wrap {
     border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
+    /* Top corners square — same rationale as commodities wrap above. */
+    border-radius: 0 0 var(--hm-r) var(--hm-r);
     overflow-x: auto;
     overflow-y: hidden;
     background: var(--hm-panel);
@@ -1243,7 +1246,9 @@
   .hm-app .hm-gave-wrap {
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
+    /* Top corners square so the gold header band reads as a flat title bar.
+       Bottom corners stay rounded to keep card chrome consistent w/ others. */
+    border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 16px;
     /* overflow:hidden so the gold-header inserted at the top (with neg
        margins to escape the padding) follows the card's border-radius. */
@@ -1521,7 +1526,8 @@
   .hm-app .hm-mc {
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
+    /* Top corners square — gold header reads as a flat title bar. */
+    border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 16px;
     /* overflow:hidden so the gold-header inserted at the top follows the
        card's border-radius rather than poking past it. */
@@ -2084,10 +2090,12 @@
     flex-direction: column;
   }
   /* margin-bottom: 0 so the gold header sits flush against the cards
-     (no breathing-room band between band and content). */
+     (no breathing-room band between band and content). Square top corners
+     so the gold band reads as a flat title bar — matches the calendar /
+     ranking-table headers that don't round. */
   .hm-app .hm-indexes-section > .hm-gold-header {
     margin-bottom: 0;
-    border-radius: var(--hm-r) var(--hm-r) 0 0;
+    border-radius: 0;
   }
   /* Period pills inside the indexes gold header. Visual styling matches
      the factors panel pills (10px Karla, white outline, fill on active)
@@ -2348,10 +2356,16 @@
     text-transform: uppercase;
     letter-spacing: 0.4px;
     padding: 8px 12px;
-    border-top: 1px solid var(--hm-border);
-    border-bottom: 1px solid var(--hm-border);  /* single line, was 2px */
+    /* No border-top: the previous section's last cards already provide a
+       1px border-bottom, so adding one here stacked into a 2px line above
+       each subhead. The card's border-bottom alone is the divider. */
+    border-bottom: 1px solid var(--hm-border);
   }
-  .hm-app .hm-econ-body > .hm-econ-subhead:first-child { border-top: none; }
+  /* For the very first subhead (no card above it) we need a 1px line above
+     the band so the panel doesn't look top-bare. Use border-top here only. */
+  .hm-app .hm-econ-body > .hm-econ-subhead:first-child {
+    border-top: 1px solid var(--hm-border);
+  }
   /* Grids use explicit column counts (not auto-fit) so 4-item groups like
      Inflation always lay out as 2+2 rows, not 3+1 with empty cells. Container
      queries below drop column count when the sidebar is tight. */
