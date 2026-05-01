@@ -2442,6 +2442,18 @@
     color: var(--hm-muted);
     white-space: nowrap;
   }
+  /* Reference anchor below value+prev: tiny muted line giving the user a
+     benchmark for the metric (Fed target, boundary, historical average,
+     recession trigger, etc.). Italic to read as a side-note, not data. */
+  .hm-app .hm-econ-anchor {
+    font-size: 9.5px;
+    font-style: italic;
+    color: var(--hm-muted);
+    opacity: 0.85;
+    margin-top: 2px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
   .hm-app .hm-econ-arrow {
     font-weight: 700;
     font-size: 12px;
@@ -6140,17 +6152,32 @@
         fmtPrev = String(prev);
       }
 
-      /* Arrow direction: for "neg" direction metrics, improvement is down */
+      /* Arrow direction: for "neg" direction metrics, improvement is down.
+         Tolerance: if |\u0394| is smaller than half the displayed format's
+         precision, the values round to the same display string \u2014 show a
+         neutral gray dash instead of a green/red arrow that contradicts
+         "prev 2.7% \u2192 2.7%" reading. Per format:
+           pct1 displays 1 decimal, half-step = 0.05
+           pct2 displays 2 decimals, half-step = 0.005
+           num1 displays 1 decimal, half-step = 0.05
+           int  displays whole numbers, half-step = 0.5
+         Anything tighter than this prints identically in both cells. */
+      var tolByFmt = { pct1: 0.05, pct2: 0.005, num1: 0.05, int: 0.5 };
+      var tol = tolByFmt[ind.format] != null ? tolByFmt[ind.format] : 0;
+      var noChange = Math.abs(val - prev) < tol;
       var improved;
       if (ind.direction === 'neg') {
         improved = val < prev;
       } else {
         improved = val > prev;
       }
-      var arrowCls = (val === prev) ? '' : (improved ? 'up' : 'down');
-      var arrowChar = (val === prev) ? '\u2013' : (val > prev ? '\u25B2' : '\u25BC');
+      var arrowCls = noChange ? '' : (improved ? 'up' : 'down');
+      var arrowChar = noChange ? '\u2013' : (val > prev ? '\u25B2' : '\u25BC');
 
       var asOf = ind.as_of ? '<span style="color:var(--hm-muted);font-size:10px;margin-left:4px;white-space:nowrap">(' + ind.as_of + ')</span>' : '';
+      var anchor = ind.anchor
+        ? '<div class="hm-econ-anchor">' + ind.anchor + '</div>'
+        : '';
       card.innerHTML =
         '<div class="hm-econ-name">' + ind.name + asOf + '</div>' +
         '<div class="hm-econ-row">' +
@@ -6159,7 +6186,8 @@
             '<span class="hm-econ-arrow ' + arrowCls + '">' + arrowChar + '</span> ' +
             'prev ' + fmtPrev +
           '</div>' +
-        '</div>';
+        '</div>' +
+        anchor;
 
       return card;
     }
