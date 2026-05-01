@@ -1000,11 +1000,33 @@
   }
   .hm-app .hm-commod-tbl {
     width: 100%;
-    min-width: 460px;
+    min-width: 620px;
     border-collapse: separate;
     border-spacing: 0;
     font-variant-numeric: tabular-nums;
+    /* Fixed layout so column widths are authoritative — auto layout was
+       letting the 52W column absorb spare cell width. With fixed, the
+       per-column nth-child rules below pin sizes exactly. min-width
+       bumped to 620px so the auto-width name column always has room. */
+    table-layout: fixed;
   }
+  /* Per-column widths. Order: Commodity / Last / Chg / %Chg / YTD / 52W / 13W.
+     Column 1 (Commodity) gets `auto` so it absorbs remaining horizontal
+     space. The other columns are sized to their content needs. */
+  .hm-app .hm-commod-tbl th:nth-child(1),
+  .hm-app .hm-commod-tbl td:nth-child(1) { width: auto; }
+  .hm-app .hm-commod-tbl th:nth-child(2),
+  .hm-app .hm-commod-tbl td:nth-child(2) { width: 70px; }   /* Last */
+  .hm-app .hm-commod-tbl th:nth-child(3),
+  .hm-app .hm-commod-tbl td:nth-child(3) { width: 60px; }   /* Chg */
+  .hm-app .hm-commod-tbl th:nth-child(4),
+  .hm-app .hm-commod-tbl td:nth-child(4) { width: 60px; }   /* % Chg */
+  .hm-app .hm-commod-tbl th:nth-child(5),
+  .hm-app .hm-commod-tbl td:nth-child(5) { width: 60px; }   /* YTD */
+  .hm-app .hm-commod-tbl th:nth-child(6),
+  .hm-app .hm-commod-tbl td:nth-child(6) { width: 130px; }  /* 52W Range */
+  .hm-app .hm-commod-tbl th:nth-child(7),
+  .hm-app .hm-commod-tbl td:nth-child(7) { width: 80px; }   /* 13W Trend */
   /* Compact density: sidebar tables need to fit a lot of rows. Trimmed
      vertical padding / font size / sparkline size to recover ~25% vertical
      footprint without sacrificing columns or visual identity. Horizontal
@@ -1079,15 +1101,14 @@
      [52w-high price]. Track is a horizontal line, marker is a gold
      vertical line at the current price's position. Low/high price labels
      anchor the ends visually so no separate tick marks are needed. */
-  /* Cap the whole 52W bar so the column doesn't auto-size wider than the
-     name column. Slider inside still fills the available width via flex
-     (see .hm-w52-track below) so it visually anchors to the cell ends. */
+  /* Bar fills the whole 52W cell. The cell width itself is constrained
+     by table-layout: fixed + explicit nth-child width on the column
+     (see .hm-commod-tbl / .hm-fx-tbl rules below). */
   .hm-app .hm-w52-bar {
     display: flex;
     align-items: center;
     gap: 6px;
     width: 100%;
-    max-width: 130px;
     font-size: 9.5px;
     font-weight: 600;
     color: var(--hm-muted);
@@ -1161,12 +1182,34 @@
     overflow-y: hidden;
     background: var(--hm-panel);
   }
+  /* Per-column widths for currencies — same column order as commodities
+     (Currency / Last / Chg / %Chg / YTD / 52W / 13W). FX needs more
+     decimals than commodities so Last + Chg are slightly wider. Column 1
+     absorbs remaining space, others are content-sized. */
+  .hm-app .hm-fx-tbl th:nth-child(1),
+  .hm-app .hm-fx-tbl td:nth-child(1) { width: auto; }
+  .hm-app .hm-fx-tbl th:nth-child(2),
+  .hm-app .hm-fx-tbl td:nth-child(2) { width: 80px; }   /* Last */
+  .hm-app .hm-fx-tbl th:nth-child(3),
+  .hm-app .hm-fx-tbl td:nth-child(3) { width: 70px; }   /* Chg */
+  .hm-app .hm-fx-tbl th:nth-child(4),
+  .hm-app .hm-fx-tbl td:nth-child(4) { width: 60px; }   /* % Chg */
+  .hm-app .hm-fx-tbl th:nth-child(5),
+  .hm-app .hm-fx-tbl td:nth-child(5) { width: 60px; }   /* YTD */
+  .hm-app .hm-fx-tbl th:nth-child(6),
+  .hm-app .hm-fx-tbl td:nth-child(6) { width: 130px; }  /* 52W Range */
+  .hm-app .hm-fx-tbl th:nth-child(7),
+  .hm-app .hm-fx-tbl td:nth-child(7) { width: 80px; }   /* 13W Trend */
   .hm-app .hm-fx-tbl {
     width: 100%;
-    min-width: 460px;
+    min-width: 640px;
     border-collapse: separate;
     border-spacing: 0;
     font-variant-numeric: tabular-nums;
+    /* Same fixed-layout strategy as the commodities table — see those
+       comments above. Pinned column widths above this rule. min-width
+       slightly higher than commodities since FX has wider Last/Chg. */
+    table-layout: fixed;
   }
   .hm-app .hm-fx-tbl thead th {
     padding: 6px 12px;
