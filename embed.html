@@ -3021,6 +3021,25 @@
     margin-left: 6px;
     opacity: 0.75;
   }
+  /* Pricing-basis tag — small uppercase pill next to the ticker so the
+     user can tell at a glance whether the row's return reflects spot
+     futures, an ETF holding rolled futures, or a basket of producer
+     equities. (Steel SLX is producer equities, not spot steel.) */
+  .hm-app .hm-cp-row .hm-basis {
+    display: inline-block;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--hm-muted);
+    border: 1px solid var(--hm-border);
+    border-radius: 3px;
+    padding: 0 4px;
+    margin-left: 6px;
+    line-height: 1.4;
+    opacity: 0.85;
+    vertical-align: middle;
+  }
   .hm-app .hm-cp-ret {
     font-size: 12px;
     font-weight: 700;
@@ -6779,6 +6798,42 @@
     };
   }
 
+  /* Build a heat-paint function calibrated to the spread of the visible
+     values in a panel (instead of perfCellPaint's fixed +-10% cap, which
+     made Korea +175% and Denmark +6.6% paint identical green).
+
+     Strategy: take the absolute max across all visible values as the
+     full-saturation reference, then apply a gamma-2 curve so the
+     strongest mover saturates fully and weaker ones fade noticeably.
+     1% floor on max so a calm period (everything <0.5%) doesn't blast
+     the panel red+green. */
+  function buildHeatPaint(values, theme) {
+    var p = PALETTE[theme];
+    var maxAbs = 1;
+    values.forEach(function (v) {
+      if (v == null || isNaN(v)) return;
+      var a = Math.abs(v);
+      if (a > maxAbs) maxAbs = a;
+    });
+    return function paint(val) {
+      if (val == null || isNaN(val)) return { bg: '', fg: '' };
+      var end = val >= 0 ? p.green : p.red;
+      var k = Math.min(Math.abs(val) / maxAbs, 1);
+      /* Gamma 2: pushes mid+low values toward neutral, so the strongest
+         mover stands out clearly. A "barely positive" cell paints faint
+         instead of deep green when the panel has a big winner above it. */
+      k = k * k;
+      var rgb = [0, 1, 2].map(function (i) {
+        return Math.round(lerp(p.neutral[i], end[i], k));
+      });
+      var lum = luminance(rgb[0], rgb[1], rgb[2]);
+      return {
+        bg: 'rgb(' + rgb.join(',') + ')',
+        fg: lum < 140 ? '#ffffff' : '#2d2d2d'
+      };
+    };
+  }
+
   /* ---------- Style Box ---------- */
   var sbPeriod = 'm1';  /* style box period */
   /* Mode toggle — 'abs' = each cell's own period return; 'rel' = excess
@@ -6944,16 +6999,12 @@
 
     function updateStyleBox() {
       var th = getTheme();
-      var palette = PALETTE[th];
       var spyVal = (data.spy_returns && data.spy_returns[sbPeriod] != null)
         ? data.spy_returns[sbPeriod]
         : null;
 
       /* First pass: compute each cell's effective value (abs or excess
-         vs SPY) and find the largest |value| so we can scale saturation
-         relative to the strongest mover in the visible grid. Floor at
-         3% so a calm period doesn't blast the panel red+green. */
-      var maxAbs = 3;
+         vs SPY). */
       allCells.forEach(function (cell) {
         var d = cell._data;
         if (!d || d[sbPeriod] == null) {
@@ -6966,13 +7017,16 @@
           v = v - spyVal;
         }
         cell._val = v;
-        var abs = Math.abs(v);
-        if (abs > maxAbs) maxAbs = abs;
       });
 
-      /* Second pass: paint each cell with intensity scaled to maxAbs.
-         Strongest mover = full saturation; weakest moves are very faint
-         even when positive — so capital flow reads at a glance. */
+      /* Build a paint function scaled to this period's value spread —
+         max-abs + gamma 2, so the strongest cell pops and weaker ones
+         fade noticeably (even when all 9 are positive). */
+      var paint = buildHeatPaint(
+        allCells.map(function (c) { return c._val; }),
+        th
+      );
+
       allCells.forEach(function (cell) {
         var retEl = cell.querySelector('.hm-style-cell-ret');
         var v = cell._val;
@@ -6984,14 +7038,9 @@
         }
         var sign = v >= 0 ? '+' : '';
         retEl.textContent = sign + v.toFixed(1) + '%';
-        var end = v >= 0 ? palette.green : palette.red;
-        var k = Math.min(Math.abs(v) / maxAbs, 1);
-        var rgb = [0, 1, 2].map(function (i) {
-          return Math.round(lerp(palette.neutral[i], end[i], k));
-        });
-        var lum = luminance(rgb[0], rgb[1], rgb[2]);
-        cell.style.background = 'rgb(' + rgb.join(',') + ')';
-        cell.style.color = lum < 140 ? '#ffffff' : '#2d2d2d';
+        var pp = paint(v);
+        cell.style.background = pp.bg;
+        cell.style.color = pp.fg;
       });
     }
 
@@ -7367,7 +7416,12 @@
         });
         rows.forEach(function (r) { list.appendChild(r); });
       });
-      /* Paint each row's return cell based on raw value (no vs-benchmark here). */
+      /* Build a heat-paint function calibrated to the spread of THIS
+         period's values \u2014 strongest mover saturates fully, weakest fades. */
+      var paint = buildHeatPaint(
+        allRows.map(function (r) { return r._data[fiPeriod]; }),
+        th
+      );
       allRows.forEach(function (row) {
         var f = row._data;
         var v = f[fiPeriod];
@@ -7380,9 +7434,9 @@
         }
         var sign = v >= 0 ? '+' : '';
         retEl.textContent = sign + v.toFixed(1) + '%';
-        var paint = perfCellPaint(v, th);
-        row.style.background = paint.bg;
-        row.style.color = paint.fg;
+        var pp = paint(v);
+        row.style.background = pp.bg;
+        row.style.color = pp.fg;
       });
     }
 
@@ -7520,6 +7574,10 @@
         });
         rows.forEach(function (r) { list.appendChild(r); });
       });
+      var paint = buildHeatPaint(
+        allRows.map(function (r) { return r._data[giPeriod]; }),
+        th
+      );
       allRows.forEach(function (row) {
         var f = row._data;
         var v = f[giPeriod];
@@ -7532,9 +7590,9 @@
         }
         var sign = v >= 0 ? '+' : '';
         retEl.textContent = sign + v.toFixed(1) + '%';
-        var paint = perfCellPaint(v, th);
-        row.style.background = paint.bg;
-        row.style.color = paint.fg;
+        var pp = paint(v);
+        row.style.background = pp.bg;
+        row.style.color = pp.fg;
       });
     }
 
@@ -7689,6 +7747,10 @@
         });
         rows.forEach(function (r) { list.appendChild(r); });
       });
+      var paint = buildHeatPaint(
+        allRows.map(function (r) { return r._data[cePeriod]; }),
+        th
+      );
       allRows.forEach(function (row) {
         var f = row._data;
         var v = f[cePeriod];
@@ -7701,9 +7763,9 @@
         }
         var sign = v >= 0 ? '+' : '';
         retEl.textContent = sign + v.toFixed(1) + '%';
-        var paint = perfCellPaint(v, th);
-        row.style.background = paint.bg;
-        row.style.color = paint.fg;
+        var pp = paint(v);
+        row.style.background = pp.bg;
+        row.style.color = pp.fg;
       });
     }
 
@@ -7793,17 +7855,36 @@
       (group.rows || []).forEach(function (f) {
         var row = document.createElement('div');
         row.className = 'hm-cp-row';
+        /* Basis tag for the tooltip + a small inline pill next to the
+           ticker. Maps the backend's compact basis code to a friendly
+           label users actually read. */
+        var BASIS_LABEL = {
+          'futures':     'Front-Month',
+          'futures_etf': 'Futures ETF',
+          'equities':    'Equities',
+          'spot':        'Spot'
+        };
+        var basisLabel = f.basis ? (BASIS_LABEL[f.basis] || f.basis) : '';
+        var basisTip = f.basis === 'futures'     ? 'Front-month futures contract.' :
+                       f.basis === 'futures_etf' ? 'ETF holding rolled futures contracts.' :
+                       f.basis === 'equities'    ? 'Equity basket of producers/miners — proxy for the underlying commodity.' :
+                       f.basis === 'spot'        ? 'Physical spot price.' : '';
         var tip = COMMODITY_PERF_TIPS[f.ticker];
-        if (tip) {
+        var tipBody = (basisTip ? basisTip + ' ' : '') + (tip || '');
+        if (tipBody) {
           row.classList.add('hm-metric-tip');
-          row.setAttribute('data-tip', tip);
+          row.setAttribute('data-tip', tipBody);
           row.setAttribute('data-tip-title', f.name + ' (' + f.ticker + ')');
         } else {
           row.setAttribute('title', f.name + ' (' + f.ticker + ')');
         }
+        var basisHtml = basisLabel
+          ? '<span class="hm-basis" title="' + (basisTip || basisLabel).replace(/"/g, '&quot;') + '">' + basisLabel + '</span>'
+          : '';
         row.innerHTML =
           '<span class="hm-cp-name">' + f.name +
             '<span class="hm-ticker">' + f.ticker + '</span>' +
+            basisHtml +
           '</span>' +
           '<span class="hm-cp-ret"></span>';
         row._data = f;
@@ -7837,6 +7918,10 @@
         });
         rows.forEach(function (r) { list.appendChild(r); });
       });
+      var paint = buildHeatPaint(
+        allRows.map(function (r) { return r._data[cpPeriod]; }),
+        th
+      );
       allRows.forEach(function (row) {
         var f = row._data;
         var v = f[cpPeriod];
@@ -7849,9 +7934,9 @@
         }
         var sign = v >= 0 ? '+' : '';
         retEl.textContent = sign + v.toFixed(1) + '%';
-        var paint = perfCellPaint(v, th);
-        row.style.background = paint.bg;
-        row.style.color = paint.fg;
+        var pp = paint(v);
+        row.style.background = pp.bg;
+        row.style.color = pp.fg;
       });
     }
 
@@ -8150,14 +8235,12 @@
       paintCells();
     }
 
-    /* Paint cells with a continuous color scale anchored at 0%, with
-       saturation scaled to the largest visible |cross| so the most
-       extreme cell always reads as full intensity. Floor at 5% so a
-       calm period (everything <= 1%) doesn't blast the panel red+green. */
+    /* Paint cells with the shared gamma-2 dynamic heatmap so the
+       strongest cross-mover saturates fully and weaker ones fade.
+       Same scale logic as the ranking tables and Style Box. */
     function paintCells() {
       var th = getTheme();
 
-      var maxAbs = 5;
       cells.forEach(function (td) {
         var rVs = vs[td._row] && vs[td._row][cmPeriod];
         var cVs = vs[td._col] && vs[td._col][cmPeriod];
@@ -8167,11 +8250,13 @@
         }
         var rx = rVs / 100, ry = cVs / 100;
         td._cross = ((1 + rx) / (1 + ry) - 1) * 100;
-        var abs = Math.abs(td._cross);
-        if (abs > maxAbs) maxAbs = abs;
       });
 
-      var palette = PALETTE[th];
+      var paint = buildHeatPaint(
+        cells.map(function (td) { return td._cross; }),
+        th
+      );
+
       cells.forEach(function (td) {
         if (td._cross == null) {
           td.textContent = '\u2014';
@@ -8185,14 +8270,9 @@
         var cross = td._cross;
         var sign = cross >= 0 ? '+' : '';
         td.textContent = sign + cross.toFixed(1) + '%';
-        var end = cross >= 0 ? palette.green : palette.red;
-        var k = Math.min(Math.abs(cross) / maxAbs, 1);
-        var rgb = [0, 1, 2].map(function (i) {
-          return Math.round(lerp(palette.neutral[i], end[i], k));
-        });
-        var lum = luminance(rgb[0], rgb[1], rgb[2]);
-        td.style.background = 'rgb(' + rgb.join(',') + ')';
-        td.style.color = lum < 140 ? '#ffffff' : '#2d2d2d';
+        var pp = paint(cross);
+        td.style.background = pp.bg;
+        td.style.color = pp.fg;
         td.setAttribute('title', td._row + ' vs ' + td._col + ': ' + sign + cross.toFixed(2) + '%');
       });
     }
