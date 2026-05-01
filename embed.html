@@ -8911,6 +8911,15 @@
               var id = item.getAttribute('gs-id');
               if (id) INITIAL_H[id] = node.h;
             });
+            /* Compact upward: fitToContent shrunk panels to their actual
+               content size, but with float: true the items kept their
+               original gs-y positions — leaving visible vertical gaps
+               anywhere a panel ended shorter than its declared gs-h.
+               compact('list', false) re-flows items to fill those gaps
+               while preserving each panel's x position (it pulls items
+               up column-by-column without reordering them across
+               columns). Runs once on initial load + after any reset. */
+            try { window.gridInstance.compact('list', false); } catch (e) {}
             window.gridInstance._suppressSave = false;
           }, 0);
           /* Second snapshot 800ms later: by now Chart.js sparklines and any
