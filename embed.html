@@ -1079,11 +1079,15 @@
      [52w-high price]. Track is a horizontal line, marker is a gold
      vertical line at the current price's position. Low/high price labels
      anchor the ends visually so no separate tick marks are needed. */
+  /* Cap the whole 52W bar so the column doesn't auto-size wider than the
+     name column. Slider inside still fills the available width via flex
+     (see .hm-w52-track below) so it visually anchors to the cell ends. */
   .hm-app .hm-w52-bar {
     display: flex;
     align-items: center;
     gap: 6px;
     width: 100%;
+    max-width: 130px;
     font-size: 9.5px;
     font-weight: 600;
     color: var(--hm-muted);
@@ -1095,15 +1099,15 @@
     white-space: nowrap;
     opacity: 0.85;
   }
-  /* Fixed-width slider track (was flex: 1 1 auto, which stretched to fill
-     the cell — too long when cells were wide). 90px gives the gold marker
-     enough travel to read low/mid/high positions cleanly without dominating
-     the row. The flanking low/high price labels still anchor the ends. */
+  /* Slider fills whatever cell width remains after the low/high labels.
+     The parent .hm-w52-bar is capped at 130px (max-width) so the column
+     doesn't grow excessively wide. min-width keeps the marker readable
+     even when the cell is narrow. */
   .hm-app .hm-w52-track {
-    flex: 0 0 90px;
+    flex: 1 1 auto;
     display: block;
     height: 18px;
-    min-width: 28px;
+    min-width: 40px;
   }
   .hm-app .hm-w52-track svg { display: block; width: 100%; height: 100%; }
   .hm-app .hm-unit {
