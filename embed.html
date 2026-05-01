@@ -2348,6 +2348,15 @@
        the sidebar itself is. */
     container-type: inline-size;
   }
+  /* Border philosophy for the economy panel:
+       - Subheads are the only horizontal heavy-weight: 1px on top
+         (separates from previous section's cards) and 1px on bottom
+         (separates the band from the cards under it). This is the only
+         place the user expects a visible "section break".
+       - Cards have border-right between columns inside a row, and
+         border-bottom only between rows-within-a-section (stripped on
+         the last row of every grid via :nth-last-child below). The
+         panel's outer border handles the panel's own bottom edge. */
   .hm-app .hm-econ-subhead {
     background: var(--hm-bg-warm);
     color: var(--hm-gold);
@@ -2356,16 +2365,10 @@
     text-transform: uppercase;
     letter-spacing: 0.4px;
     padding: 8px 12px;
-    /* No border-top: the previous section's last cards already provide a
-       1px border-bottom, so adding one here stacked into a 2px line above
-       each subhead. The card's border-bottom alone is the divider. */
+    border-top: 1px solid var(--hm-border);
     border-bottom: 1px solid var(--hm-border);
   }
-  /* For the very first subhead (no card above it) we need a 1px line above
-     the band so the panel doesn't look top-bare. Use border-top here only. */
-  .hm-app .hm-econ-body > .hm-econ-subhead:first-child {
-    border-top: 1px solid var(--hm-border);
-  }
+  .hm-app .hm-econ-body > .hm-econ-subhead:first-child { border-top: none; }
   /* Grids use explicit column counts (not auto-fit) so 4-item groups like
      Inflation always lay out as 2+2 rows, not 3+1 with empty cells. Container
      queries below drop column count when the sidebar is tight. */
@@ -2392,28 +2395,32 @@
     border-bottom: 1px solid var(--hm-border);
     position: relative;
   }
-  /* Strip trailing bottom border so the last row's cards sit flush with the
-     body's bottom edge. Strip right border on the LAST column so the card
-     border doesn't double-up with the section's outer right edge (was
-     making M2 YOY's right border look thick / its left look missing). */
-  .hm-app .hm-econ-grid > .hm-econ-card:last-child { border-bottom: none; }
+  /* Strip border-right on the last column of each grid so it doesn't
+     stack with the panel's outer border. */
   .hm-app .hm-econ-grid-1 > .hm-econ-card { border-right: none; }
   .hm-app .hm-econ-grid > .hm-econ-card:nth-child(2n) { border-right: none; }
   .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(3n) { border-right: none; }
-  /* Strip the LAST-COLUMN border-right so the body's outer border doesn't
-     stack with the card's = double-line look the user reported. Default
-     2-col layout: every other card is last-col. 3-col variant: every 3rd. */
-  .hm-app .hm-econ-grid > .hm-econ-card:nth-child(2n) { border-right: none; }
-  .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(3n) { border-right: none; }
+  /* Strip border-bottom on the LAST ROW of each grid (every grid in the
+     panel) so the next subhead band's border-top doesn't stack with the
+     card's border-bottom into a 2px line — and so the very last grid in
+     the panel doesn't double up with the panel's own bottom border. The
+     :nth-last-child(-n+N) trick matches the last N children, which is
+     the last row when N == column count. */
+  .hm-app .hm-econ-grid-1 > .hm-econ-card:last-child { border-bottom: none; }
+  .hm-app .hm-econ-grid > .hm-econ-card:nth-last-child(-n+2) { border-bottom: none; }
+  .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(-n+3) { border-bottom: none; }
   /* Container-query overrides (3-col → 2-col → 1-col) need their own
-     last-col stripping when the grid template changes at runtime. */
+     last-col + last-row stripping when the grid template changes at runtime. */
   @container (max-width: 360px) {
-    .hm-app .hm-econ-grid-3 > .hm-econ-card { border-right: 1px solid var(--hm-border); }
+    .hm-app .hm-econ-grid-3 > .hm-econ-card { border-right: 1px solid var(--hm-border); border-bottom: 1px solid var(--hm-border); }
     .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(2n) { border-right: none; }
+    .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(-n+2) { border-bottom: none; }
   }
   @container (max-width: 260px) {
     .hm-app .hm-econ-grid > .hm-econ-card,
     .hm-app .hm-econ-grid-3 > .hm-econ-card { border-right: none; }
+    .hm-app .hm-econ-grid > .hm-econ-card:last-child,
+    .hm-app .hm-econ-grid-3 > .hm-econ-card:last-child { border-bottom: none; }
   }
   .hm-app .hm-econ-name {
     font-size: 11px;
@@ -3053,14 +3060,15 @@
     opacity: 0.5;
   }
   /* Hover-cross highlight: when the cursor is over a cell, the active
-     row and column header tint so the user can read the cross without
-     losing their place in a 10x10 matrix. */
+     row + column headers and the active cell get a gold outline so the
+     user can read the cross without losing their place. No bg color
+     change on the headers — too aggressive — just a gold inset border
+     plus gold text. */
   .hm-app .hm-cm-table th.is-active {
-    background: var(--hm-gold) !important;
-    color: var(--hm-white) !important;
+    color: var(--hm-gold) !important;
+    box-shadow: inset 0 0 0 2px var(--hm-gold);
   }
   .hm-app .hm-cm-table td.is-active {
-    /* very subtle outline so the active cell itself is also obvious */
     box-shadow: inset 0 0 0 2px var(--hm-gold);
   }
 
@@ -3638,7 +3646,7 @@
           <div class="grid-stack-item" gs-id="hm-indexes"         gs-x="0"  gs-y="0"   gs-w="4"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-macrocompass"    gs-x="4"  gs-y="0"   gs-w="4"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-calendar"        gs-x="8"  gs-y="0"   gs-w="2"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="10" gs-y="0"   gs-w="2"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="10" gs-y="0"   gs-w="2"  gs-h="32"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-gave-wrap"       gs-x="0"  gs-y="4"   gs-w="4"  gs-h="24">
             <div class="grid-stack-item-content">
               <div class="hm-gave-wrap" id="hm-gave-wrap">
@@ -6164,18 +6172,13 @@
       }
 
       /* Arrow direction: for "neg" direction metrics, improvement is down.
-         Tolerance: if |\u0394| is smaller than half the displayed format's
-         precision, the values round to the same display string \u2014 show a
-         neutral gray dash instead of a green/red arrow that contradicts
-         "prev 2.7% \u2192 2.7%" reading. Per format:
-           pct1 displays 1 decimal, half-step = 0.05
-           pct2 displays 2 decimals, half-step = 0.005
-           num1 displays 1 decimal, half-step = 0.05
-           int  displays whole numbers, half-step = 0.5
-         Anything tighter than this prints identically in both cells. */
-      var tolByFmt = { pct1: 0.05, pct2: 0.005, num1: 0.05, int: 0.5 };
-      var tol = tolByFmt[ind.format] != null ? tolByFmt[ind.format] : 0;
-      var noChange = Math.abs(val - prev) < tol;
+         "No change" rule: if the value and prev render to the EXACT same
+         display string (e.g. both "3.0%" even though raw values differ
+         by 0.04), show a neutral gray dash. Comparing display strings
+         is more accurate than a numeric tolerance \u2014 a tolerance of 0.05
+         can still miss e.g. 3.04 vs 2.96 (both round to 3.0%, diff 0.08
+         but they look identical to the user). */
+      var noChange = fmtVal === fmtPrev;
       var improved;
       if (ind.direction === 'neg') {
         improved = val < prev;
@@ -7991,14 +7994,17 @@
         tr.appendChild(rowLabel);
         order.forEach(function (colCode) {
           var td = document.createElement('td');
+          /* Tag every cell with its row/col so hover highlighting works
+             on diagonals (X vs X) and on null/empty cells too \u2014 only
+             paint + textContent differ for those branches. */
+          td.dataset.row = rowCode;
+          td.dataset.col = colCode;
           if (rowCode === colCode) {
             td.classList.add('hm-cm-diag');
             td.textContent = '\u2014';
           } else {
             td._row = rowCode;
             td._col = colCode;
-            td.dataset.row = rowCode;
-            td.dataset.col = colCode;
             cells.push(td);
           }
           tr.appendChild(td);
@@ -8442,7 +8448,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v13';
+  var LAYOUT_KEY = 'hm-grid-layout-v14';
   var GS_SCALE = 40;
   var gridInstance = null;
 
