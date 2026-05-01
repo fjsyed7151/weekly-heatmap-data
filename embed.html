@@ -2366,7 +2366,9 @@
     letter-spacing: 0.4px;
     padding: 8px 12px;
     border-top: 1px solid var(--hm-border);
-    border-bottom: 1px solid var(--hm-border);
+    /* 2px under the subhead band — emphasizes section break vs. the 1px
+       between rows of cards within the section. */
+    border-bottom: 2px solid var(--hm-border);
   }
   .hm-app .hm-econ-body > .hm-econ-subhead:first-child { border-top: none; }
   /* Grids use explicit column counts (not auto-fit) so 4-item groups like
@@ -2396,18 +2398,23 @@
     position: relative;
   }
   /* Strip border-right on the last column of each grid so it doesn't
-     stack with the panel's outer border. */
+     stack with the panel's outer border. The `:not(.hm-econ-grid-3)`
+     guard on the 2n rule is critical — JS adds BOTH classes
+     (.hm-econ-grid AND .hm-econ-grid-3) on 3-col grids, so without the
+     guard the 2n rule would strip the right border from the middle
+     card too (Empire State, Buffett), making the third card look like
+     it has no left border. */
   .hm-app .hm-econ-grid-1 > .hm-econ-card { border-right: none; }
-  .hm-app .hm-econ-grid > .hm-econ-card:nth-child(2n) { border-right: none; }
+  .hm-app .hm-econ-grid:not(.hm-econ-grid-3) > .hm-econ-card:nth-child(2n) { border-right: none; }
   .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(3n) { border-right: none; }
   /* Strip border-bottom on the LAST ROW of each grid (every grid in the
      panel) so the next subhead band's border-top doesn't stack with the
      card's border-bottom into a 2px line — and so the very last grid in
      the panel doesn't double up with the panel's own bottom border. The
      :nth-last-child(-n+N) trick matches the last N children, which is
-     the last row when N == column count. */
+     the last row when N == column count. Same `:not` guard reasoning. */
   .hm-app .hm-econ-grid-1 > .hm-econ-card:last-child { border-bottom: none; }
-  .hm-app .hm-econ-grid > .hm-econ-card:nth-last-child(-n+2) { border-bottom: none; }
+  .hm-app .hm-econ-grid:not(.hm-econ-grid-3) > .hm-econ-card:nth-last-child(-n+2) { border-bottom: none; }
   .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(-n+3) { border-bottom: none; }
   /* Container-query overrides (3-col → 2-col → 1-col) need their own
      last-col + last-row stripping when the grid template changes at runtime. */
@@ -3060,13 +3067,11 @@
     opacity: 0.5;
   }
   /* Hover-cross highlight: when the cursor is over a cell, the active
-     row + column headers and the active cell get a gold outline so the
-     user can read the cross without losing their place. No bg color
-     change on the headers — too aggressive — just a gold inset border
-     plus gold text. */
+     row + column headers tint gold so the user can read the cross
+     without losing their place. Headers get gold TEXT only (no outline);
+     the active cell itself gets a gold inset outline so it pops. */
   .hm-app .hm-cm-table th.is-active {
     color: var(--hm-gold) !important;
-    box-shadow: inset 0 0 0 2px var(--hm-gold);
   }
   .hm-app .hm-cm-table td.is-active {
     box-shadow: inset 0 0 0 2px var(--hm-gold);
