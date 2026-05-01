@@ -3052,6 +3052,17 @@
     color: var(--hm-muted);
     opacity: 0.5;
   }
+  /* Hover-cross highlight: when the cursor is over a cell, the active
+     row and column header tint so the user can read the cross without
+     losing their place in a 10x10 matrix. */
+  .hm-app .hm-cm-table th.is-active {
+    background: var(--hm-gold) !important;
+    color: var(--hm-white) !important;
+  }
+  .hm-app .hm-cm-table td.is-active {
+    /* very subtle outline so the active cell itself is also obvious */
+    box-shadow: inset 0 0 0 2px var(--hm-gold);
+  }
 
   /* Thematic treemap */
   /* margin-top/bottom removed — Gridstack handles spacing in the grid. */
@@ -7830,6 +7841,10 @@
 
   /* ---------- Currency Performance Matrix (N×N cross-returns) ---------- */
   var cmPeriod = 'y1';
+  /* Sorted mode reorders rows + columns strongest -> weakest (by mean
+     row cross-return for the active period). Off keeps the static
+     G10-liquidity order from the backend. */
+  var cmSorted = false;
 
   function renderCurrencyMatrix(data) {
     var container = document.getElementById('hm-currency-matrix');
@@ -7857,16 +7872,59 @@
       btn.textContent = p.label;
       btn.addEventListener('click', function () {
         cmPeriod = p.key;
-        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+        /* Only deactivate period pills (direct children of btnWrap), not
+           the sort toggle pills nested inside sortWrap. */
+        btnWrap.querySelectorAll(':scope > .hm-factors-period-btn').forEach(function (b) {
           b.classList.remove('active');
         });
         btn.classList.add('active');
-        updateCells();
+        rebuildAndPaint();
       });
       btnWrap.appendChild(btn);
     });
+
+    /* Sort toggle (Static / Sorted) — same chrome as period pills with
+       a vertical divider, matching the treemap toggle pattern. */
+    var sortWrap = document.createElement('span');
+    sortWrap.className = 'hm-treemap-toggle';
+    [
+      { key: 'static', label: 'Static',  title: 'Default G10-liquidity order from the backend.' },
+      { key: 'sorted', label: 'Sorted',  title: 'Reorder rows + cols strongest to weakest for the active period.' }
+    ].forEach(function (m) {
+      var active = (m.key === 'sorted') === cmSorted;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-factors-period-btn' + (active ? ' active' : '');
+      btn.textContent = m.label;
+      btn.title = m.title;
+      btn.addEventListener('click', function () {
+        cmSorted = (m.key === 'sorted');
+        sortWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        rebuildAndPaint();
+      });
+      sortWrap.appendChild(btn);
+    });
+    btnWrap.appendChild(sortWrap);
+
     hdr.appendChild(btnWrap);
     card.appendChild(hdr);
+
+    /* Register the panel info-popup (How-to-Read helper) so the (i)
+       button in the panel header opens a styled popup explaining the
+       cross-axis convention + color scale. */
+    window.PANEL_INFO_HTML['hm-currency-matrix'] = function () {
+      return (
+        '<p><b>How to read</b>: each cell is <i>row currency vs. column currency</i> over the selected period.</p>' +
+        '<p>Example: cell <b>EUR / JPY = +12.3%</b> means EUR strengthened 12.3% against JPY. Green = row beat column, red = row lagged column.</p>' +
+        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation scales with the largest visible cell so the strongest mover always pops; smaller moves stay light.</p>' +
+        '<p><b>Sort toggle</b>: when on, rows + columns reorder strongest-to-weakest for the active period — green pools in the top-right, red in the bottom-left.</p>'
+      );
+    };
+    var cmItem = document.querySelector('.grid-stack-item[gs-id="hm-currency-matrix"]');
+    if (cmItem) cmItem.classList.add('hm-has-info');
 
     /* Horizontal scroll for narrow containers — table has N+1 columns at
        ~72px each, so ~790px wide for 10 currencies. */
@@ -7875,53 +7933,105 @@
 
     var table = document.createElement('table');
     table.className = 'hm-cm-table';
-
-    /* Header: corner + column labels */
     var thead = document.createElement('thead');
-    var hrow  = document.createElement('tr');
-    hrow.appendChild(document.createElement('th')); /* corner */
-    codes.forEach(function (c) {
-      var th = document.createElement('th');
-      th.textContent = c;
-      hrow.appendChild(th);
-    });
-    thead.appendChild(hrow);
-    table.appendChild(thead);
-
-    /* Body: row label + N cells */
     var tbody = document.createElement('tbody');
-    var cells = [];  /* [{ tr, td, row, col }] for repaint */
-
-    codes.forEach(function (rowCode) {
-      var tr = document.createElement('tr');
-      var rowLabel = document.createElement('th');
-      rowLabel.textContent = rowCode;
-      tr.appendChild(rowLabel);
-      codes.forEach(function (colCode) {
-        var td = document.createElement('td');
-        if (rowCode === colCode) {
-          td.classList.add('hm-cm-diag');
-          td.textContent = '\u2014';
-        } else {
-          td._row = rowCode;
-          td._col = colCode;
-          cells.push(td);
-        }
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
+    table.appendChild(thead);
     table.appendChild(tbody);
     scroll.appendChild(table);
     card.appendChild(scroll);
     container.appendChild(card);
 
-    function updateCells() {
+    /* Live cell list \u2014 refreshed on each rebuild. */
+    var cells = [];
+
+    /* Compute strongest-to-weakest order for the active period.
+       Strength = mean cross-return of currency vs. all others. */
+    function computeSortedOrder() {
+      var scores = {};
+      codes.forEach(function (rowCode) {
+        var sum = 0, count = 0;
+        codes.forEach(function (colCode) {
+          if (rowCode === colCode) return;
+          var rVs = vs[rowCode] && vs[rowCode][cmPeriod];
+          var cVs = vs[colCode] && vs[colCode][cmPeriod];
+          if (rVs == null || cVs == null) return;
+          var rx = rVs / 100, ry = cVs / 100;
+          sum += ((1 + rx) / (1 + ry) - 1) * 100;
+          count++;
+        });
+        scores[rowCode] = count > 0 ? sum / count : -Infinity;
+      });
+      return codes.slice().sort(function (a, b) { return scores[b] - scores[a]; });
+    }
+
+    /* Rebuild thead + tbody DOM with the active code order, then paint. */
+    function rebuildAndPaint() {
+      var order = cmSorted ? computeSortedOrder() : codes;
+
+      thead.innerHTML = '';
+      var hrow = document.createElement('tr');
+      hrow.appendChild(document.createElement('th'));  /* corner */
+      order.forEach(function (c) {
+        var th = document.createElement('th');
+        th.textContent = c;
+        th.dataset.code = c;
+        th.dataset.axis = 'col';
+        hrow.appendChild(th);
+      });
+      thead.appendChild(hrow);
+
+      tbody.innerHTML = '';
+      cells = [];
+      order.forEach(function (rowCode) {
+        var tr = document.createElement('tr');
+        var rowLabel = document.createElement('th');
+        rowLabel.textContent = rowCode;
+        rowLabel.dataset.code = rowCode;
+        rowLabel.dataset.axis = 'row';
+        tr.appendChild(rowLabel);
+        order.forEach(function (colCode) {
+          var td = document.createElement('td');
+          if (rowCode === colCode) {
+            td.classList.add('hm-cm-diag');
+            td.textContent = '\u2014';
+          } else {
+            td._row = rowCode;
+            td._col = colCode;
+            td.dataset.row = rowCode;
+            td.dataset.col = colCode;
+            cells.push(td);
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      paintCells();
+    }
+
+    /* Paint cells with a continuous color scale anchored at 0%, with
+       saturation scaled to the largest visible |cross| so the most
+       extreme cell always reads as full intensity. Floor at 5% so a
+       calm period (everything <= 1%) doesn't blast the panel red+green. */
+    function paintCells() {
       var th = getTheme();
+
+      var maxAbs = 5;
       cells.forEach(function (td) {
         var rVs = vs[td._row] && vs[td._row][cmPeriod];
         var cVs = vs[td._col] && vs[td._col][cmPeriod];
         if (rVs == null || cVs == null) {
+          td._cross = null;
+          return;
+        }
+        var rx = rVs / 100, ry = cVs / 100;
+        td._cross = ((1 + rx) / (1 + ry) - 1) * 100;
+        var abs = Math.abs(td._cross);
+        if (abs > maxAbs) maxAbs = abs;
+      });
+
+      var palette = PALETTE[th];
+      cells.forEach(function (td) {
+        if (td._cross == null) {
           td.textContent = '\u2014';
           td.classList.add('hm-cm-empty');
           td.style.background = '';
@@ -7930,19 +8040,45 @@
           return;
         }
         td.classList.remove('hm-cm-empty');
-        /* r_X_vs_Y = (1 + r_X) / (1 + r_Y) - 1, each r in % */
-        var rx = rVs / 100, ry = cVs / 100;
-        var cross = ((1 + rx) / (1 + ry) - 1) * 100;
+        var cross = td._cross;
         var sign = cross >= 0 ? '+' : '';
         td.textContent = sign + cross.toFixed(1) + '%';
-        var paint = perfCellPaint(cross, th);
-        td.style.background = paint.bg;
-        td.style.color = paint.fg;
+        var end = cross >= 0 ? palette.green : palette.red;
+        var k = Math.min(Math.abs(cross) / maxAbs, 1);
+        var rgb = [0, 1, 2].map(function (i) {
+          return Math.round(lerp(palette.neutral[i], end[i], k));
+        });
+        var lum = luminance(rgb[0], rgb[1], rgb[2]);
+        td.style.background = 'rgb(' + rgb.join(',') + ')';
+        td.style.color = lum < 140 ? '#ffffff' : '#2d2d2d';
         td.setAttribute('title', td._row + ' vs ' + td._col + ': ' + sign + cross.toFixed(2) + '%');
       });
     }
 
-    updateCells();
+    /* Hover highlighting via delegation: when the cursor enters a cell,
+       light up its row + column headers AND the cell itself so the user
+       can read the cross at a glance without losing their place. */
+    table.addEventListener('mouseover', function (e) {
+      var td = e.target.closest('td');
+      if (!td || !td.dataset.row) return;
+      var row = td.dataset.row, col = td.dataset.col;
+      table.querySelectorAll('th[data-axis="col"]').forEach(function (th) {
+        if (th.dataset.code === col) th.classList.add('is-active');
+      });
+      table.querySelectorAll('th[data-axis="row"]').forEach(function (th) {
+        if (th.dataset.code === row) th.classList.add('is-active');
+      });
+      td.classList.add('is-active');
+    });
+    table.addEventListener('mouseout', function (e) {
+      var td = e.target.closest('td');
+      if (!td) return;
+      table.querySelectorAll('.is-active').forEach(function (el) {
+        el.classList.remove('is-active');
+      });
+    });
+
+    rebuildAndPaint();
   }
 
   /* ---------- Thematic treemap ---------- */
