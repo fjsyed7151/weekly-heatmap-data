@@ -2077,16 +2077,16 @@
        resizeToContent + maxH cap, so the calendar list grows naturally
        to its full row count instead of being scrolled inside a 280px box. */
   }
-  /* Calendar row layout: 3-column grid so dot + datetime + name + prev all
-     align consistently regardless of variable string lengths.
-       col 1 = impact dot (fixed, 12px)
-       col 2 = datetime stack (date over time, fixed-ish width)
-       col 3 = event name (flex, takes remaining space)
-       col 4 = previous-value stack (label over value, fixed-ish, right-aligned)
+  /* Calendar row layout: 4-col grid so dot + name + datetime + prev all
+     align across rows regardless of variable string lengths.
+       col 1 = impact dot (fixed 12px)
+       col 2 = event name (flex 1fr — takes remaining width)
+       col 3 = date/time stack (date on top, time below)
+       col 4 = previous-value stack (label on top, value below, right-aligned)
   */
   .hm-app .hm-cal-row {
     display: grid;
-    grid-template-columns: 12px auto 1fr auto;
+    grid-template-columns: 12px 1fr auto auto;
     align-items: center;
     padding: 6px 12px;
     border-bottom: 1px solid var(--hm-border);
@@ -2114,11 +2114,12 @@
   .hm-app .hm-cal-dot[data-impact="high"]   { background: #d14343; }
   .hm-app .hm-cal-dot[data-impact="medium"] { background: #daa520; }
   .hm-app .hm-cal-dot[data-impact="low"]    { background: #9ca3af; }
-  /* Date / time stack: date on top, time below. Fixed font sizes so the
-     stack height matches the prev-value stack on the right. */
+  /* Date / time stack: date on top, time below. Right-aligned so both this
+     stack and the prev-value stack share a clean right edge in the row. */
   .hm-app .hm-cal-when {
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
     line-height: 1.15;
     white-space: nowrap;
     min-width: 50px;
@@ -2165,25 +2166,10 @@
     font-variant-numeric: tabular-nums;
   }
   .hm-app .hm-cal-prev-val.is-empty { color: var(--hm-border); font-weight: 500; }
-  /* Header info button — small "i" pill the user can click to learn what
-     the impact dot colors mean. Sits between the title and the count. */
-  .hm-app .hm-cal-info {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.25);
-    color: var(--hm-white);
-    font-size: 9px;
-    font-weight: 700;
-    cursor: help;
-    user-select: none;
-    margin-left: 6px;
-    flex-shrink: 0;
-  }
-  .hm-app .hm-cal-info:hover { background: rgba(255,255,255,0.45); }
+  /* Header info button is provided by the shared panel-header system
+     (see toggleInfoPopup + window.PANEL_INFO_HTML). The calendar panel
+     opts in by registering its info HTML and tagging the grid item with
+     `.hm-has-info` inside renderCalendar — no per-panel CSS here. */
 
   .hm-app .hm-econ-section { margin-bottom: 24px; }
   .hm-app .hm-econ-header {
@@ -5759,21 +5745,34 @@
     var lastDa = lastDate.getDate();
     var calSub = calCount + ' event' + (calCount === 1 ? '' : 's') +
                  ' \u00b7 thru ' + lastMo + ' ' + lastDa;
-    /* Title cluster = "Upcoming Releases" + small (i) info icon explaining
-       the impact-dot color system. Uses native title-attr tooltip \u2014 no JS
-       popup needed for ~5 lines of legend text. */
-    var impactTip =
-      'Impact rating \u2014 how market-moving the release tends to be:\n' +
-      '\u2022 Red dot = High (CPI, NFP, FOMC)\n' +
-      '\u2022 Gold dot = Medium (PPI, GDP, Retail Sales)\n' +
-      '\u2022 Gray dot = Low (sentiment surveys)\n\n' +
-      'Prev = the most recent published value of each release.';
-    hdr.innerHTML =
-      '<span>Upcoming Releases' +
-        '<span class="hm-cal-info" title="' + impactTip.replace(/"/g, '&quot;') + '">i</span>' +
-      '</span>' +
-      '<span class="hm-cal-sub">' + calSub + '</span>';
+    hdr.innerHTML = '<span>Upcoming Releases</span><span class="hm-cal-sub">' + calSub + '</span>';
     section.appendChild(hdr);
+
+    /* Wire the standard panel info-popup so the (i) button in the panel's
+       gridstack header opens a styled popup matching commodities/currencies
+       \u2014 instead of a native title-attr tooltip. */
+    window.PANEL_INFO_HTML['hm-calendar'] = function () {
+      return (
+        '<p><b>Impact rating</b>: how market-moving the release tends to be.</p>' +
+        '<p>' +
+          '<span class="hm-cal-dot" data-impact="high" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>' +
+          '<b>High</b> \u2014 CPI, Jobs (NFP), FOMC. Big intraday moves in stocks, rates, FX.' +
+        '</p>' +
+        '<p>' +
+          '<span class="hm-cal-dot" data-impact="medium" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>' +
+          '<b>Medium</b> \u2014 PPI, GDP, Retail Sales. Tradable, but smaller average impact.' +
+        '</p>' +
+        '<p>' +
+          '<span class="hm-cal-dot" data-impact="low" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>' +
+          '<b>Low</b> \u2014 Sentiment surveys (UMich). Brief intraday ripple at most.' +
+        '</p>' +
+        '<p><b>Prev</b>: the most recent published value of each release. ' +
+          'Unit hint (YoY, MoM, QoQ saar, Index, Range) shown above the value.</p>'
+      );
+    };
+    /* Tag the gridstack item so the info button becomes visible. */
+    var calItem = document.querySelector('.grid-stack-item[gs-id="hm-calendar"]');
+    if (calItem) calItem.classList.add('hm-has-info');
 
     var body = document.createElement('div');
     body.className = 'hm-cal-body';
@@ -5816,14 +5815,17 @@
             '<span class="hm-cal-prev-val is-empty">\u2014</span>' +
           '</span>';
       }
+      /* Column order: dot → name → date/time → prev. Name leads (the
+         "what") so the eye lands on the release first; the supporting
+         metadata (when + last value) reads to the right of it. */
       row.innerHTML =
         '<span class="hm-cal-dot" data-impact="' + impact + '" ' +
               'title="Impact: ' + impact.charAt(0).toUpperCase() + impact.slice(1) + '"></span>' +
+        '<span class="hm-cal-name">' + e.name + '</span>' +
         '<span class="hm-cal-when">' +
           '<span class="hm-cal-date">' + mo + ' ' + da + '</span>' +
           (time ? '<span class="hm-cal-time">' + time + '</span>' : '') +
         '</span>' +
-        '<span class="hm-cal-name">' + e.name + '</span>' +
         prevHtml;
       body.appendChild(row);
     });
