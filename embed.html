@@ -2646,18 +2646,18 @@
   }
   /* Heat-painted ranking panels: the longest column's last row sits flush
      against the panel card's outer bottom border, doubling the 1px row
-     border + 1px card border into a visible 2px line. Drop the card's
-     bottom border on these panels — the row's own border-bottom serves
-     as the visual panel bottom, and overflow: hidden on the card (set
-     above) lets the rounded bottom corners still clip cleanly.
-     Skipped: hm-currency-matrix (uses .hm-cm-table whose last row already
-     has border-bottom: none, so it relies on the card's bottom border). */
-  .hm-app #hm-fixed-income > .hm-factors-card,
-  .hm-app #hm-global-indexes > .hm-factors-card,
-  .hm-app #hm-country-etfs > .hm-factors-card,
-  .hm-app #hm-commodity-perf > .hm-factors-card,
-  .hm-app #hm-factors > .hm-factors-card {
-    border-bottom: none;
+     border + 1px card border into a visible 2px line. Pull the last row
+     up by 1px so its own border-bottom OVERLAPS the card's border-bottom
+     (collapsing into a single visible line) instead of stacking with it.
+     Shorter columns aren't affected — their last row's border still
+     shows mid-panel as a normal divider since they don't reach the
+     panel's bottom edge. */
+  .hm-app #hm-fixed-income .hm-fi-row:last-child,
+  .hm-app #hm-global-indexes .hm-gi-row:last-child,
+  .hm-app #hm-country-etfs .hm-ce-row:last-child,
+  .hm-app #hm-commodity-perf .hm-cp-row:last-child,
+  .hm-app #hm-factors .hm-factors-row:last-child {
+    margin-bottom: -1px;
   }
   .hm-app .hm-factors-header {
     font-size: 12px;
