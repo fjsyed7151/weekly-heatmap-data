@@ -2038,9 +2038,90 @@
     display: flex;
     flex-direction: column;
   }
+  /* margin-bottom: 0 so the gold header sits flush against the cards
+     (no breathing-room band between band and content). */
   .hm-app .hm-indexes-section > .hm-gold-header {
-    margin-bottom: 12px;
+    margin-bottom: 0;
     border-radius: var(--hm-r) var(--hm-r) 0 0;
+  }
+  /* Period pills inside the indexes gold header. Visual styling matches
+     the factors panel pills (10px Karla, white outline, fill on active)
+     so the dashboard reads as one cohesive control language. */
+  .hm-app .hm-indexes-periods { display: flex; gap: 4px; }
+  .hm-app .hm-indexes-period-btn {
+    font-family: 'Karla', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: var(--hm-r);
+    background: transparent;
+    color: var(--hm-white);
+    cursor: pointer;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    letter-spacing: 0.3px;
+    text-transform: none;
+  }
+  .hm-app .hm-indexes-period-btn.active {
+    background: rgba(255,255,255,0.25);
+    border-color: var(--hm-white);
+  }
+  /* External tooltip for the index sparklines.
+     Native Chart.js tooltip was getting clipped: the sparkline canvas is
+     only ~48px tall, so the in-canvas tooltip + caret was exceeding the
+     canvas bounds and getting cut off. Rendering as a fixed-position DOM
+     element decouples it from the canvas and lets it sit anywhere. */
+  .hm-app .hm-idx-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--hm-panel);
+    color: var(--hm-dark);
+    border: 1px solid var(--hm-border);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'Karla', sans-serif;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 80ms;
+    /* Anchor bottom-center to the data point, then nudge up by 10px so
+       the caret has room to sit between tooltip and the line. */
+    transform: translate(-50%, calc(-100% - 10px));
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  /* Caret arrow pointing down from the tooltip to the data point. Two
+     overlapping triangles fake a 1px border on the arrow itself so it
+     matches the tooltip's border. */
+  .hm-app .hm-idx-tooltip::before,
+  .hm-app .hm-idx-tooltip::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    border: 6px solid transparent;
+    transform: translateX(-50%);
+  }
+  .hm-app .hm-idx-tooltip::before {
+    bottom: -7px;
+    border-top-color: var(--hm-border);
+  }
+  .hm-app .hm-idx-tooltip::after {
+    bottom: -6px;
+    border-top-color: var(--hm-panel);
+  }
+  .hm-app .hm-idx-tooltip-title {
+    font-weight: 700;
+    font-size: 10px;
+    color: var(--hm-brown);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 3px;
+  }
+  .hm-app .hm-idx-tooltip-body {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 
   .hm-app .hm-cal-section {
@@ -5342,6 +5423,45 @@
     container.appendChild(card);
   }
 
+  /* Module-level state: which time window the sparklines display.
+     'm3' (13 weeks) matches what build_indexes used to ship as a fixed
+     window — this keeps initial load visually identical. */
+  var idxPeriod = 'm3';
+
+  /* External-tooltip handler for the index sparklines. Renders the
+     tooltip as a fixed-position DOM element instead of inside the canvas,
+     so it can extend beyond the (small) sparkline canvas without getting
+     clipped. One shared element across all 4 cards. */
+  function _externalIdxTooltip(context) {
+    var tt = document.getElementById('hm-idx-tt-el');
+    if (!tt) {
+      tt = document.createElement('div');
+      tt.id = 'hm-idx-tt-el';
+      tt.className = 'hm-idx-tooltip';
+      var hmApp = document.querySelector('.hm-app');
+      (hmApp || document.body).appendChild(tt);
+    }
+    var model = context.tooltip;
+    if (model.opacity === 0) {
+      tt.style.opacity = 0;
+      return;
+    }
+    var titleLines = model.title || [];
+    var bodyLines = (model.body || []).map(function (b) {
+      return (b.lines || []).join('');
+    });
+    tt.innerHTML =
+      '<div class="hm-idx-tooltip-title">' + titleLines.join('') + '</div>' +
+      '<div class="hm-idx-tooltip-body">' + bodyLines.join('') + '</div>';
+
+    /* caretX/caretY are canvas-local coords; offset by canvas's
+       viewport rect to get fixed-position coords. */
+    var rect = context.chart.canvas.getBoundingClientRect();
+    tt.style.opacity = 1;
+    tt.style.left = (rect.left + model.caretX) + 'px';
+    tt.style.top  = (rect.top  + model.caretY) + 'px';
+  }
+
   function renderIndexes(data) {
     var container = document.getElementById('hm-indexes');
     if (!container || !data.indexes || !data.indexes.length) return;
@@ -5355,13 +5475,34 @@
     /* Wrap the 4-card grid inside a section that carries the gold title
        band. The cards themselves keep their existing per-card chrome
        (border + sparkline); the section is just structural to anchor the
-       header above. Title says "Index Snapshot" to match PANEL_TITLES. */
+       header above. */
     var section = document.createElement('div');
     section.className = 'hm-indexes-section';
 
+    /* Gold header: title on the left, time-period pills on the right.
+       Pills control all 4 sparkline windows together (global state via
+       idxPeriod) — clicking one re-renders the whole panel, which is
+       cheap with only 4 charts. */
     var hdr = document.createElement('div');
     hdr.className = 'hm-gold-header';
-    hdr.innerHTML = '<span>Index Snapshot</span>';
+    var titleSpan = document.createElement('span');
+    titleSpan.textContent = 'Index Snapshot';
+    hdr.appendChild(titleSpan);
+
+    var btnWrap = document.createElement('div');
+    btnWrap.className = 'hm-indexes-periods';
+    STANDARD_PERIODS.forEach(function (p) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-indexes-period-btn' + (idxPeriod === p.key ? ' active' : '');
+      btn.textContent = p.label;
+      btn.addEventListener('click', function () {
+        idxPeriod = p.key;
+        renderIndexes(data);  /* re-render with new window */
+      });
+      btnWrap.appendChild(btn);
+    });
+    hdr.appendChild(btnWrap);
     section.appendChild(hdr);
 
     var grid = document.createElement('div');
@@ -5391,19 +5532,44 @@
       card.appendChild(sparkWrap);
       grid.appendChild(card);
 
-      /* Interactive Chart.js sparkline */
+      /* Interactive Chart.js sparkline — sliced to the active period. */
       if (idx.sparkline && idx.sparkline.length >= 2) {
-        var labels = (idx.spark_dates || []).map(function (d) {
+        var weeks = _sparkWeeksFor(idxPeriod);
+        var slicedSpark = idx.sparkline.slice(-weeks);
+        var slicedDates = (idx.spark_dates || []).slice(-weeks);
+        var labels = slicedDates.map(function (d) {
           var parts = d.split('-');
           return parts[1] + '/' + parts[2];
         });
+
+        /* Y-axis floor: prevent over-scaling so a flat market doesn't
+           visually look as dramatic as a big mover. We hardcode a
+           minimum visual range = 3% of the latest close — anything
+           tighter than that gets centered in a 3% band. Otherwise we
+           pad ±10% of the actual range for a bit of breathing room. */
+        var sMin = Math.min.apply(null, slicedSpark);
+        var sMax = Math.max.apply(null, slicedSpark);
+        var sRange = sMax - sMin;
+        var lastVal = slicedSpark[slicedSpark.length - 1];
+        var minVisualRange = lastVal * 0.03;
+        var yMin, yMax;
+        if (sRange < minVisualRange) {
+          var center = (sMin + sMax) / 2;
+          yMin = center - minVisualRange / 2;
+          yMax = center + minVisualRange / 2;
+        } else {
+          var pad = sRange * 0.10;
+          yMin = sMin - pad;
+          yMax = sMax + pad;
+        }
+
         var chart = new Chart(canvas, {
           type: 'line',
           data: {
             labels: labels,
             datasets: [{
               label: idx.name,
-              data: idx.sparkline,
+              data: slicedSpark,
               borderColor: color,
               backgroundColor: fillColor,
               pointBackgroundColor: color,
@@ -5424,40 +5590,30 @@
               legend: { display: false },
               datalabels: { display: false },
               tooltip: {
-                enabled: true,
-                backgroundColor: theme === 'dark' ? '#0b0d12' : '#ffffff',
-                titleColor: theme === 'dark' ? '#e6e8ee' : '#2d2d2d',
-                bodyColor: theme === 'dark' ? '#e6e8ee' : '#2d2d2d',
-                borderColor: theme === 'dark' ? '#3a3f4e' : '#d9d9d9',
-                borderWidth: 1,
-                padding: { top: 8, right: 12, bottom: 8, left: 12 },
-                boxPadding: 6,
-                cornerRadius: 5,
-                titleMarginBottom: 6,
-                caretSize: 5,
-                caretPadding: 8,
-                displayColors: true,
-                usePointStyle: true,
-                bodyFont: { family: 'Karla', size: 11, weight: '500' },
-                titleFont: { family: 'Karla', weight: '700', size: 12 },
+                /* DOM-rendered (external) — see _externalIdxTooltip
+                   above. enabled:false disables the in-canvas one. */
+                enabled: false,
+                external: _externalIdxTooltip,
                 callbacks: {
                   title: function (items) {
                     var i = items[0].dataIndex;
-                    var d = (idx.spark_dates || [])[i];
+                    var d = slicedDates[i];
                     if (!d) return '';
-                    /* Format as "Apr 17" */
                     var parts = d.split('-');
                     var mo = new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' });
                     return mo + ' ' + parseInt(parts[2], 10);
                   },
                   label: function (c) {
                     var v = c.parsed.y;
-                    return ' ' + idx.name + ': ' + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    return idx.name + ': ' + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                   },
                 },
               },
             },
-            scales: { x: { display: false }, y: { display: false } },
+            scales: {
+              x: { display: false },
+              y: { display: false, min: yMin, max: yMax },
+            },
           },
         });
         indexChartInstances.push(chart);
