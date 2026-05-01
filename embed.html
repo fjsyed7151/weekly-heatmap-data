@@ -7497,6 +7497,31 @@
 
   /* ---------- Global Equity Indexes rankings (Koyfin-style 4-col) ---------- */
   var giPeriod = 'y1';
+  /* Currency toggle — index returns are shipped in LOCAL currency.
+     'local' (default) shows the raw return; 'usd' applies the
+     LOCAL-vs-USD FX return for the period so US investors see what
+     they'd actually have earned. Critical for EM indexes whose moves
+     can be FX-dominated (Turkey BIST in TRY, etc.). */
+  var giCurrency = 'local';
+
+  /* Convert a local-currency return to USD using fx_returns.
+     r_usd = (1 + r_local) * (1 + r_local_vs_usd) - 1 */
+  function _toUsdReturn(rLocal, currency, period, fxReturns) {
+    if (rLocal == null || currency == null || currency === 'USD') return rLocal;
+    if (!fxReturns || !fxReturns[currency]) return null;
+    var fx = fxReturns[currency][period];
+    if (fx == null) return null;
+    return ((1 + rLocal / 100) * (1 + fx / 100) - 1) * 100;
+  }
+  /* Convert a USD return back to local using fx_returns.
+     r_local = (1 + r_usd) / (1 + r_local_vs_usd) - 1 */
+  function _toLocalReturn(rUsd, currency, period, fxReturns) {
+    if (rUsd == null || currency == null || currency === 'USD') return rUsd;
+    if (!fxReturns || !fxReturns[currency]) return null;
+    var fx = fxReturns[currency][period];
+    if (fx == null) return null;
+    return ((1 + rUsd / 100) / (1 + fx / 100) - 1) * 100;
+  }
 
   /* Tooltip copy for each index, keyed by Bloomberg-style display ticker. */
   var GLOBAL_INDEX_TIPS = {
@@ -7550,7 +7575,7 @@
       btn.textContent = p.label;
       btn.addEventListener('click', function () {
         giPeriod = p.key;
-        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+        btnWrap.querySelectorAll(':scope > .hm-factors-period-btn').forEach(function (b) {
           b.classList.remove('active');
         });
         btn.classList.add('active');
@@ -7558,6 +7583,34 @@
       });
       btnWrap.appendChild(btn);
     });
+
+    /* Local / USD currency toggle — same chrome as period pills, separated
+       by a divider. Default = local since that's how indexes natively
+       trade. Flip to USD to see what a US investor would actually earn
+       after FX (catches Turkey-style FX-distorted returns). */
+    var giCurWrap = document.createElement('span');
+    giCurWrap.className = 'hm-treemap-toggle';
+    [
+      { key: 'local', label: 'Local', title: 'Index returns in their local currency (native).' },
+      { key: 'usd',   label: 'USD',   title: 'Apply local-vs-USD FX so returns are what a US investor would see.' }
+    ].forEach(function (m) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-factors-period-btn' + (giCurrency === m.key ? ' active' : '');
+      btn.textContent = m.label;
+      btn.title = m.title;
+      btn.addEventListener('click', function () {
+        giCurrency = m.key;
+        giCurWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        updateRows();
+      });
+      giCurWrap.appendChild(btn);
+    });
+    btnWrap.appendChild(giCurWrap);
+
     hdr.appendChild(btnWrap);
     card.appendChild(hdr);
 
@@ -7565,6 +7618,7 @@
     body.className = 'hm-gi-body';
 
     var allRows = [];
+    var fxReturns = data.fx_returns || {};
 
     data.global_indexes.forEach(function (group) {
       var col = document.createElement('div');
@@ -7612,6 +7666,18 @@
 
     function updateRows() {
       var th = getTheme();
+
+      /* Resolve each row's effective value (local or USD-adjusted) before
+         sort/paint. Cache on the row so we only do the FX math once. */
+      allRows.forEach(function (r) {
+        var f = r._data;
+        var v = f[giPeriod];
+        if (giCurrency === 'usd') {
+          v = _toUsdReturn(v, f.currency, giPeriod, fxReturns);
+        }
+        r._effVal = v;
+      });
+
       var byList = new Map();
       allRows.forEach(function (r) {
         if (!byList.has(r._list)) byList.set(r._list, []);
@@ -7619,7 +7685,7 @@
       });
       byList.forEach(function (rows, list) {
         rows.sort(function (a, b) {
-          var av = a._data[giPeriod], bv = b._data[giPeriod];
+          var av = a._effVal, bv = b._effVal;
           if (av == null) return 1;
           if (bv == null) return -1;
           return bv - av;
@@ -7627,12 +7693,11 @@
         rows.forEach(function (r) { list.appendChild(r); });
       });
       var paint = buildHeatPaint(
-        allRows.map(function (r) { return r._data[giPeriod]; }),
+        allRows.map(function (r) { return r._effVal; }),
         th
       );
       allRows.forEach(function (row) {
-        var f = row._data;
-        var v = f[giPeriod];
+        var v = row._effVal;
         var retEl = row.querySelector('.hm-gi-ret');
         if (v == null) {
           retEl.textContent = '\u2014';
@@ -7653,6 +7718,12 @@
 
   /* ---------- Country-ETF rankings (Koyfin-style 4-col regional) ---------- */
   var cePeriod = 'y1';
+  /* Currency toggle — country ETFs trade in USD so their returns are
+     already FX-adjusted. 'usd' (default) shows the native ETF return.
+     'local' backs out the local-vs-USD FX move to show the underlying
+     local-currency return. Useful for comparing the actual local-market
+     performance vs. the FX-distorted USD result. */
+  var ceCurrency = 'usd';
 
   /* Tooltip copy for each country ETF. Issuer-ticker-scope style so the
      reader knows what they're looking at (iShares MSCI vs Vanguard vs Global X). */
@@ -7723,7 +7794,7 @@
       btn.textContent = p.label;
       btn.addEventListener('click', function () {
         cePeriod = p.key;
-        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+        btnWrap.querySelectorAll(':scope > .hm-factors-period-btn').forEach(function (b) {
           b.classList.remove('active');
         });
         btn.classList.add('active');
@@ -7731,6 +7802,34 @@
       });
       btnWrap.appendChild(btn);
     });
+
+    /* USD / Local currency toggle. Default = USD (native ETF return).
+       Flip to Local to back out FX and see the underlying local-market
+       return. Pegged-currency rows (Saudi/UAE/Qatar) are no-ops since
+       fx_returns is ~0 for those. */
+    var ceCurWrap = document.createElement('span');
+    ceCurWrap.className = 'hm-treemap-toggle';
+    [
+      { key: 'usd',   label: 'USD',   title: 'ETF return as-traded (USD-denominated, native).' },
+      { key: 'local', label: 'Local', title: 'Back out the local-vs-USD FX move to show the underlying local-market return.' }
+    ].forEach(function (m) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-factors-period-btn' + (ceCurrency === m.key ? ' active' : '');
+      btn.textContent = m.label;
+      btn.title = m.title;
+      btn.addEventListener('click', function () {
+        ceCurrency = m.key;
+        ceCurWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        updateRows();
+      });
+      ceCurWrap.appendChild(btn);
+    });
+    btnWrap.appendChild(ceCurWrap);
+
     hdr.appendChild(btnWrap);
     card.appendChild(hdr);
 
@@ -7738,6 +7837,7 @@
     body.className = 'hm-ce-body';
 
     var allRows = [];
+    var fxReturns = data.fx_returns || {};
 
     data.country_etfs.forEach(function (group) {
       var col = document.createElement('div');
@@ -7785,6 +7885,18 @@
 
     function updateRows() {
       var th = getTheme();
+
+      /* Resolve each row's effective value (USD native or local-converted)
+         once before sort/paint. */
+      allRows.forEach(function (r) {
+        var f = r._data;
+        var v = f[cePeriod];
+        if (ceCurrency === 'local') {
+          v = _toLocalReturn(v, f.currency, cePeriod, fxReturns);
+        }
+        r._effVal = v;
+      });
+
       var byList = new Map();
       allRows.forEach(function (r) {
         if (!byList.has(r._list)) byList.set(r._list, []);
@@ -7792,7 +7904,7 @@
       });
       byList.forEach(function (rows, list) {
         rows.sort(function (a, b) {
-          var av = a._data[cePeriod], bv = b._data[cePeriod];
+          var av = a._effVal, bv = b._effVal;
           if (av == null) return 1;
           if (bv == null) return -1;
           return bv - av;
@@ -7800,12 +7912,11 @@
         rows.forEach(function (r) { list.appendChild(r); });
       });
       var paint = buildHeatPaint(
-        allRows.map(function (r) { return r._data[cePeriod]; }),
+        allRows.map(function (r) { return r._effVal; }),
         th
       );
       allRows.forEach(function (row) {
-        var f = row._data;
-        var v = f[cePeriod];
+        var v = row._effVal;
         var retEl = row.querySelector('.hm-ce-ret');
         if (v == null) {
           retEl.textContent = '\u2014';
