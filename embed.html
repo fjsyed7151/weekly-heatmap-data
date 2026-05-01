@@ -2142,7 +2142,9 @@
     text-align: left;
   }
   /* Previous-value stack: tiny label on top ("YoY", "MoM", "Range"),
-     value below. Mirrors the date/time stack so rows feel symmetric. */
+     value below. Mirrors the date/time stack so rows feel symmetric.
+     Extra margin-left pushes prev further from the date/time stack so the
+     two right-side metadata columns read as distinct groups, not one blob. */
   .hm-app .hm-cal-prev {
     display: flex;
     flex-direction: column;
@@ -2150,6 +2152,7 @@
     line-height: 1.15;
     white-space: nowrap;
     min-width: 48px;
+    margin-left: 14px;
   }
   .hm-app .hm-cal-prev-label {
     font-size: 9px;
