@@ -2077,13 +2077,20 @@
        resizeToContent + maxH cap, so the calendar list grows naturally
        to its full row count instead of being scrolled inside a 280px box. */
   }
+  /* Calendar row layout: 3-column grid so dot + datetime + name + prev all
+     align consistently regardless of variable string lengths.
+       col 1 = impact dot (fixed, 12px)
+       col 2 = datetime stack (date over time, fixed-ish width)
+       col 3 = event name (flex, takes remaining space)
+       col 4 = previous-value stack (label over value, fixed-ish, right-aligned)
+  */
   .hm-app .hm-cal-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 12px auto 1fr auto;
     align-items: center;
-    justify-content: space-between;
-    padding: 4px 12px;
+    padding: 6px 12px;
     border-bottom: 1px solid var(--hm-border);
-    gap: 8px;
+    gap: 10px;
     text-decoration: none;
     color: inherit;
     transition: background 80ms;
@@ -2095,19 +2102,88 @@
   }
   .hm-app a.hm-cal-row:hover .hm-cal-name { color: var(--hm-gold); }
   .hm-app .hm-cal-row:last-child { border-bottom: none; }
+  /* Impact dot — color is set inline per row from the `impact` field.
+     8px circle inside a 12px column for vertical alignment. */
+  .hm-app .hm-cal-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--hm-border);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .hm-app .hm-cal-dot[data-impact="high"]   { background: #d14343; }
+  .hm-app .hm-cal-dot[data-impact="medium"] { background: #daa520; }
+  .hm-app .hm-cal-dot[data-impact="low"]    { background: #9ca3af; }
+  /* Date / time stack: date on top, time below. Fixed font sizes so the
+     stack height matches the prev-value stack on the right. */
+  .hm-app .hm-cal-when {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    white-space: nowrap;
+    min-width: 50px;
+  }
   .hm-app .hm-cal-date {
     font-size: 10px;
     font-weight: 700;
     color: var(--hm-brown);
-    white-space: nowrap;
-    min-width: 50px;
+  }
+  .hm-app .hm-cal-time {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--hm-muted, #8a7e62);
+    opacity: 0.85;
   }
   .hm-app .hm-cal-name {
     font-size: 11px;
     font-weight: 600;
     color: var(--hm-dark);
-    text-align: right;
+    text-align: left;
   }
+  /* Previous-value stack: tiny label on top ("YoY", "MoM", "Range"),
+     value below. Mirrors the date/time stack so rows feel symmetric. */
+  .hm-app .hm-cal-prev {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.15;
+    white-space: nowrap;
+    min-width: 48px;
+  }
+  .hm-app .hm-cal-prev-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--hm-muted, #8a7e62);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    opacity: 0.85;
+  }
+  .hm-app .hm-cal-prev-val {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--hm-dark);
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-app .hm-cal-prev-val.is-empty { color: var(--hm-border); font-weight: 500; }
+  /* Header info button — small "i" pill the user can click to learn what
+     the impact dot colors mean. Sits between the title and the count. */
+  .hm-app .hm-cal-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    color: var(--hm-white);
+    font-size: 9px;
+    font-weight: 700;
+    cursor: help;
+    user-select: none;
+    margin-left: 6px;
+    flex-shrink: 0;
+  }
+  .hm-app .hm-cal-info:hover { background: rgba(255,255,255,0.45); }
 
   .hm-app .hm-econ-section { margin-bottom: 24px; }
   .hm-app .hm-econ-header {
@@ -5683,7 +5759,20 @@
     var lastDa = lastDate.getDate();
     var calSub = calCount + ' event' + (calCount === 1 ? '' : 's') +
                  ' \u00b7 thru ' + lastMo + ' ' + lastDa;
-    hdr.innerHTML = '<span>Upcoming Releases</span><span class="hm-cal-sub">' + calSub + '</span>';
+    /* Title cluster = "Upcoming Releases" + small (i) info icon explaining
+       the impact-dot color system. Uses native title-attr tooltip \u2014 no JS
+       popup needed for ~5 lines of legend text. */
+    var impactTip =
+      'Impact rating \u2014 how market-moving the release tends to be:\n' +
+      '\u2022 Red dot = High (CPI, NFP, FOMC)\n' +
+      '\u2022 Gold dot = Medium (PPI, GDP, Retail Sales)\n' +
+      '\u2022 Gray dot = Low (sentiment surveys)\n\n' +
+      'Prev = the most recent published value of each release.';
+    hdr.innerHTML =
+      '<span>Upcoming Releases' +
+        '<span class="hm-cal-info" title="' + impactTip.replace(/"/g, '&quot;') + '">i</span>' +
+      '</span>' +
+      '<span class="hm-cal-sub">' + calSub + '</span>';
     section.appendChild(hdr);
 
     var body = document.createElement('div');
@@ -5704,9 +5793,38 @@
       /* Format date as "Apr 28" */
       var mo = eventDate.toLocaleDateString('en-US', { month: 'short' });
       var da = eventDate.getDate();
+      var impact = (e.impact || 'low');
+      var time = (e.time || '');
+      var prevVal = (e.prev || '').trim();
+      var prevLabel = (e.prev_label || '').trim();
+      /* Stale-data guard: pre-redesign heatmap.json ships rows with only
+         {date, name, url}. Render those gracefully \u2014 em-dash in the prev
+         column, gray dot in the impact column. New fields slot in once
+         the next build pushes. */
+      var prevHtml;
+      if (prevVal) {
+        prevHtml =
+          '<span class="hm-cal-prev">' +
+            (prevLabel
+              ? '<span class="hm-cal-prev-label">' + prevLabel + '</span>'
+              : '') +
+            '<span class="hm-cal-prev-val">' + prevVal + '</span>' +
+          '</span>';
+      } else {
+        prevHtml =
+          '<span class="hm-cal-prev">' +
+            '<span class="hm-cal-prev-val is-empty">\u2014</span>' +
+          '</span>';
+      }
       row.innerHTML =
-        '<span class="hm-cal-date">' + mo + ' ' + da + '</span>' +
-        '<span class="hm-cal-name">' + e.name + '</span>';
+        '<span class="hm-cal-dot" data-impact="' + impact + '" ' +
+              'title="Impact: ' + impact.charAt(0).toUpperCase() + impact.slice(1) + '"></span>' +
+        '<span class="hm-cal-when">' +
+          '<span class="hm-cal-date">' + mo + ' ' + da + '</span>' +
+          (time ? '<span class="hm-cal-time">' + time + '</span>' : '') +
+        '</span>' +
+        '<span class="hm-cal-name">' + e.name + '</span>' +
+        prevHtml;
       body.appendChild(row);
     });
 
