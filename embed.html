@@ -1095,8 +1095,12 @@
     white-space: nowrap;
     opacity: 0.85;
   }
+  /* Fixed-width slider track (was flex: 1 1 auto, which stretched to fill
+     the cell — too long when cells were wide). 90px gives the gold marker
+     enough travel to read low/mid/high positions cleanly without dominating
+     the row. The flanking low/high price labels still anchor the ends. */
   .hm-app .hm-w52-track {
-    flex: 1 1 auto;
+    flex: 0 0 90px;
     display: block;
     height: 18px;
     min-width: 28px;
@@ -1654,12 +1658,20 @@
   .hm-app .hm-mc-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
   .hm-app .hm-mc-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
 
-  /* Top index cards */
+  /* Top index cards — unified panel with vertical dividers between cells.
+     Previous design had 4 standalone cards with their own borders/radii; the
+     dividers approach reads as a single "Index Snapshot" panel partitioned
+     into 4 cells, instead of 4 separate pills competing for attention. */
   .hm-app .hm-indexes {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    gap: 0;
+    background: var(--hm-panel);
+    border: 1px solid var(--hm-border);
+    border-top: none;  /* gold header above already provides the top edge */
+    border-radius: 0 0 var(--hm-r) var(--hm-r);
     margin-bottom: 0; /* Gridstack handles spacing */
+    overflow: hidden;  /* clip child content to the rounded bottom corners */
   }
   @media (max-width: 1100px) {
     .hm-app .hm-indexes { grid-template-columns: repeat(2, 1fr); }
@@ -1668,15 +1680,32 @@
     .hm-app .hm-indexes { grid-template-columns: 1fr; }
   }
   .hm-app .hm-idx-card {
-    background: var(--hm-panel);
-    border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--hm-border);
+    border-radius: 0;
     padding: 12px 16px;
     display: flex;
     flex-direction: column;
     gap: 4px;
     position: relative;
     overflow: hidden;
+  }
+  .hm-app .hm-idx-card:last-child { border-right: none; }
+  /* Responsive: when stacked to 2 columns, reset right-borders to vertical
+     dividers between the 2 cells per row + horizontal divider between rows. */
+  @media (max-width: 1100px) {
+    .hm-app .hm-idx-card { border-right: 1px solid var(--hm-border); }
+    .hm-app .hm-idx-card:nth-child(2n) { border-right: none; }
+    .hm-app .hm-idx-card:nth-child(-n+2) { border-bottom: 1px solid var(--hm-border); }
+  }
+  @media (max-width: 600px) {
+    .hm-app .hm-idx-card,
+    .hm-app .hm-idx-card:nth-child(2n) {
+      border-right: none;
+      border-bottom: 1px solid var(--hm-border);
+    }
+    .hm-app .hm-idx-card:last-child { border-bottom: none; }
   }
   .hm-app .hm-idx-label {
     font-size: 11px;
@@ -3530,10 +3559,10 @@
               y=...: Commodities(w=6) | Currencies(w=6)
               y=...: Heatmap(w=12)
           -->
-          <div class="grid-stack-item" gs-id="hm-indexes"        gs-x="0" gs-y="0"   gs-w="6"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-indexes"        gs-x="0" gs-y="0"   gs-w="4"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-calendar"       gs-x="6" gs-y="0"   gs-w="2"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-economy"        gs-x="9" gs-y="0"   gs-w="3"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-gave-wrap"      gs-x="0" gs-y="4"   gs-w="6"  gs-h="20">
+          <div class="grid-stack-item" gs-id="hm-economy"        gs-x="9" gs-y="0"   gs-w="2"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-gave-wrap"      gs-x="0" gs-y="4"   gs-w="4"  gs-h="24">
             <div class="grid-stack-item-content">
               <div class="hm-gave-wrap" id="hm-gave-wrap">
                 <div id="hm-gave-quadrant"></div>
@@ -3541,23 +3570,22 @@
               </div>
             </div>
           </div>
-          <div class="grid-stack-item" gs-id="hm-stylefactor"    gs-x="6" gs-y="14"  gs-w="3"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-macrocompass"   gs-x="0" gs-y="24"  gs-w="6"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-factors"        gs-x="6" gs-y="24"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-          <!-- Ranking tables — sized JUST OVER each panel's content min-width
-               barrier so all columns are visible without horizontal scroll, but
-               not full-width either. Cell widths under the 12-col grid (margin
-               24px) are 108.75n − 24, so 7 cols = 737px (clears 720px floors
-               for 4-col bodies) and 9 cols = 955px (clears 900px FI floor). -->
-          <div class="grid-stack-item" gs-id="hm-fixed-income"   gs-x="0" gs-y="38"  gs-w="9"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-x="0" gs-y="49"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="6" gs-y="49" gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="0" gs-y="60"  gs-w="7"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="0" gs-y="75"  gs-w="7"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-stylefactor"    gs-x="6" gs-y="14"  gs-w="2"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-macrocompass"   gs-x="0" gs-y="24"  gs-w="4"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-factors"        gs-x="6" gs-y="24"  gs-w="4"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
+          <!-- Ranking tables — sized roughly to fit each panel's content
+               min-width barrier (so columns visible without horizontal scroll
+               on most layouts) while leaving room in the row for other panels.
+               Cell widths under the 12-col grid (margin 24px) are 108.75n − 24. -->
+          <div class="grid-stack-item" gs-id="hm-fixed-income"   gs-x="0" gs-y="38"  gs-w="7"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-global-indexes" gs-x="0" gs-y="49"  gs-w="4"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="6" gs-y="49" gs-w="4"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-x="0" gs-y="60"  gs-w="4"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-x="0" gs-y="75"  gs-w="5"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-sector-chart"   gs-x="0" gs-y="90"  gs-w="6"  gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-theme-treemap"  gs-x="6" gs-y="90"  gs-w="4"  gs-h="24"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-commodities"    gs-x="6" gs-y="105" gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currencies"     gs-x="0" gs-y="120" gs-w="6"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currencies"     gs-x="0" gs-y="120" gs-w="4"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
           <!-- Metrics chart panel (always present in grid; shows empty state
                of "0/6 metrics selected" until user picks rows from the heat map). -->
           <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="140" gs-w="12" gs-h="11">
@@ -6641,7 +6669,11 @@
     var sbBtns = document.createElement('div');
     sbBtns.className = 'hm-sf-period-btns';
 
-    var periodOpts = SF_PERIODS;
+    /* Style Box drops 10Y from the standard 8-period set: at the panel's
+       narrow default width the row of 8 pills wraps, and 10Y data on a
+       9-cell style grid isn't a useful comparison anyway (style leadership
+       rotates much faster than that). */
+    var periodOpts = SF_PERIODS.filter(function (p) { return p.key !== 'y10'; });
 
     var allCells = [];
 
@@ -8197,7 +8229,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v10';
+  var LAYOUT_KEY = 'hm-grid-layout-v11';
   var GS_SCALE = 40;
   var gridInstance = null;
 
