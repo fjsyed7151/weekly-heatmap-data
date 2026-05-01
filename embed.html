@@ -2624,6 +2624,7 @@
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
+    overflow: hidden;
     /* width: max-content + min-width: 100% — when the inner table is
        wider than the panel cell, the card extends with the table so its
        gold title bar follows. Otherwise (table narrower than cell) the
@@ -2642,6 +2643,21 @@
      stays pinned at the bottom edge of the visible panel. */
   .hm-app .hm-factors-scroll {
     overflow: visible;
+  }
+  /* Heat-painted ranking panels: the longest column's last row sits flush
+     against the panel card's outer bottom border, doubling the 1px row
+     border + 1px card border into a visible 2px line. Drop the card's
+     bottom border on these panels — the row's own border-bottom serves
+     as the visual panel bottom, and overflow: hidden on the card (set
+     above) lets the rounded bottom corners still clip cleanly.
+     Skipped: hm-currency-matrix (uses .hm-cm-table whose last row already
+     has border-bottom: none, so it relies on the card's bottom border). */
+  .hm-app #hm-fixed-income > .hm-factors-card,
+  .hm-app #hm-global-indexes > .hm-factors-card,
+  .hm-app #hm-country-etfs > .hm-factors-card,
+  .hm-app #hm-commodity-perf > .hm-factors-card,
+  .hm-app #hm-factors > .hm-factors-card {
+    border-bottom: none;
   }
   .hm-app .hm-factors-header {
     font-size: 12px;
@@ -7269,7 +7285,13 @@
         rows.forEach(function (r) { list.appendChild(r); });
       });
 
-      /* Color + fill each row based on the active mode's value. */
+      /* Color + fill each row using the shared dynamic heat scale so
+         saturation reads the same as the other ranking panels (FI,
+         Global Indexes, etc.). */
+      var paint = buildHeatPaint(
+        allRows.map(function (r) { return r._data[dataKey]; }),
+        th
+      );
       allRows.forEach(function (row) {
         var f = row._data;
         var val = f[dataKey];
@@ -7282,9 +7304,9 @@
         }
         var sign = val >= 0 ? '+' : '';
         retEl.textContent = sign + val.toFixed(1) + '%';
-        var paint = perfCellPaint(val, th);
-        row.style.background = paint.bg;
-        row.style.color = paint.fg;
+        var pp = paint(val);
+        row.style.background = pp.bg;
+        row.style.color = pp.fg;
       });
     }
 
