@@ -3103,6 +3103,15 @@
   .hm-app .hm-cm-table th:last-child,
   .hm-app .hm-cm-table td:last-child { border-right: none; }
   .hm-app .hm-cm-table tbody tr:last-child td { border-bottom: none; }
+  /* Round the last row's first/last edge cells so the table content
+     doesn't poke past the panel card's 5px rounded corners. The first
+     cell of the last row is a TH (row-label) here, not a TD. */
+  .hm-app .hm-cm-table tbody tr:last-child th:first-child {
+    border-bottom-left-radius: 5px;
+  }
+  .hm-app .hm-cm-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 5px;
+  }
   .hm-app .hm-cm-table thead th {
     background: var(--hm-bg-warm);
     font-weight: 700;
@@ -6772,6 +6781,9 @@
 
   /* ---------- Style Box ---------- */
   var sbPeriod = 'm1';  /* style box period */
+  /* Mode toggle — 'abs' = each cell's own period return; 'rel' = excess
+     return vs SPY for the same period (cell return − SPY return). */
+  var sbMode = 'abs';
 
   /* ──────────────────────────────────────────────────────────────────
      Canonical period set. Used by EVERY period selector in the dashboard:
@@ -6834,12 +6846,42 @@
       btn.textContent = p.label;
       btn.addEventListener('click', function () {
         sbPeriod = p.key;
-        sbBtns.querySelectorAll('.hm-sf-period-btn').forEach(function (b) { b.classList.remove('active'); });
+        /* Only deactivate period pills (direct children of sbBtns), not
+           the mode toggle pills nested inside sbModeWrap. */
+        sbBtns.querySelectorAll(':scope > .hm-sf-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
         btn.classList.add('active');
         updateStyleBox();
       });
       sbBtns.appendChild(btn);
     });
+
+    /* Abs / vs SPY toggle — same chrome as the period pills with a
+       vertical divider, mirroring the thematic treemap pattern. */
+    var sbModeWrap = document.createElement('span');
+    sbModeWrap.className = 'hm-treemap-toggle';
+    [
+      { key: 'abs', label: 'Abs',    title: 'Absolute return for each cell.' },
+      { key: 'rel', label: 'vs SPY', title: 'Cell return minus SPY for the same period.' }
+    ].forEach(function (m) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hm-sf-period-btn' + (sbMode === m.key ? ' active' : '');
+      btn.textContent = m.label;
+      btn.title = m.title;
+      btn.addEventListener('click', function () {
+        sbMode = m.key;
+        sbModeWrap.querySelectorAll('.hm-sf-period-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        updateStyleBox();
+      });
+      sbModeWrap.appendChild(btn);
+    });
+    sbBtns.appendChild(sbModeWrap);
+
     sbHdr.appendChild(sbBtns);
     sbPanel.appendChild(sbHdr);
 
@@ -6902,19 +6944,54 @@
 
     function updateStyleBox() {
       var th = getTheme();
+      var palette = PALETTE[th];
+      var spyVal = (data.spy_returns && data.spy_returns[sbPeriod] != null)
+        ? data.spy_returns[sbPeriod]
+        : null;
+
+      /* First pass: compute each cell's effective value (abs or excess
+         vs SPY) and find the largest |value| so we can scale saturation
+         relative to the strongest mover in the visible grid. Floor at
+         3% so a calm period doesn't blast the panel red+green. */
+      var maxAbs = 3;
       allCells.forEach(function (cell) {
         var d = cell._data;
-        var retEl = cell.querySelector('.hm-style-cell-ret');
         if (!d || d[sbPeriod] == null) {
+          cell._val = null;
+          return;
+        }
+        var v = d[sbPeriod];
+        if (sbMode === 'rel') {
+          if (spyVal == null) { cell._val = null; return; }
+          v = v - spyVal;
+        }
+        cell._val = v;
+        var abs = Math.abs(v);
+        if (abs > maxAbs) maxAbs = abs;
+      });
+
+      /* Second pass: paint each cell with intensity scaled to maxAbs.
+         Strongest mover = full saturation; weakest moves are very faint
+         even when positive — so capital flow reads at a glance. */
+      allCells.forEach(function (cell) {
+        var retEl = cell.querySelector('.hm-style-cell-ret');
+        var v = cell._val;
+        if (v == null) {
           retEl.textContent = '--';
           cell.style.background = 'var(--hm-bg-alt)';
           cell.style.color = 'var(--hm-muted)';
-        } else {
-          retEl.textContent = d[sbPeriod].toFixed(1) + '%';
-          var paint = perfCellPaint(d[sbPeriod], th);
-          cell.style.background = paint.bg;
-          cell.style.color = paint.fg;
+          return;
         }
+        var sign = v >= 0 ? '+' : '';
+        retEl.textContent = sign + v.toFixed(1) + '%';
+        var end = v >= 0 ? palette.green : palette.red;
+        var k = Math.min(Math.abs(v) / maxAbs, 1);
+        var rgb = [0, 1, 2].map(function (i) {
+          return Math.round(lerp(palette.neutral[i], end[i], k));
+        });
+        var lum = luminance(rgb[0], rgb[1], rgb[2]);
+        cell.style.background = 'rgb(' + rgb.join(',') + ')';
+        cell.style.color = lum < 140 ? '#ffffff' : '#2d2d2d';
       });
     }
 
