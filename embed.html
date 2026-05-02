@@ -2708,24 +2708,24 @@
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     overflow: hidden;
-  }
-  /* Square the top corners on Factors / Currency Performance / Global Equity
-     Index cards so the gold #daa520 title bar reads as a flat band flush
-     with the panel edge (not clipped to a rounded shape). The other ranking
-     panels keep fully-rounded corners. */
-  .hm-app #hm-factors > .hm-factors-card,
-  .hm-app #hm-currency-matrix > .hm-factors-card,
-  .hm-app #hm-global-indexes > .hm-factors-card {
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
     /* width: max-content + min-width: 100% — when the inner table is
        wider than the panel cell, the card extends with the table so its
        gold title bar follows. Otherwise (table narrower than cell) the
-       card fills the cell width via min-width. Without this, the header
-       bar stayed at cell width and the wide table content overflowed
-       past it, leaving a dark gap to the right of the header. */
+       card fills the cell width via min-width. */
     width: max-content;
     min-width: 100%;
     box-sizing: border-box;
+  }
+  /* Square the top corners on Factors / Currency Performance / Global Equity
+     Index cards so the gold #daa520 title bar reads as a flat band flush
+     with the panel edge (not clipped to a rounded shape). !important on the
+     per-corner rules wins against the shorthand in .hm-factors-card without
+     having to re-declare the bottom corners. */
+  .hm-app #hm-factors > .hm-factors-card,
+  .hm-app #hm-currency-matrix > .hm-factors-card,
+  .hm-app #hm-global-indexes > .hm-factors-card {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
   }
   /* Horizontal scroll wrapper around the 3-column body. When the main column
      is narrower than the body's min-width, the user can scroll sideways
@@ -3877,19 +3877,19 @@
             </div>
           </div>
           <div class="grid-stack-item" gs-id="hm-country-etfs"    gs-x="5"  gs-y="26"  gs-w="7"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-factors"         gs-x="0"  gs-y="42"  gs-w="4"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="5"  gs-y="42"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-stylefactor"     gs-x="0"  gs-y="53"  gs-w="4"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-global-indexes"  gs-x="5"  gs-y="53"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-fixed-income"    gs-x="0"  gs-y="64"  gs-w="12" gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodity-perf"  gs-x="0"  gs-y="75"  gs-w="9"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-sector-chart"    gs-x="0"  gs-y="95"  gs-w="7"  gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-theme-treemap"   gs-x="0"  gs-y="125" gs-w="6"  gs-h="24"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodities"     gs-x="6"  gs-y="125" gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currencies"      gs-x="0"  gs-y="149" gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-factors"         gs-x="0"  gs-y="42"  gs-w="6"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="6"  gs-y="42"  gs-w="6"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-stylefactor"     gs-x="0"  gs-y="56"  gs-w="5"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-global-indexes"  gs-x="5"  gs-y="56"  gs-w="6"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-fixed-income"    gs-x="0"  gs-y="67"  gs-w="12" gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-commodity-perf"  gs-x="0"  gs-y="78"  gs-w="9"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-sector-chart"    gs-x="0"  gs-y="98"  gs-w="8"  gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-theme-treemap"   gs-x="0"  gs-y="128" gs-w="6"  gs-h="24"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-commodities"     gs-x="6"  gs-y="128" gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-currencies"      gs-x="0"  gs-y="152" gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
           <!-- Metrics chart panel (always present in grid; shows empty state
                of "0/6 metrics selected" until user picks rows from the heat map). -->
-          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="171" gs-w="12" gs-h="11">
+          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="174" gs-w="12" gs-h="11">
             <div class="grid-stack-item-content">
               <div class="hm-chart-section" id="hm-chart-section">
                 <div class="hm-chart-toolbar">
@@ -3909,7 +3909,7 @@
             </div>
           </div>
           <!-- Weekly heat map table panel. -->
-          <div class="grid-stack-item" gs-id="hm-heatmap-wrap"   gs-x="0" gs-y="182" gs-w="12" gs-h="22">
+          <div class="grid-stack-item" gs-id="hm-heatmap-wrap"   gs-x="0" gs-y="185" gs-w="12" gs-h="22">
             <div class="grid-stack-item-content">
               <div class="hm-scroll" id="hm-heatmap-wrap">
                 <table class="hm-table" id="hm-table"></table>
@@ -5664,6 +5664,39 @@
     if (!data.macrocompass) return;
     var m = data.macrocompass;
 
+    /* Register the panel info popup. Methodology lives here (not as a
+       footer note in the panel itself) so the regime card stays compact
+       and the user can pull up details on demand via the [i] button. */
+    window.PANEL_INFO_HTML['hm-macrocompass'] = function () {
+      return (
+        '<p><b>Macro Regime · Growth × Policy</b> implements Alf @ MacroAlf\'s 2024 ' +
+          'Quadrant Asset Allocation Model (QAAM).</p>' +
+        '<p><b>Axes</b><br>' +
+          '<b>X = Growth</b>: composite z-score of (ISM Services − 50) and (INDPRO YoY − 2). ' +
+          'Positive = growth accelerating.<br>' +
+          '<b>Y = Policy stance</b>: 0.5% R* − (EFFR − core PCE YoY). Positive = net easing. ' +
+          'Sign flipped relative to the raw real rate so easing visually goes UP, matching ' +
+          'MacroAlf\'s published chart orientation.</p>' +
+        '<p><b>Inflation tint</b>: core PCE YoY vs 2.5% threshold. Above = high (orange ' +
+          'overlay); below = low (blue overlay). Same growth/policy quadrant produces ' +
+          'different trade tilts under high vs low CPI — that\'s the 3rd dimension of QAAM.</p>' +
+        '<p><b>Marker</b>: dot position is the current reading on each axis, z-scored against ' +
+          'its own 7-year rolling std and clamped to ±2σ → ±1.</p>' +
+        '<p><b>Quadrants</b><br>' +
+          'NW · 60/40 Heaven (decel + easing) · long Treasuries + Growth<br>' +
+          'NE · Goldilocks (accel + easing) · long DM/EM equities + credit<br>' +
+          'SW · Just Get Out Of Stuff (decel + tight) · long dollar + cash<br>' +
+          'SE · Healthy Tightening (accel + tight) · long EM/Value + credit<br>' +
+          'Inner italic labels (Gold Rush, Everything Rally, Hawks In Control, Old Economy) ' +
+          'are transitional regime trades — hover for the long list.</p>' +
+        '<p><b>Free-data proxies</b>: Conference Board LEI (used in the real QAAM) is ' +
+          'paywalled, so we approximate growth via ISM Services + INDPRO. R* uses the NY Fed ' +
+          'HLW long-run estimate (~0.5%) rather than the live time-varying figure.</p>'
+      );
+    };
+    var mcItem = document.querySelector('.grid-stack-item[gs-id="hm-macrocompass"]');
+    if (mcItem) mcItem.classList.add('hm-has-info');
+
     /* Card wears an inflation-regime modifier class so the CSS can apply a
        subtle orange (high) or blue (low) tint to the plane backdrop, matching
        the 2024 QAAM image where inflation acts as a 3rd dimension. */
@@ -5782,15 +5815,8 @@
       card.appendChild(trades);
     }
 
-    /* Methodology note — explicit about the proxies since the real 2024
-       QAAM uses Conference Board LEI (not free) for growth and HLW R*
-       (proxied at 0.5%). Inflation tint flips at 2.5% core PCE. */
-    var note = document.createElement('div');
-    note.className = 'hm-mc-note';
-    note.textContent = 'Axes: X = growth (z-score of ISM Services + INDPRO YoY). ' +
-      'Y = policy stance (0.5% R* minus [EFFR minus core PCE YoY]; +ve = easing). ' +
-      'Tint: inflation regime (core PCE vs 2.5%). 2024 QAAM, marker uses 7y z-score.';
-    card.appendChild(note);
+    /* Methodology lives in the panel info popup (see PANEL_INFO_HTML above)
+       — keeps the card compact while still being one click away. */
 
     container.appendChild(card);
   }
@@ -9156,7 +9182,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v20';
+  var LAYOUT_KEY = 'hm-grid-layout-v21';
   var GS_SCALE = 40;
   var gridInstance = null;
 
