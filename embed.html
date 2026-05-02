@@ -338,6 +338,23 @@
     border: 2px dashed var(--hm-gold);
     border-radius: var(--hm-r);
   }
+  /* Dragged + resized items: kill the CSS transition that GridStack adds
+     under animate:true, but ONLY for the active item. Other items still
+     transition smoothly when they reflow around the drag. Without this
+     override the dragged panel slid behind the cursor (transition replays
+     between snap positions), and the placeholder felt like it was
+     "lagging" because the cursor visually outpaced both. */
+  .hm-app .grid-stack-item.ui-draggable-dragging,
+  .hm-app .grid-stack-item.gs-dragging,
+  .hm-app .grid-stack-item.ui-resizable-resizing,
+  .hm-app .grid-stack-item.gs-resizing {
+    transition: none !important;
+  }
+  /* Same treatment for the placeholder so it snaps instantly between
+     target cells instead of sliding. */
+  .hm-app .grid-stack > .grid-stack-placeholder {
+    transition: none !important;
+  }
   /* Resize handles — invisible hit zones only. Cursor changes do the
      signalling (n/s/e/w/ne/nw/se/sw-resize). No gold bars/triangles. */
   .hm-app .grid-stack-item > .ui-resizable-handle {
@@ -9459,8 +9476,12 @@
          a vertical resize. */
       resizable: { handles: 'e, s, w, se, sw' },
       /* Drag ONLY from the window-style header bar — prevents accidental
-         drags when users interact with charts/tables inside panels. */
-      draggable: { handle: '.hm-panel-header' },
+         drags when users interact with charts/tables inside panels.
+         distance:0 removes the default ~5px drag-start threshold so drag
+         engages immediately on mousedown — without it the panel feels
+         "stuck" until you move past the threshold, and the placeholder
+         appears to lag the cursor. */
+      draggable: { handle: '.hm-panel-header', distance: 0 },
       animate: true,
       disableOneColumnMode: false,
       minRow: 1,
