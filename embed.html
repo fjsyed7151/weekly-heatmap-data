@@ -9335,7 +9335,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v29';
+  var LAYOUT_KEY = 'hm-grid-layout-v30';
   var GS_SCALE = 40;
   var gridInstance = null;
 
@@ -9405,7 +9405,11 @@
     } catch (e) {}
 
     /* Scale HTML gs-h / gs-y by GS_SCALE (40) so the same visual layout
-       applies under cellHeight: 1 (1px row resolution = exact-fit cells). */
+       applies under cellHeight: 1 (1px row resolution = exact-fit cells).
+       Also enforces a universal min width of 3 columns (in 24-col grid =
+       12.5% of dashboard width) so no panel can be resized into an
+       unreadable sliver. Applied before GridStack.init reads the
+       attributes so the constraint is wired into the node from the start. */
     document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
       var id = item.getAttribute('gs-id');
       if (!id) return;
@@ -9415,6 +9419,8 @@
       var yNew = yOrig * GS_SCALE;
       item.setAttribute('gs-h', hNew);
       item.setAttribute('gs-y', yNew);
+      // Universal min width (only set if not already explicitly overridden).
+      if (!item.hasAttribute('gs-min-w')) item.setAttribute('gs-min-w', '3');
       DEFAULT_LAYOUT[id] = {
         x: parseInt(item.getAttribute('gs-x') || 0, 10),
         y: yNew,
