@@ -5728,12 +5728,11 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-indexes-periods';
-    /* Index Snapshot drops 1W and 10Y:
-         1W = single weekly close, can't render a sparkline from 1 point
-         10Y = sparkline visually compresses to "up and to the right" with
-               little signal. Tactical 1M-5Y is where the trend reads. */
+    /* Index Snapshot drops 1W only — sparklines need at least 2 points
+       to draw a segment, and a 1W view = 1 weekly close. Everything else
+       (incl. 10Y) is kept. */
     var idxPeriodOpts = STANDARD_PERIODS.filter(function (p) {
-      return p.key !== 'w1' && p.key !== 'y10';
+      return p.key !== 'w1';
     });
     idxPeriodOpts.forEach(function (p) {
       var btn = document.createElement('button');
@@ -6591,20 +6590,25 @@
     var periodWrap = document.createElement('div');
     periodWrap.className = 'hm-sector-period-btns';
     /* Sector chart slices its data by week count (not by JSON key, since
-       the chart renders a continuous line). Mirror the canonical period
-       set with the equivalent weeks: m6=26, m3=13, etc. YTD signals -1
-       and is computed at click-time from the current calendar year.
-       1W = 2 weeks of context so the chart actually has a visible line. */
+       the chart renders a continuous line). Each `weeks` value below is
+       the number of weekly closes in the visible slice, where the chart
+       LINE rebases against the FIRST close in that slice — so a chart
+       slice of N weekly closes shows (N-1) spans of return. To make
+       the chart's end-value match the table's compute_returns.<period>
+       (e.g. m3 = pct_at(13) = 13 weeks of return), we need a slice of
+       N+1 closes. So 1M (pct_at(4)) wants 5 closes, 3M (pct_at(13))
+       wants 14, etc. 1W (pct_at(1)) is already correct at 2 closes.
+       YTD signals -1 and is computed at click-time from year-start. */
     var periods = [
       { label: '1W',  weeks: 2   },
-      { label: '1M',  weeks: 4   },
-      { label: '3M',  weeks: 13  },
-      { label: '6M',  weeks: 26  },
+      { label: '1M',  weeks: 5   },
+      { label: '3M',  weeks: 14  },
+      { label: '6M',  weeks: 27  },
       { label: 'YTD', weeks: -1  },
-      { label: '1Y',  weeks: 52  },
-      { label: '3Y',  weeks: 156 },
-      { label: '5Y',  weeks: 260 },
-      { label: '10Y', weeks: 520 },
+      { label: '1Y',  weeks: 53  },
+      { label: '3Y',  weeks: 157 },
+      { label: '5Y',  weeks: 261 },
+      { label: '10Y', weeks: 521 },
     ];
     periods.forEach(function (p) {
       var btn = document.createElement('button');
@@ -6936,14 +6940,10 @@
     var sbBtns = document.createElement('div');
     sbBtns.className = 'hm-sf-period-btns';
 
-    /* Style Box drops 5Y + 10Y from the standard period set: style
-       leadership rotates faster than 5y horizons capture (typically 1-3y
-       between value/growth, large/small leadership flips), so longer
-       windows are dominated by mean-reversion noise. 1W kept for tactical
-       short-term rotation reads. */
-    var periodOpts = SF_PERIODS.filter(function (p) {
-      return p.key !== 'y5' && p.key !== 'y10';
-    });
+    /* Full 9-period set on Style Box — user keeps 5Y and 10Y for
+       longer-horizon style baselines, even though style leadership
+       rotates faster than that. */
+    var periodOpts = SF_PERIODS;
 
     var allCells = [];
 
