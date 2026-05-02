@@ -343,10 +343,28 @@
      .hm-active-drag on the item being dragged/resized via GridStack's
      own events (see initGridStack) so we don't have to guess the
      library's internal class name. Other items reflowing around the
-     drag keep their smooth transition (animate:true). */
+     drag keep their smooth transition (animate:true).
+     The descendant (*) selector is required because GridStack v12
+     applies inline transitions to the placeholder's inner positioning
+     wrapper too; without it the outer element snaps but the visible
+     dashed-border child slides between snap targets. */
   .hm-app .grid-stack-item.hm-active-drag,
-  .hm-app .grid-stack > .grid-stack-placeholder {
+  .hm-app .grid-stack-item.hm-active-drag *,
+  .hm-app .grid-stack > .grid-stack-placeholder,
+  .hm-app .grid-stack > .grid-stack-placeholder * {
     transition: none !important;
+    animation: none !important;
+  }
+  /* Hint to the browser so the dragged item gets its own composite
+     layer — paints don't have to rerasterize every cursor move. */
+  .hm-app .grid-stack-item.hm-active-drag {
+    will-change: transform, left, top;
+  }
+  /* Placeholder shouldn't intercept pointer events under the cursor;
+     the dragged item needs them. Without this, hovering the placeholder
+     under the dragged panel can briefly pause cursor-tracking updates. */
+  .hm-app .grid-stack > .grid-stack-placeholder {
+    pointer-events: none;
   }
   /* Resize handles — invisible hit zones only. Cursor changes do the
      signalling (n/s/e/w/ne/nw/se/sw-resize). No gold bars/triangles. */
