@@ -6808,6 +6808,7 @@
         return Math.round((last / prev - 1) * 10000) / 100;
       };
       var r = {
+        w1:  pct(1),
         m1:  pct(4),
         m3:  pct(13),
         m6:  pct(26),
@@ -6979,7 +6980,7 @@
     /* --- Main table --- */
     var table = document.createElement('table');
     table.className = 'hm-sector-tbl';
-    table.innerHTML = '<thead><tr><th></th><th>Sector</th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>1Y</th></tr></thead>';
+    table.innerHTML = '<thead><tr><th></th><th>Sector</th><th>1W</th><th>1M</th><th>3M</th><th>6M</th><th>YTD</th><th>1Y</th><th>3Y</th><th>5Y</th><th>10Y</th></tr></thead>';
     var tbody = document.createElement('tbody');
 
     /* SPY row */
@@ -6994,7 +6995,7 @@
     var spyNameTd = document.createElement('td');
     spyNameTd.innerHTML = '<span class="hm-sector-name">S&P 500</span><span class="hm-ticker">SPY</span>';
     spyTr.appendChild(spyNameTd);
-    ['w1', 'm1', 'm3', 'ytd', 'y1'].forEach(function (key) {
+    ['w1', 'm1', 'm3', 'm6', 'ytd', 'y1', 'y3', 'y5', 'y10'].forEach(function (key) {
       var td = document.createElement('td');
       var val = spyRet[key];
       if (val == null) { td.textContent = '--'; td.style.color = 'var(--hm-muted)'; }
@@ -7008,6 +7009,18 @@
     data.sectors.forEach(function (s) {
       var si = sectorInfo[s.ticker];
       if (!si) return;
+      /* 1W return isn't shipped from the backend (sectors only get
+         m1..y10). Compute from the weekly sparkline: last close vs
+         the close one week prior. Falls through to null if the
+         sparkline isn't long enough. */
+      if (s.w1 == null && s.sparkline && s.sparkline.length >= 2) {
+        var sl = s.sparkline;
+        var lastVal = sl[sl.length - 1];
+        var prevVal = sl[sl.length - 2];
+        if (lastVal != null && prevVal != null && prevVal !== 0) {
+          s.w1 = Math.round((lastVal / prevVal - 1) * 10000) / 100;
+        }
+      }
       var tr = document.createElement('tr');
       var cbTd = document.createElement('td');
       var cb = document.createElement('input');
@@ -7019,7 +7032,7 @@
       tdName.innerHTML = '<span class="hm-sector-dot" style="background:' + si.color + '"></span>' +
         '<span class="hm-sector-name">' + s.name + '</span><span class="hm-ticker">' + s.ticker + '</span>';
       tr.appendChild(tdName);
-      ['w1', 'm1', 'm3', 'ytd', 'y1'].forEach(function (key) {
+      ['w1', 'm1', 'm3', 'm6', 'ytd', 'y1', 'y3', 'y5', 'y10'].forEach(function (key) {
         var td = document.createElement('td');
         var val = s[key];
         if (val == null) { td.textContent = '--'; td.style.color = 'var(--hm-muted)'; }
