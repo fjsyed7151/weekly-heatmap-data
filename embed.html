@@ -798,7 +798,13 @@
   .hm-app .hm-table thead th {
     font-weight: 700;
     font-size: 12px;
-
+    /* Override the shared th/td rule so the gold header band reads at the
+       same height as .hm-factors-header (8px vertical padding, normal
+       line-height). The line-height: 1 in the shared rule keeps data cells
+       tight but makes the thead look squashed compared to other panels'
+       gold bars — this rule restores parity. */
+    padding: 8px 12px;
+    line-height: 1.2;
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
@@ -9024,6 +9030,21 @@
     var theme = getTheme();
 
     var spyReturns = data.spy_returns || {};
+
+    /* Backend ships m1..y10 for themes; 1W is computed in the frontend
+       from the weekly sparkline (last close vs one week prior). Same
+       fix as the sector table — without this, the 1W period button
+       renders every theme as "--". */
+    data.themes.forEach(function (t) {
+      if (t.w1 == null && t.sparkline && t.sparkline.length >= 2) {
+        var sl = t.sparkline;
+        var lastVal = sl[sl.length - 1];
+        var prevVal = sl[sl.length - 2];
+        if (lastVal != null && prevVal != null && prevVal !== 0) {
+          t.w1 = Math.round((lastVal / prevVal - 1) * 10000) / 100;
+        }
+      }
+    });
 
     /* Resolve a theme's value for the current (period, mode). In 'rel'
        mode subtract SPY's same-period return; if either is null, the
