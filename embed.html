@@ -2718,12 +2718,34 @@
   }
   /* Square the top corners on Factors / Currency Performance / Global Equity
      Index cards so the gold #daa520 title bar reads as a flat band flush
-     with the panel edge (not clipped to a rounded shape). !important on the
-     per-corner rules wins against the shorthand in .hm-factors-card without
-     having to re-declare the bottom corners. */
+     with the panel edge (not clipped to a rounded shape).
+     Has to apply to EVERY layer that wraps the gold band — otherwise an
+     outer parent's rounded corners (grid-stack-item-content, the sticky
+     window-style hm-panel-header, the card itself) clip the gold band
+     into a rounded shape. */
   .hm-app #hm-factors > .hm-factors-card,
   .hm-app #hm-currency-matrix > .hm-factors-card,
   .hm-app #hm-global-indexes > .hm-factors-card {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+  }
+  /* Outer cell + window-style header bar — square top corners on these so
+     the visible top edge of the panel is a flat horizontal line, not a
+     rounded curve that the gold band peeks under. */
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-factors"] .hm-panel-header,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-global-indexes"] .hm-panel-header {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+  }
+  /* Belt-and-suspenders: the gold band itself also gets square top in case
+     anything anywhere inherits or sets a rounded shorthand. */
+  .hm-app #hm-factors .hm-factors-header,
+  .hm-app #hm-currency-matrix .hm-factors-header,
+  .hm-app #hm-global-indexes .hm-factors-header {
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
   }
@@ -9182,7 +9204,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v21';
+  var LAYOUT_KEY = 'hm-grid-layout-v22';
   var GS_SCALE = 40;
   var gridInstance = null;
 
