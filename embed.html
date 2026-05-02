@@ -1539,9 +1539,12 @@
     .hm-app .hm-gave-cell-hint { display: none; }
   }
 
-  /* Credit × Policy quadrants — prescriptive trade framework.
-     Axes: X = credit impulse (M2 YoY vs 3m MA), Y = policy stance (10y TIPS vs R*).
-     Each cell shows quadrant name + LONG/SHORT trade lists. */
+  /* Macro Regime · Growth × Policy quadrants — Alf @ MacroAlf 2024 QAAM.
+     Axes: X = growth (z-score of ISM Services + INDPRO YoY).
+            Y = policy stance (0.5% R* − [EFFR − core PCE]; +ve = easing).
+            3rd dim = inflation regime (core PCE vs 2.5%) → plane tint.
+     Each cell shows quadrant name + LONG/SHORT trade lists; inner cells
+     surface transitional-regime trades on hover. */
   .hm-app .hm-mc {
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
@@ -1603,7 +1606,7 @@
     color: var(--hm-muted);
     padding: 4px 2px;
   }
-  /* Continuous 2×2 plane for Credit × Policy — same pattern as Gave. */
+  /* Continuous 2x2 plane for Growth × Policy — same pattern as Gave. */
   .hm-app .hm-mc-plane {
     grid-column: 2;
     grid-row: 2;
@@ -1629,10 +1632,15 @@
     color: var(--hm-muted);
     padding: 2px 4px 0;
   }
-  .hm-app .hm-mc-tint.q1 { background: rgba(110,120,150,0.10); }
-  .hm-app .hm-mc-tint.q2 { background: rgba(26,122,66,0.10); }
-  .hm-app .hm-mc-tint.q3 { background: rgba(230,191,102,0.14); }
-  .hm-app .hm-mc-tint.q4 { background: rgba(212,42,32,0.08); }
+  /* Quadrant tints — 2024 QAAM:
+       60/40 Heaven  (NW, decel + easing)  → muted blue (defensive growth/bonds)
+       Goldilocks    (NE, accel + easing)  → green       (risk-on)
+       Just Get Out  (SW, decel + tight)   → muted red   (defensive cash/dollar)
+       Healthy Tight (SE, accel + tight)   → amber       (cyclical real-economy) */
+  .hm-app .hm-mc-tint.sixty_forty   { background: rgba(110,120,150,0.10); }
+  .hm-app .hm-mc-tint.goldilocks    { background: rgba(26,122,66,0.10); }
+  .hm-app .hm-mc-tint.just_get_out  { background: rgba(212,42,32,0.08); }
+  .hm-app .hm-mc-tint.healthy_tight { background: rgba(230,191,102,0.14); }
   .hm-app .hm-mc-midline-h,
   .hm-app .hm-mc-midline-v {
     position: absolute;
@@ -1698,6 +1706,81 @@
   }
   .hm-app .hm-mc-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
   .hm-app .hm-mc-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
+
+  /* Inner transitional-cell labels for the 2024 QAAM (Gold Rush, Everything
+     Rally, Hawks In Control, Old Economy). Smaller and lighter than corner
+     chips so they read as secondary "transitional" callouts. Positioned at
+     ~30%/70% on each axis so they sit clearly inside their parent quadrant
+     without colliding with the corner chips or the centre crosshair. */
+  .hm-app .hm-mc-inner {
+    position: absolute;
+    z-index: 2;
+    font-size: 9.5px;
+    font-weight: 600;
+    font-style: italic;
+    line-height: 1.2;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.55);
+    color: var(--hm-muted);
+    white-space: nowrap;
+    pointer-events: auto;
+    /* No border — keeps it visually subordinate to the corner chips. */
+  }
+  .hm-app.dark .hm-mc-inner {
+    background: rgba(20,22,30,0.55);
+    color: var(--hm-muted);
+  }
+  /* Position each inner label at the centroid of its parent quadrant.
+     translate(-50%, -50%) anchors the label centre on those coordinates. */
+  .hm-app .hm-mc-inner.inner-tl { top: 28%; left: 28%; transform: translate(-50%, -50%); }
+  .hm-app .hm-mc-inner.inner-tr { top: 28%; right: 28%; transform: translate(50%, -50%); }
+  .hm-app .hm-mc-inner.inner-bl { bottom: 28%; left: 28%; transform: translate(-50%, 50%); }
+  .hm-app .hm-mc-inner.inner-br { bottom: 28%; right: 28%; transform: translate(50%, 50%); }
+
+  /* Inflation regime badge in the gold header — pill that turns orange under
+     high CPI, blue under low CPI. Same accent palette as the 2024 QAAM image. */
+  .hm-app .hm-mc-infl-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    vertical-align: 1px;
+  }
+  .hm-app .hm-mc-infl-badge.high {
+    background: rgba(232,116,38,0.18);
+    color: #c95a14;
+    border: 1px solid rgba(232,116,38,0.40);
+  }
+  .hm-app .hm-mc-infl-badge.low {
+    background: rgba(46,103,178,0.16);
+    color: #265a99;
+    border: 1px solid rgba(46,103,178,0.36);
+  }
+  .hm-app.dark .hm-mc-infl-badge.high { color: #f59658; border-color: rgba(232,116,38,0.55); }
+  .hm-app.dark .hm-mc-infl-badge.low  { color: #6fa3df; border-color: rgba(46,103,178,0.55); }
+
+  /* Inflation overlay on the plane itself — subtle full-plane wash that
+     lets the user feel the inflation regime without overwhelming the
+     quadrant tints. Layered via a pseudo-element so it doesn't fight with
+     hm-mc-tint's z-index. */
+  .hm-app .hm-mc.infl-high .hm-mc-plane::before,
+  .hm-app .hm-mc.infl-low .hm-mc-plane::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: multiply;
+  }
+  .hm-app .hm-mc.infl-high .hm-mc-plane::before { background: rgba(232,116,38,0.06); }
+  .hm-app .hm-mc.infl-low  .hm-mc-plane::before { background: rgba(46,103,178,0.05); }
+  .hm-app.dark .hm-mc.infl-high .hm-mc-plane::before { background: rgba(232,116,38,0.10); mix-blend-mode: screen; }
+  .hm-app.dark .hm-mc.infl-low  .hm-mc-plane::before { background: rgba(46,103,178,0.09); mix-blend-mode: screen; }
 
   /* Top index cards — unified panel with vertical dividers between cells.
      Previous design had 4 standalone cards with their own borders/radii; the
@@ -2063,7 +2146,7 @@
   /* Economic calendar — compact density matching the commodity / currency
      sidebar tables (6/12 header, 4/12 rows, 10-11px fonts). */
   /* Shared gold header band — used by the Index Snapshot, Macro Regime,
-     and Credit × Policy panels (and reusable by any future panel that
+     and Growth × Policy panels (and reusable by any future panel that
      needs a title bar). Matches the existing .hm-cal-header / .hm-econ-header
      styling so the dashboard reads as one cohesive product. Right side of
      the header optionally carries a "Current: X" subtitle (in lighter
@@ -3775,7 +3858,7 @@
           <div class="grid-stack-item" gs-id="hm-indexes"         gs-x="0"  gs-y="0"   gs-w="4"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-macrocompass"    gs-x="4"  gs-y="0"   gs-w="4"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-calendar"        gs-x="8"  gs-y="0"   gs-w="2"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="9"  gs-y="0"   gs-w="3"  gs-h="32"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="10" gs-y="0"   gs-w="2"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-gave-wrap"       gs-x="0"  gs-y="4"   gs-w="4"  gs-h="24">
             <div class="grid-stack-item-content">
               <div class="hm-gave-wrap" id="hm-gave-wrap">
@@ -3792,7 +3875,7 @@
           <div class="grid-stack-item" gs-id="hm-stylefactor"     gs-x="4"  gs-y="36"  gs-w="3"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-fixed-income"    gs-x="0"  gs-y="45"  gs-w="8"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-sector-chart"    gs-x="0"  gs-y="57"  gs-w="6"  gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodity-perf"  gs-x="6"  gs-y="57"  gs-w="4"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-commodity-perf"  gs-x="6"  gs-y="57"  gs-w="6"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-commodities"     gs-x="6"  gs-y="77"  gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-currencies"      gs-x="0"  gs-y="87"  gs-w="4"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
           <!-- Metrics chart panel (always present in grid; shows empty state
@@ -4901,7 +4984,7 @@
     { id: 'hm-gave-wrap',      label: 'Macro Regime (Gave)',   group: 'Main column' },
     { id: 'hm-gave-quadrant',  label: 'Gave Four Quadrants',   group: 'Main column' },
     { id: 'hm-gave-charts',    label: 'Gave companion charts', group: 'Main column' },
-    { id: 'hm-macrocompass',   label: 'Credit \u00d7 Policy',  group: 'Main column' },
+    { id: 'hm-macrocompass',   label: 'Growth \u00d7 Policy',  group: 'Main column' },
     { id: 'hm-stylefactor',    label: 'Size vs Value',         group: 'Main column' },
     { id: 'hm-factors',        label: 'Factors (vs S&P 500)',  group: 'Main column' },
     { id: 'hm-fixed-income',   label: 'Fixed Income',          group: 'Main column' },
@@ -5521,31 +5604,48 @@
     container.appendChild(grid);
   }
 
-  /* ---------- Credit × Policy quadrants ----------
+  /* ---------- Growth × Policy quadrants — 2024 QAAM ----------
      Backend convention (build_macrocompass):
-       dev_x > 0  →  credit accelerating (impulse ≥ 0)  →  RIGHT half
-       dev_y > 0  →  policy tightening (stance ≥ 0)     →  TOP half
-     The marker code uses `topPct = 50 - dev_y * 35` so positive dev_y
-     visually goes UP. The four quadrants must therefore be placed:
-       Q3 (credit accel + tightening, dev_x≥0 dev_y≥0)  →  top-right (row 0, col 1)
-       Q2 (credit accel + easing,     dev_x≥0 dev_y<0)  →  bottom-right (row 1, col 1)
-       Q4 (credit decel + tightening, dev_x<0 dev_y≥0)  →  top-left  (row 0, col 0)
-       Q1 (credit decel + easing,     dev_x<0 dev_y<0)  →  bottom-left (row 1, col 0)
-     Earlier this was inverted vertically — chip ended up in q2's box
-     while the marker landed at top-right. Now consistent. */
+       dev_x > 0  →  growth accelerating  →  RIGHT half
+       dev_y > 0  →  net easing           →  TOP half
+     Marker code uses `topPct = 50 - dev_y * 35` so positive dev_y goes UP.
+     Quadrant placement matches Alf @ MacroAlf's published chart:
+       60/40 Heaven   (decel + easing)  →  top-left     (row 0, col 0)
+       Goldilocks     (accel + easing)  →  top-right    (row 0, col 1)
+       Just Get Out   (decel + tight)   →  bottom-left  (row 1, col 0)
+       Healthy Tight. (accel + tight)   →  bottom-right (row 1, col 1)
+     Inner-cell hints (Gold Rush, Everything Rally, Hawks In Control, Old Economy)
+     are the transitional regime trades for marker positions near the centre of
+     each quadrant — surfaced via tooltip on the inner-cell label. */
   var MC_CELLS = [
-    { key: 'q4', row: 0, col: 0, name: 'Q4: Strong defenders',
-      longs:  ['DXY / cash', 'Volatility (VIX)', 'Puts on risk'],
+    { key: 'sixty_forty',         row: 0, col: 0, name: '60/40 Heaven',
+      longs:  ['US Growth', 'Treasuries', 'High-grade credit'],
+      shorts: ['Industrial commodities', 'EM equities', 'Value vs growth'] },
+    { key: 'goldilocks',    row: 0, col: 1, name: 'Goldilocks',
+      longs:  ['EM equities & bonds', 'DM equities', 'Credit'],
+      shorts: ['Dollar', 'Volatility (VIX)'] },
+    { key: 'just_get_out',  row: 1, col: 0, name: 'Just Get Out Of Stuff',
+      longs:  ['Dollar', 'Cash'],
       shorts: ['All risk assets'] },
-    { key: 'q3', row: 0, col: 1, name: 'Q3: Cyclical rally',
-      longs:  ['EM equities/FX', 'Cyclical stocks', 'Industrial commodities'],
-      shorts: ['Fixed Income / TIPS', 'Gold', 'Growth vs value'] },
-    { key: 'q1', row: 1, col: 0, name: 'Q1: Secular trends',
-      longs:  ['Fixed income 10y+', 'Growth stocks', 'DM vs EM'],
-      shorts: ['EM equities/FX', 'Industrial commodities', 'Value vs growth'] },
-    { key: 'q2', row: 1, col: 1, name: 'Q2: Risk-on paradise',
-      longs:  ['Equities', 'Real estate', 'Credit spreads', 'Gold'],
-      shorts: ['DXY / cash', 'Volatility (VIX)'] },
+    { key: 'healthy_tight', row: 1, col: 1, name: 'Healthy Tightening',
+      longs:  ['EM equities', 'US Value', 'Credit'],
+      shorts: ['Treasuries', 'Growth stocks'] },
+  ];
+
+  /* Inner transitional cells — rendered as smaller labels near the centre of
+     each quadrant. The trade tilts shown apply when the marker is sitting
+     near the axes (small dev), i.e. when the regime is partially in
+     transition. Hover for the full long list; the active trade list below
+     the plane stays focused on the corner regime. */
+  var MC_INNER_CELLS = [
+    { key: 'gold_rush',         row: 0, col: 0, name: 'Gold Rush',
+      longs:  ['Gold'] },
+    { key: 'everything_rally',  row: 0, col: 1, name: 'Everything Rally',
+      longs:  ['US Small Cap', 'Commodities', 'Bitcoin'] },
+    { key: 'hawks_in_control',  row: 1, col: 0, name: 'Hawks In Control',
+      longs:  ['Commodities', 'Dollar'] },
+    { key: 'old_economy',       row: 1, col: 1, name: 'The Old Economy',
+      longs:  ['US Value', 'Commodities', 'EM equities'] },
   ];
 
   function renderMacroCompass(data) {
@@ -5555,18 +5655,24 @@
     if (!data.macrocompass) return;
     var m = data.macrocompass;
 
+    /* Card wears an inflation-regime modifier class so the CSS can apply a
+       subtle orange (high) or blue (low) tint to the plane backdrop, matching
+       the 2024 QAAM image where inflation acts as a 3rd dimension. */
     var card = document.createElement('div');
-    card.className = 'hm-mc';
+    card.className = 'hm-mc' + (m.infl_regime ? ' infl-' + m.infl_regime : '');
 
-    /* Gold title band \u2014 replaces the old grey .hm-mc-top. Sits at the
-       very top of the .hm-mc card (negative-margin to escape the card's
-       16px padding) so it visually anchors the panel like the other
-       gold-headed panels (Calendar, Economic Indicators, Factors). */
+    /* Gold title band. The inflation-regime badge sits next to the regime
+       label so the user reads the full classification at a glance, e.g.
+       "Goldilocks \u00b7 Low inflation". */
     var hdr = document.createElement('div');
     hdr.className = 'hm-gold-header';
+    var inflBadge = '';
+    if (m.infl_label) {
+      inflBadge = ' <span class="hm-mc-infl-badge ' + m.infl_regime + '">' + m.infl_label + '</span>';
+    }
     hdr.innerHTML =
-      '<span>Credit \u00d7 Policy Regime</span>' +
-      '<span class="hm-gold-state">Current:<b>' + m.label + '</b></span>';
+      '<span>Macro Regime \u00b7 Growth \u00d7 Policy</span>' +
+      '<span class="hm-gold-state">Current:<b>' + m.label + '</b>' + inflBadge + '</span>';
     card.appendChild(hdr);
 
     var frame = document.createElement('div');
@@ -5574,10 +5680,10 @@
 
     var axisY = document.createElement('div');
     axisY.className = 'hm-mc-axis-y';
-    /* The CSS uses writing-mode:vertical-rl + transform:rotate(180deg) which
-       puts the SECOND span at the visual top (same trick as the Gave axis).
-       So "Net tightening" goes second to align with dev_y > 0 → up. */
-    axisY.innerHTML = '<span>Net easing</span><span>Net tightening</span>';
+    /* CSS rotates the axis so the SECOND span is visually at the top.
+       2024 QAAM convention: easing UP, tightening DOWN. dev_y > 0 = easing
+       (sign already flipped in build_macrocompass for this exact reason). */
+    axisY.innerHTML = '<span>Net tightening</span><span>Net easing</span>';
     frame.appendChild(axisY);
 
     var plane = document.createElement('div');
@@ -5617,7 +5723,25 @@
       plane.appendChild(chip);
     });
 
-    /* Position marker, padded to inner 15–85% of the plane. */
+    /* Inner transitional-cell labels — positioned toward the centre of each
+       quadrant. These are the trades that perform when the regime is
+       partially in transition (marker near the axes). Hover for the LONG
+       list — only longs are shown because the 2024 image presents these
+       as additive tilts, not as paired long/short trades. */
+    MC_INNER_CELLS.forEach(function (c) {
+      var innerClass = 'inner-' + (c.row === 0 ? 't' : 'b') + (c.col === 0 ? 'l' : 'r');
+      var chip = document.createElement('span');
+      chip.className = 'hm-mc-inner hm-metric-tip ' + innerClass;
+      chip.textContent = c.name;
+      var innerTip = '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>' + c.longs.join(', ') + '</div>';
+      chip.setAttribute('data-tip-title', c.name + ' · transitional');
+      chip.setAttribute('data-tip', innerTip);
+      plane.appendChild(chip);
+    });
+
+    /* Position marker, padded to inner 15-85% of the plane.
+       leftPct: dev_x > 0 = right (growth accel)
+       topPct:  dev_y > 0 = up    (net easing) */
     var leftPct = 50 + m.dev_x * 35;
     var topPct  = 50 - m.dev_y * 35;
     var marker = document.createElement('div');
@@ -5630,7 +5754,7 @@
 
     var axisX = document.createElement('div');
     axisX.className = 'hm-mc-axis-x';
-    axisX.innerHTML = '<span>&lt; Credit decel</span><span>Credit accel &gt;</span>';
+    axisX.innerHTML = '<span>&lt; Growth decel</span><span>Growth accel &gt;</span>';
     frame.appendChild(axisX);
 
     card.appendChild(frame);
@@ -5649,12 +5773,14 @@
       card.appendChild(trades);
     }
 
-    /* Methodology note — explicit about the two proxies since BIS G5 credit
-       impulse and NY Fed HLW R* aren't accessible via free APIs. */
+    /* Methodology note — explicit about the proxies since the real 2024
+       QAAM uses Conference Board LEI (not free) for growth and HLW R*
+       (proxied at 0.5%). Inflation tint flips at 2.5% core PCE. */
     var note = document.createElement('div');
     note.className = 'hm-mc-note';
-    note.textContent = 'Axes: X = credit impulse (M2 YoY vs 3m trend). Y = policy stance (10y real minus R* at 0.5%). ' +
-      'Marker uses Z-score vs own 7y std.';
+    note.textContent = 'Axes: X = growth (z-score of ISM Services + INDPRO YoY). ' +
+      'Y = policy stance (0.5% R* minus [EFFR minus core PCE YoY]; +ve = easing). ' +
+      'Tint: inflation regime (core PCE vs 2.5%). 2024 QAAM, marker uses 7y z-score.';
     card.appendChild(note);
 
     container.appendChild(card);
@@ -9021,7 +9147,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v17';
+  var LAYOUT_KEY = 'hm-grid-layout-v19';
   var GS_SCALE = 40;
   var gridInstance = null;
 
@@ -9053,7 +9179,7 @@
     'hm-economy':        'Economic Indicators',
     'hm-indexes':        'Index Snapshot',
     'hm-gave-wrap':      'Macro Regime',
-    'hm-macrocompass':   'Credit \u00d7 Policy',
+    'hm-macrocompass':   'Growth \u00d7 Policy',
     'hm-stylefactor':    'Size vs Value',
     'hm-factors':        'Factors vs S&P 500',
     'hm-fixed-income':   'Fixed Income',
