@@ -1681,14 +1681,36 @@
     border-color: var(--hm-gold);
     color: var(--hm-white);
   }
+  /* Subtle Q1/Q2/Q3/Q4 prefix inside each quadrant chip. Lower opacity +
+     slightly heavier weight so the math-style quadrant number is visible
+     but doesn't fight the actual regime name. Gets full opacity on the
+     active chip so it pops along with the gold fill. */
+  .hm-app .hm-mc-qname > .hm-mc-qnum {
+    font-weight: 800;
+    opacity: 0.55;
+    margin-right: 5px;
+    letter-spacing: 0.4px;
+  }
+  .hm-app .hm-mc-qname.active > .hm-mc-qnum { opacity: 1; }
   /* Active quadrant's LONG/SHORT trade list rendered below the plane, full
      width. Only the current regime's trades are shown — cleaner than packing
-     all four into the quadrants. */
+     all four into the quadrants. Top divider matches the visual separation
+     used in the Gave panel's active-hint block. */
   .hm-app .hm-mc-active-trades {
     margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--hm-border);
     display: flex;
     flex-direction: column;
     gap: 4px;
+  }
+  .hm-app .hm-mc-active-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--hm-muted);
+    margin-bottom: 2px;
   }
   .hm-app .hm-mc-trade-line {
     font-size: 11px;
@@ -5715,9 +5737,13 @@
     var axisY = document.createElement('div');
     axisY.className = 'hm-mc-axis-y';
     /* CSS rotates the axis so the SECOND span is visually at the top.
-       2024 QAAM convention: easing UP, tightening DOWN. dev_y > 0 = easing
-       (sign already flipped in build_macrocompass for this exact reason). */
-    axisY.innerHTML = '<span>Net tightening</span><span>Net easing</span>';
+       Easing UP, tightening DOWN — dev_y > 0 = easing.
+       Arrows are positioned to mirror the X-axis pattern (< / >): the arrow
+       sits at the OUTER edge of each span, pointing toward the extreme.
+       After the rotate(180), a glyph at the START of the bottom span lands
+       at the bottom edge (and visually flips to point down); a glyph at the
+       END of the top span lands at the top edge (and flips to point up). */
+    axisY.innerHTML = '<span>▲ Net tightening</span><span>Net easing ▼</span>';
     frame.appendChild(axisY);
 
     var plane = document.createElement('div');
@@ -5741,18 +5767,21 @@
     plane.appendChild(midV);
 
     /* Corner chips — quadrant names in the outer corners of the plane.
-       Hover reveals the LONG/SHORT trade lists for every regime, not just
-       the active one. Rendered as HTML in the tooltip body so the colored
-       LONG/SHORT tags still carry their visual meaning. */
+       Each chip is prefixed with its math-style quadrant number (Q1=NE,
+       Q2=NW, Q3=SW, Q4=SE — counter-clockwise from top-right) so users
+       not familiar with the layout still get an anchor. Hover reveals
+       the LONG/SHORT trade lists for every regime. */
+    var Q_NUM_BY_POS = { tl: 'Q2', tr: 'Q1', bl: 'Q3', br: 'Q4' };
     MC_CELLS.forEach(function (c) {
       var cornerClass = (c.row === 0 ? 't' : 'b') + (c.col === 0 ? 'l' : 'r');
+      var qNum = Q_NUM_BY_POS[cornerClass];
       var chip = document.createElement('span');
       chip.className = 'hm-mc-qname hm-metric-tip ' + cornerClass + (c.key === m.quadrant ? ' active' : '');
-      chip.textContent = c.name;
+      chip.innerHTML = '<span class="hm-mc-qnum">' + qNum + '</span>' + c.name;
       var tipBody =
         '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + c.longs.join(', ')  + '</div>' +
         '<div class="hm-mc-trade-line" style="margin-top:4px"><span class="hm-mc-trade-tag short">SHORT</span>' + c.shorts.join(', ') + '</div>';
-      chip.setAttribute('data-tip-title', c.name);
+      chip.setAttribute('data-tip-title', qNum + ' · ' + c.name);
       chip.setAttribute('data-tip', tipBody);
       plane.appendChild(chip);
     });
@@ -5783,9 +5812,11 @@
       if (MC_CELLS[i].key === m.quadrant) { activeCell = MC_CELLS[i]; break; }
     }
     if (activeCell) {
+      var activeQNum = Q_NUM_BY_POS[(activeCell.row === 0 ? 't' : 'b') + (activeCell.col === 0 ? 'l' : 'r')];
       var trades = document.createElement('div');
       trades.className = 'hm-mc-active-trades';
       trades.innerHTML =
+        '<div class="hm-mc-active-label">Trade tilts · ' + activeQNum + ' · ' + activeCell.name + '</div>' +
         '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + activeCell.longs.join(', ')  + '</div>' +
         '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag short">SHORT</span>' + activeCell.shorts.join(', ') + '</div>';
       card.appendChild(trades);
