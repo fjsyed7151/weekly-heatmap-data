@@ -3789,8 +3789,8 @@
           <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="4"  gs-y="25"  gs-w="4"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-country-etfs"    gs-x="0"  gs-y="28"  gs-w="4"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-theme-treemap"   gs-x="8"  gs-y="33"  gs-w="4"  gs-h="24"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-stylefactor"     gs-x="4"  gs-y="36"  gs-w="2"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-fixed-income"    gs-x="0"  gs-y="45"  gs-w="7"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-stylefactor"     gs-x="4"  gs-y="36"  gs-w="3"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-fixed-income"    gs-x="0"  gs-y="45"  gs-w="8"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-sector-chart"    gs-x="0"  gs-y="57"  gs-w="6"  gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-commodity-perf"  gs-x="6"  gs-y="57"  gs-w="4"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-commodities"     gs-x="6"  gs-y="72"  gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
@@ -5728,12 +5728,10 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-indexes-periods';
-    /* Index Snapshot drops 1W only — sparklines need at least 2 points
-       to draw a segment, and a 1W view = 1 weekly close. Everything else
-       (incl. 10Y) is kept. */
-    var idxPeriodOpts = STANDARD_PERIODS.filter(function (p) {
-      return p.key !== 'w1';
-    });
+    /* Full 9-period set on Index Snapshot. 1W's sparkline window is
+       2 weekly closes (see _sparkWeeksFor) so the line draws fine —
+       short, but visible. */
+    var idxPeriodOpts = STANDARD_PERIODS;
     idxPeriodOpts.forEach(function (p) {
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -8717,14 +8715,12 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-treemap-period-btns';
-    /* Thematic Treemap drops 5Y + 10Y. Many thematic ETFs are young
-       (HDRO 2021, KRBN 2020, IBIT 2024, ARKG 2014, etc.) so longer
-       windows show "—" for half the universe. Themes are also a
-       1-3y phenomenon — value past that window is academic. */
-    var treemapPeriodOpts = STANDARD_PERIODS.filter(function (p) {
-      return p.key !== 'y5' && p.key !== 'y10';
-    });
-    treemapPeriodOpts.forEach(function (p) {
+    /* Full 9-period set on the Thematic Treemap. Some thematic ETFs
+       are young (HDRO 2021, KRBN 2020, IBIT 2024) so 5Y/10Y will show
+       "—" for those tiles — handled gracefully by the null path in
+       updateTreemapColors. Older themes (SOXX, GDX, XBI, etc.) get
+       real long-window values that are useful for context. */
+    STANDARD_PERIODS.forEach(function (p) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'hm-treemap-period-btn' + (treemapPeriod === p.key ? ' active' : '');
@@ -8946,7 +8942,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v15';
+  var LAYOUT_KEY = 'hm-grid-layout-v16';
   var GS_SCALE = 40;
   var gridInstance = null;
 
