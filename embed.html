@@ -338,20 +338,11 @@
     border: 2px dashed var(--hm-gold);
     border-radius: var(--hm-r);
   }
-  /* Dragged + resized items: kill the CSS transition that GridStack adds
-     under animate:true, but ONLY for the active item. Other items still
-     transition smoothly when they reflow around the drag. Without this
-     override the dragged panel slid behind the cursor (transition replays
-     between snap positions), and the placeholder felt like it was
-     "lagging" because the cursor visually outpaced both. */
-  .hm-app .grid-stack-item.ui-draggable-dragging,
-  .hm-app .grid-stack-item.gs-dragging,
-  .hm-app .grid-stack-item.ui-resizable-resizing,
-  .hm-app .grid-stack-item.gs-resizing {
-    transition: none !important;
-  }
-  /* Same treatment for the placeholder so it snaps instantly between
-     target cells instead of sliding. */
+  /* Belt-and-suspenders: with animate:false in the GridStack config the
+     transition is already off, but some downstream skins re-add it.
+     Force it off for grid items + placeholder so drag stays snappy in
+     every direction. */
+  .hm-app .grid-stack-item,
   .hm-app .grid-stack > .grid-stack-placeholder {
     transition: none !important;
   }
@@ -9477,12 +9468,17 @@
       resizable: { handles: 'e, s, w, se, sw' },
       /* Drag ONLY from the window-style header bar — prevents accidental
          drags when users interact with charts/tables inside panels.
-         distance:0 removes the default ~5px drag-start threshold so drag
-         engages immediately on mousedown — without it the panel feels
-         "stuck" until you move past the threshold, and the placeholder
-         appears to lag the cursor. */
+         distance:0 removes the ~5px drag-start threshold so drag engages
+         instantly when you grab the header (no "stuck" feel). */
       draggable: { handle: '.hm-panel-header', distance: 0 },
-      animate: true,
+      /* animate:false — was true but it added a CSS transition to every
+         grid item including the one being dragged AND the placeholder.
+         The cursor visually outpaced both, regardless of drag direction
+         (down, up, left, right). Killing the transition entirely makes
+         the panel and placeholder lock to the cursor in every direction.
+         Tradeoff: when other panels reflow around a drop, they snap into
+         place instead of sliding smoothly. Worth it for responsive drag. */
+      animate: false,
       disableOneColumnMode: false,
       minRow: 1,
     }, '#hm-grid');
