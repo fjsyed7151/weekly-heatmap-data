@@ -6967,10 +6967,16 @@
     exportLeg.id = 'hm-sector-legend';
     body.appendChild(exportLeg);
 
-    /* SPY returns — add y1 */
-    if (sc.spy.length >= 52) {
-      var spyLast2 = sc.spy[sc.spy.length - 1];
-      spyRet.y1 = Math.round((spyLast2 / sc.spy[0] - 1) * 10000) / 100;
+    /* SPY returns — prefer the backend's data.spy_returns when available
+       since it ships all 9 standard periods (w1..y10) computed from the
+       full SPY history. The local spyRet (computed from sc.spy) is fine
+       for short windows but the y10 reading was off by one: sc.spy ships
+       exactly 520 weekly closes, so pct(520) requires 521 samples and
+       returned null. Override with the authoritative top-level series. */
+    if (data.spy_returns) {
+      Object.keys(data.spy_returns).forEach(function (k) {
+        if (data.spy_returns[k] != null) spyRet[k] = data.spy_returns[k];
+      });
     }
 
     /* Two side-by-side tables: main returns + vs SPY */
