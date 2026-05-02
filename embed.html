@@ -5728,7 +5728,14 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-indexes-periods';
-    STANDARD_PERIODS.forEach(function (p) {
+    /* Index Snapshot drops 1W and 10Y:
+         1W = single weekly close, can't render a sparkline from 1 point
+         10Y = sparkline visually compresses to "up and to the right" with
+               little signal. Tactical 1M-5Y is where the trend reads. */
+    var idxPeriodOpts = STANDARD_PERIODS.filter(function (p) {
+      return p.key !== 'w1' && p.key !== 'y10';
+    });
+    idxPeriodOpts.forEach(function (p) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'hm-indexes-period-btn' + (idxPeriod === p.key ? ' active' : '');
@@ -6584,10 +6591,12 @@
     var periodWrap = document.createElement('div');
     periodWrap.className = 'hm-sector-period-btns';
     /* Sector chart slices its data by week count (not by JSON key, since
-       the chart renders a continuous line). Mirror the canonical 8-period
+       the chart renders a continuous line). Mirror the canonical period
        set with the equivalent weeks: m6=26, m3=13, etc. YTD signals -1
-       and is computed at click-time from the current calendar year. */
+       and is computed at click-time from the current calendar year.
+       1W = 2 weeks of context so the chart actually has a visible line. */
     var periods = [
+      { label: '1W',  weeks: 2   },
       { label: '1M',  weeks: 4   },
       { label: '3M',  weeks: 13  },
       { label: '6M',  weeks: 26  },
@@ -6893,6 +6902,7 @@
      etc. all ship m1/m3/m6/ytd/y1/y3/y5/y10).
      ────────────────────────────────────────────────────────────────── */
   var STANDARD_PERIODS = [
+    { key: 'w1',  label: '1W'  },
     { key: 'm1',  label: '1M'  },
     { key: 'm3',  label: '3M'  },
     { key: 'm6',  label: '6M'  },
@@ -6926,11 +6936,14 @@
     var sbBtns = document.createElement('div');
     sbBtns.className = 'hm-sf-period-btns';
 
-    /* Style Box drops 10Y from the standard 8-period set: at the panel's
-       narrow default width the row of 8 pills wraps, and 10Y data on a
-       9-cell style grid isn't a useful comparison anyway (style leadership
-       rotates much faster than that). */
-    var periodOpts = SF_PERIODS.filter(function (p) { return p.key !== 'y10'; });
+    /* Style Box drops 5Y + 10Y from the standard period set: style
+       leadership rotates faster than 5y horizons capture (typically 1-3y
+       between value/growth, large/small leadership flips), so longer
+       windows are dominated by mean-reversion noise. 1W kept for tactical
+       short-term rotation reads. */
+    var periodOpts = SF_PERIODS.filter(function (p) {
+      return p.key !== 'y5' && p.key !== 'y10';
+    });
 
     var allCells = [];
 
@@ -8607,6 +8620,10 @@
      rather than the literal period; acceptable trade-off vs shipping
      5-10x more spark data. */
   function _sparkWeeksFor(period) {
+    /* w1 returns 2 weeks because a sparkline needs at least 2 points to
+       draw a segment. The 1W period is "last week vs the week before"
+       but visually we slice 2 weekly closes. */
+    if (period === 'w1')  return 2;
     if (period === 'm1')  return 4;
     if (period === 'm3')  return 13;
     if (period === 'm6')  return 26;
@@ -8700,7 +8717,14 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-treemap-period-btns';
-    STANDARD_PERIODS.forEach(function (p) {
+    /* Thematic Treemap drops 5Y + 10Y. Many thematic ETFs are young
+       (HDRO 2021, KRBN 2020, IBIT 2024, ARKG 2014, etc.) so longer
+       windows show "—" for half the universe. Themes are also a
+       1-3y phenomenon — value past that window is academic. */
+    var treemapPeriodOpts = STANDARD_PERIODS.filter(function (p) {
+      return p.key !== 'y5' && p.key !== 'y10';
+    });
+    treemapPeriodOpts.forEach(function (p) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'hm-treemap-period-btn' + (treemapPeriod === p.key ? ' active' : '');
