@@ -1704,14 +1704,6 @@
     flex-direction: column;
     gap: 4px;
   }
-  .hm-app .hm-mc-active-label {
-    font-size: 9.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: var(--hm-muted);
-    margin-bottom: 2px;
-  }
   .hm-app .hm-mc-trade-line {
     font-size: 11px;
     line-height: 1.35;
@@ -1728,32 +1720,6 @@
   }
   .hm-app .hm-mc-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
   .hm-app .hm-mc-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
-
-  /* Inflation regime badge in the gold header — pill that turns orange under
-     high CPI, blue under low CPI. Same accent palette as the 2024 QAAM image. */
-  .hm-app .hm-mc-infl-badge {
-    display: inline-block;
-    margin-left: 8px;
-    padding: 1px 7px;
-    border-radius: 10px;
-    font-size: 9.5px;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    vertical-align: 1px;
-  }
-  .hm-app .hm-mc-infl-badge.high {
-    background: rgba(232,116,38,0.18);
-    color: #c95a14;
-    border: 1px solid rgba(232,116,38,0.40);
-  }
-  .hm-app .hm-mc-infl-badge.low {
-    background: rgba(46,103,178,0.16);
-    color: #265a99;
-    border: 1px solid rgba(46,103,178,0.36);
-  }
-  .hm-app.dark .hm-mc-infl-badge.high { color: #f59658; border-color: rgba(232,116,38,0.55); }
-  .hm-app.dark .hm-mc-infl-badge.low  { color: #6fa3df; border-color: rgba(46,103,178,0.55); }
 
   /* Inflation overlay on the plane itself — subtle full-plane wash that
      lets the user feel the inflation regime without overwhelming the
@@ -5717,18 +5683,13 @@
     var card = document.createElement('div');
     card.className = 'hm-mc' + (m.infl_regime ? ' infl-' + m.infl_regime : '');
 
-    /* Gold title band. The inflation-regime badge sits next to the regime
-       label so the user reads the full classification at a glance, e.g.
-       "Goldilocks \u00b7 Low inflation". */
+    /* Gold title band \u2014 title only. Current regime is already conveyed by
+       the gold-filled active corner chip + the regime tint on the plane,
+       and the inflation regime is conveyed by the subtle orange/blue
+       plane wash. No need to repeat it in the header. */
     var hdr = document.createElement('div');
     hdr.className = 'hm-gold-header';
-    var inflBadge = '';
-    if (m.infl_label) {
-      inflBadge = ' <span class="hm-mc-infl-badge ' + m.infl_regime + '">' + m.infl_label + '</span>';
-    }
-    hdr.innerHTML =
-      '<span>Macro Regime \u00b7 Growth \u00d7 Policy</span>' +
-      '<span class="hm-gold-state">Current:<b>' + m.label + '</b>' + inflBadge + '</span>';
+    hdr.innerHTML = '<span>Macro Regime \u00b7 Growth \u00d7 Policy</span>';
     card.appendChild(hdr);
 
     var frame = document.createElement('div');
@@ -5738,12 +5699,9 @@
     axisY.className = 'hm-mc-axis-y';
     /* CSS rotates the axis so the SECOND span is visually at the top.
        Easing UP, tightening DOWN — dev_y > 0 = easing.
-       Arrows are positioned to mirror the X-axis pattern (< / >): the arrow
-       sits at the OUTER edge of each span, pointing toward the extreme.
-       After the rotate(180), a glyph at the START of the bottom span lands
-       at the bottom edge (and visually flips to point down); a glyph at the
-       END of the top span lands at the top edge (and flips to point up). */
-    axisY.innerHTML = '<span>▲ Net tightening</span><span>Net easing ▼</span>';
+       Same chevron-style arrows as the X-axis (< / >) for visual
+       consistency; rotation lands them at the outer edges. */
+    axisY.innerHTML = '<span>&lt; Net tightening</span><span>Net easing &gt;</span>';
     frame.appendChild(axisY);
 
     var plane = document.createElement('div');
@@ -5812,11 +5770,9 @@
       if (MC_CELLS[i].key === m.quadrant) { activeCell = MC_CELLS[i]; break; }
     }
     if (activeCell) {
-      var activeQNum = Q_NUM_BY_POS[(activeCell.row === 0 ? 't' : 'b') + (activeCell.col === 0 ? 'l' : 'r')];
       var trades = document.createElement('div');
       trades.className = 'hm-mc-active-trades';
       trades.innerHTML =
-        '<div class="hm-mc-active-label">Trade tilts · ' + activeQNum + ' · ' + activeCell.name + '</div>' +
         '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + activeCell.longs.join(', ')  + '</div>' +
         '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag short">SHORT</span>' + activeCell.shorts.join(', ') + '</div>';
       card.appendChild(trades);
