@@ -5775,9 +5775,24 @@
 
       /* Interactive Chart.js sparkline — sliced to the active period. */
       if (idx.sparkline && idx.sparkline.length >= 2) {
+        /* For short periods (≤6M) prefer daily granularity if shipped —
+           a 1W view from 5 daily points reads as a curve, not the
+           slanted line you get from 2 weekly closes. Falls back to the
+           weekly sparkline for longer periods or when daily isn't
+           available. */
         var weeks = _sparkWeeksFor(idxPeriod);
-        var slicedSpark = idx.sparkline.slice(-weeks);
-        var slicedDates = (idx.spark_dates || []).slice(-weeks);
+        var useDaily = (idxPeriod === 'w1' || idxPeriod === 'm1' ||
+                        idxPeriod === 'm3' || idxPeriod === 'm6' ||
+                        idxPeriod === 'ytd');
+        var slicedSpark, slicedDates;
+        if (useDaily && idx.sparkline_daily && idx.sparkline_daily.length > 0) {
+          var days = weeks * 5; /* ~5 trading days/week */
+          slicedSpark = idx.sparkline_daily.slice(-days);
+          slicedDates = (idx.spark_dates_daily || []).slice(-days);
+        } else {
+          slicedSpark = idx.sparkline.slice(-weeks);
+          slicedDates = (idx.spark_dates || []).slice(-weeks);
+        }
         var labels = slicedDates.map(function (d) {
           var parts = d.split('-');
           return parts[1] + '/' + parts[2];
@@ -6372,6 +6387,18 @@
   var sectorCharts = [];
   var sectorRangeStart = 52 - 13;  /* index into dates array (0=oldest) */
   var sectorRangeEnd = 51;         /* always last point initially */
+  /* When the active period is short (1W / 1M / 3M / 6M / YTD-if-short),
+     use the daily series shipped by build_sector_chart so the chart
+     line is smooth. Longer periods stay on weekly granularity. */
+  var sectorIsDaily = false;
+  /* Helper: returns the active dataset (daily or weekly) so all chart
+     code reads from one place. */
+  function _scActive(sc) {
+    if (sectorIsDaily && sc.dates_daily && sc.dates_daily.length > 0) {
+      return { dates: sc.dates_daily, spy: sc.spy_daily, series: sc.series_daily };
+    }
+    return { dates: sc.dates, spy: sc.spy, series: sc.series };
+  }
   var sectorSelected = {};
   var sectorShowSpy = true;
   var sectorViewMode = 'combined';
@@ -6466,7 +6493,7 @@
   function buildSectorCharts() {
     if (!_sc || !_sectorInfo) return;
     destroySectorCharts();
-    var sc = _sc, info = _sectorInfo;
+    var sc = _scActive(_sc), info = _sectorInfo;
     var theme = getTheme();
     var si = sectorRangeStart, ei = sectorRangeEnd;
     var labels = sc.dates.slice(si, ei + 1).map(function (d) { var p = d.split('-'); return p[1] + '/' + p[2]; });
@@ -6527,9 +6554,14 @@
     var sc = data.sector_chart;
     _sc = sc;
     var theme = getTheme();
-    var maxIdx = sc.dates.length - 1;
+    /* Initial state: 3M view in DAILY mode (matches the active button
+       at first render). 66 daily closes = 13 weeks of return spans —
+       matches compute_returns.m3 = pct_at(13). */
+    sectorIsDaily = !!(sc.dates_daily && sc.dates_daily.length >= 66);
+    var initActive = _scActive(sc);
+    var maxIdx = initActive.dates.length - 1;
     sectorRangeEnd = maxIdx;
-    sectorRangeStart = Math.max(0, maxIdx - 12);
+    sectorRangeStart = Math.max(0, maxIdx - 65);
 
     var sectorInfo = {};
     data.sectors.forEach(function (s, i) {
@@ -6587,40 +6619,67 @@
 
     var periodWrap = document.createElement('div');
     periodWrap.className = 'hm-sector-period-btns';
-    /* Sector chart slices its data by week count (not by JSON key, since
-       the chart renders a continuous line). Each `weeks` value below is
-       the number of weekly closes in the visible slice, where the chart
-       LINE rebases against the FIRST close in that slice — so a chart
-       slice of N weekly closes shows (N-1) spans of return. To make
-       the chart's end-value match the table's compute_returns.<period>
-       (e.g. m3 = pct_at(13) = 13 weeks of return), we need a slice of
-       N+1 closes. So 1M (pct_at(4)) wants 5 closes, 3M (pct_at(13))
-       wants 14, etc. 1W (pct_at(1)) is already correct at 2 closes.
-       YTD signals -1 and is computed at click-time from year-start. */
+    /* Each period below has both a `weeks` count (for the weekly
+       dataset) and a `days` count (for the daily dataset). Short
+       periods use daily granularity so the line renders smoothly;
+       1Y+ stay weekly. The weeks/days values are calibrated so the
+       chart's end-value matches the table's compute_returns.<period>
+       — slice of N+1 closes spans N closes of return (off-by-one fix).
+       YTD recomputes its slice from the year-start position at click
+       time and picks daily vs weekly based on how far into the year. */
     var periods = [
-      { label: '1W',  weeks: 2   },
-      { label: '1M',  weeks: 5   },
-      { label: '3M',  weeks: 14  },
-      { label: '6M',  weeks: 27  },
-      { label: 'YTD', weeks: -1  },
-      { label: '1Y',  weeks: 53  },
-      { label: '3Y',  weeks: 157 },
-      { label: '5Y',  weeks: 261 },
-      { label: '10Y', weeks: 521 },
+      { label: '1W',  weeks: 2,   days: 6,   daily: true  },
+      { label: '1M',  weeks: 5,   days: 22,  daily: true  },
+      { label: '3M',  weeks: 14,  days: 66,  daily: true  },
+      { label: '6M',  weeks: 27,  days: 131, daily: true  },
+      { label: 'YTD', weeks: -1,  days: -1,  daily: 'auto'},
+      { label: '1Y',  weeks: 53,  days: 0,   daily: false },
+      { label: '3Y',  weeks: 157, days: 0,   daily: false },
+      { label: '5Y',  weeks: 261, days: 0,   daily: false },
+      { label: '10Y', weeks: 521, days: 0,   daily: false },
     ];
     periods.forEach(function (p) {
       var btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'hm-sector-period-btn' + (p.weeks === 13 ? ' active' : '');
+      btn.className = 'hm-sector-period-btn' + (p.weeks === 14 ? ' active' : '');
       btn.textContent = p.label;
       btn.addEventListener('click', function () {
-        var weeks = p.weeks;
-        if (weeks === -1) {
+        /* Decide daily vs weekly. For YTD ('auto'), use daily if the
+           year has progressed less than ~6M of trading days. */
+        var useDaily;
+        if (p.daily === 'auto') {
+          var datesD = (sc.dates_daily && sc.dates_daily.length > 0) ? sc.dates_daily : null;
           var yr = new Date().getFullYear();
-          for (var i = 0; i < sc.dates.length; i++) { if (sc.dates[i].substring(0, 4) === String(yr)) { weeks = sc.dates.length - i; break; } }
+          if (datesD) {
+            // count trading days from year start to today in daily array
+            var ytdDays = 0;
+            for (var i = 0; i < datesD.length; i++) {
+              if (datesD[i].substring(0, 4) === String(yr)) { ytdDays = datesD.length - i; break; }
+            }
+            useDaily = (ytdDays > 0 && ytdDays <= 130);
+          } else {
+            useDaily = false;
+          }
+        } else {
+          useDaily = !!p.daily;
         }
-        sectorRangeStart = Math.max(0, maxIdx - weeks + 1);
-        sectorRangeEnd = maxIdx;
+        sectorIsDaily = useDaily && (sc.dates_daily && sc.dates_daily.length > 0);
+        var active = _scActive(_sc);
+        var amax = active.dates.length - 1;
+
+        var slice;
+        if (p.weeks === -1) {
+          // YTD: count entries from year-start to end in the active dataset
+          var yr2 = new Date().getFullYear();
+          slice = active.dates.length;
+          for (var j = 0; j < active.dates.length; j++) {
+            if (active.dates[j].substring(0, 4) === String(yr2)) { slice = active.dates.length - j; break; }
+          }
+        } else {
+          slice = sectorIsDaily ? p.days : p.weeks;
+        }
+        sectorRangeStart = Math.max(0, amax - slice + 1);
+        sectorRangeEnd = amax;
         buildSectorCharts();
         periodWrap.querySelectorAll('.hm-sector-period-btn').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
@@ -8649,10 +8708,30 @@
      - vector-effect=non-scaling-stroke keeps stroke pixel-fixed despite
        the viewBox stretch
      - linecap+linejoin=round smooths sharp angles between segments */
-  function _buildTreemapSpark(spark, period) {
-    if (!spark || spark.length < 2) return '';
-    var weeks = Math.min(_sparkWeeksFor(period), spark.length);
-    var slice = spark.slice(-weeks);
+  function _buildTreemapSpark(t, period) {
+    /* Choose data source by period: daily for ≤3M zooms (5 daily points
+       per week vs 1 weekly close → much smoother short-period lines),
+       weekly otherwise. Backwards-compatible: if t is an array (legacy
+       call shape), treat it as the weekly sparkline. */
+    var weekly, daily;
+    if (Array.isArray(t)) {
+      weekly = t;
+      daily = null;
+    } else {
+      weekly = (t && t.sparkline) || [];
+      daily = (t && t.sparkline_daily) || [];
+    }
+    var useDaily = (period === 'w1' || period === 'm1' || period === 'm3' || period === 'ytd');
+    var spark, slice;
+    if (useDaily && daily && daily.length >= 2) {
+      var days = _sparkWeeksFor(period) * 5;
+      slice = daily.slice(-days);
+    } else {
+      spark = weekly;
+      if (!spark || spark.length < 2) return '';
+      var weeks = Math.min(_sparkWeeksFor(period), spark.length);
+      slice = spark.slice(-weeks);
+    }
     if (slice.length < 2) return '';
     var w = 60, h = 16, padY = 1;
     var mn = Math.min.apply(null, slice);
@@ -8834,7 +8913,7 @@
         var val = valueFor(t);
         var retEl = block.querySelector('[data-key="ret"]');
         var sparkEl = block.querySelector('[data-key="spark"]');
-        if (sparkEl) sparkEl.innerHTML = _buildTreemapSpark(t.sparkline || [], treemapPeriod);
+        if (sparkEl) sparkEl.innerHTML = _buildTreemapSpark(t, treemapPeriod);
         if (val == null) {
           retEl.textContent = '—';
           block.style.background = 'var(--hm-bg-alt)';
