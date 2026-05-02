@@ -1424,6 +1424,15 @@
     border-color: var(--hm-gold);
     color: var(--hm-white);
   }
+  /* Subtle Q1/Q2/Q3/Q4 prefix inside each Gave chip — same visual rules as
+     the Growth × Policy panel for cross-panel consistency. */
+  .hm-app .hm-gave-qname > .hm-gave-qnum {
+    font-weight: 800;
+    opacity: 0.55;
+    margin-right: 5px;
+    letter-spacing: 0.4px;
+  }
+  .hm-app .hm-gave-qname.active > .hm-gave-qnum { opacity: 1; }
   /* Position marker: a single gold dot with a pulsing outer ring so the
      eye catches it immediately. Padded to the 15–85% range of the plane
      so it stays clear of the corner chips. */
@@ -1454,16 +1463,33 @@
     0%, 100% { transform: scale(1);   opacity: 0.65; }
     50%      { transform: scale(1.4); opacity: 0.1;  }
   }
-  /* Active quadrant's hint text displayed below the plane. Replaces the
-     per-cell hint text that lived inside each cell in the old design. */
-  .hm-app .hm-gave-active-hint {
+  /* Active quadrant's LONG/SHORT trade list rendered below the plane.
+     Top divider line matches the visual separation used on the Growth ×
+     Policy panel for cross-panel consistency. */
+  .hm-app .hm-gave-active-trades {
     margin-top: 10px;
-    font-size: 11.5px;
-    color: var(--hm-brown);
-    line-height: 1.4;
-    font-style: italic;
-    text-align: center;
+    padding-top: 10px;
+    border-top: 1px solid var(--hm-border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
+  .hm-app .hm-gave-trade-line {
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--hm-brown);
+  }
+  .hm-app .hm-gave-trade-tag {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-right: 6px;
+  }
+  .hm-app .hm-gave-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
+  .hm-app .hm-gave-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
 
   /* Gave companion charts — three ratio lines with 7y MA overlay, rendered
      inside the same card as the quadrant so they read as one unit. */
@@ -2691,19 +2717,24 @@
   }
   /* Outer cell + window-style header bar — square top corners on these so
      the visible top edge of the panel is a flat horizontal line, not a
-     rounded curve that the gold band peeks under. */
+     rounded curve that the gold band peeks under. Includes the Gave +
+     Macrocompass panels so their gold title bands also read flush. */
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-country-etfs"] > .grid-stack-item-content,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-gave-wrap"] > .grid-stack-item-content,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-macrocompass"] > .grid-stack-item-content,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-factors"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-global-indexes"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-country-etfs"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-fixed-income"] .hm-panel-header,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-commodity-perf"] .hm-panel-header {
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-commodity-perf"] .hm-panel-header,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-gave-wrap"] .hm-panel-header,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-macrocompass"] .hm-panel-header {
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
   }
@@ -5311,15 +5342,28 @@
   /* ---------- Macro Regime: Gave's Four Quadrants ---------- */
   /* Layout grid: 2 rows × 2 cols indexed TOP-LEFT=0, TOP-RIGHT=1,
                                           BOT-LEFT=2, BOT-RIGHT=3 */
+  /* GAVE_CELLS \u2014 corner regimes with explicit LONG/SHORT trade tilts per
+     Charles Gave's "General Theory of Portfolio Construction" (2024). The
+     `hint` line stays as a one-sentence summary surfaced in the chip
+     tooltip; longs/shorts populate the active-trades block below the
+     plane (same pattern as the Growth \u00d7 Policy panel). */
   var GAVE_CELLS = [
     { key: 'infl_bust', row: 0, col: 0, name: 'Inflationary Bust',
-      hint: 'Stagflation. Own cash (safest currency) + energy. Sell financials.' },
+      hint: 'Stagflation \u2014 the investor\u2019s nightmare. Very few assets work.',
+      longs:  ['Cash (safest currency)', 'Energy'],
+      shorts: ['Financial assets', 'Long-duration bonds', 'Long-duration equities'] },
     { key: 'infl_boom', row: 0, col: 1, name: 'Inflationary Boom',
-      hint: 'Real assets shine. Gold, commodities, real estate, cyclicals. Bonds suffer.' },
+      hint: 'Real assets dominate. Gold, commodities, real estate, cyclicals.',
+      longs:  ['Gold', 'Commodities', 'Real estate', 'Value stocks', 'EM equities', 'High fixed-cost cyclicals'],
+      shorts: ['Long-duration bonds'] },
     { key: 'defl_bust', row: 1, col: 0, name: 'Deflationary Bust',
-      hint: 'Flight to safety. Long-dated government bonds. Equities and credit collapse.' },
+      hint: 'Flight to safety. Long-dated government bonds the only winning trade.',
+      longs:  ['Long-dated government bonds', 'Cash'],
+      shorts: ['Equities', 'Corporate bonds', 'Real estate', 'Commodities'] },
     { key: 'defl_boom', row: 1, col: 1, name: 'Deflationary Boom',
-      hint: 'Capitalism\u2019s natural state. Stocks, bonds, real estate all work.' },
+      hint: 'Capitalism\u2019s natural state. Most long-term investments work.',
+      longs:  ['Innovative growth stocks (pricing power)', 'Bonds', 'Real estate'],
+      shorts: ['Companies without pricing power'] },
   ];
 
   function renderGaveQuadrant(data) {
@@ -5328,6 +5372,52 @@
     container.innerHTML = '';
     if (!data.gave_quadrant) return;
     var g = data.gave_quadrant;
+
+    /* Register the panel info popup with full methodology + cheatsheet.
+       Keeps the regime card compact while making the deeper context one
+       click away. Same pattern as the Growth × Policy panel. */
+    window.PANEL_INFO_HTML['hm-gave-wrap'] = function () {
+      return (
+        '<p><b>Charles Gave\'s Four Quadrants</b> — a regime classifier from his ' +
+          '<i>General Theory of Portfolio Construction</i> (2024). Originally framed as ' +
+          'economic activity vs prices, Gave later renamed the axes to reflect what his ' +
+          'ratios actually measure: <b>energy efficiency</b> and <b>currency quality</b>.</p>' +
+        '<p><b>X axis · Energy efficiency</b><br>' +
+          'Ratio: <code>S&amp;P 500 / WTI</code>. The S&amp;P 500 proxies private-sector ' +
+          'output; WTI proxies the energy cost to produce it. Above its 7y MA = ' +
+          'businesses extracting more value per unit of energy → boom (right). Below = bust.</p>' +
+        '<p><b>Y axis · Currency quality</b><br>' +
+          'Ratio: <code>Gold / IEF</code> (the 7-10y Treasury ETF as a free proxy for ' +
+          'long-bond total return). When gold outperforms bonds (above 7y MA), currency ' +
+          'is debasing → inflationary regime (top). When bonds outperform gold (below ' +
+          '7y MA), bonds are a proper store of value → deflationary regime (bottom).</p>' +
+        '<p><b>Marker placement</b>: <code>(ratio − MA) / 7y std</code>, clamped to ±2σ ' +
+          '→ ±1. Reflects how unusual the deviation is vs the recent regime. ' +
+          'Classification uses the raw above/below MA test only.</p>' +
+        '<p><b>Quadrants</b><br>' +
+          'Q1 · NE · <b>Inflationary Boom</b> · long real assets (gold, commodities, ' +
+          'real estate, value, EM); short long bonds<br>' +
+          'Q2 · NW · <b>Inflationary Bust</b> · stagflation; long cash + energy; short ' +
+          'financials and duration<br>' +
+          'Q3 · SW · <b>Deflationary Bust</b> · flight to safety; long long-dated ' +
+          'government bonds<br>' +
+          'Q4 · SE · <b>Deflationary Boom</b> · "natural state of capitalism"; long ' +
+          'innovative growth + bonds + real estate. <i>All true US bull markets occur ' +
+          'here.</i></p>' +
+        '<p><b>Three companion charts</b><br>' +
+          '<b>S&amp;P 500 / WTI</b> — primary X-axis driver<br>' +
+          '<b>Gold / IEF</b> — primary Y-axis driver<br>' +
+          '<b>S&amp;P 500 / Gold</b> — money illusion. Stocks rising vs gold = real ' +
+          'gains; flat or falling vs gold = monetary debasement masquerading as upside. ' +
+          'This ratio crossing below its 7y MA often <i>leads</i> S&amp;P/WTI doing the ' +
+          'same by a few months — early warning of a regime shift.</p>' +
+        '<p><b>Free-data caveat</b>: Gave\'s original work uses Bloomberg UST 7-10y ' +
+          'total return back to 1973. We use the IEF ETF (since 2002), which captures ' +
+          'both price and coupon. Slightly shorter history but identical signal.</p>'
+      );
+    };
+    var gaveItem = document.querySelector('.grid-stack-item[gs-id="hm-gave-wrap"]');
+    if (gaveItem) gaveItem.classList.add('hm-has-info');
 
     /* Gold title band attached to the parent wrap (.hm-gave-wrap) so it
        spans the full card width above both the quadrant and the companion
@@ -5340,9 +5430,7 @@
       if (existing) existing.remove();
       var hdr = document.createElement('div');
       hdr.className = 'hm-gold-header';
-      hdr.innerHTML =
-        '<span>Macro Regime &middot; Gave Four Quadrants</span>' +
-        '<span class="hm-gold-state">Current:<b>' + g.label + '</b></span>';
+      hdr.innerHTML = '<span>Macro Regime &middot; Gave Four Quadrants</span>';
       wrap.insertBefore(hdr, wrap.firstChild);
     }
 
@@ -5355,7 +5443,9 @@
 
     var axisY = document.createElement('div');
     axisY.className = 'hm-gave-axis-y';
-    axisY.innerHTML = '<span>Good currency</span><span>Bad currency</span>';
+    /* CSS rotation lands the chevrons at the outer edges of the rotated
+       axis, mirroring the X-axis pattern. */
+    axisY.innerHTML = '<span>&lt; Good currency</span><span>Bad currency &gt;</span>';
     frame.appendChild(axisY);
 
     var plane = document.createElement('div');
@@ -5378,17 +5468,17 @@
     midV.className = 'hm-gave-midline-v';
     plane.appendChild(midV);
 
-    /* Corner chips. Each chip is placed at the outer corner of its own
-       quadrant (row=0 → top, col=0 → left, etc.), away from the plane
-       center where the marker sits. Active chip gets a gold fill. Hover
-       the chip to see the regime's description (same text that used to
-       live inline in each cell). */
+    /* Corner chips with subtle Q1-Q4 prefix (math convention: Q1=NE,
+       Q2=NW, Q3=SW, Q4=SE — counter-clockwise from top-right). Active
+       chip gets a gold fill; hover reveals the one-sentence summary. */
+    var Q_NUM_BY_POS_GAVE = { tl: 'Q2', tr: 'Q1', bl: 'Q3', br: 'Q4' };
     GAVE_CELLS.forEach(function (c) {
       var cornerClass = (c.row === 0 ? 't' : 'b') + (c.col === 0 ? 'l' : 'r');
+      var qNum = Q_NUM_BY_POS_GAVE[cornerClass];
       var chip = document.createElement('span');
       chip.className = 'hm-gave-qname hm-metric-tip ' + cornerClass + (c.key === g.quadrant ? ' active' : '');
-      chip.textContent = c.name;
-      chip.setAttribute('data-tip-title', c.name);
+      chip.innerHTML = '<span class="hm-gave-qnum">' + qNum + '</span>' + c.name;
+      chip.setAttribute('data-tip-title', qNum + ' · ' + c.name);
       chip.setAttribute('data-tip', c.hint);
       plane.appendChild(chip);
     });
@@ -5414,25 +5504,22 @@
 
     card.appendChild(frame);
 
-    /* Active quadrant's hint displayed below the plane (replaces the old
-       per-cell hint text that lived inside each cell). */
+    /* Active quadrant's LONG/SHORT trade list rendered below the plane —
+       same structure as the Growth × Policy panel. Methodology lives in
+       the panel info popup (registered above). */
     var activeCell = null;
     for (var i = 0; i < GAVE_CELLS.length; i++) {
       if (GAVE_CELLS[i].key === g.quadrant) { activeCell = GAVE_CELLS[i]; break; }
     }
     if (activeCell) {
-      var activeHint = document.createElement('div');
-      activeHint.className = 'hm-gave-active-hint';
-      activeHint.textContent = activeCell.hint;
-      card.appendChild(activeHint);
+      var trades = document.createElement('div');
+      trades.className = 'hm-gave-active-trades';
+      trades.innerHTML =
+        '<div class="hm-gave-trade-line"><span class="hm-gave-trade-tag long">LONG</span>'  + activeCell.longs.join(', ')  + '</div>' +
+        '<div class="hm-gave-trade-line"><span class="hm-gave-trade-tag short">SHORT</span>' + activeCell.shorts.join(', ') + '</div>';
+      card.appendChild(trades);
     }
 
-    /* Methodology note */
-    var note = document.createElement('div');
-    note.className = 'hm-gave-note';
-    note.textContent = 'Proxy: Yahoo IEF (7\u201310y Treasury ETF, since 2002) as the bond-total-return input. ' +
-      'Marker placement uses Z-score vs own 7y std \u2014 reflects historical extremity, not absolute levels.';
-    card.appendChild(note);
 
     container.appendChild(card);
   }
