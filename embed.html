@@ -488,29 +488,46 @@
   .hm-app .hm-cb:disabled { opacity: 0.35; cursor: not-allowed; }
 
   /* Chart section — fills its grid panel cell so the visible card border
-     tracks resize, just like the other panels. */
+     tracks resize, just like the other panels. Square top corners so the
+     gold header band sits flush at the top edge. */
   .hm-app .hm-chart-section {
     border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
+    border-radius: 0 0 var(--hm-r) var(--hm-r);
     background: var(--hm-panel);
     padding: 16px;
-    /* margin removed: Gridstack handles inter-panel spacing now. */
+    overflow: hidden;
   }
-
-  .hm-app .hm-chart-toolbar {
-    display: flex;
+  /* Gold header band escapes the .hm-chart-section's 16px padding via
+     negative margins so it spans the full card width — same pattern used
+     by .hm-gave-wrap and .hm-mc. */
+  .hm-app .hm-chart-section > .hm-gold-header {
+    margin: -16px -16px 14px -16px;
+  }
+  .hm-app .hm-chart-section > .hm-gold-header b {
+    font-weight: 700;
+    margin: 0 2px;
+  }
+  /* Toolbar button group on the right of the gold header. */
+  .hm-app .hm-chart-toolbar-btns {
+    display: inline-flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
+    gap: 6px;
   }
-  .hm-app .hm-chart-note {
-    flex: 1;
-    font-size: 12px;
-    color: var(--hm-brown);
+  /* Override .hm-btn defaults so the icons read on the gold background:
+     transparent fill, white stroke, subtle hover. */
+  .hm-app .hm-chart-toolbar-btns .hm-btn {
+    background: rgba(255,255,255,0.10);
+    color: var(--hm-white);
+    border: 1px solid rgba(255,255,255,0.20);
   }
-  .hm-app .hm-chart-note b { color: var(--hm-dark); font-weight: 600; }
+  .hm-app .hm-chart-toolbar-btns .hm-btn:hover {
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255,255,255,0.36);
+  }
+  .hm-app .hm-chart-toolbar-btns .hm-btn.active {
+    background: rgba(255,255,255,0.30);
+    border-color: rgba(255,255,255,0.50);
+  }
 
   .hm-app .hm-chart-canvases {
     display: grid;
@@ -2737,6 +2754,7 @@
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-gave-wrap"] > .grid-stack-item-content,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-macrocompass"] > .grid-stack-item-content,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-chart-section"] > .grid-stack-item-content,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-factors"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-global-indexes"] .hm-panel-header,
@@ -2744,7 +2762,8 @@
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-fixed-income"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-commodity-perf"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-gave-wrap"] .hm-panel-header,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-macrocompass"] .hm-panel-header {
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-macrocompass"] .hm-panel-header,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-chart-section"] .hm-panel-header {
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
   }
@@ -3921,20 +3940,22 @@
           <div class="grid-stack-item" gs-id="hm-currencies"      gs-x="0"  gs-y="152" gs-w="5"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
           <!-- Metrics chart panel (always present in grid; shows empty state
                of "0/6 metrics selected" until user picks rows from the heat map). -->
-          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="174" gs-w="12" gs-h="11">
+          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="174" gs-w="8" gs-h="14">
             <div class="grid-stack-item-content">
               <div class="hm-chart-section" id="hm-chart-section">
-                <div class="hm-chart-toolbar">
-                  <span class="hm-chart-note"><b id="hm-chart-count">0</b>/6 metrics selected</span>
-                  <button class="hm-btn" id="hm-chart-combined" type="button" aria-label="Combined view" title="Combined">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 14 9 10 13 13 21 7"/></svg>
-                  </button>
-                  <button class="hm-btn" id="hm-chart-separated" type="button" aria-label="Separated view" title="Separated">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
-                  </button>
-                  <button class="hm-btn" id="hm-chart-download" type="button" aria-label="Download chart" title="Download">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  </button>
+                <div class="hm-gold-header">
+                  <span>Metrics Chart &middot; <b id="hm-chart-count">0</b>/6 selected</span>
+                  <span class="hm-chart-toolbar-btns">
+                    <button class="hm-btn" id="hm-chart-combined" type="button" aria-label="Combined view" title="Combined">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 14 9 10 13 13 21 7"/></svg>
+                    </button>
+                    <button class="hm-btn" id="hm-chart-separated" type="button" aria-label="Separated view" title="Separated">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+                    </button>
+                    <button class="hm-btn" id="hm-chart-download" type="button" aria-label="Download chart" title="Download">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
+                  </span>
                 </div>
                 <div class="hm-chart-canvases combined" id="hm-chart-canvases"></div>
               </div>
@@ -9261,7 +9282,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v26';
+  var LAYOUT_KEY = 'hm-grid-layout-v27';
   var GS_SCALE = 40;
   var gridInstance = null;
 
@@ -9457,10 +9478,24 @@
       } else if (action === 'info') {
         toggleInfoPopup(item, id, btn);
       } else if (action === 'close') {
-        /* Hide the panel via the existing customize-view system so the
-           Customize panel checkbox reflects state and re-add works. If the
-           panel is currently pinned, unpin first so it's back in the grid
-           when applyBlockVisibility runs. */
+        /* Special case: the chart panel only exists in the grid while
+           metrics are selected from the heat map. Clicking close should
+           clear the selection so the panel disappears (and so re-selecting
+           a metric brings it back). setBlockHidden would just toggle the
+           Customize visibility flag, which loses sync with chartState. */
+        if (id === 'hm-chart-section' && typeof chartState !== 'undefined') {
+          chartState.selected = [];
+          document.querySelectorAll('.hm-cb').forEach(function (cb) { cb.checked = false; });
+          if (typeof updateChartSectionVisibility === 'function') updateChartSectionVisibility();
+          if (typeof updateCheckboxAvailability === 'function') updateCheckboxAvailability();
+          if (typeof updateCountLabel === 'function') updateCountLabel();
+          if (typeof renderCharts === 'function') renderCharts();
+          return;
+        }
+        /* Default: hide the panel via the existing customize-view system so
+           the Customize panel checkbox reflects state and re-add works. If
+           the panel is currently pinned, unpin first so it's back in the
+           grid when applyBlockVisibility runs. */
         if (isPinned(id)) {
           unpinItemById(id);
           refreshAllPinIcons();
