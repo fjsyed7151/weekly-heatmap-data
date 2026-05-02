@@ -3940,7 +3940,7 @@
           <div class="grid-stack-item" gs-id="hm-currencies"      gs-x="0"  gs-y="152" gs-w="5"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
           <!-- Metrics chart panel (always present in grid; shows empty state
                of "0/6 metrics selected" until user picks rows from the heat map). -->
-          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="174" gs-w="8" gs-h="14">
+          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="174" gs-w="8" gs-h="16">
             <div class="grid-stack-item-content">
               <div class="hm-chart-section" id="hm-chart-section">
                 <div class="hm-gold-header">
@@ -4777,7 +4777,11 @@
       var cellH = window.gridInstance.getCellHeight(true) || 40;
       var natural = wrap.scrollHeight;
       if (!natural) return;
-      var rows = Math.max(1, Math.ceil(natural / cellH));
+      /* Add a small breathing-room buffer (~12px) so the content's bottom
+         edge never lands flush against the cell's clipping border, which
+         is what triggers the vertical scrollbar to appear at the exact
+         fit height. */
+      var rows = Math.max(1, Math.ceil((natural + 12) / cellH));
       window.gridInstance._suppressSave = true;
       /* Chart panel is a special case: don't lock maxH at content height
          like other panels. Users want to drag the chart taller for better
@@ -9282,7 +9286,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v27';
+  var LAYOUT_KEY = 'hm-grid-layout-v28';
   var GS_SCALE = 40;
   var gridInstance = null;
 
@@ -9812,6 +9816,19 @@
     }
     var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
+    /* Chart panel is a special case: the "right" height depends on how
+       many metrics are selected and which view mode is active, so reset
+       width to default and let refitChartSection auto-fit the height
+       to the current chart content. Otherwise the user would reset to a
+       static height that's wrong for their current selection count. */
+    if (id === 'hm-chart-section') {
+      try {
+        gridInstance.update(item, { maxH: 4000, minH: 1 });
+        gridInstance.update(item, { w: def.w });
+      } catch (e) {}
+      if (typeof refitChartSection === 'function') refitChartSection();
+      return;
+    }
     /* Use the post-init snapshot if available, else fall back to the
        pre-fit gs-h × GS_SCALE value (still better than nothing). */
     var targetH = (INITIAL_H[id] != null) ? INITIAL_H[id] : def.h;
