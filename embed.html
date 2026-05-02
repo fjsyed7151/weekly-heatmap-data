@@ -338,11 +338,13 @@
     border: 2px dashed var(--hm-gold);
     border-radius: var(--hm-r);
   }
-  /* Belt-and-suspenders: with animate:false in the GridStack config the
-     transition is already off, but some downstream skins re-add it.
-     Force it off for grid items + placeholder so drag stays snappy in
-     every direction. */
-  .hm-app .grid-stack-item,
+  /* Active drag/resize: kill transitions on the moving item + the
+     placeholder so they track the cursor exactly. JS adds/removes
+     .hm-active-drag on the item being dragged/resized via GridStack's
+     own events (see initGridStack) so we don't have to guess the
+     library's internal class name. Other items reflowing around the
+     drag keep their smooth transition (animate:true). */
+  .hm-app .grid-stack-item.hm-active-drag,
   .hm-app .grid-stack > .grid-stack-placeholder {
     transition: none !important;
   }
@@ -9471,14 +9473,13 @@
          distance:0 removes the ~5px drag-start threshold so drag engages
          instantly when you grab the header (no "stuck" feel). */
       draggable: { handle: '.hm-panel-header', distance: 0 },
-      /* animate:false — was true but it added a CSS transition to every
-         grid item including the one being dragged AND the placeholder.
-         The cursor visually outpaced both, regardless of drag direction
-         (down, up, left, right). Killing the transition entirely makes
-         the panel and placeholder lock to the cursor in every direction.
-         Tradeoff: when other panels reflow around a drop, they snap into
-         place instead of sliding smoothly. Worth it for responsive drag. */
-      animate: false,
+      /* animate:true so OTHER panels reflowing around a drop slide
+         smoothly into their new positions. The actively-dragged item +
+         the placeholder need transitions OFF to track the cursor — that
+         is handled by adding/removing the .hm-active-drag class on the
+         dragged element via the dragstart/dragstop hooks below, which
+         dodges the guesswork of what GridStack v12 calls its drag class. */
+      animate: true,
       disableOneColumnMode: false,
       minRow: 1,
     }, '#hm-grid');
@@ -9556,6 +9557,32 @@
         e.stopPropagation();
       }
     }, true);
+
+    /* Mark the actively-dragged / resized item with .hm-active-drag so
+       CSS can disable its transition (and the placeholder's) for snappy
+       cursor tracking. Other items keep transitions for smooth reflow.
+       Defensive: GridStack v12's event signature can be (event, item) or
+       (event, items[]) depending on dragger backend, so handle both. */
+    function _activeDragOn(_event, payload) {
+      var nodes = Array.isArray(payload) ? payload : (payload ? [payload] : []);
+      nodes.forEach(function (n) {
+        var el = n && n.el ? n.el : (n && n.tagName ? n : null);
+        if (el && el.classList) el.classList.add('hm-active-drag');
+      });
+    }
+    function _activeDragOff() {
+      document.querySelectorAll('.grid-stack-item.hm-active-drag').forEach(function (el) {
+        el.classList.remove('hm-active-drag');
+      });
+    }
+    gridInstance.on('dragstart resizestart', _activeDragOn);
+    gridInstance.on('dragstop resizestop',  _activeDragOff);
+    /* Defensive cleanup: if the drag is canceled (Esc, blur, pointer lost)
+       we still want the class gone so the panel doesn't get stuck without
+       transitions. */
+    window.addEventListener('mouseup', _activeDragOff, true);
+    window.addEventListener('pointerup', _activeDragOff, true);
+    window.addEventListener('pointercancel', _activeDragOff, true);
 
     /* Persist layout on every change (drag end, resize end, item removed).
        Skipped while the post-load fit-to-content pass runs so the auto
