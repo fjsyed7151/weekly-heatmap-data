@@ -1632,15 +1632,15 @@
     color: var(--hm-muted);
     padding: 2px 4px 0;
   }
-  /* Quadrant tints — 2024 QAAM:
-       60/40 Heaven  (NW, decel + easing)  → muted blue (defensive growth/bonds)
-       Goldilocks    (NE, accel + easing)  → green       (risk-on)
-       Just Get Out  (SW, decel + tight)   → muted red   (defensive cash/dollar)
-       Healthy Tight (SE, accel + tight)   → amber       (cyclical real-economy) */
-  .hm-app .hm-mc-tint.sixty_forty   { background: rgba(110,120,150,0.10); }
-  .hm-app .hm-mc-tint.goldilocks    { background: rgba(26,122,66,0.10); }
-  .hm-app .hm-mc-tint.just_get_out  { background: rgba(212,42,32,0.08); }
-  .hm-app .hm-mc-tint.healthy_tight { background: rgba(230,191,102,0.14); }
+  /* Quadrant tints:
+       Soft Landing    (NW, decel + easing)  → muted blue   (defensive bonds/quality)
+       Risk On         (NE, accel + easing)  → green        (broad risk-on)
+       Recession Risk  (SW, decel + tight)   → muted red    (defensive cash/vol)
+       Late Cycle      (SE, accel + tight)   → amber        (cyclical real-economy) */
+  .hm-app .hm-mc-tint.soft_landing    { background: rgba(110,120,150,0.10); }
+  .hm-app .hm-mc-tint.risk_on         { background: rgba(26,122,66,0.10); }
+  .hm-app .hm-mc-tint.recession_risk  { background: rgba(212,42,32,0.08); }
+  .hm-app .hm-mc-tint.late_cycle      { background: rgba(230,191,102,0.14); }
   .hm-app .hm-mc-midline-h,
   .hm-app .hm-mc-midline-v {
     position: absolute;
@@ -1706,37 +1706,6 @@
   }
   .hm-app .hm-mc-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
   .hm-app .hm-mc-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
-
-  /* Inner transitional-cell labels for the 2024 QAAM (Gold Rush, Everything
-     Rally, Hawks In Control, Old Economy). Smaller and lighter than corner
-     chips so they read as secondary "transitional" callouts. Positioned at
-     ~30%/70% on each axis so they sit clearly inside their parent quadrant
-     without colliding with the corner chips or the centre crosshair. */
-  .hm-app .hm-mc-inner {
-    position: absolute;
-    z-index: 2;
-    font-size: 9.5px;
-    font-weight: 600;
-    font-style: italic;
-    line-height: 1.2;
-    padding: 2px 5px;
-    border-radius: 3px;
-    background: rgba(255,255,255,0.55);
-    color: var(--hm-muted);
-    white-space: nowrap;
-    pointer-events: auto;
-    /* No border — keeps it visually subordinate to the corner chips. */
-  }
-  .hm-app.dark .hm-mc-inner {
-    background: rgba(20,22,30,0.55);
-    color: var(--hm-muted);
-  }
-  /* Position each inner label at the centroid of its parent quadrant.
-     translate(-50%, -50%) anchors the label centre on those coordinates. */
-  .hm-app .hm-mc-inner.inner-tl { top: 28%; left: 28%; transform: translate(-50%, -50%); }
-  .hm-app .hm-mc-inner.inner-tr { top: 28%; right: 28%; transform: translate(50%, -50%); }
-  .hm-app .hm-mc-inner.inner-bl { bottom: 28%; left: 28%; transform: translate(-50%, 50%); }
-  .hm-app .hm-mc-inner.inner-br { bottom: 28%; right: 28%; transform: translate(50%, 50%); }
 
   /* Inflation regime badge in the gold header — pill that turns orange under
      high CPI, blue under low CPI. Same accent palette as the 2024 QAAM image. */
@@ -5647,48 +5616,29 @@
     container.appendChild(grid);
   }
 
-  /* ---------- Growth × Policy quadrants — 2024 QAAM ----------
+  /* ---------- Growth × Policy quadrants ----------
      Backend convention (build_macrocompass):
-       dev_x > 0  →  growth accelerating  →  RIGHT half
-       dev_y > 0  →  net easing           →  TOP half
+       dev_x > 0  →  growth at/above neutral   →  RIGHT half
+       dev_y > 0  →  net easing                →  TOP half
      Marker code uses `topPct = 50 - dev_y * 35` so positive dev_y goes UP.
-     Quadrant placement matches Alf @ MacroAlf's published chart:
-       60/40 Heaven   (decel + easing)  →  top-left     (row 0, col 0)
-       Goldilocks     (accel + easing)  →  top-right    (row 0, col 1)
-       Just Get Out   (decel + tight)   →  bottom-left  (row 1, col 0)
-       Healthy Tight. (accel + tight)   →  bottom-right (row 1, col 1)
-     Inner-cell hints (Gold Rush, Everything Rally, Hawks In Control, Old Economy)
-     are the transitional regime trades for marker positions near the centre of
-     each quadrant — surfaced via tooltip on the inner-cell label. */
+     Quadrant placement:
+       Soft Landing    (decel + easing)  →  top-left     (row 0, col 0)
+       Risk On         (accel + easing)  →  top-right    (row 0, col 1)
+       Recession Risk  (decel + tight)   →  bottom-left  (row 1, col 0)
+       Late Cycle      (accel + tight)   →  bottom-right (row 1, col 1) */
   var MC_CELLS = [
-    { key: 'sixty_forty',         row: 0, col: 0, name: '60/40 Heaven',
-      longs:  ['US Growth', 'Treasuries', 'High-grade credit'],
-      shorts: ['Industrial commodities', 'EM equities', 'Value vs growth'] },
-    { key: 'goldilocks',    row: 0, col: 1, name: 'Goldilocks',
-      longs:  ['EM equities & bonds', 'DM equities', 'Credit'],
-      shorts: ['Dollar', 'Volatility (VIX)'] },
-    { key: 'just_get_out',  row: 1, col: 0, name: 'Just Get Out Of Stuff',
-      longs:  ['Dollar', 'Cash'],
-      shorts: ['All risk assets'] },
-    { key: 'healthy_tight', row: 1, col: 1, name: 'Healthy Tightening',
-      longs:  ['EM equities', 'US Value', 'Credit'],
-      shorts: ['Treasuries', 'Growth stocks'] },
-  ];
-
-  /* Inner transitional cells — rendered as smaller labels near the centre of
-     each quadrant. The trade tilts shown apply when the marker is sitting
-     near the axes (small dev), i.e. when the regime is partially in
-     transition. Hover for the full long list; the active trade list below
-     the plane stays focused on the corner regime. */
-  var MC_INNER_CELLS = [
-    { key: 'gold_rush',         row: 0, col: 0, name: 'Gold Rush',
-      longs:  ['Gold'] },
-    { key: 'everything_rally',  row: 0, col: 1, name: 'Everything Rally',
-      longs:  ['US Small Cap', 'Commodities', 'Bitcoin'] },
-    { key: 'hawks_in_control',  row: 1, col: 0, name: 'Hawks In Control',
-      longs:  ['Commodities', 'Dollar'] },
-    { key: 'old_economy',       row: 1, col: 1, name: 'The Old Economy',
-      longs:  ['US Value', 'Commodities', 'EM equities'] },
+    { key: 'soft_landing',   row: 0, col: 0, name: 'Soft Landing',
+      longs:  ['Long-duration Treasuries', 'Quality growth (large-cap tech)', 'IG credit'],
+      shorts: ['Cyclicals', 'EM equities', 'Industrial commodities'] },
+    { key: 'risk_on',        row: 0, col: 1, name: 'Risk On',
+      longs:  ['Broad equities', 'High-yield credit', 'EM equities', 'Real estate'],
+      shorts: ['Dollar', 'Volatility (VIX)', 'Cash'] },
+    { key: 'recession_risk', row: 1, col: 0, name: 'Recession Risk',
+      longs:  ['Dollar', 'Cash', 'Volatility (VIX)'],
+      shorts: ['Equities (broad)', 'High-yield credit', 'EM equities'] },
+    { key: 'late_cycle',     row: 1, col: 1, name: 'Late Cycle',
+      longs:  ['Commodities', 'Value stocks', 'EM equities', 'Banks'],
+      shorts: ['Long-duration Treasuries', 'Growth/Tech'] },
   ];
 
   function renderMacroCompass(data) {
@@ -5703,29 +5653,37 @@
        and the user can pull up details on demand via the [i] button. */
     window.PANEL_INFO_HTML['hm-macrocompass'] = function () {
       return (
-        '<p><b>Macro Regime · Growth × Policy</b> implements Alf @ MacroAlf\'s 2024 ' +
-          'Quadrant Asset Allocation Model (QAAM).</p>' +
-        '<p><b>Axes</b><br>' +
-          '<b>X = Growth</b>: composite z-score of (ISM Services − 50) and (INDPRO YoY − 2). ' +
-          'Positive = growth accelerating.<br>' +
-          '<b>Y = Policy stance</b>: 0.5% R* − (EFFR − core PCE YoY). Positive = net easing. ' +
-          'Sign flipped relative to the raw real rate so easing visually goes UP, matching ' +
-          'MacroAlf\'s published chart orientation.</p>' +
-        '<p><b>Inflation tint</b>: core PCE YoY vs 2.5% threshold. Above = high (orange ' +
-          'overlay); below = low (blue overlay). Same growth/policy quadrant produces ' +
-          'different trade tilts under high vs low CPI — that\'s the 3rd dimension of QAAM.</p>' +
-        '<p><b>Marker</b>: dot position is the current reading on each axis, z-scored against ' +
-          'its own 7-year rolling std and clamped to ±2σ → ±1.</p>' +
+        '<p><b>Growth × Policy regime classifier</b> with inflation as a third dimension. ' +
+          'Tells you which macro setup we\'re in and the trade tilts that historically ' +
+          'work in that setup.</p>' +
+        '<p><b>X axis · Growth</b><br>' +
+          'A composite of two real-economy indicators, each anchored at its expansion/' +
+          'contraction threshold and divided by its rough historical standard deviation:<br>' +
+          '&nbsp;&nbsp;<code>growth = 0.5 · (ISM Services − 50) / 3.5 + 0.5 · (INDPRO YoY − 2) / 5.5</code><br>' +
+          'Sign tells the regime (above/below neutral); ±1 ≈ one std above/below trend.</p>' +
+        '<p><b>Y axis · Policy stance</b><br>' +
+          'Real Fed Funds vs the long-run neutral rate (R* ≈ 0.5%, NY Fed HLW estimate):<br>' +
+          '&nbsp;&nbsp;<code>stance = (0.5 − [EFFR − core PCE YoY]) / 2.0</code><br>' +
+          'Positive = net easing (Fed below neutral); negative = net tightening. ' +
+          '±1 ≈ 200 bps from neutral. Sign convention chosen so easing goes UP on the ' +
+          'plane.</p>' +
+        '<p><b>Inflation tint</b>: core PCE YoY vs 2.5% threshold. Above = high (subtle ' +
+          'orange overlay); below = low (subtle blue overlay). Same growth/policy ' +
+          'quadrant gives different trade conviction under high vs low CPI.</p>' +
+        '<p><b>Marker placement</b>: <code>x = clamp(growth, −1, +1)</code>, ' +
+          '<code>y = clamp(stance, −1, +1)</code>. Both axes use fixed (not rolling) ' +
+          'normalization so a reading of growth = +1 always plots at the same spot on ' +
+          'the chart, regardless of which decade you\'re in.</p>' +
         '<p><b>Quadrants</b><br>' +
-          'NW · 60/40 Heaven (decel + easing) · long Treasuries + Growth<br>' +
-          'NE · Goldilocks (accel + easing) · long DM/EM equities + credit<br>' +
-          'SW · Just Get Out Of Stuff (decel + tight) · long dollar + cash<br>' +
-          'SE · Healthy Tightening (accel + tight) · long EM/Value + credit<br>' +
-          'Inner italic labels (Gold Rush, Everything Rally, Hawks In Control, Old Economy) ' +
-          'are transitional regime trades — hover for the long list.</p>' +
-        '<p><b>Free-data proxies</b>: Conference Board LEI (used in the real QAAM) is ' +
-          'paywalled, so we approximate growth via ISM Services + INDPRO. R* uses the NY Fed ' +
-          'HLW long-run estimate (~0.5%) rather than the live time-varying figure.</p>'
+          'NW · <b>Soft Landing</b> (decel + easing) · long Treasuries + quality growth<br>' +
+          'NE · <b>Risk On</b> (accel + easing) · long broad equities + credit + EM<br>' +
+          'SW · <b>Recession Risk</b> (decel + tight) · long dollar + cash + vol<br>' +
+          'SE · <b>Late Cycle</b> (accel + tight) · long commodities + value + EM</p>' +
+        '<p><b>Data sources</b>: ISM Services PMI (Trading Economics), Industrial Production ' +
+          'YoY (FRED INDPRO), Effective Fed Funds (FRED DFF), core PCE YoY (FRED PCEPILFE). ' +
+          'Conference Board LEI would be a stronger growth signal but it\'s paywalled; ISM ' +
+          'Services + INDPRO is the cleanest free combination (one diffusion / forward-looking, ' +
+          'one realized output).</p>'
       );
     };
     var mcItem = document.querySelector('.grid-stack-item[gs-id="hm-macrocompass"]');
@@ -5796,22 +5754,6 @@
         '<div class="hm-mc-trade-line" style="margin-top:4px"><span class="hm-mc-trade-tag short">SHORT</span>' + c.shorts.join(', ') + '</div>';
       chip.setAttribute('data-tip-title', c.name);
       chip.setAttribute('data-tip', tipBody);
-      plane.appendChild(chip);
-    });
-
-    /* Inner transitional-cell labels — positioned toward the centre of each
-       quadrant. These are the trades that perform when the regime is
-       partially in transition (marker near the axes). Hover for the LONG
-       list — only longs are shown because the 2024 image presents these
-       as additive tilts, not as paired long/short trades. */
-    MC_INNER_CELLS.forEach(function (c) {
-      var innerClass = 'inner-' + (c.row === 0 ? 't' : 'b') + (c.col === 0 ? 'l' : 'r');
-      var chip = document.createElement('span');
-      chip.className = 'hm-mc-inner hm-metric-tip ' + innerClass;
-      chip.textContent = c.name;
-      var innerTip = '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>' + c.longs.join(', ') + '</div>';
-      chip.setAttribute('data-tip-title', c.name + ' · transitional');
-      chip.setAttribute('data-tip', innerTip);
       plane.appendChild(chip);
     });
 
