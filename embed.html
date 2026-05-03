@@ -3050,11 +3050,13 @@
     justify-content: space-between;
     gap: 8px;
     padding: 6px 12px;
-    border-bottom: 1px solid var(--hm-border);
+    /* No row-bottom border — it shows as a 1px line of --hm-border
+       between adjacent heat-painted backgrounds, reading as a stray
+       gap inside the panel. Heat-paint already separates rows. */
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
-  .hm-app .hm-factors-row:last-child { border-bottom: none; }
+  /* hm-factors-row no longer has a border-bottom; last-child rule retired. */
   @media (hover: hover) {
     .hm-app .hm-factors-row:hover {
       outline: 2px solid var(--hm-gold);
@@ -3124,7 +3126,6 @@
     justify-content: space-between;
     gap: 8px;
     padding: 6px 12px;
-    border-bottom: 1px solid var(--hm-border);
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
@@ -3221,7 +3222,6 @@
     justify-content: space-between;
     gap: 8px;
     padding: 6px 12px;
-    border-bottom: 1px solid var(--hm-border);
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
@@ -3291,7 +3291,6 @@
     justify-content: space-between;
     gap: 8px;
     padding: 6px 12px;
-    border-bottom: 1px solid var(--hm-border);
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
@@ -3361,7 +3360,6 @@
     justify-content: space-between;
     gap: 8px;
     padding: 6px 12px;
-    border-bottom: 1px solid var(--hm-border);
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
@@ -3939,6 +3937,17 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M3 12a9 9 0 1 0 3-6.7"/>
           <polyline points="3 4 3 10 9 10"/>
+        </svg>
+      </button>
+      <!-- Unpin All: returns every pinned panel back to its place in the
+           grid. Hidden when nothing is pinned (set via JS on init + after
+           every pin/unpin). Same icon as the per-panel pin button but
+           with a slash through it to read as "unpin". -->
+      <button class="hm-btn" id="hm-unpin-all" type="button" aria-label="Unpin all" title="Unpin all" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="17" x2="12" y2="22"/>
+          <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+          <line x1="3" y1="3" x2="21" y2="21"/>
         </svg>
       </button>
       <div class="hm-info-wrap">
@@ -9686,6 +9695,26 @@
     });
   })();
 
+  /* Unpin-all button (topbar) — returns every pinned panel to the grid.
+     Visibility is driven by getPinned().length so the button is hidden
+     when nothing is pinned (avoids dead chrome in the topbar). */
+  function refreshUnpinAllVisibility() {
+    var btn = document.getElementById('hm-unpin-all');
+    if (!btn) return;
+    btn.hidden = getPinned().length === 0;
+  }
+  (function () {
+    var ubtn = document.getElementById('hm-unpin-all');
+    if (!ubtn) return;
+    ubtn.addEventListener('click', function () {
+      /* Snapshot the list since unpinItemById mutates localStorage. */
+      var ids = getPinned().slice();
+      ids.forEach(function (id) { unpinItemById(id); });
+      refreshUnpinAllVisibility();
+      if (typeof refreshAllPinIcons === 'function') refreshAllPinIcons();
+    });
+  })();
+
   function initGridStack() {
     if (!window.GridStack) {
       console.warn('[gridstack] library not loaded — skipping layout init');
@@ -10150,8 +10179,14 @@
        `% - 12px` offset accounts for the pinned-bar's gap between items. */
     var pct = Math.max(20, Math.min(100, Math.round((origW / 24) * 100)));
     item.style.width = 'max(240px, ' + pct + '% - 12px)';
-    /* Height: literal pixel height from the user's gs-h. */
-    item.style.height = origH + 'px';
+    /* Height: cap at the user's gs-h (so a tall heatmap still scrolls
+       inside the bar instead of swallowing the page) but let panels
+       SHRINK to natural content height when their content is shorter
+       than gs-h. Otherwise pinned panels show a large dead band of
+       empty space below their content (their grid cells are sized for
+       headroom, not measured to fit). */
+    item.style.height = '';
+    item.style.maxHeight = origH + 'px';
     var bar = document.getElementById('hm-pinned-bar');
     if (bar) bar.appendChild(item);
     /* Persist if not already there. */
@@ -10160,6 +10195,7 @@
       pinned.push(id);
       savePinned(pinned);
     }
+    if (typeof refreshUnpinAllVisibility === 'function') refreshUnpinAllVisibility();
   }
 
   /* Toggle a per-panel info popup. Renderers populate
@@ -10229,15 +10265,17 @@
     var h = parseInt(item.dataset.unpinH || item.getAttribute('gs-h') || (4 * GS_SCALE), 10);
     item.setAttribute('gs-w', w);
     item.setAttribute('gs-h', h);
-    /* Clear the inline width + height we set in pinItemById so Gridstack
-       can size the item by gs-w/gs-h again. */
+    /* Clear the inline width + height + maxHeight we set in pinItemById
+       so Gridstack can size the item by gs-w/gs-h again. */
     item.style.width = '';
     item.style.height = '';
+    item.style.maxHeight = '';
     var grid = document.getElementById('hm-grid');
     if (grid) grid.appendChild(item);
     try { gridInstance.makeWidget(item); } catch (e) {}
     var pinned = getPinned().filter(function (p) { return p !== id; });
     savePinned(pinned);
+    if (typeof refreshUnpinAllVisibility === 'function') refreshUnpinAllVisibility();
   }
 
   function restorePinnedFromStorage() {
