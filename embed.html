@@ -461,33 +461,15 @@
   .hm-app .grid-stack-item-content {
     z-index: 1;
   }
-  /* Economic Indicators: no internal scroll. The fitToContent pass
-     on init sizes the panel exactly to content height, and maxH
-     gets locked there, so the panel grows tall enough to show
-     every card without ever needing a scrollbar. overflow: visible
-     prevents a scrollbar from appearing when the panel is briefly
-     under-sized during async paint. The outer gold outline uses a
-     high-z-index ::after pseudo-element (instead of the default
-     box-shadow) so that any inner content overflowing the cell
-     paints UNDER the outline rather than over it — fixes the
-     "border missing on resize" bug while keeping the scroll-free
-     behavior. */
+  /* Economic Indicators: cell is height-locked to content via JS
+     (fitEconomy runs on init + resize + content reflow), so
+     overflow doesn't matter for normal use — but use 'hidden' as
+     a safety so a transient mismatch can never overflow into the
+     gutter or paint over the outer gold outline. The standard
+     box-shadow + 5px radius from the main grid rule applies (no
+     special border treatment needed). */
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content {
-    overflow: visible;
-    position: relative;
-    box-shadow: none;
-  }
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content::after {
-    content: "";
-    position: absolute;
-    top: -1px;
-    left: -1px;
-    right: -1px;
-    bottom: -1px;
-    border: 1px solid var(--hm-panel-outline);
-    border-radius: calc(var(--hm-r) + 1px);
-    pointer-events: none;
-    z-index: 9999;
+    overflow: hidden;
   }
   /* No north handle — top edge is drag-only via the header. */
 
@@ -4196,11 +4178,10 @@
           <div class="grid-stack-item" gs-id="hm-calendar"        gs-x="20" gs-y="0"   gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-stylefactor"     gs-x="0"  gs-y="4"   gs-w="6"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-factors"         gs-x="0"  gs-y="14"  gs-w="7"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-          <!-- gs-size-to-content tells gridstack to auto-size this item's
-               height to its content on every resize, so the cell always
-               matches the content's natural height (no overflow into the
-               gutter, resize handles always at the actual visual edge). -->
-          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="8"  gs-y="14"  gs-w="4"  gs-h="22" gs-size-to-content="true"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <!-- Height auto-tracked to content via JS fitEconomy() — see
+               below. Cell stays exactly content-sized so resize handles
+               sit at the visible edge and no overflow eats the gutter. -->
+          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="8"  gs-y="14"  gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="12" gs-y="24"  gs-w="8"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-commodities"     gs-x="16" gs-y="24"  gs-w="8"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-country-etfs"    gs-x="0"  gs-y="28"  gs-w="8"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
@@ -10563,34 +10544,52 @@
             });
           }, 800);
 
-          /* Economic Indicators — auto-track content size on width
-             reflow. gs-size-to-content="true" handles gridstack's own
-             resize events; this ResizeObserver covers the case where
-             content height changes WITHOUT a gridstack resize (e.g.
-             window resize triggering CSS container queries). Observes
-             the inner panel-wrap so we react to content reflow but
-             NOT to cell-h changes (which would loop). */
+          /* Economic Indicators — height auto-locked to content. Cell
+             stays exactly content-sized so resize handles sit at the
+             visible bottom edge and no overflow eats the gridstack
+             gutter. Debounced to coalesce multiple events (init +
+             resizestop + window resize + content reflow). */
+          var fitEconomyTimer = null;
+          window._fitEconomy = function fitEconomy() {
+            if (fitEconomyTimer) clearTimeout(fitEconomyTimer);
+            fitEconomyTimer = setTimeout(function () {
+              fitEconomyTimer = null;
+              var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-economy"]');
+              if (!item || !window.gridInstance) return;
+              try {
+                /* Fully unlock so resizeToContent can grow OR shrink. */
+                window.gridInstance.update(item, { minH: 1, maxH: 9999 });
+                window.gridInstance.resizeToContent(item);
+                var node = item.gridstackNode;
+                if (node) {
+                  /* Re-lock so user can't drag-resize height to a value
+                     that mismatches content (which would cause overflow
+                     or empty space). */
+                  window.gridInstance.update(item, { minH: node.h, maxH: node.h });
+                }
+              } catch (e) {}
+            }, 60);
+          };
+          /* Re-fit on user resize end (any panel — width changes
+             elsewhere can shift the economy cell's available width). */
+          window.gridInstance.on('resizestop', function () { window._fitEconomy(); });
+          /* Re-fit on window resize (viewport change might trigger
+             container-query reflow inside the panel). */
+          window.addEventListener('resize', function () { window._fitEconomy(); });
+          /* Belt-and-suspenders: ResizeObserver on the inner wrap so
+             any content-driven height change (data refresh, theme
+             change, etc.) re-fits without needing a known event. */
           var econItem = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-economy"]');
           if (econItem && window.ResizeObserver) {
             var econContent = econItem.querySelector('.grid-stack-item-content');
             var econWrap = econContent && econContent.firstElementChild;
             if (econWrap) {
-              var roLastH = 0;
-              var econRO = new ResizeObserver(function () {
-                var natH = econWrap.scrollHeight;
-                if (Math.abs(natH - roLastH) < 3) return;
-                roLastH = natH;
-                var node = econItem.gridstackNode;
-                if (!node || !window.gridInstance) return;
-                if (Math.abs(natH - node.h) < 3) return;
-                try {
-                  window.gridInstance.update(econItem, { minH: 1, maxH: 9999 });
-                  window.gridInstance.update(econItem, { h: natH });
-                } catch (e) {}
-              });
-              econRO.observe(econWrap);
+              new ResizeObserver(function () { window._fitEconomy(); }).observe(econWrap);
             }
           }
+          /* Initial fit. Runs once after fitAll's setTimeout chain has
+             settled so we have the latest content height. */
+          window._fitEconomy();
         }
         fitAll();
         /* Apply the no-selection state once gridInstance is live: this
