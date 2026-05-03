@@ -424,6 +424,16 @@
     transition: none !important;
     animation: none !important;
   }
+  /* While ANY drag is in flight, kill transitions on every grid item.
+     Otherwise non-dragged neighbors animate (300ms default) into new
+     positions as they reflow around the drag — reads as lag when the
+     user drops into a gap and sees neighbors slowly slide. The body
+     class is toggled by dragstart/dragstop. */
+  body.hm-grid-dragging .hm-app .grid-stack > .grid-stack-item,
+  body.hm-grid-dragging .hm-app .grid-stack > .grid-stack-item * {
+    transition: none !important;
+    animation: none !important;
+  }
   /* Hint to the browser so the dragged item gets its own composite
      layer — paints don't have to rerasterize every cursor move. */
   .hm-app .grid-stack-item.hm-active-drag {
@@ -9972,11 +9982,16 @@
         var el = n && n.el ? n.el : (n && n.tagName ? n : null);
         if (el && el.classList) el.classList.add('hm-active-drag');
       });
+      /* Body-level flag → CSS disables transitions on ALL grid items
+         while the drag is in flight, so neighbors don't slowly slide
+         into reflow positions (reads as lag when dropping into gaps). */
+      document.body.classList.add('hm-grid-dragging');
     }
     function _activeDragOff() {
       document.querySelectorAll('.grid-stack-item.hm-active-drag').forEach(function (el) {
         el.classList.remove('hm-active-drag');
       });
+      document.body.classList.remove('hm-grid-dragging');
     }
     gridInstance.on('dragstart resizestart', _activeDragOn);
     gridInstance.on('dragstop resizestop',  _activeDragOff);
