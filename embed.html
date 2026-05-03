@@ -225,8 +225,8 @@
        cols across × 4 rows down → gs-w="12" gs-h="4" in the HTML. */
     background-color: transparent;
     background-image:
-      linear-gradient(to right, rgba(218, 165, 32, 0.20) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(218, 165, 32, 0.20) 1px, transparent 1px),
+      linear-gradient(to right, rgba(218, 165, 32, 0.09) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(218, 165, 32, 0.09) 1px, transparent 1px),
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='l' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85 0.55' numOctaves='2' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.54  0 0 0 0 0.48  0 0 0 0 0.36  0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E");
     background-size:
       calc(100% / 24) 100%,
@@ -238,8 +238,8 @@
   }
   .hm-app.dark .grid-stack {
     background-image:
-      linear-gradient(to right, rgba(218, 165, 32, 0.18) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(218, 165, 32, 0.18) 1px, transparent 1px),
+      linear-gradient(to right, rgba(218, 165, 32, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(218, 165, 32, 0.07) 1px, transparent 1px),
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='l' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85 0.55' numOctaves='2' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.10 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E");
   }
   /* High specificity to win against Gridstack's default rule. The cell
