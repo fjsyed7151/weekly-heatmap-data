@@ -9870,14 +9870,11 @@
          GS_SCALE (40) above to keep the visual layout identical. */
       cellHeight: 1,
       marginLeft: 8, marginRight: 8, marginTop: 8, marginBottom: 8,
-      /* float: false enables push-to-fit during drag: gridstack
-         shifts neighbors aside as the user drags through occupied
-         space, so the placeholder follows the cursor naturally
-         instead of refusing to update until the cursor reaches an
-         empty patch wide enough for the dragged item. Was 'true' to
-         preserve explicit gs-y gaps in the original 3-6-3 layout,
-         but the v33 packed layout doesn't depend on such gaps. */
-      float: false,
+      /* float: true preserves explicit gs-y positions (no auto-compact),
+         so users can drag a panel anywhere and leave empty space
+         above/below it. float:false forced grid compaction which made
+         vertical drags feel like swaps (couldn't place freely). */
+      float: true,
       alwaysShowResizeHandle: true,
       /* Resize from left, right, bottom, and bottom corners only. The top
          edge (and top corners) are reserved for the header — that's the
@@ -9890,14 +9887,12 @@
          distance:0 removes the ~5px drag-start threshold so drag engages
          instantly when you grab the header (no "stuck" feel). */
       draggable: { handle: '.hm-panel-header', distance: 0 },
-      /* animate:false — transitions on reflowing panels were the
-         residual cause of perceived drag lag (placeholder updates
-         couldn't keep up with cursor moves while neighbors slowly
-         slid into position). Instant snap > smooth-but-laggy reflow.
-         The .hm-active-drag CSS rules and the body.hm-grid-dragging
-         flag are kept as defense in depth in case animate is ever
-         re-enabled. */
-      animate: false,
+      /* animate:true (gridstack default ~300ms) so OTHER panels
+         reflowing around a drop slide smoothly into their new
+         positions. The actively-dragged item + the placeholder
+         keep transitions OFF (via .hm-active-drag CSS) for snappy
+         cursor tracking. */
+      animate: true,
       disableOneColumnMode: false,
       minRow: 1,
       /* Cap how far down panels can be dragged/resized. Default
