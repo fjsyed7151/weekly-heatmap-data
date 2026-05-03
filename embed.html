@@ -250,11 +250,12 @@
      content matches cell exactly so scrollbars stay hidden. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content {
     background: transparent;
-    /* 2px outline drawn OUTSIDE the box so it doesn't eat into content
-       area (border would push inner content in by 2px). box-shadow with
-       spread 2px + zero blur acts as an outset stroke that follows
-       border-radius. */
-    box-shadow: 0 0 0 2px var(--hm-panel-outline);
+    /* 1px outline drawn OUTSIDE the box so it doesn't eat into content
+       area (border would push inner content in by 1px). box-shadow with
+       spread 1px + zero blur acts as an outset stroke that follows
+       border-radius. Hairline weight reads as subtle panel chrome
+       rather than a heavy band between cells. */
+    box-shadow: 0 0 0 1px var(--hm-panel-outline);
     border-radius: var(--hm-r);
     overflow: auto;
     padding: 0;
