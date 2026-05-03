@@ -9888,13 +9888,8 @@
       /* Drag ONLY from the window-style header bar — prevents accidental
          drags when users interact with charts/tables inside panels.
          distance:0 removes the ~5px drag-start threshold so drag engages
-         instantly when you grab the header (no "stuck" feel).
-         helper:'clone' creates a lightweight DOM clone for the drag
-         visual so the actual panel (with its charts/tables/sparklines)
-         doesn't get repainted on every cursor tick — was the bottleneck
-         making drag feel laggy. The clone is just a static snapshot
-         that follows the cursor; the original stays put until drop. */
-      draggable: { handle: '.hm-panel-header', distance: 0, helper: 'clone' },
+         instantly when you grab the header (no "stuck" feel). */
+      draggable: { handle: '.hm-panel-header', distance: 0 },
       /* animate:false — transitions on reflowing panels were the
          residual cause of perceived drag lag (placeholder updates
          couldn't keep up with cursor moves while neighbors slowly
