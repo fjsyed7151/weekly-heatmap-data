@@ -149,11 +149,13 @@
   .hm-app .hm-pinned-bar:empty + .hm-pinned-bar-resizer {
     display: none;
   }
-  /* Drag handle to resize the pinned bar's max-height. Sits in normal
-     flow below the bar (not sticky — keeps the implementation simple
-     and avoids hardcoding bar height in CSS). User scrolls to the top
-     to drag-resize. Subtle 4px transparent strip; the gold accent
-     reveals on hover so the affordance is discoverable. */
+  /* Drag handle to resize the pinned bar's max-height. ALSO sticky,
+     so the user can resize at any scroll position — not only when
+     scrolled to the top. Sticky-top tracks the pinned bar's actual
+     rendered height via --hm-pinned-bar-actual-h, which JS updates
+     via ResizeObserver as items get pinned / unpinned / dragged.
+     Falls back to 0 (resizer pinned right under the topbar) when
+     the var hasn't been set yet so it never goes off-screen. */
   .hm-app .hm-pinned-bar-resizer {
     height: 4px;
     margin: -13px 0 12px 0;  /* pulls up over the bar's 12px bottom margin */
@@ -161,7 +163,8 @@
     cursor: ns-resize;
     transition: background 120ms;
     z-index: 49;
-    position: relative;
+    position: sticky;
+    top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px) + var(--hm-pinned-bar-actual-h, 0px) - 13px);
   }
   .hm-app .hm-pinned-bar-resizer:hover,
   .hm-app .hm-pinned-bar-resizer.is-dragging {
@@ -10108,6 +10111,26 @@
     }
   }
 
+  /* Keep --hm-pinned-bar-actual-h in sync with the pinned bar's
+     rendered height. The resizer's sticky-top offset uses this so it
+     always sits flush under the bar regardless of how many items are
+     pinned (or what max-height the user dragged it to). */
+  function _trackPinnedBarHeight() {
+    var bar = document.getElementById('hm-pinned-bar');
+    if (!bar) return;
+    function update() {
+      var h = bar.offsetHeight;  /* 0 when bar is :empty + display:none */
+      document.documentElement.style.setProperty('--hm-pinned-bar-actual-h', h + 'px');
+    }
+    if (window.ResizeObserver) {
+      new ResizeObserver(update).observe(bar);
+    } else {
+      /* Fallback: poll every 500ms in case ResizeObserver isn't available. */
+      setInterval(update, 500);
+    }
+    update();
+  }
+
   function _initPinnedBarResizer() {
     var resizer = document.getElementById('hm-pinned-bar-resizer');
     var bar = document.getElementById('hm-pinned-bar');
@@ -10143,6 +10166,7 @@
   }
   applyPinnedBarHeight();
   _initPinnedBarResizer();
+  _trackPinnedBarHeight();
 
   function getPinned() {
     try {
