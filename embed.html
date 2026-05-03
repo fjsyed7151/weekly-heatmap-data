@@ -9886,13 +9886,14 @@
          distance:0 removes the ~5px drag-start threshold so drag engages
          instantly when you grab the header (no "stuck" feel). */
       draggable: { handle: '.hm-panel-header', distance: 0 },
-      /* animate:true so OTHER panels reflowing around a drop slide
-         smoothly into their new positions. The actively-dragged item +
-         the placeholder need transitions OFF to track the cursor — that
-         is handled by adding/removing the .hm-active-drag class on the
-         dragged element via the dragstart/dragstop hooks below, which
-         dodges the guesswork of what GridStack v12 calls its drag class. */
-      animate: true,
+      /* animate:false — transitions on reflowing panels were the
+         residual cause of perceived drag lag (placeholder updates
+         couldn't keep up with cursor moves while neighbors slowly
+         slid into position). Instant snap > smooth-but-laggy reflow.
+         The .hm-active-drag CSS rules and the body.hm-grid-dragging
+         flag are kept as defense in depth in case animate is ever
+         re-enabled. */
+      animate: false,
       disableOneColumnMode: false,
       minRow: 1,
     }, '#hm-grid');
