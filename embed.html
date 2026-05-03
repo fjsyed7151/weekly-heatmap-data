@@ -10574,18 +10574,29 @@
               var content = item.querySelector('.grid-stack-item-content');
               var wrap = content && content.firstElementChild;
               if (!wrap) return;
-              /* Direct natural-height measurement instead of relying on
-                 gridstack.resizeToContent (which behaves inconsistently
-                 with our cellHeight: 1 + injected hm-panel-wrap). +2 is
-                 a tiny buffer so a sub-pixel mismatch doesn't trigger
-                 a scroll. */
+              /* Direct natural-height measurement on the panel-wrap. */
               var natH = wrap.scrollHeight + 2;
-              if (natH < 60) return;  /* not yet rendered */
+              if (natH < 60) return;
               var node = item.gridstackNode;
               if (!node) return;
               if (Math.abs(natH - node.h) < 3) return;
+              /* Three-step force-fit:
+                 1) Set inline style.height directly so the visual
+                    cell shrinks IMMEDIATELY, regardless of whether
+                    gridstack's internal update takes effect.
+                 2) Update gs-h attribute so any code reading the
+                    attribute (e.g. compact, save layout) sees the
+                    new value.
+                 3) Call gridstack.update so node.h and the layout
+                    engine know the new height — needed for items
+                    below to position correctly.
+                 We tried just step 3 but gridInstance.update wasn't
+                 shrinking the visible cell here (likely a quirk of
+                 cellHeight:1 + injected panel-wrap). Forcing all 3
+                 layers is reliable. */
               try {
-                window.gridInstance.update(item, { minH: 1, maxH: 9999 });
+                item.style.height = natH + 'px';
+                item.setAttribute('gs-h', natH);
                 window.gridInstance.update(item, { h: natH, minH: natH, maxH: natH });
               } catch (e) {}
             }, 60);
