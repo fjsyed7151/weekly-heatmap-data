@@ -984,8 +984,24 @@
     font-size: 10.5px;
     color: var(--hm-muted);
     margin-top: 2px;
-    text-align: right;
     font-variant-numeric: tabular-nums;
+    /* Flex row: anchor (Fed target / recession trigger / etc.) on
+       left, "5y monthly · as of [date]" on right. Wraps cleanly if
+       the popup is narrow. */
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .hm-app #hm-mtip .hm-mtip-anchor {
+    font-style: italic;
+    text-align: left;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .hm-app #hm-mtip .hm-mtip-meta-right {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
   .hm-app.dark #hm-mtip { box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
   .hm-app #hm-mtip.on { opacity: 1; }
@@ -5362,7 +5378,11 @@
       var html = '<div class="hm-mtip-title">' + title + '</div>' + text;
       if (showChart) {
         html += '<div class="hm-mtip-chart"><canvas></canvas></div>';
-        html += '<div class="hm-mtip-chart-meta">5y monthly &middot; as of ' + (econ.as_of || '') + '</div>';
+        var anchorTxt = econ && econ.anchor ? econ.anchor : '';
+        html += '<div class="hm-mtip-chart-meta">' +
+                  '<span class="hm-mtip-anchor">' + anchorTxt + '</span>' +
+                  '<span class="hm-mtip-meta-right">5y monthly &middot; as of ' + (econ.as_of || '') + '</span>' +
+                '</div>';
       }
       mtip.innerHTML = html;
       mtip.classList.toggle('with-chart', !!showChart);
@@ -6662,9 +6682,9 @@
       var arrowChar = noChange ? '\u2013' : (val > prev ? '\u25B2' : '\u25BC');
 
       var asOf = ind.as_of ? '<span style="color:var(--hm-muted);font-size:10px;margin-left:4px;white-space:nowrap">(' + ind.as_of + ')</span>' : '';
-      var anchor = ind.anchor
-        ? '<div class="hm-econ-anchor">' + ind.anchor + '</div>'
-        : '';
+      /* Anchor (Fed target / recession trigger / etc.) used to render
+         under each card; now lives only inside the hover popup's
+         chart-meta row to declutter the card grid. */
       card.innerHTML =
         '<div class="hm-econ-name">' + ind.name + asOf + '</div>' +
         '<div class="hm-econ-row">' +
@@ -6673,8 +6693,7 @@
             '<span class="hm-econ-arrow ' + arrowCls + '">' + arrowChar + '</span> ' +
             'prev ' + fmtPrev +
           '</div>' +
-        '</div>' +
-        anchor;
+        '</div>';
 
       return card;
     }
