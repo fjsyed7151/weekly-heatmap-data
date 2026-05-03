@@ -220,6 +220,7 @@
      content matches cell exactly so scrollbars stay hidden. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content {
     background: transparent;
+    border: 2px solid #F2DFB3;
     border-radius: var(--hm-r);
     overflow: auto;
     padding: 0;
@@ -379,14 +380,14 @@
      so its icons stay clickable even when a handle's hit zone overlaps. */
   .hm-app .grid-stack-item > .ui-resizable-handle { display: block; z-index: 0; }
   /* Push edge handles into the Gridstack inset, OUTSIDE the cell's
-     content area (where scrollbars live). Horizontal inset = 12px
-     (split equally between adjacent panels), vertical inset = 6px.
+     content area (where scrollbars live). Horizontal inset = 8px
+     (split equally between adjacent panels), vertical inset = 4px.
      Handles fill those gutters so they don't enter content space. */
-  .hm-app .grid-stack-item > .ui-resizable-e { right: 0; width: 12px; }
-  .hm-app .grid-stack-item > .ui-resizable-w { left: 0; width: 12px; }
-  .hm-app .grid-stack-item > .ui-resizable-s { bottom: 0; height: 6px; }
-  .hm-app .grid-stack-item > .ui-resizable-se { right: 0; bottom: 0; width: 12px; height: 6px; }
-  .hm-app .grid-stack-item > .ui-resizable-sw { left: 0; bottom: 0; width: 12px; height: 6px; }
+  .hm-app .grid-stack-item > .ui-resizable-e { right: 0; width: 8px; }
+  .hm-app .grid-stack-item > .ui-resizable-w { left: 0; width: 8px; }
+  .hm-app .grid-stack-item > .ui-resizable-s { bottom: 0; height: 4px; }
+  .hm-app .grid-stack-item > .ui-resizable-se { right: 0; bottom: 0; width: 8px; height: 4px; }
+  .hm-app .grid-stack-item > .ui-resizable-sw { left: 0; bottom: 0; width: 8px; height: 4px; }
   /* Force a stacking context on the content so the header (z-index: 2)
      wins over the resize handle siblings (z-index: 0). */
   .hm-app .grid-stack-item-content {
@@ -9478,7 +9479,7 @@
          rounding overshoot. HTML gs-h/gs-y values were pre-scaled by
          GS_SCALE (40) above to keep the visual layout identical. */
       cellHeight: 1,
-      marginLeft: 12, marginRight: 12, marginTop: 6, marginBottom: 6,
+      marginLeft: 8, marginRight: 8, marginTop: 4, marginBottom: 4,
       /* float: true preserves explicit gs-y positions (no auto-compact).
          Critical here because our 3-6-3 default has gaps below the
          sidebar columns; with float: false those gaps would pull main
