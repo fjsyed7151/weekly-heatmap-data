@@ -181,6 +181,14 @@
     position: static !important;
     height: 100%;
     overflow: auto;
+    /* Mirror the gold outer outline that grid-stack panels carry, so
+       pinning a panel doesn't visually strip its chrome. Same 1px
+       box-shadow + border-radius as the main grid rule above. */
+    box-shadow: 0 0 0 1px var(--hm-panel-outline);
+    border-radius: var(--hm-r);
+    background: transparent;
+    padding: 0;
+    box-sizing: border-box;
   }
 
   /* Right-click context menu on grid panels. */
