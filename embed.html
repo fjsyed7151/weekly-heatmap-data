@@ -9694,8 +9694,13 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v36';
-  var GS_SCALE = 40;
+  var LAYOUT_KEY = 'hm-grid-layout-v37';
+  /* GS_SCALE × GS_CELL_H = px per HTML gs-h unit. Was 40×1 = 40 px/unit
+     (1px snap, super sensitive drag). Now 4×10 = 40 px/unit (10px
+     snap, forgiving drag). Visual sizes are identical; only the
+     drag/resize snap granularity changes. */
+  var GS_SCALE = 4;
+  var GS_CELL_H = 10;
   var gridInstance = null;
 
   /* Snapshot of each panel's settled cell h taken AFTER the initial fitAll
@@ -9864,11 +9869,14 @@
          grid edge alignment. All HTML default gs-x/gs-w values are
          pre-multiplied × 2 to keep the visual layout identical. */
       column: 24,
-      /* 1px row resolution. With cellHeight: 1, fitToContent's
-         ceil((wrap+inset)/cellHeight) gives EXACT cell heights — no
-         rounding overshoot. HTML gs-h/gs-y values were pre-scaled by
-         GS_SCALE (40) above to keep the visual layout identical. */
-      cellHeight: 1,
+      /* 10px row resolution. Together with GS_SCALE=4, gives the
+         same 40px-per-HTML-unit visual layout as before, but drag/
+         resize snap on 10px boundaries instead of 1px — much more
+         forgiving for the user (was 'almost-pixel-perfect' to land
+         a panel in a target spot). fitToContent rounds up to the
+         nearest 10px, so panels may be up to 9px taller than
+         strict content height (worth it for drag UX). */
+      cellHeight: 10,
       marginLeft: 8, marginRight: 8, marginTop: 8, marginBottom: 8,
       /* float: false enables push-to-fit during drag: gridstack
          shifts neighbors aside as the user drags through occupied
@@ -9902,11 +9910,12 @@
       minRow: 1,
       /* Cap how far down panels can be dragged/resized. Default
          layout's deepest panel ends at gs-y(130) + gs-h(22) = 152
-         (HTML units), scaled by GS_SCALE(40) = 6080 internal cells.
-         8000 leaves ~1900 cells of headroom for users who enlarge
-         tall panels (heatmap, sector chart). Without this cap, users
-         can drag a panel to gs-y=99999 and the grid expands forever. */
-      maxRow: 8000,
+         (HTML units), scaled by GS_SCALE(4) = 608 internal cells.
+         800 leaves ~190 cells (= 1900px at cellHeight:10) of
+         headroom for users who enlarge tall panels (heatmap,
+         sector chart). Without this cap, users can drag a panel to
+         gs-y=99999 and the grid expands forever. */
+      maxRow: 800,
     }, '#hm-grid');
     /* Drag + resize are always enabled — the narrow header and hit-zoned
        resize edges make accidental manipulation unlikely. */
@@ -10185,7 +10194,7 @@
      bottom padding = 184px. Lets a user shrink the bar to exactly
      fit one Index Snapshot card without clipping. */
   var PINNED_BAR_H_KEY = 'hm-pinned-bar-h';
-  var PINNED_BAR_MIN_PX = (4 * GS_SCALE) + 24;
+  var PINNED_BAR_MIN_PX = (4 * GS_SCALE * GS_CELL_H) + 24;
 
   function applyPinnedBarHeight() {
     var bar = document.getElementById('hm-pinned-bar');
@@ -10254,12 +10263,12 @@
     var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
     /* Save current size so we can restore on unpin. node.w is in grid
-       columns (24-col grid). node.h is in cells; with cellHeight:1 and
-       gs-h pre-scaled by GS_SCALE, node.h equals the rendered pixel
-       height — perfect for inline `height: Xpx` on the pinned item. */
+       columns (24-col grid). node.h is in cells (cellHeight=GS_CELL_H);
+       multiply by GS_CELL_H to get pixel height for inline style. */
     var node = item.gridstackNode;
     var origW = (node && node.w) || parseInt(item.getAttribute('gs-w') || 24, 10);
     var origH = (node && node.h) || parseInt(item.getAttribute('gs-h') || (4 * GS_SCALE), 10);
+    var origHPx = origH * GS_CELL_H;
     if (node) {
       item.dataset.unpinW = node.w;
       item.dataset.unpinH = node.h;
@@ -10284,7 +10293,7 @@
        empty space below their content (their grid cells are sized for
        headroom, not measured to fit). */
     item.style.height = '';
-    item.style.maxHeight = origH + 'px';
+    item.style.maxHeight = origHPx + 'px';
     var bar = document.getElementById('hm-pinned-bar');
     if (bar) bar.appendChild(item);
     /* Persist if not already there. */
