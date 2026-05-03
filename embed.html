@@ -9870,12 +9870,14 @@
          GS_SCALE (40) above to keep the visual layout identical. */
       cellHeight: 1,
       marginLeft: 8, marginRight: 8, marginTop: 8, marginBottom: 8,
-      /* float: true preserves explicit gs-y positions (no auto-compact).
-         Critical here because our 3-6-3 default has gaps below the
-         sidebar columns; with float: false those gaps would pull main
-         panels up into them, breaking the layout. Drag-drop still works
-         with float: true — Gridstack pushes other items aside on drop. */
-      float: true,
+      /* float: false enables push-to-fit during drag: gridstack
+         shifts neighbors aside as the user drags through occupied
+         space, so the placeholder follows the cursor naturally
+         instead of refusing to update until the cursor reaches an
+         empty patch wide enough for the dragged item. Was 'true' to
+         preserve explicit gs-y gaps in the original 3-6-3 layout,
+         but the v33 packed layout doesn't depend on such gaps. */
+      float: false,
       alwaysShowResizeHandle: true,
       /* Resize from left, right, bottom, and bottom corners only. The top
          edge (and top corners) are reserved for the header — that's the
