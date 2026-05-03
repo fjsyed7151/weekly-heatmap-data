@@ -461,21 +461,29 @@
   .hm-app .grid-stack-item-content {
     z-index: 1;
   }
-  /* Economic Indicators: cell is height-locked to content via JS
-     (fitEconomy runs on init + resize + content reflow), so
-     overflow doesn't matter for normal use — but use 'hidden' as
-     a safety so a transient mismatch can never overflow into the
-     gutter or paint over the outer gold outline. The standard
-     box-shadow + 5px radius from the main grid rule applies (no
-     special border treatment needed). */
+  /* Economic Indicators: overflow: visible so no scrollbar can ever
+     appear (per user spec). The z-index ::after pseudo replaces the
+     default box-shadow outline for this panel — pseudo paints OVER
+     overflowing content, so the gold outline stays intact even if
+     content briefly overflows during async paint. */
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content {
-    overflow: hidden;
+    overflow: visible;
+    position: relative;
+    box-shadow: none;
+  }
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content::after {
+    content: "";
+    position: absolute;
+    top: -1px; left: -1px; right: -1px; bottom: -1px;
+    border: 1px solid var(--hm-panel-outline);
+    border-radius: calc(var(--hm-r) + 1px);
+    pointer-events: none;
+    z-index: 9999;
   }
   /* Hide the S / SE / SW resize handles on hm-economy. Height is
-     auto-tracked to content (fitEconomy), so user-driven height
-     resize is meaningless — and previously caused glitching as
-     gridstack snapped back against the minH=maxH lock. Width
-     handles (E / W) stay live so the user can still resize width. */
+     auto-tracked to content; user-driven height resize is
+     meaningless and previously caused glitching. Width handles
+     (E / W) stay live so the user can still resize width. */
   .hm-app .grid-stack-item[gs-id="hm-economy"] > .ui-resizable-s,
   .hm-app .grid-stack-item[gs-id="hm-economy"] > .ui-resizable-se,
   .hm-app .grid-stack-item[gs-id="hm-economy"] > .ui-resizable-sw {
@@ -10555,67 +10563,37 @@
             });
           }, 800);
 
-          /* Economic Indicators — height auto-locked to content. Cell
-             stays exactly content-sized so resize handles sit at the
-             visible bottom edge and no overflow eats the gridstack
-             gutter. Debounced to coalesce multiple events. The
-             gridResizing flag suppresses mid-drag re-fits so calls to
-             gridInstance.update() never interrupt an active drag (was
-             the cause of the visible glitching during resize). */
-          var fitEconomyTimer = null;
+          /* Economic Indicators — re-run gridstack's own
+             resizeToContent on every event that could change the
+             content's natural height. resizeToContent is the same
+             API that successfully sizes every other panel on init;
+             we just need to call it again whenever the panel might
+             need to re-fit (its container-query layout means content
+             height depends on width). gridResizing flag suppresses
+             mid-drag fits so gridstack.update() never interrupts an
+             active drag. */
           var gridResizing = false;
+          var fitEcoTimer = null;
           window._fitEconomy = function fitEconomy() {
             if (gridResizing) return;
-            if (fitEconomyTimer) clearTimeout(fitEconomyTimer);
-            fitEconomyTimer = setTimeout(function () {
-              fitEconomyTimer = null;
+            if (fitEcoTimer) clearTimeout(fitEcoTimer);
+            fitEcoTimer = setTimeout(function () {
+              fitEcoTimer = null;
               var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-economy"]');
               if (!item || !window.gridInstance) return;
-              var content = item.querySelector('.grid-stack-item-content');
-              var wrap = content && content.firstElementChild;
-              if (!wrap) return;
-              /* Direct natural-height measurement on the panel-wrap. */
-              var natH = wrap.scrollHeight + 2;
-              if (natH < 60) return;
-              var node = item.gridstackNode;
-              if (!node) return;
-              if (Math.abs(natH - node.h) < 3) return;
-              /* Three-step force-fit:
-                 1) Set inline style.height directly so the visual
-                    cell shrinks IMMEDIATELY, regardless of whether
-                    gridstack's internal update takes effect.
-                 2) Update gs-h attribute so any code reading the
-                    attribute (e.g. compact, save layout) sees the
-                    new value.
-                 3) Call gridstack.update so node.h and the layout
-                    engine know the new height — needed for items
-                    below to position correctly.
-                 We tried just step 3 but gridInstance.update wasn't
-                 shrinking the visible cell here (likely a quirk of
-                 cellHeight:1 + injected panel-wrap). Forcing all 3
-                 layers is reliable. */
               try {
-                item.style.height = natH + 'px';
-                item.setAttribute('gs-h', natH);
-                window.gridInstance.update(item, { h: natH, minH: natH, maxH: natH });
+                /* Unlock so resizeToContent can grow OR shrink. */
+                window.gridInstance.update(item, { minH: 1, maxH: 9999 });
+                window.gridInstance.resizeToContent(item);
               } catch (e) {}
-            }, 60);
+            }, 50);
           };
-          /* Track active resize/drag to suppress fits while one is in
-             flight — fits ONLY fire once the drag stops. */
           window.gridInstance.on('resizestart dragstart', function () { gridResizing = true; });
           window.gridInstance.on('resizestop  dragstop',  function () {
             gridResizing = false;
             setTimeout(window._fitEconomy, 80);
           });
-          /* Re-fit on window resize (viewport change might trigger
-             container-query reflow inside the panel). */
           window.addEventListener('resize', function () { window._fitEconomy(); });
-          /* Belt-and-suspenders: ResizeObserver on the inner wrap so
-             any content-driven height change (data refresh, theme
-             change, etc.) re-fits without needing a known event.
-             Gated by gridResizing so mid-drag width changes don't
-             trigger update() calls that would interrupt the drag. */
           var econItem = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-economy"]');
           if (econItem && window.ResizeObserver) {
             var econContent = econItem.querySelector('.grid-stack-item-content');
@@ -10624,13 +10602,14 @@
               new ResizeObserver(function () { window._fitEconomy(); }).observe(econWrap);
             }
           }
-          /* Initial fit. Runs once after fitAll's setTimeout chain has
-             settled so we have the latest content height. Plus a
-             delayed safety re-fit at 1500ms in case async-painted
-             content (charts, fonts, etc.) shifts the natural height
-             after the initial measurement. */
+          /* Multi-stage fit so async-painted content (Chart.js charts,
+             web fonts, container-query reflow) all get a final pass
+             after they settle. Each stage triggers the same debounced
+             resizeToContent call. */
           window._fitEconomy();
-          setTimeout(window._fitEconomy, 1500);
+          setTimeout(window._fitEconomy, 200);
+          setTimeout(window._fitEconomy, 800);
+          setTimeout(window._fitEconomy, 1800);
         }
         fitAll();
         /* Apply the no-selection state once gridInstance is live: this
