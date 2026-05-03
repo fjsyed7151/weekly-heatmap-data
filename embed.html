@@ -10036,17 +10036,24 @@
         });
       });
 
-      /* Economic Indicators is height-locked to content. When the user
-         resizes its WIDTH, content reflows and its natural height
-         changes — re-fit gs-h to the new content height and re-lock
-         minH/maxH there so it never needs a scrollbar. setTimeout
-         lets the DOM reflow first so resizeToContent measures the
-         post-reflow scrollHeight. */
+      /* Economic Indicators is height-locked to content. When the
+         user resizes its WIDTH, content reflows and its natural
+         height changes — re-fit gs-h to the new content height
+         and re-lock minH/maxH there so it never needs a
+         scrollbar. setTimeout lets the DOM reflow first so
+         resizeToContent measures the post-reflow scrollHeight. */
       if (el && el.getAttribute && el.getAttribute('gs-id') === 'hm-economy') {
         setTimeout(function () {
           try {
-            /* Unlock so resizeToContent can grow OR shrink the cell. */
-            gridInstance.update(el, { minH: 1 });
+            /* Unlock BOTH minH and maxH so resizeToContent can
+               grow OR shrink the cell freely. The previous fix
+               only unlocked minH, leaving maxH capped at the OLD
+               content height — so when the user resized wider
+               (content got shorter) the cell couldn't shrink past
+               the cap, and when narrower (content got taller) the
+               cell couldn't grow past the cap. Both directions
+               now refit. */
+            gridInstance.update(el, { minH: 1, maxH: 9999 });
             gridInstance.resizeToContent(el);
             var node = el.gridstackNode;
             if (node) {
