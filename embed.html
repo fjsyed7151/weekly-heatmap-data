@@ -471,6 +471,17 @@
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content {
     overflow: hidden;
   }
+  /* Hide the S / SE / SW resize handles on hm-economy. Height is
+     auto-tracked to content (fitEconomy), so user-driven height
+     resize is meaningless — and previously caused glitching as
+     gridstack snapped back against the minH=maxH lock. Width
+     handles (E / W) stay live so the user can still resize width. */
+  .hm-app .grid-stack-item[gs-id="hm-economy"] > .ui-resizable-s,
+  .hm-app .grid-stack-item[gs-id="hm-economy"] > .ui-resizable-se,
+  .hm-app .grid-stack-item[gs-id="hm-economy"] > .ui-resizable-sw {
+    display: none !important;
+    pointer-events: none !important;
+  }
   /* No north handle — top edge is drag-only via the header. */
 
   @media (max-width: 1100px) {
@@ -10547,10 +10558,14 @@
           /* Economic Indicators — height auto-locked to content. Cell
              stays exactly content-sized so resize handles sit at the
              visible bottom edge and no overflow eats the gridstack
-             gutter. Debounced to coalesce multiple events (init +
-             resizestop + window resize + content reflow). */
+             gutter. Debounced to coalesce multiple events. The
+             gridResizing flag suppresses mid-drag re-fits so calls to
+             gridInstance.update() never interrupt an active drag (was
+             the cause of the visible glitching during resize). */
           var fitEconomyTimer = null;
+          var gridResizing = false;
           window._fitEconomy = function fitEconomy() {
+            if (gridResizing) return;
             if (fitEconomyTimer) clearTimeout(fitEconomyTimer);
             fitEconomyTimer = setTimeout(function () {
               fitEconomyTimer = null;
@@ -10570,15 +10585,21 @@
               } catch (e) {}
             }, 60);
           };
-          /* Re-fit on user resize end (any panel — width changes
-             elsewhere can shift the economy cell's available width). */
-          window.gridInstance.on('resizestop', function () { window._fitEconomy(); });
+          /* Track active resize/drag to suppress fits while one is in
+             flight — fits ONLY fire once the drag stops. */
+          window.gridInstance.on('resizestart dragstart', function () { gridResizing = true; });
+          window.gridInstance.on('resizestop  dragstop',  function () {
+            gridResizing = false;
+            setTimeout(window._fitEconomy, 80);
+          });
           /* Re-fit on window resize (viewport change might trigger
              container-query reflow inside the panel). */
           window.addEventListener('resize', function () { window._fitEconomy(); });
           /* Belt-and-suspenders: ResizeObserver on the inner wrap so
              any content-driven height change (data refresh, theme
-             change, etc.) re-fits without needing a known event. */
+             change, etc.) re-fits without needing a known event.
+             Gated by gridResizing so mid-drag width changes don't
+             trigger update() calls that would interrupt the drag. */
           var econItem = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-economy"]');
           if (econItem && window.ResizeObserver) {
             var econContent = econItem.querySelector('.grid-stack-item-content');
