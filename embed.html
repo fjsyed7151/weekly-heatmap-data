@@ -4196,7 +4196,11 @@
           <div class="grid-stack-item" gs-id="hm-calendar"        gs-x="20" gs-y="0"   gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-stylefactor"     gs-x="0"  gs-y="4"   gs-w="6"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-factors"         gs-x="0"  gs-y="14"  gs-w="7"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="8"  gs-y="14"  gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <!-- gs-size-to-content tells gridstack to auto-size this item's
+               height to its content on every resize, so the cell always
+               matches the content's natural height (no overflow into the
+               gutter, resize handles always at the actual visual edge). -->
+          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="8"  gs-y="14"  gs-w="4"  gs-h="22" gs-size-to-content="true"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="12" gs-y="24"  gs-w="8"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-commodities"     gs-x="16" gs-y="24"  gs-w="8"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-country-etfs"    gs-x="0"  gs-y="28"  gs-w="8"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
@@ -10558,6 +10562,35 @@
               if (id) INITIAL_H[id] = node.h;
             });
           }, 800);
+
+          /* Economic Indicators — auto-track content size on width
+             reflow. gs-size-to-content="true" handles gridstack's own
+             resize events; this ResizeObserver covers the case where
+             content height changes WITHOUT a gridstack resize (e.g.
+             window resize triggering CSS container queries). Observes
+             the inner panel-wrap so we react to content reflow but
+             NOT to cell-h changes (which would loop). */
+          var econItem = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-economy"]');
+          if (econItem && window.ResizeObserver) {
+            var econContent = econItem.querySelector('.grid-stack-item-content');
+            var econWrap = econContent && econContent.firstElementChild;
+            if (econWrap) {
+              var roLastH = 0;
+              var econRO = new ResizeObserver(function () {
+                var natH = econWrap.scrollHeight;
+                if (Math.abs(natH - roLastH) < 3) return;
+                roLastH = natH;
+                var node = econItem.gridstackNode;
+                if (!node || !window.gridInstance) return;
+                if (Math.abs(natH - node.h) < 3) return;
+                try {
+                  window.gridInstance.update(econItem, { minH: 1, maxH: 9999 });
+                  window.gridInstance.update(econItem, { h: natH });
+                } catch (e) {}
+              });
+              econRO.observe(econWrap);
+            }
+          }
         }
         fitAll();
         /* Apply the no-selection state once gridInstance is live: this
