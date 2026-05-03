@@ -132,6 +132,37 @@
   .hm-app .hm-pinned-bar:empty {
     display: none;
   }
+  /* Hide the resizer when the bar is empty — nothing to resize. The :has
+     check stays modern-evergreen-only; older browsers just see the
+     resizer above empty space, which is harmless. */
+  .hm-app .hm-pinned-bar:empty + .hm-pinned-bar-resizer {
+    display: none;
+  }
+  /* Drag handle to resize the pinned bar's max-height. Sits in normal
+     flow below the bar (not sticky — keeps the implementation simple
+     and avoids hardcoding bar height in CSS). User scrolls to the top
+     to drag-resize. Subtle 4px transparent strip; the gold accent
+     reveals on hover so the affordance is discoverable. */
+  .hm-app .hm-pinned-bar-resizer {
+    height: 4px;
+    margin: -13px 0 12px 0;  /* pulls up over the bar's 12px bottom margin */
+    background: transparent;
+    cursor: ns-resize;
+    transition: background 120ms;
+    z-index: 49;
+    position: relative;
+  }
+  .hm-app .hm-pinned-bar-resizer:hover,
+  .hm-app .hm-pinned-bar-resizer.is-dragging {
+    background: var(--hm-panel-outline);
+  }
+  /* While dragging, kill text selection on the page so cursor doesn't
+     turn into the I-beam mid-drag. */
+  body.hm-pinned-bar-resizing,
+  body.hm-pinned-bar-resizing * {
+    user-select: none !important;
+    cursor: ns-resize !important;
+  }
   /* Override Gridstack's absolute positioning when an item lives in the
      pinned bar — let it flow naturally. Width AND height are set inline
      at pin time from the user's last grid size so a pinned panel keeps
@@ -3879,8 +3910,11 @@
            else. Heat map + metrics chart stay OUTSIDE the grid below. -->
       <div class="hm-main">
         <!-- Pinned-to-top bar. Sticky below the topbar. Right-click any panel →
-             "Pin to top" moves it here; "Unpin" sends it back to the grid. -->
+             "Pin to top" moves it here; "Unpin" sends it back to the grid.
+             The resizer below lets the user drag the bar's max-height to
+             give pinned panels more (or less) screen real estate. -->
         <div class="hm-pinned-bar" id="hm-pinned-bar"></div>
+        <div class="hm-pinned-bar-resizer" id="hm-pinned-bar-resizer" title="Drag to resize pinned bar"></div>
         <!-- Custom context menu for grid panels. Hidden by default. -->
         <div class="hm-context-menu" id="hm-context-menu" hidden>
           <button class="hm-context-item" data-action="toggle-pin" type="button"></button>
@@ -9398,6 +9432,7 @@
     rbtn.addEventListener('click', function () {
       try { localStorage.removeItem(LAYOUT_KEY); } catch (e) {}
       try { localStorage.removeItem('hm-pinned-ids'); } catch (e) {}
+      try { localStorage.removeItem('hm-pinned-bar-h'); } catch (e) {}
       window.location.reload();
     });
   })();
@@ -9756,6 +9791,58 @@
      topbar). DOM nodes are preserved so Chart.js instances inside keep
      working. State persists in localStorage. */
   var PINNED_KEY = 'hm-pinned-ids';
+  /* User-resizable pinned-bar height: persisted as a px integer.
+     Default falls back to CSS max-height: 50vh when key is unset. */
+  var PINNED_BAR_H_KEY = 'hm-pinned-bar-h';
+  var PINNED_BAR_MIN_PX = 60;
+
+  function applyPinnedBarHeight() {
+    var bar = document.getElementById('hm-pinned-bar');
+    if (!bar) return;
+    var saved = parseInt(localStorage.getItem(PINNED_BAR_H_KEY) || '0', 10);
+    if (saved > 0) {
+      var clamped = Math.max(PINNED_BAR_MIN_PX, Math.min(window.innerHeight * 0.9, saved));
+      bar.style.maxHeight = clamped + 'px';
+    } else {
+      bar.style.maxHeight = '';  /* fall back to CSS default (50vh) */
+    }
+  }
+
+  function _initPinnedBarResizer() {
+    var resizer = document.getElementById('hm-pinned-bar-resizer');
+    var bar = document.getElementById('hm-pinned-bar');
+    if (!resizer || !bar) return;
+    resizer.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      var startY = e.clientY;
+      var startH = bar.getBoundingClientRect().height;
+      resizer.classList.add('is-dragging');
+      document.body.classList.add('hm-pinned-bar-resizing');
+      function onMove(ev) {
+        var delta = ev.clientY - startY;
+        var newH = Math.max(PINNED_BAR_MIN_PX,
+                            Math.min(window.innerHeight * 0.9, startH + delta));
+        bar.style.maxHeight = newH + 'px';
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        resizer.classList.remove('is-dragging');
+        document.body.classList.remove('hm-pinned-bar-resizing');
+        var h = parseInt(bar.style.maxHeight, 10);
+        if (h > 0) {
+          try { localStorage.setItem(PINNED_BAR_H_KEY, h); } catch (e) {}
+        }
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+    /* Re-clamp on window resize so a saved height larger than the new
+       viewport collapses to 90vh instead of going off-screen. */
+    window.addEventListener('resize', applyPinnedBarHeight);
+  }
+  applyPinnedBarHeight();
+  _initPinnedBarResizer();
 
   function getPinned() {
     try {
