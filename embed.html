@@ -162,14 +162,12 @@
     position: relative;
     height: 8px;
     margin: 8px 0 0 0;
-    background: rgba(242,223,179,0.18);
+    background: transparent;
     cursor: ns-resize;
-    transition: background 120ms;
-    border-radius: 4px;
+    border-radius: 5px;
   }
   /* Centered "grip" indicator — three short horizontal lines, like
-     the standard drag-handle iconography. Sits inside the strip so
-     it scales with the strip's hover state. */
+     the standard drag-handle iconography. */
   .hm-app .hm-pinned-bar-resizer::before {
     content: "";
     position: absolute;
@@ -186,20 +184,9 @@
     opacity: 0.65;
     transition: opacity 120ms;
   }
-  .hm-app .hm-pinned-bar-resizer:hover,
-  .hm-app .hm-pinned-bar-resizer.is-dragging {
-    background: rgba(242,223,179,0.40);
-  }
   .hm-app .hm-pinned-bar-resizer:hover::before,
   .hm-app .hm-pinned-bar-resizer.is-dragging::before {
     opacity: 1;
-  }
-  .hm-app.dark .hm-pinned-bar-resizer {
-    background: rgba(140,122,74,0.25);
-  }
-  .hm-app.dark .hm-pinned-bar-resizer:hover,
-  .hm-app.dark .hm-pinned-bar-resizer.is-dragging {
-    background: rgba(140,122,74,0.55);
   }
   /* While dragging, kill text selection on the page so cursor doesn't
      turn into the I-beam mid-drag. */
