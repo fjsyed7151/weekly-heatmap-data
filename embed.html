@@ -3084,6 +3084,17 @@
   .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-col:last-child {
     border-bottom: none;
   }
+  /* Force the card to track the panel width (not max-content) in
+     vertical mode. Without this the card keeps `width: max-content`
+     from the base .hm-factors-card rule, which expands to fit the
+     widest factor name and produces horizontal scroll when the panel
+     is narrower than the longest row. The flex row's
+     text-overflow:ellipsis on .hm-factors-name then handles
+     truncation naturally as the panel shrinks. */
+  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-card {
+    width: 100%;
+    min-width: 0;
+  }
   .hm-app .hm-factors-col-header {
     font-size: 10px;
     font-weight: 700;
