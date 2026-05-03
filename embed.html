@@ -388,6 +388,12 @@
      `hm-has-info` after registering content for that panel. */
   .hm-app .hm-panel-info { display: none; }
   .hm-app .grid-stack-item.hm-has-info .hm-panel-info { display: inline-flex; }
+  /* Stack-orientation toggle hidden by default; only panels whose
+     renderer tags the item with `hm-has-stack` get the control. The
+     `.active` state is the existing .hm-panel-btn.active rule (gold
+     tint), used when the panel is in vertical-stack mode. */
+  .hm-app .hm-panel-stack { display: none; }
+  .hm-app .grid-stack-item.hm-has-stack .hm-panel-stack { display: inline-flex; }
   .hm-app .hm-panel-btn.active {
     opacity: 1;
     color: var(--hm-gold);
@@ -3061,6 +3067,23 @@
     flex-direction: column;
   }
   .hm-app .hm-factors-col:last-child { border-right: none; }
+  /* Vertical-stack mode — set on the .grid-stack-item via JS when the
+     header stack-toggle is active. Collapses the 3-column grid into a
+     single vertical column, swaps the column dividers from a vertical
+     border-right to a horizontal border-bottom, and drops the 660px
+     min-width floor so the panel can resize down to its narrow form
+     factor without horizontal scroll. */
+  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-body {
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
+  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-col {
+    border-right: none;
+    border-bottom: 1px solid var(--hm-border);
+  }
+  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-col:last-child {
+    border-bottom: none;
+  }
   .hm-app .hm-factors-col-header {
     font-size: 10px;
     font-weight: 700;
@@ -7905,6 +7928,21 @@
     card.appendChild(scroll);
     container.appendChild(card);
 
+    /* Opt this panel into the header stack-toggle button + restore the
+       user's saved orientation from localStorage. The actual click
+       handler lives in the delegated header-button listener (see
+       `data-action="stack"` branch); this just primes the initial
+       visual state. */
+    var fItem = container.closest('.grid-stack-item');
+    if (fItem) {
+      fItem.classList.add('hm-has-stack');
+      if (typeof getStackOrientation === 'function' &&
+          getStackOrientation('hm-factors') === 'vertical') {
+        fItem.classList.add('hm-stack-vertical');
+      }
+      if (typeof refreshStackBtn === 'function') refreshStackBtn(fItem);
+    }
+
     function updateFactorRows() {
       var th = getTheme();
       /* Mode-driven key: 'rel' uses excess-vs-SPY (vs_m1, vs_y1, ...);
@@ -9836,6 +9874,14 @@
         '<button class="hm-panel-btn hm-panel-pin" type="button" data-action="pin" title="Pin to top" aria-label="Pin to top">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/></svg>' +
         '</button>' +
+        /* Stack-orientation toggle: hidden by default, shown only on panels
+           tagged `hm-has-stack` (renderer opts in). Switches between
+           horizontal multi-column layout and a single vertical stack.
+           Icon shows three vertical bars (the "columns" layout). When
+           in vertical mode the button gets `.active` (gold tint). */
+        '<button class="hm-panel-btn hm-panel-stack" type="button" data-action="stack" title="Switch to vertical stack" aria-label="Toggle stack orientation">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="4" height="16"/><rect x="10" y="4" width="4" height="16"/><rect x="16" y="4" width="4" height="16"/></svg>' +
+        '</button>' +
         '<button class="hm-panel-btn hm-panel-reset" type="button" data-action="reset" title="Reset size" aria-label="Reset size">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>' +
         '</button>' +
@@ -9942,6 +9988,8 @@
         refreshAllPinIcons();
       } else if (action === 'reset') {
         resetItemSize(id);
+      } else if (action === 'stack') {
+        toggleStackOrientation(id);
       } else if (action === 'info') {
         toggleInfoPopup(item, id, btn);
       } else if (action === 'close') {
@@ -10405,6 +10453,76 @@
     });
   }
 
+  /* ---- Stack-orientation toggle (per-panel horizontal/vertical layout) ---- */
+  /* Storage shape: { 'hm-factors': 'vertical', ... }. Default for any
+     panel without an entry is 'horizontal' (its native multi-column
+     layout). Stored under its own key so a layout-version bump
+     (LAYOUT_KEY) doesn't wipe the orientation preference. */
+  var STACK_KEY = 'hm-stack-orientations-v1';
+  function loadStackMap() {
+    try {
+      var raw = localStorage.getItem(STACK_KEY);
+      return raw ? (JSON.parse(raw) || {}) : {};
+    } catch (e) { return {}; }
+  }
+  function saveStackMap(map) {
+    try { localStorage.setItem(STACK_KEY, JSON.stringify(map)); } catch (e) {}
+  }
+  function getStackOrientation(id) {
+    var m = loadStackMap();
+    return m[id] === 'vertical' ? 'vertical' : 'horizontal';
+  }
+  function setStackOrientation(id, orientation) {
+    var m = loadStackMap();
+    if (orientation === 'vertical') m[id] = 'vertical';
+    else delete m[id];  /* horizontal is the default; keep map small */
+    saveStackMap(m);
+  }
+  /* Sync the button's `.active` state and tooltip with the panel's
+     current orientation. Active = vertical (gold tint), inactive =
+     horizontal. */
+  function refreshStackBtn(item) {
+    if (!item) return;
+    var btn = item.querySelector('.hm-panel-stack');
+    if (!btn) return;
+    var vertical = item.classList.contains('hm-stack-vertical');
+    btn.classList.toggle('active', vertical);
+    btn.setAttribute('title', vertical
+      ? 'Switch to horizontal columns'
+      : 'Switch to vertical stack');
+  }
+  /* Toggle a panel's orientation: flip the .hm-stack-vertical class,
+     persist, refresh button, then refit the cell to its new content
+     height (vertical mode is much taller — 3 cols stacked vs. 3 cols
+     side-by-side). Uses the same maxH-unlock-then-relock dance that
+     resetItemSize uses so the panel can grow past its old height. */
+  function toggleStackOrientation(id) {
+    var item = document.querySelector('.grid-stack-item[gs-id="' + id + '"]');
+    if (!item) return;
+    var nowVertical = !item.classList.contains('hm-stack-vertical');
+    item.classList.toggle('hm-stack-vertical', nowVertical);
+    setStackOrientation(id, nowVertical ? 'vertical' : 'horizontal');
+    refreshStackBtn(item);
+    /* Refit cell height to the reflowed content. Skip if the panel is
+       pinned (lives outside gridInstance) or pinned items would error
+       on resizeToContent. The setTimeout lets the browser apply the
+       new layout before measuring. */
+    if (!window.gridInstance) return;
+    if (typeof isPinned === 'function' && isPinned(id)) return;
+    setTimeout(function () {
+      try {
+        gridInstance.update(item, { maxH: 9999 });
+        gridInstance.resizeToContent(item);
+        var node = item.gridstackNode;
+        if (node) {
+          var minH = (typeof computePanelMinH === 'function')
+            ? computePanelMinH(item) : 70;
+          gridInstance.update(item, { maxH: node.h, minH: minH });
+        }
+      } catch (e) {}
+    }, 30);
+  }
+
   /* Reset a single panel to its default size (and return to grid if pinned).
      Both w and h are restored verbatim from snapshots:
        - w  comes from DEFAULT_LAYOUT (raw HTML gs-w, doesn't change post-init)
@@ -10426,6 +10544,20 @@
     }
     var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
+    /* Also reset orientation back to horizontal (the default). Track
+       whether we just flipped the orientation so the height-restore
+       step below knows to ignore the cached INITIAL_H (which would
+       reflect the vertical-mode taller content) and instead measure
+       the now-horizontal layout fresh. */
+    var orientationFlipped = false;
+    if (item.classList.contains('hm-stack-vertical')) {
+      item.classList.remove('hm-stack-vertical');
+      if (typeof setStackOrientation === 'function') {
+        setStackOrientation(id, 'horizontal');
+      }
+      if (typeof refreshStackBtn === 'function') refreshStackBtn(item);
+      orientationFlipped = true;
+    }
     /* Chart panel is a special case: the "right" height depends on how
        many metrics are selected and which view mode is active, so reset
        width to default and let refitChartSection auto-fit the height
@@ -10451,6 +10583,25 @@
       gridInstance.update(item, { w: def.w, h: targetH });
       gridInstance.update(item, { maxH: targetH, minH: minH });
     } catch (e) {}
+    /* If we just flipped from vertical → horizontal, the cached
+       INITIAL_H is for the vertical (taller) layout and the panel
+       will look stretched. Re-measure against the now-horizontal
+       content via resizeToContent and re-lock maxH/INITIAL_H to
+       that. setTimeout lets the browser apply the orientation
+       class before measuring. */
+    if (orientationFlipped) {
+      setTimeout(function () {
+        try {
+          gridInstance.update(item, { maxH: 9999 });
+          gridInstance.resizeToContent(item);
+          var node = item.gridstackNode;
+          if (node) {
+            gridInstance.update(item, { maxH: node.h, minH: minH });
+            INITIAL_H[id] = node.h;
+          }
+        } catch (e) {}
+      }, 30);
+    }
   }
 
   /* Context menu wiring — single shared menu element, positioned per click. */
