@@ -1776,22 +1776,24 @@
        Risk On         (NE, accel + easing)  → green        (broad risk-on)
        Recession Risk  (SW, decel + tight)   → muted red    (defensive cash/vol)
        Late Cycle      (SE, accel + tight)   → amber        (cyclical real-economy) */
-  .hm-app .hm-mc-tint.soft_landing    { background: rgba(110,120,150,0.10); }
-  .hm-app .hm-mc-tint.risk_on         { background: rgba(26,122,66,0.10); }
-  .hm-app .hm-mc-tint.recession_risk  { background: rgba(212,42,32,0.08); }
-  .hm-app .hm-mc-tint.late_cycle      { background: rgba(230,191,102,0.14); }
+  .hm-app .hm-mc-tint.soft_landing    { background: rgba(110,120,150,0.28); }
+  .hm-app .hm-mc-tint.risk_on         { background: rgba(26,122,66,0.28); }
+  .hm-app .hm-mc-tint.recession_risk  { background: rgba(212,42,32,0.22); }
+  .hm-app .hm-mc-tint.late_cycle      { background: rgba(230,191,102,0.36); }
 
   /* Regime ribbon under the plane: one colored square per shipped
-     weekly history row (~24 weeks). Quadrant colors match the plane
-     tints but at full saturation so the ribbon reads cleanly at small
-     size. Shows persistence + recent transitions of the macro
-     regime — the "evolution" lens the static plane lacks. */
+     weekly history row (~24 weeks). Cells use the SAME RGBA tints
+     as the plane quadrants so the ribbon reads as the same color
+     family. Hairline border keeps each cell visible at 14px. Shows
+     persistence + recent transitions of the macro regime — the
+     "evolution" lens the static plane lacks. Padding/border matches
+     .hm-mc-active-trades for visual consistency. */
   .hm-app .hm-mc-regime-ribbon {
     display: flex;
     align-items: stretch;
     gap: 2px;
-    margin: 8px 0 0 0;
-    padding: 6px 0 0 0;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px solid var(--hm-border);
   }
   .hm-app .hm-mc-regime-ribbon-label {
@@ -1818,20 +1820,23 @@
     border-radius: 2px;
     cursor: help;
     transition: transform 80ms;
+    border: 1px solid var(--hm-border);
   }
   .hm-app .hm-mc-regime-cell:hover {
     transform: scaleY(1.4);
   }
-  .hm-app .hm-mc-regime-cell.soft_landing    { background: #6e7896; }
-  .hm-app .hm-mc-regime-cell.risk_on         { background: #1a7a42; }
-  .hm-app .hm-mc-regime-cell.recession_risk  { background: #d42a20; }
-  .hm-app .hm-mc-regime-cell.late_cycle      { background: #e6bf66; }
+  /* Same RGBA values as .hm-mc-tint.* so the ribbon matches the plane. */
+  .hm-app .hm-mc-regime-cell.soft_landing    { background: rgba(110,120,150,0.28); }
+  .hm-app .hm-mc-regime-cell.risk_on         { background: rgba(26,122,66,0.28); }
+  .hm-app .hm-mc-regime-cell.recession_risk  { background: rgba(212,42,32,0.22); }
+  .hm-app .hm-mc-regime-cell.late_cycle      { background: rgba(230,191,102,0.36); }
   .hm-app .hm-mc-regime-cell.is-current {
     /* Last cell highlighted with a thin gold ring + slight bump so the
        eye lands on "where we are now" first. */
     outline: 2px solid var(--hm-gold);
     outline-offset: 1px;
     transform: scaleY(1.15);
+    border-color: transparent;
   }
   .hm-app .hm-mc-midline-h,
   .hm-app .hm-mc-midline-v {
