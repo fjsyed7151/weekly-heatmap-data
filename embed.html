@@ -133,11 +133,11 @@
        Without it, overflow-y:auto creates an implicit clipping
        context that cuts off the left/right edges of edge items. */
     padding: 12px 4px;
-    /* margin-bottom dropped: the gap below the bar is now produced by
-       the resizer's own margin-bottom (so resizer sits flush against
-       the bar's bottom edge rather than 12px below it, which used to
-       hide the resizer behind the bar's z-index when scrolling). */
-    margin-bottom: 0;
+    /* 12px breathing room between the bar and the resizer below it.
+       The resizer's sticky-top calc adds the same 12px so the gap is
+       preserved during scroll without the resizer hiding behind the
+       bar's z-index. */
+    margin-bottom: 12px;
     border-bottom: 1px solid var(--hm-border);
     /* Cap the stack at half the viewport so a tall pinned panel (like the
        commodities table) doesn't swallow the screen. Scroll inside if needed. */
@@ -171,7 +171,10 @@
     transition: background 120ms;
     z-index: 49;
     position: sticky;
-    top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px) + var(--hm-pinned-bar-actual-h, 0px));
+    /* +12px to match the bar's margin-bottom — keeps the gap between
+       bar and resizer visible at all scroll positions. Without it
+       the resizer would slide back into bar territory once sticky. */
+    top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px) + var(--hm-pinned-bar-actual-h, 0px) + 12px);
   }
   .hm-app .hm-pinned-bar-resizer:hover,
   .hm-app .hm-pinned-bar-resizer.is-dragging {
