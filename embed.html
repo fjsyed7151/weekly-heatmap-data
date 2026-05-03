@@ -1780,6 +1780,59 @@
   .hm-app .hm-mc-tint.risk_on         { background: rgba(26,122,66,0.10); }
   .hm-app .hm-mc-tint.recession_risk  { background: rgba(212,42,32,0.08); }
   .hm-app .hm-mc-tint.late_cycle      { background: rgba(230,191,102,0.14); }
+
+  /* Regime ribbon under the plane: one colored square per shipped
+     weekly history row (~24 weeks). Quadrant colors match the plane
+     tints but at full saturation so the ribbon reads cleanly at small
+     size. Shows persistence + recent transitions of the macro
+     regime — the "evolution" lens the static plane lacks. */
+  .hm-app .hm-mc-regime-ribbon {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    margin: 8px 0 0 0;
+    padding: 6px 0 0 0;
+    border-top: 1px solid var(--hm-border);
+  }
+  .hm-app .hm-mc-regime-ribbon-label {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--hm-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    flex: 0 0 auto;
+    align-self: center;
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+  .hm-app .hm-mc-regime-ribbon-cells {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .hm-app .hm-mc-regime-cell {
+    flex: 1 1 0;
+    height: 14px;
+    border-radius: 2px;
+    cursor: help;
+    transition: transform 80ms;
+  }
+  .hm-app .hm-mc-regime-cell:hover {
+    transform: scaleY(1.4);
+  }
+  .hm-app .hm-mc-regime-cell.soft_landing    { background: #6e7896; }
+  .hm-app .hm-mc-regime-cell.risk_on         { background: #1a7a42; }
+  .hm-app .hm-mc-regime-cell.recession_risk  { background: #d42a20; }
+  .hm-app .hm-mc-regime-cell.late_cycle      { background: #e6bf66; }
+  .hm-app .hm-mc-regime-cell.is-current {
+    /* Last cell highlighted with a thin gold ring + slight bump so the
+       eye lands on "where we are now" first. */
+    outline: 2px solid var(--hm-gold);
+    outline-offset: 1px;
+    transform: scaleY(1.15);
+  }
   .hm-app .hm-mc-midline-h,
   .hm-app .hm-mc-midline-v {
     position: absolute;
@@ -5906,6 +5959,10 @@
           'NE · <b>Risk On</b> (accel + easing) · long broad equities + credit + EM<br>' +
           'SW · <b>Recession Risk</b> (decel + tight) · long dollar + cash + vol<br>' +
           'SE · <b>Late Cycle</b> (accel + tight) · long commodities + value + EM</p>' +
+        '<p><b>Regime ribbon</b>: row of colored squares under the active-trades panel ' +
+          'showing the last ~24 weekly quadrant assignments. Lets you see at a glance how ' +
+          'persistent the current regime is and any recent transitions. The current week ' +
+          '(rightmost) is ringed in gold. Hover any square for the date + regime.</p>' +
         '<p><b>Data sources</b>: ISM Services PMI (Trading Economics), Industrial Production ' +
           'YoY (FRED INDPRO), Effective Fed Funds (FRED DFF), core PCE YoY (FRED PCEPILFE). ' +
           'Conference Board LEI would be a stronger growth signal but it\'s paywalled; ISM ' +
@@ -6015,6 +6072,36 @@
         '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + activeCell.longs.join(', ')  + '</div>' +
         '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag short">SHORT</span>' + activeCell.shorts.join(', ') + '</div>';
       card.appendChild(trades);
+    }
+
+    /* Regime ribbon — last ~24 weekly quadrant assignments rendered as a
+       row of colored squares. Lets the user see at a glance how
+       persistent the current regime is and any recent transitions —
+       the "evolution" lens the static plane doesn't show. */
+    if (m.history && m.history.length) {
+      var quadName = {
+        soft_landing:    'Soft Landing',
+        risk_on:         'Risk On',
+        recession_risk:  'Recession Risk',
+        late_cycle:      'Late Cycle',
+      };
+      var ribbon = document.createElement('div');
+      ribbon.className = 'hm-mc-regime-ribbon';
+      var lab = document.createElement('span');
+      lab.className = 'hm-mc-regime-ribbon-label';
+      lab.textContent = m.history.length + 'w history';
+      ribbon.appendChild(lab);
+      var cells = document.createElement('div');
+      cells.className = 'hm-mc-regime-ribbon-cells';
+      m.history.forEach(function (h, idx) {
+        var cell = document.createElement('span');
+        var isLast = idx === m.history.length - 1;
+        cell.className = 'hm-mc-regime-cell ' + h.quadrant + (isLast ? ' is-current' : '');
+        cell.title = h.date + ' · ' + (quadName[h.quadrant] || h.quadrant);
+        cells.appendChild(cell);
+      });
+      ribbon.appendChild(cells);
+      card.appendChild(ribbon);
     }
 
     /* Methodology lives in the panel info popup (see PANEL_INFO_HTML above)
