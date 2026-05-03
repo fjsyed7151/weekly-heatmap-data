@@ -461,6 +461,16 @@
   .hm-app .grid-stack-item-content {
     z-index: 1;
   }
+  /* Economic Indicators: no internal scroll. The fitToContent pass on
+     init sizes the panel exactly to content height, and maxH gets
+     locked there, so the panel grows tall enough to show every card
+     without ever needing a scrollbar. overflow: visible (vs the
+     default 'auto' on grid-stack-item-content) prevents a scrollbar
+     from appearing when the panel is briefly under-sized during
+     async paint. */
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content {
+    overflow: visible;
+  }
   /* No north handle — top edge is drag-only via the header. */
 
   @media (max-width: 1100px) {
@@ -4136,8 +4146,8 @@
                             → theme-treemap(33..57) → commodities(72..94) -->
           <div class="grid-stack-item" gs-id="hm-indexes"         gs-x="0"  gs-y="0"   gs-w="6"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-macrocompass"    gs-x="0"  gs-y="4"   gs-w="6"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-calendar"        gs-x="10" gs-y="4"   gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="16" gs-y="4"   gs-w="8"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-calendar"        gs-x="10" gs-y="4"   gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="16" gs-y="4"   gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-gave-wrap"       gs-x="0"  gs-y="18"  gs-w="8"  gs-h="24">
             <div class="grid-stack-item-content">
               <div class="hm-gave-wrap" id="hm-gave-wrap">
