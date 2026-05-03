@@ -113,10 +113,21 @@
   /* Pinned-to-top bar — sticks below the topbar as the page scrolls.
      Pinned panels are laid out in a horizontal flex row so they keep
      something close to their original width; they wrap on narrow viewports. */
-  .hm-app .hm-pinned-bar {
+  /* Sticky wrapper that holds bar + resizer as one visual unit.
+     Solid background covers the 12px gap between bar and resizer
+     so page content scrolling behind never shows through. Z-index
+     above grid items. */
+  .hm-app .hm-pinned-stack {
     position: sticky;
     top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px));
-    z-index: 50;                                    /* above grid items */
+    z-index: 50;
+    background: var(--hm-bg);
+    margin-bottom: 12px;
+  }
+  .hm-app .hm-pinned-stack:has(.hm-pinned-bar:empty) {
+    display: none;
+  }
+  .hm-app .hm-pinned-bar {
     background: var(--hm-bg);
     display: flex;
     flex-wrap: wrap;
@@ -133,11 +144,6 @@
        Without it, overflow-y:auto creates an implicit clipping
        context that cuts off the left/right edges of edge items. */
     padding: 12px 4px;
-    /* 12px breathing room between the bar and the resizer below it.
-       The resizer's sticky-top calc adds the same 12px so the gap is
-       preserved during scroll without the resizer hiding behind the
-       bar's z-index. */
-    margin-bottom: 12px;
     border-bottom: 1px solid var(--hm-border);
     /* Cap the stack at half the viewport so a tall pinned panel (like the
        commodities table) doesn't swallow the screen. Scroll inside if needed. */
@@ -147,34 +153,18 @@
   .hm-app .hm-pinned-bar:empty {
     display: none;
   }
-  /* Hide the resizer when the bar is empty — nothing to resize. The :has
-     check stays modern-evergreen-only; older browsers just see the
-     resizer above empty space, which is harmless. */
-  .hm-app .hm-pinned-bar:empty + .hm-pinned-bar-resizer {
-    display: none;
-  }
-  /* Drag handle to resize the pinned bar's max-height. Sticky so
-     the user can resize at any scroll position, not only at the
-     top of the page. Sticky-top tracks the pinned bar's actual
-     rendered height via --hm-pinned-bar-actual-h, which JS keeps
-     in sync via ResizeObserver as items pin / unpin / drag.
-     Margin: 0 (NOT negative) so the natural document position
-     matches the sticky-top — otherwise the resizer ends up above
-     the bar's bottom edge and gets hidden behind it (bar has
-     higher z-index). The bar's own margin-bottom: 12px gives a
-     tiny breathing space below the resizer in normal flow. */
+  /* Drag handle to resize the pinned bar's max-height. Lives inside
+     the .hm-pinned-stack sticky wrapper, so it auto-sticks with the
+     bar — no individual sticky positioning needed, no math to keep
+     in sync. 12px margin-top gives breathing room from the bar's
+     bottom border; the wrapper's solid bg covers the gap so page
+     content never shows through during scroll. */
   .hm-app .hm-pinned-bar-resizer {
     height: 4px;
-    margin: 0 0 12px 0;  /* bottom-margin separates resizer from grid below */
+    margin: 12px 0 0 0;
     background: transparent;
     cursor: ns-resize;
     transition: background 120ms;
-    z-index: 49;
-    position: sticky;
-    /* +12px to match the bar's margin-bottom — keeps the gap between
-       bar and resizer visible at all scroll positions. Without it
-       the resizer would slide back into bar territory once sticky. */
-    top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px) + var(--hm-pinned-bar-actual-h, 0px) + 12px);
   }
   .hm-app .hm-pinned-bar-resizer:hover,
   .hm-app .hm-pinned-bar-resizer.is-dragging {
@@ -4069,8 +4059,14 @@
              "Pin to top" moves it here; "Unpin" sends it back to the grid.
              The resizer below lets the user drag the bar's max-height to
              give pinned panels more (or less) screen real estate. -->
-        <div class="hm-pinned-bar" id="hm-pinned-bar"></div>
-        <div class="hm-pinned-bar-resizer" id="hm-pinned-bar-resizer" title="Drag to resize pinned bar"></div>
+        <!-- Pinned-bar SECTION: bar + resizer wrapped together in a single
+             sticky container with a solid background. Wrapping them means
+             the gap between bar and resizer never shows page content
+             scrolling through, and both stick as one visual unit. -->
+        <div class="hm-pinned-stack" id="hm-pinned-stack">
+          <div class="hm-pinned-bar" id="hm-pinned-bar"></div>
+          <div class="hm-pinned-bar-resizer" id="hm-pinned-bar-resizer" title="Drag to resize pinned bar"></div>
+        </div>
         <!-- Custom context menu for grid panels. Hidden by default. -->
         <div class="hm-context-menu" id="hm-context-menu" hidden>
           <button class="hm-context-item" data-action="toggle-pin" type="button"></button>
@@ -10121,26 +10117,6 @@
     }
   }
 
-  /* Keep --hm-pinned-bar-actual-h in sync with the pinned bar's
-     rendered height. The resizer's sticky-top offset uses this so it
-     always sits flush under the bar regardless of how many items are
-     pinned (or what max-height the user dragged it to). */
-  function _trackPinnedBarHeight() {
-    var bar = document.getElementById('hm-pinned-bar');
-    if (!bar) return;
-    function update() {
-      var h = bar.offsetHeight;  /* 0 when bar is :empty + display:none */
-      document.documentElement.style.setProperty('--hm-pinned-bar-actual-h', h + 'px');
-    }
-    if (window.ResizeObserver) {
-      new ResizeObserver(update).observe(bar);
-    } else {
-      /* Fallback: poll every 500ms in case ResizeObserver isn't available. */
-      setInterval(update, 500);
-    }
-    update();
-  }
-
   function _initPinnedBarResizer() {
     var resizer = document.getElementById('hm-pinned-bar-resizer');
     var bar = document.getElementById('hm-pinned-bar');
@@ -10176,7 +10152,6 @@
   }
   applyPinnedBarHeight();
   _initPinnedBarResizer();
-  _trackPinnedBarHeight();
 
   function getPinned() {
     try {
