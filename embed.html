@@ -155,20 +155,51 @@
   }
   /* Drag handle to resize the pinned bar's max-height. Lives inside
      the .hm-pinned-stack sticky wrapper, so it auto-sticks with the
-     bar — no individual sticky positioning needed, no math to keep
-     in sync. 12px margin-top gives breathing room from the bar's
-     bottom border; the wrapper's solid bg covers the gap so page
-     content never shows through during scroll. */
+     bar. Visible at rest (subtle gold tint + centered grip) so the
+     affordance is obvious; the strip + grip both saturate to full
+     gold on hover/drag. */
   .hm-app .hm-pinned-bar-resizer {
-    height: 4px;
-    margin: 12px 0 0 0;
-    background: transparent;
+    position: relative;
+    height: 8px;
+    margin: 8px 0 0 0;
+    background: rgba(242,223,179,0.18);
     cursor: ns-resize;
     transition: background 120ms;
+    border-radius: 4px;
+  }
+  /* Centered "grip" indicator — three short horizontal lines, like
+     the standard drag-handle iconography. Sits inside the strip so
+     it scales with the strip's hover state. */
+  .hm-app .hm-pinned-bar-resizer::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 2px;
+    background: var(--hm-panel-outline);
+    border-radius: 1px;
+    box-shadow:
+      0 -3px 0 0 var(--hm-panel-outline),
+      0  3px 0 0 var(--hm-panel-outline);
+    opacity: 0.65;
+    transition: opacity 120ms;
   }
   .hm-app .hm-pinned-bar-resizer:hover,
   .hm-app .hm-pinned-bar-resizer.is-dragging {
-    background: var(--hm-panel-outline);
+    background: rgba(242,223,179,0.40);
+  }
+  .hm-app .hm-pinned-bar-resizer:hover::before,
+  .hm-app .hm-pinned-bar-resizer.is-dragging::before {
+    opacity: 1;
+  }
+  .hm-app.dark .hm-pinned-bar-resizer {
+    background: rgba(140,122,74,0.25);
+  }
+  .hm-app.dark .hm-pinned-bar-resizer:hover,
+  .hm-app.dark .hm-pinned-bar-resizer.is-dragging {
+    background: rgba(140,122,74,0.55);
   }
   /* While dragging, kill text selection on the page so cursor doesn't
      turn into the I-beam mid-drag. */
