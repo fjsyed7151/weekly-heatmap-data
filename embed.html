@@ -133,7 +133,11 @@
        Without it, overflow-y:auto creates an implicit clipping
        context that cuts off the left/right edges of edge items. */
     padding: 12px 4px;
-    margin-bottom: 12px;
+    /* margin-bottom dropped: the gap below the bar is now produced by
+       the resizer's own margin-bottom (so resizer sits flush against
+       the bar's bottom edge rather than 12px below it, which used to
+       hide the resizer behind the bar's z-index when scrolling). */
+    margin-bottom: 0;
     border-bottom: 1px solid var(--hm-border);
     /* Cap the stack at half the viewport so a tall pinned panel (like the
        commodities table) doesn't swallow the screen. Scroll inside if needed. */
@@ -149,22 +153,25 @@
   .hm-app .hm-pinned-bar:empty + .hm-pinned-bar-resizer {
     display: none;
   }
-  /* Drag handle to resize the pinned bar's max-height. ALSO sticky,
-     so the user can resize at any scroll position — not only when
-     scrolled to the top. Sticky-top tracks the pinned bar's actual
-     rendered height via --hm-pinned-bar-actual-h, which JS updates
-     via ResizeObserver as items get pinned / unpinned / dragged.
-     Falls back to 0 (resizer pinned right under the topbar) when
-     the var hasn't been set yet so it never goes off-screen. */
+  /* Drag handle to resize the pinned bar's max-height. Sticky so
+     the user can resize at any scroll position, not only at the
+     top of the page. Sticky-top tracks the pinned bar's actual
+     rendered height via --hm-pinned-bar-actual-h, which JS keeps
+     in sync via ResizeObserver as items pin / unpin / drag.
+     Margin: 0 (NOT negative) so the natural document position
+     matches the sticky-top — otherwise the resizer ends up above
+     the bar's bottom edge and gets hidden behind it (bar has
+     higher z-index). The bar's own margin-bottom: 12px gives a
+     tiny breathing space below the resizer in normal flow. */
   .hm-app .hm-pinned-bar-resizer {
     height: 4px;
-    margin: -13px 0 12px 0;  /* pulls up over the bar's 12px bottom margin */
+    margin: 0 0 12px 0;  /* bottom-margin separates resizer from grid below */
     background: transparent;
     cursor: ns-resize;
     transition: background 120ms;
     z-index: 49;
     position: sticky;
-    top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px) + var(--hm-pinned-bar-actual-h, 0px) - 13px);
+    top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px) + var(--hm-pinned-bar-actual-h, 0px));
   }
   .hm-app .hm-pinned-bar-resizer:hover,
   .hm-app .hm-pinned-bar-resizer.is-dragging {
