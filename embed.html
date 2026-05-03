@@ -222,7 +222,11 @@
      content matches cell exactly so scrollbars stay hidden. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content {
     background: transparent;
-    border: 2px solid var(--hm-panel-outline);
+    /* 2px outline drawn OUTSIDE the box so it doesn't eat into content
+       area (border would push inner content in by 2px). box-shadow with
+       spread 2px + zero blur acts as an outset stroke that follows
+       border-radius. */
+    box-shadow: 0 0 0 2px var(--hm-panel-outline);
     border-radius: var(--hm-r);
     overflow: auto;
     padding: 0;
@@ -2777,19 +2781,12 @@
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
   }
-  /* Outer cell + window-style header bar — square top corners on these so
-     the visible top edge of the panel is a flat horizontal line, not a
-     rounded curve that the gold band peeks under. Includes the Gave +
-     Macrocompass panels so their gold title bands also read flush. */
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-country-etfs"] > .grid-stack-item-content,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-gave-wrap"] > .grid-stack-item-content,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-macrocompass"] > .grid-stack-item-content,
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-chart-section"] > .grid-stack-item-content,
+  /* Window-style header bar squares its top corners — the parent
+     grid-stack-item-content keeps its 5px outer radius and clips the
+     header to a rounded silhouette. The gold band below the header
+     stays flush since it sits at y=24px (past the rounded clip).
+     NOTE: the grid-stack-item-content top corners are intentionally
+     NOT squared here — outer 5px radius is the visible panel chrome. */
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-factors"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-global-indexes"] .hm-panel-header,
