@@ -175,7 +175,10 @@
     top: auto !important;
     transform: none !important;
     flex: 0 0 auto;
-    overflow: hidden;
+    /* No overflow:hidden — would clip the outer gold box-shadow on
+       grid-stack-item-content. The inner content already scrolls via
+       its own overflow:auto, so we don't need a clipping ancestor. */
+    overflow: visible;
   }
   .hm-app .hm-pinned-bar > .grid-stack-item > .grid-stack-item-content {
     position: static !important;
