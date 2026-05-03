@@ -10571,17 +10571,22 @@
               fitEconomyTimer = null;
               var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-economy"]');
               if (!item || !window.gridInstance) return;
+              var content = item.querySelector('.grid-stack-item-content');
+              var wrap = content && content.firstElementChild;
+              if (!wrap) return;
+              /* Direct natural-height measurement instead of relying on
+                 gridstack.resizeToContent (which behaves inconsistently
+                 with our cellHeight: 1 + injected hm-panel-wrap). +2 is
+                 a tiny buffer so a sub-pixel mismatch doesn't trigger
+                 a scroll. */
+              var natH = wrap.scrollHeight + 2;
+              if (natH < 60) return;  /* not yet rendered */
+              var node = item.gridstackNode;
+              if (!node) return;
+              if (Math.abs(natH - node.h) < 3) return;
               try {
-                /* Fully unlock so resizeToContent can grow OR shrink. */
                 window.gridInstance.update(item, { minH: 1, maxH: 9999 });
-                window.gridInstance.resizeToContent(item);
-                var node = item.gridstackNode;
-                if (node) {
-                  /* Re-lock so user can't drag-resize height to a value
-                     that mismatches content (which would cause overflow
-                     or empty space). */
-                  window.gridInstance.update(item, { minH: node.h, maxH: node.h });
-                }
+                window.gridInstance.update(item, { h: natH, minH: natH, maxH: natH });
               } catch (e) {}
             }, 60);
           };
@@ -10609,8 +10614,12 @@
             }
           }
           /* Initial fit. Runs once after fitAll's setTimeout chain has
-             settled so we have the latest content height. */
+             settled so we have the latest content height. Plus a
+             delayed safety re-fit at 1500ms in case async-painted
+             content (charts, fonts, etc.) shifts the natural height
+             after the initial measurement. */
           window._fitEconomy();
+          setTimeout(window._fitEconomy, 1500);
         }
         fitAll();
         /* Apply the no-selection state once gridInstance is live: this
