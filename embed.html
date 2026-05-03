@@ -2861,6 +2861,43 @@
   .hm-app .hm-factors-scroll {
     overflow: visible;
   }
+  /* Fixed Income bias bar — derived label sitting under the gold
+     header. Maps the 10Y yield trend × HY OAS trend (3-mo) into one
+     of Vailati's four FI regimes (QE / Risk-On / Risk-Off / Fear of
+     the Fed) and translates that into a duration + credit posture. */
+  .hm-app .hm-fi-bias {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--hm-dark);
+    background: var(--hm-bg-warm);
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--hm-border);
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .hm-app .hm-fi-bias-label {
+    color: var(--hm-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.4px;
+  }
+  .hm-app .hm-fi-bias-quad {
+    color: var(--hm-gold);
+    font-weight: 700;
+  }
+  .hm-app .hm-fi-bias-recipe {
+    color: var(--hm-dark);
+  }
+  .hm-app .hm-fi-bias-detail {
+    color: var(--hm-muted);
+    font-weight: 500;
+    font-size: 10.5px;
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
   /* Heat-painted ranking panels: the longest column's last row sits flush
      against the panel card's outer bottom border, doubling the 1px row
      border + 1px card border into a visible 2px line. Pull the last row
@@ -7793,6 +7830,62 @@
     ANGL: "VanEck Fallen Angel High Yield. HY bonds that were recently IG but got downgraded. BB-concentrated, tends to outperform broad HY over cycles.",
   };
 
+  /* Compute Vailati-style FI regime label (QE / Traditional Risk-On /
+     Traditional Risk-Off / Fear of the Fed) from the heatmap rows.
+     Duration axis: 10y nominal yield trend over the available window
+       (≈3 months at weekly cadence). Yields rising → short duration.
+     Credit axis: HY OAS trend over the same window.
+       OAS tightening (↓) → long credit; widening (↑) → short credit.
+     Returns null if either input row is missing. */
+  function _computeFiBias(data) {
+    function findRow(secName, metricName) {
+      var sec = (data.sections || []).find(function (s) { return s.name === secName; });
+      if (!sec) return null;
+      return (sec.rows || []).find(function (r) { return r.name === metricName; });
+    }
+    function firstLastNonNull(values) {
+      var first = null, last = null;
+      for (var i = 0; i < values.length; i++) {
+        if (values[i] != null) { first = values[i]; break; }
+      }
+      for (var j = values.length - 1; j >= 0; j--) {
+        if (values[j] != null) { last = values[j]; break; }
+      }
+      return { first: first, last: last };
+    }
+    var ten = findRow('Rates', '10y nominal');
+    var hy  = findRow('Credit & Liquidity', 'HY OAS (bps)');
+    if (!ten || !hy || !ten.values || !hy.values) return null;
+    var d = firstLastNonNull(ten.values);
+    var c = firstLastNonNull(hy.values);
+    if (d.first == null || d.last == null || c.first == null || c.last == null) return null;
+    var dDelta = d.last - d.first;        /* in % yields → multiply by 100 for bps */
+    var cDelta = c.last - c.first;        /* HY OAS values appear to be in % already */
+    var shortDur = dDelta > 0;            /* yields rising → short duration */
+    var longCredit = cDelta < 0;          /* OAS tightening → long credit */
+    var quadrant, recipe;
+    if (!shortDur && longCredit)        { quadrant = 'QE';                    recipe = 'long duration, long credit'; }
+    else if (shortDur && longCredit)    { quadrant = 'Traditional Risk-On';   recipe = 'short duration, long credit'; }
+    else if (!shortDur && !longCredit)  { quadrant = 'Traditional Risk-Off';  recipe = 'long duration, short credit'; }
+    else                                 { quadrant = 'Fear of the Fed';       recipe = 'short duration, short credit'; }
+    /* Convert deltas to nicer display units. 10y yields ship in % so
+       100bps = 1.0; HY OAS shipped value scaled (~2.83 means 2.83%)
+       so we show 100bps deltas with the same convention. */
+    function fmtBps(v) {
+      var bps = v * 100;
+      var sign = bps >= 0 ? '+' : '';
+      return sign + bps.toFixed(0) + 'bps';
+    }
+    return {
+      quadrant: quadrant,
+      recipe: recipe,
+      tenYDelta: fmtBps(dDelta),
+      hyOasDelta: fmtBps(cDelta),
+      tenYArrow: dDelta >= 0 ? '↑' : '↓',
+      hyOasArrow: cDelta >= 0 ? '↑' : '↓',
+    };
+  }
+
   function renderFixedIncome(data) {
     var container = document.getElementById('hm-fixed-income');
     if (!container || !data.fixed_income) return;
@@ -7811,6 +7904,11 @@
       return (
         '<p><b>Bond ETF performance, sliced by exposure</b>: International credit, ' +
           'US high-grade, US high-yield, US gov/agencies, US Treasury duration ladder.</p>' +
+        '<p><b>FI bias bar</b>: Vailati\'s Four Global Macro Fixed Income Regimes ' +
+          '(QE / Traditional Risk-On / Traditional Risk-Off / Fear of the Fed). 10Y ' +
+          'yield trend × HY OAS trend over the last ~3 months drive a duration + ' +
+          'credit posture: yields rising → short duration; OAS tightening → long ' +
+          'credit. The recipe at the start of the bar is what those two axes imply.</p>' +
         '<p><b>Yield / Duration</b>: 30-day SEC yield + effective duration shown next ' +
           'to each ticker' + asOf + '. Price return alone is misleading without the ' +
           'income on the position and its rate-sensitivity. Hover the pair for the ' +
@@ -7853,6 +7951,30 @@
     });
     hdr.appendChild(btnWrap);
     card.appendChild(hdr);
+
+    /* Vailati-derived FI bias bar — one-line regime label + posture
+       recipe + the 3-mo deltas on 10y yields and HY OAS that drive
+       the call. Sits flush under the gold header. */
+    var biasInfo = _computeFiBias(data);
+    if (biasInfo) {
+      var biasBar = document.createElement('div');
+      biasBar.className = 'hm-fi-bias';
+      biasBar.innerHTML =
+        '<span class="hm-fi-bias-label">FI bias</span>' +
+        '<span class="hm-fi-bias-quad">' + biasInfo.quadrant + '</span>' +
+        '<span style="color:var(--hm-muted)">·</span>' +
+        '<span class="hm-fi-bias-recipe">' + biasInfo.recipe + '</span>' +
+        '<span class="hm-fi-bias-detail">' +
+          '10Y ' + biasInfo.tenYArrow + ' ' + biasInfo.tenYDelta +
+          ' &middot; HY OAS ' + biasInfo.hyOasArrow + ' ' + biasInfo.hyOasDelta +
+          ' (3mo)' +
+        '</span>';
+      biasBar.title =
+        'Vailati Four Global Macro Fixed Income Regimes. ' +
+        '10Y yield trend (↑→short duration) × HY OAS trend ' +
+        '(↓tightening→long credit) over the last ~3 months.';
+      card.appendChild(biasBar);
+    }
 
     var body = document.createElement('div');
     body.className = 'hm-fi-body';
