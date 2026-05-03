@@ -267,7 +267,11 @@
       220px 220px;
     background-position: 0 0, 0 0, 0 0;
     background-repeat: repeat, repeat, repeat;
-    min-height: 800px;
+    /* Always at least viewport-tall so the grid lines + linen
+       texture extend to the bottom of the visible page even when
+       few/no panels are present. Auto-grows past viewport when
+       content needs more room. */
+    min-height: 100vh;
   }
   .hm-app.dark .grid-stack {
     background-image:
@@ -9896,6 +9900,13 @@
       animate: false,
       disableOneColumnMode: false,
       minRow: 1,
+      /* Cap how far down panels can be dragged/resized. Default
+         layout's deepest panel ends at gs-y(130) + gs-h(22) = 152
+         (HTML units), scaled by GS_SCALE(40) = 6080 internal cells.
+         8000 leaves ~1900 cells of headroom for users who enlarge
+         tall panels (heatmap, sector chart). Without this cap, users
+         can drag a panel to gs-y=99999 and the grid expands forever. */
+      maxRow: 8000,
     }, '#hm-grid');
     /* Drag + resize are always enabled — the narrow header and hit-zoned
        resize edges make accidental manipulation unlikely. */
