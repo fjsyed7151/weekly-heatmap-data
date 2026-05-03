@@ -461,21 +461,33 @@
   .hm-app .grid-stack-item-content {
     z-index: 1;
   }
-  /* Economic Indicators: no visible scrollbar. The fitToContent pass
-     on init sizes the panel to content height, and the JS pin
-     locks both minH AND maxH to that height so the user can resize
-     width but not height — meaning under-sizing never happens and
-     scroll never engages. The scrollbar is hidden visually as a
-     belt-and-suspenders measure (and to cover async-paint
-     intermediate states). NOT using overflow: visible here because
-     overflowing inner content can paint OVER the outer box-shadow,
-     breaking the gold panel outline. */
+  /* Economic Indicators: no internal scroll. The fitToContent pass
+     on init sizes the panel exactly to content height, and maxH
+     gets locked there, so the panel grows tall enough to show
+     every card without ever needing a scrollbar. overflow: visible
+     prevents a scrollbar from appearing when the panel is briefly
+     under-sized during async paint. The outer gold outline uses a
+     high-z-index ::after pseudo-element (instead of the default
+     box-shadow) so that any inner content overflowing the cell
+     paints UNDER the outline rather than over it — fixes the
+     "border missing on resize" bug while keeping the scroll-free
+     behavior. */
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content {
-    scrollbar-width: none;             /* Firefox */
-    -ms-overflow-style: none;          /* legacy Edge / IE */
+    overflow: visible;
+    position: relative;
+    box-shadow: none;
   }
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content::-webkit-scrollbar {
-    display: none;                     /* Chrome / Safari */
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content::after {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    border: 1px solid var(--hm-panel-outline);
+    border-radius: calc(var(--hm-r) + 1px);
+    pointer-events: none;
+    z-index: 9999;
   }
   /* No north handle — top edge is drag-only via the header. */
 
@@ -10036,32 +10048,6 @@
         });
       });
 
-      /* Economic Indicators is height-locked to content. When the
-         user resizes its WIDTH, content reflows and its natural
-         height changes — re-fit gs-h to the new content height
-         and re-lock minH/maxH there so it never needs a
-         scrollbar. setTimeout lets the DOM reflow first so
-         resizeToContent measures the post-reflow scrollHeight. */
-      if (el && el.getAttribute && el.getAttribute('gs-id') === 'hm-economy') {
-        setTimeout(function () {
-          try {
-            /* Unlock BOTH minH and maxH so resizeToContent can
-               grow OR shrink the cell freely. The previous fix
-               only unlocked minH, leaving maxH capped at the OLD
-               content height — so when the user resized wider
-               (content got shorter) the cell couldn't shrink past
-               the cap, and when narrower (content got taller) the
-               cell couldn't grow past the cap. Both directions
-               now refit. */
-            gridInstance.update(el, { minH: 1, maxH: 9999 });
-            gridInstance.resizeToContent(el);
-            var node = el.gridstackNode;
-            if (node) {
-              gridInstance.update(el, { minH: node.h, maxH: node.h });
-            }
-          } catch (e) {}
-        }, 80);
-      }
     });
 
     /* Edge auto-scroll while dragging: when the cursor approaches the top
@@ -10543,15 +10529,10 @@
             document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
               var node = item.gridstackNode;
               if (!node) return;
-              var id = item.getAttribute('gs-id');
               var minH = computePanelMinH(item);
-              /* Economic Indicators is height-locked to its fitted
-                 content height — user can resize width but not height.
-                 Prevents under-sizing that would break the panel's
-                 outer outline (no scroll on this panel by design). */
-              if (id === 'hm-economy') minH = node.h;
               try { window.gridInstance.update(item, { maxH: node.h, minH: minH }); } catch (e) {}
               /* Initial snapshot — what the user sees right now. */
+              var id = item.getAttribute('gs-id');
               if (id) INITIAL_H[id] = node.h;
             });
             /* Compact upward: fitToContent shrunk panels to their actual
