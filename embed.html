@@ -5298,12 +5298,10 @@
   var TOGGLEABLE_BLOCKS = [
     // Main column
     { id: 'hm-indexes',        label: 'Index cards',           group: 'Main column' },
-    /* hm-gave-wrap is the actual grid panel; the inner gave-quadrant
-       and gave-charts entries below toggle just their own DOM nodes
-       (kept for backward compatibility with older saved hidden lists). */
+    /* hm-gave-wrap is the actual grid panel containing the quadrant
+       and the companion charts together — they are not exposed as
+       separate hide/show options. */
     { id: 'hm-gave-wrap',      label: 'Macro Regime (Gave)',   group: 'Main column' },
-    { id: 'hm-gave-quadrant',  label: 'Gave Four Quadrants',   group: 'Main column' },
-    { id: 'hm-gave-charts',    label: 'Gave companion charts', group: 'Main column' },
     { id: 'hm-macrocompass',   label: 'Growth \u00d7 Policy',  group: 'Main column' },
     { id: 'hm-stylefactor',    label: 'Size vs Value',         group: 'Main column' },
     { id: 'hm-factors',        label: 'Factors (vs S&P 500)',  group: 'Main column' },
