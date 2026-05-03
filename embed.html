@@ -120,6 +120,13 @@
     background: var(--hm-bg);
     display: flex;
     flex-wrap: wrap;
+    /* align-items: flex-start so each pinned item keeps its natural
+       (or max-height-capped) height instead of stretching to match
+       the tallest item in the row. Default flex behavior was making
+       a short pinned panel grow to a tall pinned panel's height,
+       leaving a dead band of empty space below the short panel's
+       content. */
+    align-items: flex-start;
     gap: 12px;
     /* 4px horizontal padding so the outermost items' 1px gold
        box-shadow has room to render inside the bar's content box.
