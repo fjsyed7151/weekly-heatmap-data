@@ -10587,13 +10587,26 @@
       try {
         gridInstance.update(item, { maxH: 9999, minH: 1 });
         gridInstance.update(item, { w: def.w });
-        gridInstance.resizeToContent(item);
-        var nodeStack = item.gridstackNode;
-        if (nodeStack) {
-          gridInstance.update(item, { maxH: nodeStack.h, minH: minHStack });
-          INITIAL_H[id] = nodeStack.h;
-        }
       } catch (e) {}
+      /* Defer the height measurement to the next frame: when the
+         panel was at a narrower width before reset, the just-issued
+         w-update needs a paint cycle before scrollHeight reflects
+         the un-wrapped content height. Measuring immediately picks
+         up the old (taller, more-wrapped) content height and leaves
+         empty space below content after the width finally widens.
+         requestAnimationFrame x2 = wait for layout + paint to settle. */
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          try {
+            gridInstance.resizeToContent(item);
+            var nodeStack = item.gridstackNode;
+            if (nodeStack) {
+              gridInstance.update(item, { maxH: nodeStack.h, minH: minHStack });
+              INITIAL_H[id] = nodeStack.h;
+            }
+          } catch (e) {}
+        });
+      });
       return;
     }
     /* Chart panel is a special case: the "right" height depends on how
