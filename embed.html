@@ -9987,15 +9987,23 @@
     window.addEventListener('pointerup', _activeDragOff, true);
     window.addEventListener('pointercancel', _activeDragOff, true);
 
-    /* Persist layout on every change (drag end, resize end, item removed).
-       Skipped while the post-load fit-to-content pass runs so the auto
-       sizing isn't persisted as a user customization. */
+    /* Persist layout — debounced so we save AFTER the drag/resize
+       settles, not on every mouse-move. The 'change' event fires
+       continuously during a drag (gridstack reflows other panels
+       on every cursor tick); serializing all 18 panels + writing
+       localStorage on every fire was the cause of perceived
+       drag-lag. 250ms after activity stops, we save once. */
+    var saveLayoutTimer = null;
     gridInstance.on('change removed added', function () {
       if (gridInstance._suppressSave) return;
-      try {
-        var layout = gridInstance.save(false);  /* false: positions only, no content */
-        localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
-      } catch (e) { /* localStorage quota / private-mode — silently ignore */ }
+      if (saveLayoutTimer) clearTimeout(saveLayoutTimer);
+      saveLayoutTimer = setTimeout(function () {
+        saveLayoutTimer = null;
+        try {
+          var layout = gridInstance.save(false);  /* false: positions only, no content */
+          localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+        } catch (e) { /* localStorage quota / private-mode — silently ignore */ }
+      }, 250);
     });
 
     /* When a panel resizes, Chart.js instances inside it need to be told to
