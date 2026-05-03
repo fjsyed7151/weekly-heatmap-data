@@ -26,6 +26,7 @@
     --hm-bg-alt:      #faf9f8;
     --hm-border:      #d9d9d9;
     --hm-border-strong: #bfbab0;
+    --hm-panel-outline: #F2DFB3;
     --hm-brown:       #513C0C;
     --hm-blue:        #2c40d0;
     --hm-green:       #1a7a42;
@@ -50,6 +51,7 @@
     --hm-bg-alt:      #171a21;
     --hm-border:      #232731;
     --hm-border-strong: #3a3f4e;
+    --hm-panel-outline: #8c7a4a;
     --hm-brown:       #c7ab6d;
     --hm-blue:        #5b6ef5;
     --hm-green:       #2f8a3e;
@@ -220,7 +222,7 @@
      content matches cell exactly so scrollbars stay hidden. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content {
     background: transparent;
-    border: 2px solid #F2DFB3;
+    border: 2px solid var(--hm-panel-outline);
     border-radius: var(--hm-r);
     overflow: auto;
     padding: 0;
@@ -381,13 +383,13 @@
   .hm-app .grid-stack-item > .ui-resizable-handle { display: block; z-index: 0; }
   /* Push edge handles into the Gridstack inset, OUTSIDE the cell's
      content area (where scrollbars live). Horizontal inset = 8px
-     (split equally between adjacent panels), vertical inset = 4px.
+     (split equally between adjacent panels), vertical inset = 8px.
      Handles fill those gutters so they don't enter content space. */
   .hm-app .grid-stack-item > .ui-resizable-e { right: 0; width: 8px; }
   .hm-app .grid-stack-item > .ui-resizable-w { left: 0; width: 8px; }
-  .hm-app .grid-stack-item > .ui-resizable-s { bottom: 0; height: 4px; }
-  .hm-app .grid-stack-item > .ui-resizable-se { right: 0; bottom: 0; width: 8px; height: 4px; }
-  .hm-app .grid-stack-item > .ui-resizable-sw { left: 0; bottom: 0; width: 8px; height: 4px; }
+  .hm-app .grid-stack-item > .ui-resizable-s { bottom: 0; height: 8px; }
+  .hm-app .grid-stack-item > .ui-resizable-se { right: 0; bottom: 0; width: 8px; height: 8px; }
+  .hm-app .grid-stack-item > .ui-resizable-sw { left: 0; bottom: 0; width: 8px; height: 8px; }
   /* Force a stacking context on the content so the header (z-index: 2)
      wins over the resize handle siblings (z-index: 0). */
   .hm-app .grid-stack-item-content {
@@ -520,7 +522,7 @@
      tracks resize, just like the other panels. Square top corners so the
      gold header band sits flush at the top edge. */
   .hm-app .hm-chart-section {
-    border: 1px solid var(--hm-border);
+    border: 0;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     background: var(--hm-panel);
     padding: 16px;
@@ -786,7 +788,7 @@
   .hm-app .hm-scroll {
     overflow: visible;
     -webkit-overflow-scrolling: touch;
-    border: 1px solid var(--hm-border);
+    border: 0;
     border-radius: var(--hm-r);
     background: var(--hm-panel);
     width: max-content;
@@ -1044,7 +1046,7 @@
      than the table's natural width. `overflow-x: auto` exposes a scrollbar
      only when needed; the table's min-width triggers overflow. */
   .hm-app .hm-commod-wrap {
-    border: 1px solid var(--hm-border);
+    border: 0;
     /* Top corners square — table thead is a gold band that should read as
        a flat title bar like the calendar / ranking-table headers. */
     border-radius: 0 0 var(--hm-r) var(--hm-r);
@@ -1225,7 +1227,7 @@
 
   /* Currencies table — shares all styling with commodities */
   .hm-app .hm-fx-wrap {
-    border: 1px solid var(--hm-border);
+    border: 0;
     /* Top corners square — same rationale as commodities wrap above. */
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     overflow-x: auto;
@@ -1316,7 +1318,7 @@
      current regime, the charts show the two ratios + their MAs over time. */
   .hm-app .hm-gave-wrap {
     background: var(--hm-panel);
-    border: 1px solid var(--hm-border);
+    border: 0;
     /* Top corners square so the gold header band reads as a flat title bar.
        Bottom corners stay rounded to keep card chrome consistent w/ others. */
     border-radius: 0 0 var(--hm-r) var(--hm-r);
@@ -1635,7 +1637,7 @@
      surface transitional-regime trades on hover. */
   .hm-app .hm-mc {
     background: var(--hm-panel);
-    border: 1px solid var(--hm-border);
+    border: 0;
     /* Top corners square — gold header reads as a flat title bar. */
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 16px;
@@ -1836,8 +1838,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 0;
     background: var(--hm-panel);
-    border: 1px solid var(--hm-border);
-    border-top: none;  /* gold header above already provides the top edge */
+    border: 0;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     margin-bottom: 0; /* Gridstack handles spacing */
     overflow: hidden;  /* clip child content to the rounded bottom corners */
@@ -1981,8 +1982,7 @@
   .hm-app .hm-sector-toolbar .hm-btn svg { width: 14px; height: 14px; display: block; margin: auto; }
   .hm-app .hm-sector-body {
     background: var(--hm-panel);
-    border: 1px solid var(--hm-border);
-    border-top: none;
+    border: 0;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 16px;
     overflow-x: auto;
@@ -2750,7 +2750,7 @@
      (best at top). Row tint uses the shared perfCellPaint palette. */
   .hm-app .hm-factors-card {
     background: var(--hm-panel);
-    border: 1px solid var(--hm-border);
+    border: 0;
     border-radius: var(--hm-r);
     overflow: hidden;
     /* width: max-content + min-width: 100% — when the inner table is
@@ -9479,7 +9479,7 @@
          rounding overshoot. HTML gs-h/gs-y values were pre-scaled by
          GS_SCALE (40) above to keep the visual layout identical. */
       cellHeight: 1,
-      marginLeft: 8, marginRight: 8, marginTop: 4, marginBottom: 4,
+      marginLeft: 8, marginRight: 8, marginTop: 8, marginBottom: 8,
       /* float: true preserves explicit gs-y positions (no auto-compact).
          Critical here because our 3-6-3 default has gaps below the
          sidebar columns; with float: false those gaps would pull main
