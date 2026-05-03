@@ -133,25 +133,22 @@
     display: none;
   }
   /* Override Gridstack's absolute positioning when an item lives in the
-     pinned bar — let it flow naturally. Width is set inline at pin time
-     to a percentage derived from the item's original grid width so panels
-     don't balloon to full width when pinned. Height is intrinsic but
-     capped so tall tables don't dominate. */
+     pinned bar — let it flow naturally. Width AND height are set inline
+     at pin time from the user's last grid size so a pinned panel keeps
+     the dimensions the user chose (no reset to default). The pinned-bar
+     itself caps overall height at 50vh and scrolls if the stack
+     overflows, so individual items can be as tall as the user picked. */
   .hm-app .hm-pinned-bar > .grid-stack-item {
     position: relative !important;
     left: auto !important;
     top: auto !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: 45vh;
     transform: none !important;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     overflow: hidden;
   }
   .hm-app .hm-pinned-bar > .grid-stack-item > .grid-stack-item-content {
     position: static !important;
-    height: auto !important;
-    max-height: 45vh;
+    height: 100%;
     overflow: auto;
   }
 
@@ -9778,24 +9775,32 @@
        the DOM move is what's missing.) */
     var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
-    /* Save current size so we can restore on unpin. */
+    /* Save current size so we can restore on unpin. node.w is in grid
+       columns (24-col grid). node.h is in cells; with cellHeight:1 and
+       gs-h pre-scaled by GS_SCALE, node.h equals the rendered pixel
+       height — perfect for inline `height: Xpx` on the pinned item. */
     var node = item.gridstackNode;
     var origW = (node && node.w) || parseInt(item.getAttribute('gs-w') || 24, 10);
+    var origH = (node && node.h) || parseInt(item.getAttribute('gs-h') || (4 * GS_SCALE), 10);
     if (node) {
       item.dataset.unpinW = node.w;
       item.dataset.unpinH = node.h;
     }
     /* Remove from gridstack tracking but keep DOM (second arg = removeDOM=false). */
     try { gridInstance.removeWidget(item, false, false); } catch (e) {}
-    /* Strip Gridstack's inline positioning. Set width as a % of the grid
-       matching the item's original column span so a w=6 panel stays ~50% wide
-       when pinned, not 100%. Minimum 240px so narrow items stay legible. */
+    /* Strip Gridstack's inline positioning, then write back the user's
+       chosen size so the pinned panel keeps the W×H they had in the
+       grid (instead of resetting to a fixed pinned-bar size). */
     item.style.left = '';
     item.style.top = '';
-    item.style.height = '';
     item.style.transform = '';
-    var pct = Math.max(20, Math.min(100, Math.round((origW / 12) * 100)));
+    /* Width: % of the dashboard width matching the user's column span
+       (out of 24). Minimum 240px so a 3-col panel still reads. The
+       `% - 12px` offset accounts for the pinned-bar's gap between items. */
+    var pct = Math.max(20, Math.min(100, Math.round((origW / 24) * 100)));
     item.style.width = 'max(240px, ' + pct + '% - 12px)';
+    /* Height: literal pixel height from the user's gs-h. */
+    item.style.height = origH + 'px';
     var bar = document.getElementById('hm-pinned-bar');
     if (bar) bar.appendChild(item);
     /* Persist if not already there. */
@@ -9870,12 +9875,13 @@
     var item = document.querySelector('#hm-pinned-bar > .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
     var w = parseInt(item.dataset.unpinW || item.getAttribute('gs-w') || 24, 10);
-    var h = parseInt(item.dataset.unpinH || item.getAttribute('gs-h') || 4, 10);
+    var h = parseInt(item.dataset.unpinH || item.getAttribute('gs-h') || (4 * GS_SCALE), 10);
     item.setAttribute('gs-w', w);
     item.setAttribute('gs-h', h);
-    /* Clear the inline width we set in pinItemById so Gridstack can size
-       the item by gs-w again. */
+    /* Clear the inline width + height we set in pinItemById so Gridstack
+       can size the item by gs-w/gs-h again. */
     item.style.width = '';
+    item.style.height = '';
     var grid = document.getElementById('hm-grid');
     if (grid) grid.appendChild(item);
     try { gridInstance.makeWidget(item); } catch (e) {}
