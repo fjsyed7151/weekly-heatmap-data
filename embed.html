@@ -9888,8 +9888,16 @@
       /* Drag ONLY from the window-style header bar — prevents accidental
          drags when users interact with charts/tables inside panels.
          distance:0 removes the ~5px drag-start threshold so drag engages
-         instantly when you grab the header (no "stuck" feel). */
-      draggable: { handle: '.hm-panel-header', distance: 0 },
+         instantly when you grab the header (no "stuck" feel).
+         pause:30 — gridstack's _dragFollow updates the dragged item's
+         visual position on every mousemove (smooth tracking), but the
+         expensive grid handling (collision, push-to-fit with float:false,
+         placeholder updates, change events) is debounced until the
+         cursor settles for 30ms. With 24 columns × 18 panels, doing
+         all that on every mousemove was the bottleneck. 30ms is below
+         human-noticeable lag (~100ms threshold) but cuts redundant
+         work by ~5-10x during a fast drag. */
+      draggable: { handle: '.hm-panel-header', distance: 0, pause: 30 },
       /* animate:false — transitions on reflowing panels were the
          residual cause of perceived drag lag (placeholder updates
          couldn't keep up with cursor moves while neighbors slowly
