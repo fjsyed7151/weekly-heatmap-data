@@ -2355,8 +2355,7 @@
   }
   .hm-app .hm-cal-body {
     background: var(--hm-panel);
-    border: 1px solid var(--hm-border);
-    border-top: none;
+    border: 0;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     /* No max-height / overflow: the grid item auto-fits to content via
        resizeToContent + maxH cap, so the calendar list grows naturally
@@ -2489,8 +2488,7 @@
   .hm-app .hm-econ-section > .hm-econ-body { flex: 1 1 auto; min-height: 0; }
   .hm-app .hm-econ-body {
     background: var(--hm-panel);
-    border: 1px solid var(--hm-border);
-    border-top: none;
+    border: 0;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     overflow: hidden;
     /* Container query root: grids below query their own width (i.e. the
@@ -2705,8 +2703,7 @@
   }
   .hm-app .hm-sf-body {
     background: var(--hm-panel);
-    border: 1px solid var(--hm-border);
-    border-top: none;
+    border: 0;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 12px;
   }
@@ -6031,27 +6028,15 @@
       var card = document.createElement('div');
       card.className = 'hm-idx-card';
 
-      var sign = idx.change >= 0 ? '+' : '';
-      var cls = idx.change >= 0 ? 'up' : 'down';
-      var color = idx.change >= 0 ? '#1a7a42' : '#d42a20';
-      var fillColor = idx.change >= 0 ? 'rgba(26,122,66,0.15)' : 'rgba(212,42,32,0.15)';
+      /* Compute period-specific price/change FIRST so the card label
+         reflects the active idxPeriod (1W / 1M / 3M / etc.). Falls back
+         to shipped 1-day idx.close/idx.change when the sparkline is
+         missing. */
+      var slicedSpark = null, slicedDates = null;
+      var currentPrice = idx.close;
+      var periodChange = idx.change;
+      var periodChangePct = idx.change_pct;
 
-      var sparkWrap = document.createElement('div');
-      sparkWrap.className = 'hm-idx-spark';
-      var canvas = document.createElement('canvas');
-      sparkWrap.appendChild(canvas);
-
-      card.innerHTML =
-        '<div class="hm-idx-label">' + idx.name + '</div>' +
-        '<div class="hm-idx-row">' +
-          '<span class="hm-idx-close">' + idx.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>' +
-          '<span class="hm-idx-change ' + cls + '">' + sign + idx.change.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-          ' (' + sign + idx.change_pct.toFixed(2) + '%)</span>' +
-        '</div>';
-      card.appendChild(sparkWrap);
-      grid.appendChild(card);
-
-      /* Interactive Chart.js sparkline — sliced to the active period. */
       if (idx.sparkline && idx.sparkline.length >= 2) {
         /* For short periods (≤6M) prefer daily granularity if shipped —
            a 1W view from 5 daily points reads as a curve, not the
@@ -6062,7 +6047,6 @@
         var useDaily = (idxPeriod === 'w1' || idxPeriod === 'm1' ||
                         idxPeriod === 'm3' || idxPeriod === 'm6' ||
                         idxPeriod === 'ytd');
-        var slicedSpark, slicedDates;
         if (useDaily && idx.sparkline_daily && idx.sparkline_daily.length > 0) {
           var days = weeks * 5; /* ~5 trading days/week */
           slicedSpark = idx.sparkline_daily.slice(-days);
@@ -6071,6 +6055,38 @@
           slicedSpark = idx.sparkline.slice(-weeks);
           slicedDates = (idx.spark_dates || []).slice(-weeks);
         }
+        if (slicedSpark && slicedSpark.length >= 2) {
+          var startVal = slicedSpark[0];
+          var endVal = slicedSpark[slicedSpark.length - 1];
+          currentPrice = endVal;
+          periodChange = endVal - startVal;
+          periodChangePct = startVal !== 0 ? (periodChange / startVal) * 100 : 0;
+        }
+      }
+
+      var sign = periodChange >= 0 ? '+' : '';
+      var cls = periodChange >= 0 ? 'up' : 'down';
+      var color = periodChange >= 0 ? '#1a7a42' : '#d42a20';
+      var fillColor = periodChange >= 0 ? 'rgba(26,122,66,0.15)' : 'rgba(212,42,32,0.15)';
+
+      var sparkWrap = document.createElement('div');
+      sparkWrap.className = 'hm-idx-spark';
+      var canvas = document.createElement('canvas');
+      sparkWrap.appendChild(canvas);
+
+      card.innerHTML =
+        '<div class="hm-idx-label">' + idx.name + '</div>' +
+        '<div class="hm-idx-row">' +
+          '<span class="hm-idx-close">' + currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>' +
+          '<span class="hm-idx-change ' + cls + '">' + sign + periodChange.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+          ' (' + sign + periodChangePct.toFixed(2) + '%)</span>' +
+        '</div>';
+      card.appendChild(sparkWrap);
+      grid.appendChild(card);
+
+      /* Interactive Chart.js sparkline — uses slicedSpark/slicedDates
+         already computed above for the period-specific change calc. */
+      if (slicedSpark && slicedSpark.length >= 2) {
         var labels = slicedDates.map(function (d) {
           var parts = d.split('-');
           return parts[1] + '/' + parts[2];
