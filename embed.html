@@ -461,34 +461,11 @@
   .hm-app .grid-stack-item-content {
     z-index: 1;
   }
-  /* Economic Indicators: overflow: visible so no scrollbar can ever
-     appear (per user spec). The z-index ::after pseudo replaces the
-     default box-shadow outline for this panel — pseudo paints OVER
-     overflowing content, so the gold outline stays intact even if
-     content briefly overflows during async paint. */
+  /* Economic Indicators: overflow: visible so no scrollbar appears.
+     fitToContent on init sizes the panel to content height. Standard
+     box-shadow border applies. */
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content {
     overflow: visible;
-    position: relative;
-    box-shadow: none;
-  }
-  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-economy"] > .grid-stack-item-content::after {
-    content: "";
-    position: absolute;
-    top: -1px; left: -1px; right: -1px; bottom: -1px;
-    border: 1px solid var(--hm-panel-outline);
-    border-radius: calc(var(--hm-r) + 1px);
-    pointer-events: none;
-    z-index: 9999;
-  }
-  /* Hide the S / SE / SW resize handles on hm-economy. Height is
-     auto-tracked to content; user-driven height resize is
-     meaningless and previously caused glitching. Width handles
-     (E / W) stay live so the user can still resize width. */
-  .hm-app .grid-stack-item[gs-id="hm-economy"] > .ui-resizable-s,
-  .hm-app .grid-stack-item[gs-id="hm-economy"] > .ui-resizable-se,
-  .hm-app .grid-stack-item[gs-id="hm-economy"] > .ui-resizable-sw {
-    display: none !important;
-    pointer-events: none !important;
   }
   /* No north handle — top edge is drag-only via the header. */
 
@@ -4197,10 +4174,7 @@
           <div class="grid-stack-item" gs-id="hm-calendar"        gs-x="20" gs-y="0"   gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-stylefactor"     gs-x="0"  gs-y="4"   gs-w="6"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-factors"         gs-x="0"  gs-y="14"  gs-w="7"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-          <!-- Height auto-tracked to content via JS fitEconomy() — see
-               below. Cell stays exactly content-sized so resize handles
-               sit at the visible edge and no overflow eats the gutter. -->
-          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="8"  gs-y="14"  gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="8"  gs-y="14"  gs-w="3"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="12" gs-y="24"  gs-w="8"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-commodities"     gs-x="16" gs-y="24"  gs-w="8"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
           <div class="grid-stack-item" gs-id="hm-country-etfs"    gs-x="0"  gs-y="28"  gs-w="8"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
@@ -9714,7 +9688,7 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v33';
+  var LAYOUT_KEY = 'hm-grid-layout-v34';
   var GS_SCALE = 40;
   var gridInstance = null;
 
@@ -10563,53 +10537,6 @@
             });
           }, 800);
 
-          /* Economic Indicators — re-run gridstack's own
-             resizeToContent on every event that could change the
-             content's natural height. resizeToContent is the same
-             API that successfully sizes every other panel on init;
-             we just need to call it again whenever the panel might
-             need to re-fit (its container-query layout means content
-             height depends on width). gridResizing flag suppresses
-             mid-drag fits so gridstack.update() never interrupts an
-             active drag. */
-          var gridResizing = false;
-          var fitEcoTimer = null;
-          window._fitEconomy = function fitEconomy() {
-            if (gridResizing) return;
-            if (fitEcoTimer) clearTimeout(fitEcoTimer);
-            fitEcoTimer = setTimeout(function () {
-              fitEcoTimer = null;
-              var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-economy"]');
-              if (!item || !window.gridInstance) return;
-              try {
-                /* Unlock so resizeToContent can grow OR shrink. */
-                window.gridInstance.update(item, { minH: 1, maxH: 9999 });
-                window.gridInstance.resizeToContent(item);
-              } catch (e) {}
-            }, 50);
-          };
-          window.gridInstance.on('resizestart dragstart', function () { gridResizing = true; });
-          window.gridInstance.on('resizestop  dragstop',  function () {
-            gridResizing = false;
-            setTimeout(window._fitEconomy, 80);
-          });
-          window.addEventListener('resize', function () { window._fitEconomy(); });
-          var econItem = document.querySelector('#hm-grid > .grid-stack-item[gs-id="hm-economy"]');
-          if (econItem && window.ResizeObserver) {
-            var econContent = econItem.querySelector('.grid-stack-item-content');
-            var econWrap = econContent && econContent.firstElementChild;
-            if (econWrap) {
-              new ResizeObserver(function () { window._fitEconomy(); }).observe(econWrap);
-            }
-          }
-          /* Multi-stage fit so async-painted content (Chart.js charts,
-             web fonts, container-query reflow) all get a final pass
-             after they settle. Each stage triggers the same debounced
-             resizeToContent call. */
-          window._fitEconomy();
-          setTimeout(window._fitEconomy, 200);
-          setTimeout(window._fitEconomy, 800);
-          setTimeout(window._fitEconomy, 1800);
         }
         fitAll();
         /* Apply the no-selection state once gridInstance is live: this
