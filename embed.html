@@ -9532,6 +9532,24 @@
       content.appendChild(wrap);
     });
 
+    /* Patch GridStack.Utils.updateScrollPosition to neutralize the
+       drag-time auto-scroll runaway. Default behavior: when the
+       dragged element is taller than the viewport, gridstack adds
+       the full mouse-delta to scrollTop on every mousemove, so the
+       page chases the cursor and you can't place a tall panel
+       precisely. Skip auto-scroll for oversized elements; the user
+       scrolls manually with the wheel/keyboard while dragging. For
+       normal-sized panels the original (bounded) auto-scroll still
+       runs so dropping near the page edge still scrolls the grid. */
+    if (window.GridStack && GridStack.Utils && GridStack.Utils.updateScrollPosition) {
+      var _origUpdateScrollPosition = GridStack.Utils.updateScrollPosition;
+      GridStack.Utils.updateScrollPosition = function (el, position, distance) {
+        var vh = window.innerHeight || document.documentElement.clientHeight;
+        if (el && el.offsetHeight > vh) return;
+        return _origUpdateScrollPosition.call(this, el, position, distance);
+      };
+    }
+
     gridInstance = GridStack.init({
       /* 24-column grid (was 12). Doubles width-resize granularity to
          ~40-50px per step instead of ~85-100px while preserving snap-to-
