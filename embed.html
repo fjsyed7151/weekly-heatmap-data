@@ -10020,6 +10020,23 @@
         });
       });
 
+      /* Economy panel uses container queries internally, so its
+         content height depends heavily on its width. After ANY
+         resize (even on a sibling that shifts its available
+         width), recompute maxH from the new content height —
+         otherwise the user can drag the cell taller than the
+         freshly-reflowed content, leaving empty space + a
+         stretched border. */
+      if (el && el.getAttribute && el.getAttribute('gs-id') === 'hm-economy') {
+        setTimeout(function () {
+          try {
+            gridInstance.update(el, { maxH: 9999 });
+            gridInstance.resizeToContent(el);
+            var node = el.gridstackNode;
+            if (node) gridInstance.update(el, { maxH: node.h });
+          } catch (e) {}
+        }, 80);
+      }
     });
 
     /* Edge auto-scroll while dragging: when the cursor approaches the top
