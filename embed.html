@@ -9792,9 +9792,13 @@
      working. State persists in localStorage. */
   var PINNED_KEY = 'hm-pinned-ids';
   /* User-resizable pinned-bar height: persisted as a px integer.
-     Default falls back to CSS max-height: 50vh when key is unset. */
+     Default falls back to CSS max-height: 50vh when key is unset.
+     Minimum height = the smallest possible panel (Index Snapshot,
+     gs-h=4 → 4 × GS_SCALE = 160px) + the bar's own 12px top + 12px
+     bottom padding = 184px. Lets a user shrink the bar to exactly
+     fit one Index Snapshot card without clipping. */
   var PINNED_BAR_H_KEY = 'hm-pinned-bar-h';
-  var PINNED_BAR_MIN_PX = 60;
+  var PINNED_BAR_MIN_PX = (4 * GS_SCALE) + 24;
 
   function applyPinnedBarHeight() {
     var bar = document.getElementById('hm-pinned-bar');
