@@ -9888,16 +9888,8 @@
       /* Drag ONLY from the window-style header bar — prevents accidental
          drags when users interact with charts/tables inside panels.
          distance:0 removes the ~5px drag-start threshold so drag engages
-         instantly when you grab the header (no "stuck" feel).
-         pause:30 — gridstack's _dragFollow updates the dragged item's
-         visual position on every mousemove (smooth tracking), but the
-         expensive grid handling (collision, push-to-fit with float:false,
-         placeholder updates, change events) is debounced until the
-         cursor settles for 30ms. With 24 columns × 18 panels, doing
-         all that on every mousemove was the bottleneck. 30ms is below
-         human-noticeable lag (~100ms threshold) but cuts redundant
-         work by ~5-10x during a fast drag. */
-      draggable: { handle: '.hm-panel-header', distance: 0, pause: 30 },
+         instantly when you grab the header (no "stuck" feel). */
+      draggable: { handle: '.hm-panel-header', distance: 0 },
       /* animate:false — transitions on reflowing panels were the
          residual cause of perceived drag lag (placeholder updates
          couldn't keep up with cursor moves while neighbors slowly
@@ -10006,12 +9998,28 @@
          while the drag is in flight, so neighbors don't slowly slide
          into reflow positions (reads as lag when dropping into gaps). */
       document.body.classList.add('hm-grid-dragging');
+      /* Suspend iframe-resizer's MutationObserver during drag.
+         Without this, every panel reflow (push-to-fit shifts ALL
+         neighbors per cursor tick) triggers a body-height
+         recompute + postMessage to the parent page. Compounds
+         into perceptible drag lag in the WordPress embed. */
+      if (window.parentIFrame && typeof parentIFrame.autoResize === 'function') {
+        try { parentIFrame.autoResize(false); } catch (e) {}
+      }
     }
     function _activeDragOff() {
       document.querySelectorAll('.grid-stack-item.hm-active-drag').forEach(function (el) {
         el.classList.remove('hm-active-drag');
       });
       document.body.classList.remove('hm-grid-dragging');
+      /* Resume iframe-resizer + force one final size sync so the
+         parent page picks up the post-drag layout's true height. */
+      if (window.parentIFrame && typeof parentIFrame.autoResize === 'function') {
+        try {
+          parentIFrame.autoResize(true);
+          if (typeof parentIFrame.size === 'function') parentIFrame.size();
+        } catch (e) {}
+      }
     }
     gridInstance.on('dragstart resizestart', _activeDragOn);
     gridInstance.on('dragstop resizestop',  _activeDragOff);
