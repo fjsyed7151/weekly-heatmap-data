@@ -121,7 +121,11 @@
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    padding: 12px 0;
+    /* 4px horizontal padding so the outermost items' 1px gold
+       box-shadow has room to render inside the bar's content box.
+       Without it, overflow-y:auto creates an implicit clipping
+       context that cuts off the left/right edges of edge items. */
+    padding: 12px 4px;
     margin-bottom: 12px;
     border-bottom: 1px solid var(--hm-border);
     /* Cap the stack at half the viewport so a tall pinned panel (like the
