@@ -10035,6 +10035,26 @@
           }
         });
       });
+
+      /* Economic Indicators is height-locked to content. When the user
+         resizes its WIDTH, content reflows and its natural height
+         changes — re-fit gs-h to the new content height and re-lock
+         minH/maxH there so it never needs a scrollbar. setTimeout
+         lets the DOM reflow first so resizeToContent measures the
+         post-reflow scrollHeight. */
+      if (el && el.getAttribute && el.getAttribute('gs-id') === 'hm-economy') {
+        setTimeout(function () {
+          try {
+            /* Unlock so resizeToContent can grow OR shrink the cell. */
+            gridInstance.update(el, { minH: 1 });
+            gridInstance.resizeToContent(el);
+            var node = el.gridstackNode;
+            if (node) {
+              gridInstance.update(el, { minH: node.h, maxH: node.h });
+            }
+          } catch (e) {}
+        }, 80);
+      }
     });
 
     /* Edge auto-scroll while dragging: when the cursor approaches the top
