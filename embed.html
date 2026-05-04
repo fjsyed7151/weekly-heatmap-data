@@ -338,7 +338,6 @@
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) > .grid-stack-item-content,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) > .grid-stack-item-content,
   .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) > .grid-stack-item-content,
-  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content,
   .hm-app .grid-stack-item[gs-id="hm-indexes"] > .grid-stack-item-content {
     container-type: inline-size;
   }
@@ -347,7 +346,6 @@
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-wrap,
-  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-indexes"] .hm-panel-wrap {
     width: max-content;
     min-width: 100%;
@@ -357,9 +355,27 @@
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-header,
-  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-indexes"] .hm-panel-header {
     width: 100cqw;
+  }
+  /* Metrics table (hm-heatmap-wrap) uses a different navbar-fix
+     approach because its content is significantly taller than wide
+     ranking panels: with the max-content wrap pattern above, a
+     wide table triggers a cell-level horizontal scrollbar whose
+     ~8px reservation eats into vertical space and triggers an
+     unnecessary vertical scrollbar (cell height was sized to fit
+     content exactly, but loses 8px to the h-scrollbar).
+     Instead, move the horizontal scroll INSIDE .hm-scroll itself
+     (overflow-x:auto on the table wrapper). The cell never
+     horizontally overflows → no h-scrollbar reservation → no
+     spurious v-scrollbar. The navbar stays cell-width naturally
+     (no horizontal scroll position to drift), eliminating the
+     navbar-gap symptom for this panel without the wrap-rewriting
+     plumbing the other panels need. */
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-scroll {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
   }
   /* Same trick for the GOLD header band (.hm-factors-header) on
      ranking panels: pin it to viewport-left + cell-width so the
@@ -5222,11 +5238,15 @@
       var cellH = window.gridInstance.getCellHeight(true) || 40;
       var natural = wrap.scrollHeight;
       if (!natural) return;
-      /* Add a small breathing-room buffer (~12px) so the content's bottom
-         edge never lands flush against the cell's clipping border, which
-         is what triggers the vertical scrollbar to appear at the exact
-         fit height. */
-      var rows = Math.max(1, Math.ceil((natural + 12) / cellH));
+      /* Breathing-room buffer so the content's bottom edge never lands
+         flush against the cell's clipping border, which is what
+         triggers the persistent vertical scrollbar. Bumped from 12px
+         to 24px because Chart.js's canvas can extend up to ~10px past
+         the measured scrollHeight after async paint settling (the
+         canvas's intrinsic baseline + its own resize triggered by the
+         setTimeout-delayed measurement read). 24px gives clean
+         headroom at the cost of trivial empty pixels at the bottom. */
+      var rows = Math.max(1, Math.ceil((natural + 24) / cellH));
       window.gridInstance._suppressSave = true;
       /* Chart panel is a special case: don't lock maxH at content height
          like other panels. Users want to drag the chart taller for better
@@ -10771,10 +10791,16 @@
        many metrics are selected and which view mode is active, so reset
        width to default and let refitChartSection auto-fit the height
        to the current chart content. Otherwise the user would reset to a
-       static height that's wrong for their current selection count. */
+       static height that's wrong for their current selection count.
+       minH/minW: same treatment as other panels — minH from
+       computePanelMinH (so the user can't shrink the cell below
+       window-header + gold-band height), minW = a small floor (3
+       cells ≈ 250px) so the chart toolbar buttons stay reachable. */
     if (id === 'hm-chart-section') {
+      var chartMinH = (typeof computePanelMinH === 'function')
+        ? computePanelMinH(item) : 70;
       try {
-        gridInstance.update(item, { maxH: 4000, minH: 1 });
+        gridInstance.update(item, { maxH: 4000, minH: chartMinH, minW: 3 });
         gridInstance.update(item, { w: def.w });
       } catch (e) {}
       if (typeof refitChartSection === 'function') refitChartSection();
