@@ -2106,15 +2106,18 @@
      into 4 cells, instead of 4 separate pills competing for attention. */
   .hm-app .hm-indexes {
     display: grid;
-    /* minmax(140px, 180px): cards shrink to 140px floor (so 4 cards
-       fit in the default panel-width-6 cell ≈ 628px → ~157px per
-       card, comfortably above the 140px floor) and grow up to a
-       180px cap (so on wider panels the cards don't get gratuitously
-       large — any leftover horizontal space falls trailing instead).
-       At panel widths < 4×140 = 560px the cells overflow the cell;
-       the navbar-fix CSS above keeps the navbar pinned to cell width
-       during the resulting horizontal scroll. */
-    grid-template-columns: repeat(4, minmax(140px, 180px));
+    /* clamp(140px, 25%, 180px) per column — each card is 25% of the
+       grid (so 4 cards fill the row), clamped between 140px (min)
+       and 180px (max). This gives smooth shrink/grow as the panel
+       resizes:
+         • panel 6 (~628px) → 25% = 157px → 4×157=628 ✓
+         • panel 7 (~740px) → 25% = 185px → clamped to 180 (trailing space)
+         • panel <560px → 25% < 140 → clamped to 140, cell overflows
+       minmax(140,180) doesn't distribute free space the same way
+       (with both ends fixed lengths and no 1fr, tracks tend to lock
+       to base or growth instead of interpolating). clamp() with a
+       percentage middle value gives the proper liquid behavior. */
+    grid-template-columns: repeat(4, clamp(140px, 25%, 180px));
     gap: 0;
     background: var(--hm-panel);
     border: 0;
@@ -2127,7 +2130,7 @@
      forced into a horizontal scroll situation on phones (where
      vertical scrolling is the dominant UX). */
   @media (max-width: 1100px) {
-    .hm-app .hm-indexes { grid-template-columns: repeat(2, minmax(140px, 180px)); }
+    .hm-app .hm-indexes { grid-template-columns: repeat(2, clamp(140px, 50%, 180px)); }
   }
   @media (max-width: 600px) {
     .hm-app .hm-indexes { grid-template-columns: 1fr; }
