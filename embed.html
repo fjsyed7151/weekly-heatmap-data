@@ -358,35 +358,18 @@
   .hm-app .grid-stack-item[gs-id="hm-indexes"] .hm-panel-header {
     width: 100cqw;
   }
-  /* Metrics table (hm-heatmap-wrap): horizontal scroll inside
-     .hm-scroll so the cell itself never h-overflows (which would
-     reserve ~8px and cascade into a v-scrollbar). Plus hide the
-     visible h-scrollbar entirely (scrollbar-width:none + webkit
-     equivalent) — even WITH overflow-x:auto, the auto-promoted
-     overflow-y:auto plus the h-scrollbar's 8px takeoff was
-     bouncing the cascade DOWN one level (v-scrollbar inside
-     .hm-scroll instead of at cell level — same end-user pain).
-     With scrollbar-width:none the h-scrollbar takes no layout
-     space, so no v-scrollbar is triggered. The table is still
-     scrollable horizontally via mousewheel + horizontal-shift /
-     touch / keyboard arrows. */
-  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-scroll {
-    width: 100%;
-    min-width: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-    /* Square top corners — overflow-x:auto activates border-radius
-       clipping on children, which made the table's sticky thead
-       (gold #daa520) appear with rounded top corners. The base
-       .hm-scroll rule had border-radius: var(--hm-r) for the whole
-       wrapper, which we want preserved on the BOTTOM (panel ends
-       with rounded corner) but not at the top where the gold band
-       should read as a flat title bar. */
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-  }
-  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-scroll::-webkit-scrollbar {
-    display: none;
+  /* Metrics table (hm-heatmap-wrap): make the table's gold thead
+     (column-header row) sticky JUST BELOW the panel navbar so it
+     stays visible when the user scrolls vertically inside the
+     cell. Base .hm-table thead th already has position:sticky;
+     top:0 — but top:0 means it stacks AT the cell's top edge,
+     where the panel navbar (also sticky top:0, z-index:6) covers
+     it. Top:24px puts the thead just below the 24px navbar so
+     both stay visible on scroll, no overlap. Scoped to the
+     heatmap so the same sticky pattern doesn't affect any other
+     table that might reuse .hm-table. */
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
+    top: 24px;
   }
   /* Same trick for the GOLD header band (.hm-factors-header) on
      ranking panels: pin it to viewport-left + cell-width so the
@@ -5228,62 +5211,7 @@
     return Math.max(DEFAULT_MIN, Math.round(INSET + phH + ghH + BUFFER));
   }
 
-  /* Custom refit for the metrics table panel. The shared
-     resizeToContent in fitToContent doesn't reliably size the
-     heatmap cell to fit ALL rows on initial paint — likely some
-     interaction between the inner overflow-x:auto on .hm-scroll,
-     the sticky table thead, and gridstack's measurement timing.
-     This function explicitly reads wrap.scrollHeight, adds a small
-     buffer for any scrollbar reservation, and updates h. Called
-     after the initial fitToContent settles. */
-  function refitHeatmap() {
-    /* Pixel-accurate fit: instead of adding a fixed buffer (which
-       either over- or under-shoots), set h to scrollHeight, then
-       MEASURE actual overflow on the cell and add only what's
-       actually overflowing. This avoids both the "scrollbar barely
-       scrolls" (buffer too small) and "visible gap at bottom"
-       (buffer too large) failure modes. */
-    setTimeout(function () {
-      if (!window.gridInstance) return;
-      var item = document.querySelector('.grid-stack-item[gs-id="hm-heatmap-wrap"]');
-      if (!item) return;
-      var node = item.gridstackNode;
-      if (!node) return;
-      var wrap = item.querySelector('.hm-panel-wrap');
-      var content = item.querySelector('.grid-stack-item-content');
-      if (!wrap || !content) return;
-      var cellH = window.gridInstance.getCellHeight(true) || 1;
-      var natural = wrap.scrollHeight;
-      if (!natural) return;
-      var rows = Math.max(1, Math.ceil(natural / cellH));
-      var minH = (typeof computePanelMinH === 'function')
-        ? computePanelMinH(item) : 70;
-      window.gridInstance._suppressSave = true;
-      try {
-        window.gridInstance.update(item, { maxH: 4000 });
-        if (rows !== node.h) window.gridInstance.update(item, { h: rows });
-      } catch (e) {}
-      /* Wait for the new h to paint, then measure actual cell overflow
-         and add that exact amount. requestAnimationFrame x2 = layout
-         + paint settled. */
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          try {
-            var actualOverflow = content.scrollHeight - content.clientHeight;
-            if (actualOverflow > 0) {
-              rows += Math.ceil(actualOverflow / cellH);
-              window.gridInstance.update(item, { h: rows });
-            }
-            window.gridInstance.update(item, { maxH: rows, minH: minH });
-            if (typeof INITIAL_H !== 'undefined') INITIAL_H['hm-heatmap-wrap'] = rows;
-          } catch (e) {}
-          window.gridInstance._suppressSave = false;
-        });
-      });
-    }, 200);
-  }
-
-  /* Re-run resizeToContent + maxH lock for the metrics chart panel.
+/* Re-run resizeToContent + maxH lock for the metrics chart panel.
      Called after the canvases inside it change so the cell tracks the
      new content size. Clears maxH first because Gridstack's
      resizeToContent clamps the proposed h to maxH — without clearing
@@ -10884,11 +10812,6 @@
       gridInstance.update(item, { w: def.w, h: targetH });
       gridInstance.update(item, { maxH: targetH, minH: minH });
     } catch (e) {}
-    /* Heatmap panel needs the custom refit to handle its sticky-thead /
-       inner-scroll measurement quirk — same as on initial paint. */
-    if (id === 'hm-heatmap-wrap' && typeof refitHeatmap === 'function') {
-      refitHeatmap();
-    }
   }
 
   /* Context menu wiring — single shared menu element, positioned per click. */
@@ -11034,14 +10957,6 @@
 
         }
         fitAll();
-        /* Custom refit for the metrics table panel — gridstack's
-           shared resizeToContent loop above doesn't reliably size
-           the heatmap cell to fit ALL rows on initial paint (likely
-           interactions between the table's sticky thead, the inner
-           overflow:auto on .hm-scroll, and gridstack's measurement
-           timing). refitHeatmap explicitly reads scrollHeight + a
-           buffer and updates h. */
-        if (typeof refitHeatmap === 'function') refitHeatmap();
         /* Apply the no-selection state once gridInstance is live: this
            removes the empty metrics-chart panel from the grid until a
            user picks rows from the heat map. */
