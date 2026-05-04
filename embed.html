@@ -358,24 +358,26 @@
   .hm-app .grid-stack-item[gs-id="hm-indexes"] .hm-panel-header {
     width: 100cqw;
   }
-  /* Metrics table (hm-heatmap-wrap) uses a different navbar-fix
-     approach because its content is significantly taller than wide
-     ranking panels: with the max-content wrap pattern above, a
-     wide table triggers a cell-level horizontal scrollbar whose
-     ~8px reservation eats into vertical space and triggers an
-     unnecessary vertical scrollbar (cell height was sized to fit
-     content exactly, but loses 8px to the h-scrollbar).
-     Instead, move the horizontal scroll INSIDE .hm-scroll itself
-     (overflow-x:auto on the table wrapper). The cell never
-     horizontally overflows → no h-scrollbar reservation → no
-     spurious v-scrollbar. The navbar stays cell-width naturally
-     (no horizontal scroll position to drift), eliminating the
-     navbar-gap symptom for this panel without the wrap-rewriting
-     plumbing the other panels need. */
+  /* Metrics table (hm-heatmap-wrap): horizontal scroll inside
+     .hm-scroll so the cell itself never h-overflows (which would
+     reserve ~8px and cascade into a v-scrollbar). Plus hide the
+     visible h-scrollbar entirely (scrollbar-width:none + webkit
+     equivalent) — even WITH overflow-x:auto, the auto-promoted
+     overflow-y:auto plus the h-scrollbar's 8px takeoff was
+     bouncing the cascade DOWN one level (v-scrollbar inside
+     .hm-scroll instead of at cell level — same end-user pain).
+     With scrollbar-width:none the h-scrollbar takes no layout
+     space, so no v-scrollbar is triggered. The table is still
+     scrollable horizontally via mousewheel + horizontal-shift /
+     touch / keyboard arrows. */
   .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-scroll {
     width: 100%;
     min-width: 0;
     overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-scroll::-webkit-scrollbar {
+    display: none;
   }
   /* Same trick for the GOLD header band (.hm-factors-header) on
      ranking panels: pin it to viewport-left + cell-width so the
@@ -5248,16 +5250,15 @@
          headroom at the cost of trivial empty pixels at the bottom. */
       var rows = Math.max(1, Math.ceil((natural + 24) / cellH));
       window.gridInstance._suppressSave = true;
-      /* Chart panel is a special case: don't lock maxH at content height
-         like other panels. Users want to drag the chart taller for better
-         trend visibility, even when the natural canvas size is small.
-         Set maxH wide-open (50 rows = 2000px) so resize is unconstrained,
-         and bump h to the natural so the panel sizes itself when metrics
-         are added/removed. Two-step because update with combined keys
-         processes h first against the OLD maxH and clamps growth. */
+      /* Lock maxH to the fitted content height (= rows) like other
+         panels so the user can't drag the chart taller than the
+         canvas content. Three-step because passing combined keys to
+         update can clamp h against the OLD maxH before the new maxH
+         applies. */
       try {
-        window.gridInstance.update(item, { maxH: 2000 }); /* ≈2000px @ cellH=1 */
+        window.gridInstance.update(item, { maxH: 4000 }); /* unlock to grow */
         if (rows !== node.h) window.gridInstance.update(item, { h: rows });
+        window.gridInstance.update(item, { maxH: rows }); /* lock at content */
       } catch (e) {}
       window.gridInstance._suppressSave = false;
     }, 50);
