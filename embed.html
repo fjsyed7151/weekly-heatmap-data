@@ -2961,6 +2961,37 @@
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
   }
+  /* Ranking-panel card width: pin to panel-cell width (override the
+     base .hm-factors-card width:max-content) and let the inner
+     scroll wrapper handle horizontal overflow when the body is wider
+     than the cell.
+     Why: when the card is wider than the cell, the panel-cell scrolls
+     horizontally — but .hm-panel-wrap (and the sticky window navbar
+     inside it) stay at cell-width, leaving a visible gap on the right
+     where the navbar background ends short of the visible content
+     edge. Pinning the card means the navbar always spans the full
+     visible cell, no gap, and any wide body content scrolls within
+     its own .hm-factors-scroll wrapper instead of at the cell level
+     (scrollbar moves from cell-bottom to wrapper-bottom — equivalent
+     UX, eliminates the gap). The base card kept overflow:hidden, so
+     we set overflow-x:auto only on the scroll wrapper. */
+  .hm-app #hm-factors > .hm-factors-card,
+  .hm-app #hm-fixed-income > .hm-factors-card,
+  .hm-app #hm-global-indexes > .hm-factors-card,
+  .hm-app #hm-country-etfs > .hm-factors-card,
+  .hm-app #hm-commodity-perf > .hm-factors-card,
+  .hm-app #hm-currency-matrix > .hm-factors-card {
+    width: 100%;
+    min-width: 0;
+  }
+  .hm-app #hm-factors .hm-factors-scroll,
+  .hm-app #hm-fixed-income .hm-factors-scroll,
+  .hm-app #hm-global-indexes .hm-factors-scroll,
+  .hm-app #hm-country-etfs .hm-factors-scroll,
+  .hm-app #hm-commodity-perf .hm-factors-scroll,
+  .hm-app #hm-currency-matrix .hm-factors-scroll {
+    overflow-x: auto;
+  }
   /* Window-style header bar squares its top corners — the parent
      grid-stack-item-content keeps its 5px outer radius and clips the
      header to a rounded silhouette. The gold band below the header
@@ -3098,20 +3129,12 @@
   .hm-app .grid-stack-item.hm-stack-vertical .hm-fi-col:last-child {
     border-bottom: none;
   }
-  /* Force the card to track the panel width (not max-content) in
-     vertical mode. Without this the card keeps `width: max-content`
-     from the base .hm-factors-card rule, which expands to fit the
-     widest factor name and produces horizontal scroll when the panel
-     is narrower than the longest row. The flex row's
-     text-overflow:ellipsis on .hm-factors-name then handles
-     truncation naturally as the panel shrinks. */
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-card {
-    width: 100%;
-    min-width: 0;
-  }
   /* Header wrapping is now applied unconditionally on .hm-factors-header
      and .hm-factors-periods themselves (see those rules above), so we
-     no longer need a stack-vertical-scoped variant. */
+     no longer need a stack-vertical-scoped variant. The card-width-pin
+     for these panels also moved to a shared block (search for
+     "Ranking-panel card width") so it applies in BOTH orientations and
+     fixes the navbar-gap-on-horizontal-scroll bug.  */
   .hm-app .hm-factors-col-header {
     font-size: 10px;
     font-weight: 700;
@@ -3544,23 +3567,6 @@
   /* Currency matrix — N×N pairwise performance grid. Row = base, col = quote;
      cell shows base's % return vs quote over selected period. Diagonal cells
      are muted gray (identity). Reuses the factors card chrome. */
-  /* Scoped card-width override: the shared .hm-factors-card uses
-     width:max-content so it can extend past the panel cell with a wide
-     inner table — but that means the header is also card-width (very
-     wide), so flex-wrap on the header never triggers and the period
-     pills stay off-screen at narrow panel widths. Pinning the card to
-     panel width + giving the inner scroll wrapper its own horizontal
-     overflow keeps the header reachable (wraps when narrow) while
-     preserving the matrix's "scroll right to see more currencies"
-     behavior — the scrollbar just moves from the panel cell's bottom
-     edge to the scroll wrapper's bottom edge. */
-  .hm-app #hm-currency-matrix > .hm-factors-card {
-    width: 100%;
-    min-width: 0;
-  }
-  .hm-app #hm-currency-matrix .hm-factors-scroll {
-    overflow-x: auto;
-  }
   .hm-app .hm-cm-table {
     border-collapse: separate;
     border-spacing: 0;
