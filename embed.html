@@ -3544,6 +3544,23 @@
   /* Currency matrix — N×N pairwise performance grid. Row = base, col = quote;
      cell shows base's % return vs quote over selected period. Diagonal cells
      are muted gray (identity). Reuses the factors card chrome. */
+  /* Scoped card-width override: the shared .hm-factors-card uses
+     width:max-content so it can extend past the panel cell with a wide
+     inner table — but that means the header is also card-width (very
+     wide), so flex-wrap on the header never triggers and the period
+     pills stay off-screen at narrow panel widths. Pinning the card to
+     panel width + giving the inner scroll wrapper its own horizontal
+     overflow keeps the header reachable (wraps when narrow) while
+     preserving the matrix's "scroll right to see more currencies"
+     behavior — the scrollbar just moves from the panel cell's bottom
+     edge to the scroll wrapper's bottom edge. */
+  .hm-app #hm-currency-matrix > .hm-factors-card {
+    width: 100%;
+    min-width: 0;
+  }
+  .hm-app #hm-currency-matrix .hm-factors-scroll {
+    overflow-x: auto;
+  }
   .hm-app .hm-cm-table {
     border-collapse: separate;
     border-spacing: 0;
