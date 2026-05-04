@@ -5237,11 +5237,12 @@
      buffer for any scrollbar reservation, and updates h. Called
      after the initial fitToContent settles. */
   function refitHeatmap() {
-    /* 200ms delay so font rendering, sticky-thead positioning, and
-       any other async layout settling has finished. 12px buffer
-       wasn't enough — scrollbar persisted because content was just
-       barely taller than measured scrollHeight. 24px buffer covers
-       sub-pixel discrepancies + thead's sticky offset adjustment. */
+    /* Pixel-accurate fit: instead of adding a fixed buffer (which
+       either over- or under-shoots), set h to scrollHeight, then
+       MEASURE actual overflow on the cell and add only what's
+       actually overflowing. This avoids both the "scrollbar barely
+       scrolls" (buffer too small) and "visible gap at bottom"
+       (buffer too large) failure modes. */
     setTimeout(function () {
       if (!window.gridInstance) return;
       var item = document.querySelector('.grid-stack-item[gs-id="hm-heatmap-wrap"]');
@@ -5249,21 +5250,36 @@
       var node = item.gridstackNode;
       if (!node) return;
       var wrap = item.querySelector('.hm-panel-wrap');
-      if (!wrap) return;
+      var content = item.querySelector('.grid-stack-item-content');
+      if (!wrap || !content) return;
       var cellH = window.gridInstance.getCellHeight(true) || 1;
       var natural = wrap.scrollHeight;
       if (!natural) return;
-      var rows = Math.max(1, Math.ceil((natural + 24) / cellH));
+      var rows = Math.max(1, Math.ceil(natural / cellH));
       var minH = (typeof computePanelMinH === 'function')
         ? computePanelMinH(item) : 70;
       window.gridInstance._suppressSave = true;
       try {
         window.gridInstance.update(item, { maxH: 4000 });
         if (rows !== node.h) window.gridInstance.update(item, { h: rows });
-        window.gridInstance.update(item, { maxH: rows, minH: minH });
-        if (typeof INITIAL_H !== 'undefined') INITIAL_H['hm-heatmap-wrap'] = rows;
       } catch (e) {}
-      window.gridInstance._suppressSave = false;
+      /* Wait for the new h to paint, then measure actual cell overflow
+         and add that exact amount. requestAnimationFrame x2 = layout
+         + paint settled. */
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          try {
+            var actualOverflow = content.scrollHeight - content.clientHeight;
+            if (actualOverflow > 0) {
+              rows += Math.ceil(actualOverflow / cellH);
+              window.gridInstance.update(item, { h: rows });
+            }
+            window.gridInstance.update(item, { maxH: rows, minH: minH });
+            if (typeof INITIAL_H !== 'undefined') INITIAL_H['hm-heatmap-wrap'] = rows;
+          } catch (e) {}
+          window.gridInstance._suppressSave = false;
+        });
+      });
     }, 200);
   }
 
