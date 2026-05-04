@@ -337,14 +337,18 @@
   .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) > .grid-stack-item-content,
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) > .grid-stack-item-content,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) > .grid-stack-item-content,
-  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) > .grid-stack-item-content {
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-indexes"] > .grid-stack-item-content {
     container-type: inline-size;
   }
   .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-wrap,
-  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-wrap {
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-indexes"] .hm-panel-wrap {
     width: max-content;
     min-width: 100%;
   }
@@ -352,7 +356,9 @@
   .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-header,
-  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-header {
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-indexes"] .hm-panel-header {
     width: 100cqw;
   }
   /* Same trick for the GOLD header band (.hm-factors-header) on
@@ -2100,7 +2106,13 @@
      into 4 cells, instead of 4 separate pills competing for attention. */
   .hm-app .hm-indexes {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    /* minmax(180px, 1fr) keeps each card at least 180px wide so the
+       price + change row stays readable. When the panel cell is
+       narrower than 4×180=720px the grid extends past the cell and
+       the cell scrolls horizontally — the navbar-fix CSS above
+       (wrap=max-content + navbar=100cqw) keeps the navbar pinned to
+       cell width during that scroll. */
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
     gap: 0;
     background: var(--hm-panel);
     border: 0;
@@ -2108,8 +2120,12 @@
     margin-bottom: 0; /* Gridstack handles spacing */
     overflow: hidden;  /* clip child content to the rounded bottom corners */
   }
+  /* Mobile viewport fallbacks — when the whole page is narrower than
+     these breakpoints, drop to 2-col / 1-col so the cards aren't
+     forced into a horizontal scroll situation on phones (where
+     vertical scrolling is the dominant UX). */
   @media (max-width: 1100px) {
-    .hm-app .hm-indexes { grid-template-columns: repeat(2, 1fr); }
+    .hm-app .hm-indexes { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
   }
   @media (max-width: 600px) {
     .hm-app .hm-indexes { grid-template-columns: 1fr; }
