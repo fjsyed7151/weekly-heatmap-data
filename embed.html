@@ -5498,32 +5498,40 @@
   })();
 
   /* ---------- Customize view (hide/show blocks) ---------- */
-  /* Registry of hideable blocks. Each entry has the DOM id, a human label,
-     and a group heading. Populated in the popover on open. */
+  /* Registry of hideable blocks. Each entry has the DOM id, a human
+     label (matching what users see in the panel's gold band), and a
+     thematic group heading. Order within each group matches the
+     dashboard's natural reading order. */
   var TOGGLEABLE_BLOCKS = [
-    // Main column
-    { id: 'hm-indexes',        label: 'Index cards',           group: 'Main column' },
+    // Top snapshot
+    { id: 'hm-indexes',         label: 'Index Snapshot',           group: 'Top' },
+    { id: 'hm-heatmap-wrap',    label: 'Metrics Heat Map',         group: 'Top' },
+
+    // Equities
+    { id: 'hm-sector-chart',    label: 'Sector Performance',       group: 'Equities' },
+    { id: 'hm-factors',         label: 'Factors Performance',      group: 'Equities' },
+    { id: 'hm-stylefactor',     label: 'Size vs Value',            group: 'Equities' },
+    { id: 'hm-country-etfs',    label: 'Country ETF Performance',  group: 'Equities' },
+    { id: 'hm-global-indexes',  label: 'Global Equity Indexes',    group: 'Equities' },
+    { id: 'hm-theme-treemap',   label: 'Thematic Trends',          group: 'Equities' },
+
+    // Fixed Income
+    { id: 'hm-fixed-income',    label: 'Fixed Income Performance', group: 'Fixed Income' },
+
+    // Commodities & Currencies
+    { id: 'hm-commodity-perf',  label: 'Commodity Performance',    group: 'Commodities & Currencies' },
+    { id: 'hm-commodities',     label: 'Commodities',              group: 'Commodities & Currencies' },
+    { id: 'hm-currency-matrix', label: 'Currency Performance',     group: 'Commodities & Currencies' },
+    { id: 'hm-currencies',      label: 'Currencies',               group: 'Commodities & Currencies' },
+
+    // Macro
     /* hm-gave-wrap is the actual grid panel containing the quadrant
        and the companion charts together — they are not exposed as
        separate hide/show options. */
-    { id: 'hm-gave-wrap',      label: 'Macro Regime (Gave)',   group: 'Main column' },
-    { id: 'hm-macrocompass',   label: 'Growth \u00d7 Policy',  group: 'Main column' },
-    { id: 'hm-stylefactor',    label: 'Size vs Value',         group: 'Main column' },
-    { id: 'hm-factors',        label: 'Factors (vs S&P 500)',  group: 'Main column' },
-    { id: 'hm-fixed-income',   label: 'Fixed Income',          group: 'Main column' },
-    { id: 'hm-global-indexes', label: 'Global Indexes',        group: 'Main column' },
-    { id: 'hm-country-etfs',   label: 'Country ETFs',          group: 'Main column' },
-    { id: 'hm-commodity-perf', label: 'Commodities (ranked)',  group: 'Main column' },
-    { id: 'hm-currency-matrix',label: 'Currency Matrix',       group: 'Main column' },
-    { id: 'hm-theme-treemap',  label: 'Thematic Trends',       group: 'Main column' },
-    { id: 'hm-sector-chart',   label: 'Sector Performance',    group: 'Main column' },
-    { id: 'hm-heatmap-wrap',   label: 'Heat map table',        group: 'Main column' },
-    /* Sidebar panels — now grid items alongside the rest. Group label kept
-       distinct in the customize panel so users still recognize them. */
-    { id: 'hm-commodities',    label: 'Commodities',           group: 'Reference panels' },
-    { id: 'hm-currencies',     label: 'Currencies',            group: 'Reference panels' },
-    { id: 'hm-calendar',       label: 'Economic calendar',     group: 'Reference panels' },
-    { id: 'hm-economy',        label: 'Economic indicators',   group: 'Reference panels' },
+    { id: 'hm-gave-wrap',       label: 'Macro Regime',             group: 'Macro' },
+    { id: 'hm-macrocompass',    label: 'Growth \u00d7 Policy',     group: 'Macro' },
+    { id: 'hm-economy',         label: 'Economic Indicators',      group: 'Macro' },
+    { id: 'hm-calendar',        label: 'Economic Calendar',        group: 'Macro' },
   ];
   var HIDDEN_KEY = 'hm-hidden-blocks';
 
@@ -9922,16 +9930,16 @@
     'hm-gave-wrap':      'Macro Regime',
     'hm-macrocompass':   'Growth \u00d7 Policy',
     'hm-stylefactor':    'Size vs Value',
-    'hm-factors':        'Factors vs S&P 500',
-    'hm-fixed-income':   'Fixed Income',
+    'hm-factors':        'Factors Performance',
+    'hm-fixed-income':   'Fixed Income Performance',
     'hm-global-indexes': 'Global Equity Indexes',
-    'hm-country-etfs':   'Country ETFs',
-    'hm-commodity-perf': 'Commodities (ranked)',
-    'hm-currency-matrix':'Currency Matrix',
+    'hm-country-etfs':   'Country ETF Performance',
+    'hm-commodity-perf': 'Commodity Performance',
+    'hm-currency-matrix':'Currency Performance',
     'hm-theme-treemap':  'Thematic Trends',
     'hm-sector-chart':   'Sector Performance',
     'hm-chart-section':  'Metrics Chart',
-    'hm-heatmap-wrap':   'Weekly Heat Map',
+    'hm-heatmap-wrap':   'Metrics Heat Map',
   };
 
   /* Reset-layout button (topbar) — clears saved layout + pins, reloads. */
