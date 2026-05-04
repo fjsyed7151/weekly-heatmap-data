@@ -297,6 +297,11 @@
     overflow: auto;
     padding: 0;
     box-sizing: border-box;
+    /* Positioning context for the export-image watermark, which is
+       inserted as an absolute-positioned child of this element only
+       during a capture (then removed). Doesn't affect anything else
+       — sticky descendants still stick within their scroll ancestor. */
+    position: relative;
   }
   /* Panel wrap stays at cell width by default — Chart.js responsive
      canvases (sector / macro regime / index sparklines) feed back
@@ -505,6 +510,14 @@
     opacity: 1;
     color: var(--hm-gold);
   }
+  /* Loading state for the export button while html-to-image is
+     fetching the lib (first click only) and rendering the capture.
+     Disables clicks + dims the icon so the user knows something's
+     happening without needing a separate spinner element. */
+  .hm-app .hm-panel-btn.hm-loading {
+    pointer-events: none;
+    opacity: 0.4;
+  }
   .hm-app .hm-panel-close:hover {
     background: rgba(220, 53, 69, 0.18);
     color: #c0392b;
@@ -687,9 +700,9 @@
     align-items: center;
     flex-shrink: 0;
     text-decoration: none;
-    /* +8px on top of the topbar's 8px gap = 16px total breathing
-       room between the back arrow and the logo. */
-    margin-left: 8px;
+    /* +4px on top of the topbar's 8px gap = 12px total spacing
+       between the back arrow and the logo. */
+    margin-left: 4px;
   }
   .hm-app .hm-topbar-logo img {
     height: 32px;
@@ -10100,6 +10113,15 @@
         '<button class="hm-panel-btn hm-panel-stack" type="button" data-action="stack" title="Switch to vertical stack" aria-label="Toggle stack orientation">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="4" height="16"/><rect x="10" y="4" width="4" height="16"/><rect x="16" y="4" width="4" height="16"/></svg>' +
         '</button>' +
+        /* Download as image — captures the panel content (gold band +
+           body, but not the window navbar above) and triggers a PNG
+           download with a stablebread.com/macro watermark burned in.
+           Always visible on every panel. The html-to-image library
+           that powers it is lazy-loaded on first click so the ~95%
+           of users who don't export don't pay the 50KB cost. */
+        '<button class="hm-panel-btn hm-panel-export" type="button" data-action="export" title="Download as image" aria-label="Download as image">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+        '</button>' +
         '<button class="hm-panel-btn hm-panel-reset" type="button" data-action="reset" title="Reset size" aria-label="Reset size">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>' +
         '</button>' +
@@ -10208,6 +10230,8 @@
         resetItemSize(id);
       } else if (action === 'stack') {
         toggleStackOrientation(id);
+      } else if (action === 'export') {
+        exportPanelImage(item, btn);
       } else if (action === 'info') {
         toggleInfoPopup(item, id, btn);
       } else if (action === 'close') {
@@ -10698,6 +10722,130 @@
       var pinned = isPinned(id);
       btn.classList.toggle('active', pinned);
       btn.setAttribute('title', pinned ? 'Unpin from top' : 'Pin to top');
+    });
+  }
+
+  /* ---- Image export ---- */
+  /* Lazy-load html-to-image: ~50KB, only fetched on first export click.
+     Caches the resolved module reference + an in-flight Promise so
+     concurrent clicks dedupe to a single network request. */
+  var EXPORT_LIB_URL = 'https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.min.js';
+  var _htmlToImageLib = null;
+  var _htmlToImageLoading = null;
+  function loadHtmlToImage() {
+    if (_htmlToImageLib) return Promise.resolve(_htmlToImageLib);
+    if (_htmlToImageLoading) return _htmlToImageLoading;
+    _htmlToImageLoading = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = EXPORT_LIB_URL;
+      s.async = true;
+      s.crossOrigin = 'anonymous';
+      s.onload = function () {
+        _htmlToImageLib = window.htmlToImage;
+        if (_htmlToImageLib) resolve(_htmlToImageLib);
+        else reject(new Error('html-to-image loaded but global not found'));
+      };
+      s.onerror = function () { reject(new Error('html-to-image failed to load')); };
+      document.head.appendChild(s);
+    });
+    return _htmlToImageLoading;
+  }
+
+  /* Build the watermark element that gets burned into every export.
+     Logo image + " | stablebread.com/macro" text in the bottom-right
+     corner of the captured area. Theme-aware (light vs dark bg).
+     pointer-events:none so it can never block hovers/clicks if we
+     ever forgot to remove it. */
+  function buildExportWatermark(item) {
+    var dark = document.documentElement.classList.contains('dark') ||
+               !!(item && item.closest && item.closest('.hm-app.dark')) ||
+               !!document.querySelector('.hm-app.dark');
+    var w = document.createElement('div');
+    w.className = 'hm-export-watermark';
+    w.style.cssText = [
+      'position: absolute',
+      'bottom: 8px',
+      'right: 8px',
+      'display: flex',
+      'align-items: center',
+      'gap: 8px',
+      'padding: 6px 10px',
+      'background: ' + (dark ? 'rgba(35, 32, 39, 0.92)' : 'rgba(255, 255, 255, 0.92)'),
+      'border: 1px solid ' + (dark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)'),
+      'border-radius: 4px',
+      'font-family: Karla, sans-serif',
+      'font-size: 11px',
+      'font-weight: 600',
+      'letter-spacing: 0.2px',
+      'color: ' + (dark ? '#e8e2d2' : '#2b2521'),
+      'pointer-events: none',
+      'z-index: 9999',
+      'box-shadow: 0 1px 4px rgba(0, 0, 0, 0.10)'
+    ].join('; ');
+    var img = document.createElement('img');
+    img.src = 'https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png';
+    img.alt = 'StableBread';
+    img.style.cssText = 'height: 18px; width: auto; display: block;';
+    w.appendChild(img);
+    var url = document.createElement('span');
+    url.textContent = 'stablebread.com/macro';
+    w.appendChild(url);
+    return w;
+  }
+
+  /* Slug a panel id / title into a filename-safe segment. */
+  function _slug(s) {
+    return String(s || 'panel').toLowerCase()
+      .replace(/^hm-/, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  /* Capture a single panel as a PNG and trigger a browser download.
+     Hides the window-style navbar (pin/reset/close icons) during
+     capture so the exported image shows clean panel content +
+     gold band only — those buttons mean nothing in a shared
+     screenshot. Inserts the StableBread watermark, captures, then
+     restores everything. */
+  function exportPanelImage(item, btn) {
+    if (!item) return;
+    var content = item.querySelector('.grid-stack-item-content');
+    var navbar = item.querySelector('.hm-panel-header');
+    if (!content) return;
+    if (btn) btn.classList.add('hm-loading');
+    loadHtmlToImage().then(function (lib) {
+      /* Hide via visibility:hidden (not display:none) so the navbar
+         still occupies its 24px and the gold band stays at its
+         current position — the captured layout matches what the
+         user was seeing, not a reflowed version. */
+      var prevVis = navbar ? navbar.style.visibility : null;
+      if (navbar) navbar.style.visibility = 'hidden';
+      var watermark = buildExportWatermark(item);
+      content.appendChild(watermark);
+      var idAttr = item.getAttribute('gs-id') || 'panel';
+      var dateStr = (new Date()).toISOString().slice(0, 10);
+      var fileName = 'stablebread-' + _slug(idAttr) + '-' + dateStr + '.png';
+      return lib.toPng(content, {
+        pixelRatio: 2,
+        cacheBust: true,
+        backgroundColor: getComputedStyle(content).backgroundColor || null,
+      }).then(function (dataUrl) {
+        var a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }).catch(function (err) {
+        console.error('[heatmap] export failed:', err);
+      }).then(function () {
+        if (navbar) navbar.style.visibility = prevVis || '';
+        if (watermark.parentNode) watermark.parentNode.removeChild(watermark);
+        if (btn) btn.classList.remove('hm-loading');
+      });
+    }).catch(function (err) {
+      console.error('[heatmap] export library load failed:', err);
+      if (btn) btn.classList.remove('hm-loading');
     });
   }
 
