@@ -10780,11 +10780,13 @@
           panelBg = dark ? '#1a181d' : '#fbf6ea';
         }
         /* Output pixel dimensions (2x logical).
-           OUTER_PAD on top/left/right gives ~12px visual breathing
-           room — small enough that the panel doesn't feel like it's
-           floating in the middle of an oversized canvas, large enough
-           that content isn't visually cropped against the image edge. */
-        var OUTER_PAD = 24;
+           OUTER_PAD = 32 output px = ~16px visual breathing room on
+           top/left/right. Combined with the panel's internal row
+           padding (12px on factors et al.), the rightmost values
+           sit ~28px visual from the image edge — matches the live
+           app's "panel border + row padding" feel. Bottom uses no
+           outer pad because the footer occupies the bottom. */
+        var OUTER_PAD = 32;
         var FOOTER_H = 64;
         var canvas = document.createElement('canvas');
         canvas.width = panelImg.naturalWidth + OUTER_PAD * 2;
