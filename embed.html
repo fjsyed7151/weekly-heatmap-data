@@ -3200,19 +3200,25 @@
   .hm-app .grid-stack-item.hm-stack-vertical .hm-fi-col:last-child {
     border-bottom: none;
   }
-  /* Vertical mode: pin the card to cell width. Without this, the card
-     keeps the base width:max-content rule — and max-content for a
-     card containing rows with white-space:nowrap names is the FULL
-     natural row width (ellipsis doesn't apply to max-content sizing).
-     For panels with long names that's wider than the cell, which
-     triggers a horizontal scrollbar at the cell level → ~10px of
-     vertical space taken at the bottom = the "padding below" symptom
-     after toggling to vertical-stack mode. With width:100% the card
-     stays cell-width and the rows' text-overflow:ellipsis truncates
-     long names cleanly. */
+  /* Vertical mode: pin the card to cell width using 100cqw (NOT 100%).
+     Why 100cqw and not 100%: during max-content sizing the browser
+     treats percentage widths as indefinite, so width:100% doesn't
+     actually constrain the card — it falls back to natural max-
+     content (widest row's full nowrap name + return value). For
+     long row names that exceeds cell width, which makes the wrap
+     (also max-content for ranking panels) wider than the cell,
+     which triggers a horizontal scrollbar at cell level → ~10px
+     vertical space at the bottom = the "padding below" symptom
+     after toggling to vertical-stack.
+     100cqw is a DEFINITE value = item-content's content-box width =
+     cell width. The browser respects it during max-content sizing,
+     so the card stays cell-width regardless of row name length. The
+     existing text-overflow:ellipsis on .hm-factors-name then cleanly
+     truncates long names. */
   .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-card {
-    width: 100%;
+    width: 100cqw;
     min-width: 0;
+    box-sizing: border-box;
   }
   /* Header wrapping is now applied unconditionally on .hm-factors-header
      and .hm-factors-periods themselves (see those rules above), so we
