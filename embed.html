@@ -10451,6 +10451,16 @@
      layout). Stored under its own key so a layout-version bump
      (LAYOUT_KEY) doesn't wipe the orientation preference. */
   var STACK_KEY = 'hm-stack-orientations-v1';
+  /* Vertical-mode default width override, by panel id. Used by the
+     reset button to restore a sensibly-narrow shape when the panel
+     is currently in vertical-stack mode (the wide horizontal default
+     is silly for a single-column stacked list). The stack-toggle
+     button itself does NOT auto-apply this — toggle only changes
+     shape, never width. Only Reset reads it. Panels without an entry
+     here just use their normal def.w in either orientation. */
+  var STACK_VERTICAL_W = {
+    'hm-fixed-income': 6,
+  };
   function loadStackMap() {
     try {
       var raw = localStorage.getItem(STACK_KEY);
@@ -10551,6 +10561,14 @@
        orientation and produces empty vertical space on reset. */
     if (item.classList.contains('hm-has-stack')) {
       var minHStack = computePanelMinH(item);
+      /* Pick the orientation-appropriate default width: panels with a
+         STACK_VERTICAL_W entry get a narrower default when currently
+         in vertical-stack mode. Falls back to the normal horizontal
+         default everywhere else. */
+      var resetW = (item.classList.contains('hm-stack-vertical') &&
+                    STACK_VERTICAL_W[id] != null)
+        ? STACK_VERTICAL_W[id]
+        : def.w;
       /* Suspend gridstack's 300ms width-transition for this operation.
          Otherwise resizeToContent measures scrollHeight while the
          width is mid-animation and returns a stale (too-tall) value
@@ -10561,7 +10579,7 @@
       item.classList.add('hm-no-transition');
       try {
         gridInstance.update(item, { maxH: 9999, minH: 1 });
-        gridInstance.update(item, { w: def.w });
+        gridInstance.update(item, { w: resetW });
         /* Force synchronous reflow so the browser commits the new
            width to the layout tree BEFORE we read scrollHeight.
            Reading offsetHeight is the standard "flush layout" hack. */
