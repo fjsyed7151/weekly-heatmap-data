@@ -3200,6 +3200,20 @@
   .hm-app .grid-stack-item.hm-stack-vertical .hm-fi-col:last-child {
     border-bottom: none;
   }
+  /* Vertical mode: pin the card to cell width. Without this, the card
+     keeps the base width:max-content rule — and max-content for a
+     card containing rows with white-space:nowrap names is the FULL
+     natural row width (ellipsis doesn't apply to max-content sizing).
+     For panels with long names that's wider than the cell, which
+     triggers a horizontal scrollbar at the cell level → ~10px of
+     vertical space taken at the bottom = the "padding below" symptom
+     after toggling to vertical-stack mode. With width:100% the card
+     stays cell-width and the rows' text-overflow:ellipsis truncates
+     long names cleanly. */
+  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-card {
+    width: 100%;
+    min-width: 0;
+  }
   /* Header wrapping is now applied unconditionally on .hm-factors-header
      and .hm-factors-periods themselves (see those rules above), so we
      no longer need a stack-vertical-scoped variant. The card-width-pin
