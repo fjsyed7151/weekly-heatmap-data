@@ -10955,6 +10955,14 @@
       '.hm-export-mode .hm-ce-col-header,',
       '.hm-export-mode .hm-cp-col-header {',
       '  padding-right: 16px !important;',
+      '}',
+      /* Override .hm-panel-wrap background to match the panel bg
+         so the captured image is uniform and doesn\'t leave a
+         dashboard-bg-colored strip wherever the wrap shows (e.g.
+         where the filtered-out navbar used to occupy 24px at top,
+         or anywhere the inner card doesn\'t fully cover the wrap). */
+      '.hm-export-mode .hm-panel-wrap {',
+      '  background: var(--hm-panel) !important;',
       '}'
     ].join('\n');
     /* Disable transitions globally so the temp resize is instant.
