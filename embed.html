@@ -3200,25 +3200,12 @@
   .hm-app .grid-stack-item.hm-stack-vertical .hm-fi-col:last-child {
     border-bottom: none;
   }
-  /* Vertical mode: pin the card to cell width using 100cqw (NOT 100%).
-     Why 100cqw and not 100%: during max-content sizing the browser
-     treats percentage widths as indefinite, so width:100% doesn't
-     actually constrain the card — it falls back to natural max-
-     content (widest row's full nowrap name + return value). For
-     long row names that exceeds cell width, which makes the wrap
-     (also max-content for ranking panels) wider than the cell,
-     which triggers a horizontal scrollbar at cell level → ~10px
-     vertical space at the bottom = the "padding below" symptom
-     after toggling to vertical-stack.
-     100cqw is a DEFINITE value = item-content's content-box width =
-     cell width. The browser respects it during max-content sizing,
-     so the card stays cell-width regardless of row name length. The
-     existing text-overflow:ellipsis on .hm-factors-name then cleanly
-     truncates long names. */
+  /* Vertical mode: pin the card to cell width so the body collapses
+     into a single column and rows ellipsis-truncate long names
+     instead of growing the card past cell width. */
   .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-card {
-    width: 100cqw;
+    width: 100%;
     min-width: 0;
-    box-sizing: border-box;
   }
   /* Header wrapping is now applied unconditionally on .hm-factors-header
      and .hm-factors-periods themselves (see those rules above), so we
@@ -10637,17 +10624,24 @@
        on resizeToContent. */
     if (!window.gridInstance) return;
     if (typeof isPinned === 'function' && isPinned(id)) return;
-    /* Use the same "freeze transitions + sync layout flush + measure"
-       pattern as resetItemSize. setTimeout(30) wasn't enough — by 30ms
-       the body grid template change had applied but other measurements
-       (sticky gold-header height after period pills wrap/unwrap, etc.)
-       hadn't fully settled, leaving the cell sized slightly too tall
-       and a small "padding below" gap. void offsetHeight forces a
-       synchronous layout pass so resizeToContent reads the final
-       dimensions. */
+    /* Mirror resetItemSize's exact gridstack call sequence — that one
+       reliably produces a tight fit, and bare resizeToContent after a
+       class-only change doesn't (gridstack's internal reflow/cache
+       isn't fully invalidated by a maxH update alone). The redundant
+       update(w: currentW) at the same width forces gridstack to run
+       its full reflow path, which is what makes the subsequent
+       resizeToContent measurement actually take effect. void
+       offsetHeight flushes synchronous layout so scrollHeight reads
+       the post-toggle dimensions. */
+    var nodeAtToggle = item.gridstackNode;
+    var currentW = nodeAtToggle ? nodeAtToggle.w
+      : (DEFAULT_LAYOUT[id] ? DEFAULT_LAYOUT[id].w : null);
     item.classList.add('hm-no-transition');
     try {
-      gridInstance.update(item, { maxH: 9999 });
+      gridInstance.update(item, { maxH: 9999, minH: 1 });
+      if (currentW != null) {
+        gridInstance.update(item, { w: currentW });
+      }
       void item.offsetHeight;
       gridInstance.resizeToContent(item);
       var node = item.gridstackNode;
