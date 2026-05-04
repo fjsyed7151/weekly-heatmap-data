@@ -10762,14 +10762,14 @@
 
   /* Composite the captured panel image with a footer strip below.
      Layout:
-       - OUTER padding on all 4 sides of the canvas (so the panel
-         doesn't run flush to the image edge — gives consistent
-         breathing room when the image is shared on Twitter, in
-         decks, etc.)
-       - Panel content drawn inside the outer padding
-       - Subtle divider line below the panel, edge-aligned
-       - URL bottom-left, logo bottom-right, both inside the outer
-         padding so they line up with the panel's edges
+       - Image dimensions = exactly panel-width × (panel-height +
+         footer-height). NO outer canvas padding — the panel content
+         goes flush to the image edges, matching the live app's
+         spacing exactly.
+       - Footer has its OWN internal padding (FOOTER_PAD) so the URL
+         and logo don't run flush to the image edges.
+       - Subtle divider line just above the footer, edge-aligned
+         with the footer content (= same FOOTER_PAD inset).
      All drawing in OUTPUT pixels (already 2x from pixelRatio:2). */
   function _composeExportWithFooter(panelDataUrl, item) {
     return new Promise(function (resolve, reject) {
@@ -10782,31 +10782,24 @@
           panelBg = dark ? '#1a181d' : '#fbf6ea';
         }
         /* Output pixel dimensions (2x logical). */
-        var OUTER_PAD = 32;  /* ~16px visual breathing room around panel + footer */
-        var FOOTER_H = 64;   /* ~32px visual */
+        var FOOTER_H = 64;   /* ~32px visual height */
+        var FOOTER_PAD = 32; /* ~16px visual inset for URL/logo inside the footer */
         var canvas = document.createElement('canvas');
-        canvas.width = panelImg.naturalWidth + OUTER_PAD * 2;
-        canvas.height = panelImg.naturalHeight + FOOTER_H + OUTER_PAD * 2;
+        canvas.width = panelImg.naturalWidth;
+        canvas.height = panelImg.naturalHeight + FOOTER_H;
         var ctx = canvas.getContext('2d');
-        /* Fill the entire canvas with the panel's bg color so the
-           outer-padding area looks like the panel sits on the
-           dashboard's own background. */
+        /* Fill canvas with panel bg so the footer area below the
+           panel image blends seamlessly with the panel. */
         ctx.fillStyle = panelBg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        /* Panel image inside the outer padding. */
-        ctx.drawImage(panelImg, OUTER_PAD, OUTER_PAD);
-        /* Divider line at the top of the footer, edge-aligned with
-           the panel image (left = OUTER_PAD, right = OUTER_PAD + panel width). */
+        /* Panel image flush at top-left. */
+        ctx.drawImage(panelImg, 0, 0);
+        /* Divider line at the top of the footer, inset by FOOTER_PAD
+           on each side so it reads as a footnote separator. */
         var dividerColor = dark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)';
         ctx.fillStyle = dividerColor;
-        ctx.fillRect(
-          OUTER_PAD,
-          OUTER_PAD + panelImg.naturalHeight,
-          panelImg.naturalWidth,
-          1
-        );
-        /* Footer middle Y. */
-        var midY = OUTER_PAD + panelImg.naturalHeight + FOOTER_H / 2;
+        ctx.fillRect(FOOTER_PAD, panelImg.naturalHeight, canvas.width - FOOTER_PAD * 2, 1);
+        var midY = panelImg.naturalHeight + FOOTER_H / 2;
         var fontColor = dark ? '#c9c1b3' : '#5a5042';
         var text = 'stablebread.com/macro';
         function drawTextOnly() {
@@ -10814,7 +10807,7 @@
           ctx.font = '600 24px Karla, sans-serif';
           ctx.textBaseline = 'middle';
           ctx.textAlign = 'left';
-          ctx.fillText(text, OUTER_PAD, midY);
+          ctx.fillText(text, FOOTER_PAD, midY);
           try { resolve(canvas.toDataURL('image/png')); }
           catch (e) { reject(e); }
         }
@@ -10824,18 +10817,16 @@
           try {
             var logoH = 32; /* output px (~16 visual) */
             var logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
-            /* Logo on the bottom-RIGHT, edge-aligned with the panel
-               image's right edge (canvas.width - OUTER_PAD - logoW). */
-            var logoX = canvas.width - OUTER_PAD - logoW;
+            /* Logo on the bottom-RIGHT, inset by FOOTER_PAD. */
+            var logoX = canvas.width - FOOTER_PAD - logoW;
             var logoY = midY - logoH / 2;
             ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
-            /* URL on the bottom-LEFT, edge-aligned with the panel
-               image's left edge (= OUTER_PAD). */
+            /* URL on the bottom-LEFT, inset by FOOTER_PAD. */
             ctx.fillStyle = fontColor;
             ctx.font = '600 24px Karla, sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'left';
-            ctx.fillText(text, OUTER_PAD, midY);
+            ctx.fillText(text, FOOTER_PAD, midY);
             resolve(canvas.toDataURL('image/png'));
           } catch (e) {
             drawTextOnly();
