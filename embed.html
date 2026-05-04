@@ -10614,26 +10614,36 @@
     refreshStackBtn(item);
     /* Refit cell height to the reflowed content. Skip if the panel is
        pinned (lives outside gridInstance) or pinned items would error
-       on resizeToContent. The setTimeout lets the browser apply the
-       new layout before measuring. */
+       on resizeToContent. */
     if (!window.gridInstance) return;
     if (typeof isPinned === 'function' && isPinned(id)) return;
-    setTimeout(function () {
-      try {
-        gridInstance.update(item, { maxH: 9999 });
-        gridInstance.resizeToContent(item);
-        var node = item.gridstackNode;
-        if (node) {
-          var minH = (typeof computePanelMinH === 'function')
-            ? computePanelMinH(item) : 70;
-          gridInstance.update(item, { maxH: node.h, minH: minH });
-          /* Refresh the per-panel reset snapshot so a later reset click
-             restores to THIS orientation's content height — not the
-             stale one captured at first paint in the other layout. */
-          if (typeof INITIAL_H !== 'undefined') INITIAL_H[id] = node.h;
-        }
-      } catch (e) {}
-    }, 30);
+    /* Use the same "freeze transitions + sync layout flush + measure"
+       pattern as resetItemSize. setTimeout(30) wasn't enough — by 30ms
+       the body grid template change had applied but other measurements
+       (sticky gold-header height after period pills wrap/unwrap, etc.)
+       hadn't fully settled, leaving the cell sized slightly too tall
+       and a small "padding below" gap. void offsetHeight forces a
+       synchronous layout pass so resizeToContent reads the final
+       dimensions. */
+    item.classList.add('hm-no-transition');
+    try {
+      gridInstance.update(item, { maxH: 9999 });
+      void item.offsetHeight;
+      gridInstance.resizeToContent(item);
+      var node = item.gridstackNode;
+      if (node) {
+        var minH = (typeof computePanelMinH === 'function')
+          ? computePanelMinH(item) : 70;
+        gridInstance.update(item, { maxH: node.h, minH: minH });
+        /* Refresh the per-panel reset snapshot so a later reset click
+           restores to THIS orientation's content height — not the
+           stale one captured at first paint in the other layout. */
+        if (typeof INITIAL_H !== 'undefined') INITIAL_H[id] = node.h;
+      }
+    } catch (e) {}
+    requestAnimationFrame(function () {
+      item.classList.remove('hm-no-transition');
+    });
   }
 
   /* Reset a single panel to its default size (and return to grid if pinned).
