@@ -655,11 +655,49 @@
     margin: -8px 0 4px;
     background: var(--hm-bg);
   }
-  .hm-app .hm-topbar-title {
-    flex: 1;
-    font-size: 16px;
-    font-weight: 600;
+  /* Back-to-stablebread.com button on the very left of the topbar.
+     Same visual chrome as .hm-btn (32×32 outlined square) so it
+     reads as part of the same control row, but it's an <a> element
+     for proper navigation semantics + ctrl-click / open-in-new-tab. */
+  .hm-app .hm-topbar-back {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    background: transparent;
     color: var(--hm-dark);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .hm-app .hm-topbar-back:hover {
+    border-color: var(--hm-gold);
+    color: var(--hm-gold);
+  }
+  .hm-app .hm-topbar-back svg { width: 18px; height: 18px; display: block; }
+  /* Logo wrapper — also a link to stablebread.com (standard web
+     convention for clickable logos). Auto-scales the image to the
+     topbar's natural button height (32px) to keep alignment with
+     the rest of the controls. */
+  .hm-app .hm-topbar-logo {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    text-decoration: none;
+  }
+  .hm-app .hm-topbar-logo img {
+    height: 32px;
+    width: auto;
+    display: block;
+  }
+  /* Pushes the right-side button cluster to the far right. Replaces
+     the old .hm-topbar-title flex:1 spacer (we removed the
+     "Market Dashboard" label since the logo serves as branding). */
+  .hm-app .hm-topbar-spacer {
+    flex: 1;
   }
 
   .hm-app .hm-btn {
@@ -4163,7 +4201,20 @@
 <div class="hm-app" id="hm-app">
   <div class="hm-inner">
     <div class="hm-topbar">
-      <span class="hm-topbar-title">Market Dashboard</span>
+      <!-- Back to stablebread.com — leftmost element. Same tab. -->
+      <a class="hm-topbar-back" href="https://stablebread.com" aria-label="Back to StableBread" title="Back to StableBread">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </a>
+      <!-- Logo — also linked to stablebread.com home (standard web
+           convention). Image hosted on stablebread.com WP media. -->
+      <a class="hm-topbar-logo" href="https://stablebread.com" aria-label="StableBread home">
+        <img src="https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png" alt="StableBread" />
+      </a>
+      <!-- Spacer pushes the right-side button cluster to the far right. -->
+      <span class="hm-topbar-spacer"></span>
       <!-- Reset layout: clears saved positions/sizes + reloads to defaults.
            Confirms first so users don't nuke their layout by accident. -->
       <button class="hm-btn" id="hm-reset-layout" type="button" aria-label="Reset layout" title="Reset layout">
