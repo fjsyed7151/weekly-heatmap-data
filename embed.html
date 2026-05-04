@@ -10761,55 +10761,62 @@
   }
 
   /* Composite the captured panel image with a footer strip below.
-     Layout:
-       - Modest outer padding on top, left, right (so panel content
-         doesn't run flush to the image edges = no "cropping" feel).
-       - NO outer padding at bottom — the footer occupies the bottom.
-       - Footer has its own internal padding (= same as outer, so
-         URL/logo align with the panel's left/right edges).
-       - Subtle divider line above the footer, aligned with panel
-         left/right edges. */
+     Two-layer padding:
+       1. EXTRA_PANEL_PAD (panel-bg color) extends the panel's gray
+          card area outward beyond the captured image, simulating
+          extra internal panel padding so the chart/rows don't sit
+          flush against the panel's apparent edge.
+       2. OUTER_PAD (dashboard-bg color) wraps the whole panel area
+          to give the "panel-on-dashboard" feel.
+     Footer occupies the bottom with its own padding for URL/logo. */
   function _composeExportWithFooter(panelDataUrl, item) {
     return new Promise(function (resolve, reject) {
       var panelImg = new Image();
       panelImg.onload = function () {
         var dark = !!document.querySelector('.hm-app.dark');
-        var wrap = item ? item.querySelector('.hm-panel-wrap') : null;
-        var panelBg = wrap ? getComputedStyle(wrap).backgroundColor : '';
-        if (!panelBg || panelBg === 'rgba(0, 0, 0, 0)' || panelBg === 'transparent') {
-          panelBg = dark ? '#1a181d' : '#fbf6ea';
+        var hmApp = document.querySelector('.hm-app');
+        /* Read theme colors from CSS vars on .hm-app so light/dark
+           switches automatically. Fall back to sensible defaults if
+           the vars aren't readable. */
+        function cssVar(name, fallback) {
+          if (!hmApp) return fallback;
+          var v = getComputedStyle(hmApp).getPropertyValue(name);
+          return (v && v.trim()) || fallback;
         }
-        /* Output pixel dimensions (2x logical).
-           OUTER_PAD = 48 output px = 24 visual px breathing room on
-           top/left/right. Combined with the panel's internal row
-           padding (12px on factors / FI / etc.), values sit ~36 visual
-           px from the image edge — gives a clear card-on-background
-           feel that matches the live dashboard's spacing-with-border
-           visual weight. Bottom uses no outer pad (footer occupies). */
-        var OUTER_PAD = 48;
+        var dashboardBg = cssVar('--hm-bg', dark ? '#0a0a0a' : '#fbf6ea');
+        var panelBg = cssVar('--hm-panel', dark ? '#1a181d' : '#ffffff');
+        /* Output pixel dimensions (2x logical). */
+        var EXTRA_PANEL_PAD = 32; /* 16 visual: extra panel-bg padding around captured image */
+        var OUTER_PAD = 32;       /* 16 visual: outer dashboard-bg padding */
         var FOOTER_H = 64;
         var canvas = document.createElement('canvas');
-        canvas.width = panelImg.naturalWidth + OUTER_PAD * 2;
-        canvas.height = OUTER_PAD + panelImg.naturalHeight + FOOTER_H;
+        canvas.width = panelImg.naturalWidth + EXTRA_PANEL_PAD * 2 + OUTER_PAD * 2;
+        canvas.height = OUTER_PAD + EXTRA_PANEL_PAD * 2 + panelImg.naturalHeight + FOOTER_H;
         var ctx = canvas.getContext('2d');
-        /* Fill canvas with panel bg so the outer padding zone reads
-           as a continuation of the panel's bg (no contrasting frame). */
-        ctx.fillStyle = panelBg;
+        /* Step 1: Fill entire canvas with dashboard bg (outer ring +
+           footer area). */
+        ctx.fillStyle = dashboardBg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        /* Panel image inside top-left padding. */
-        ctx.drawImage(panelImg, OUTER_PAD, OUTER_PAD);
-        /* Divider line at the top of the footer, edge-aligned with
-           panel's left/right edges (= OUTER_PAD inset). */
+        /* Step 2: Fill the panel-bg-colored card area, extending
+           EXTRA_PANEL_PAD beyond the captured panel image on all
+           sides. Top-left corner at OUTER_PAD, OUTER_PAD. */
+        var panelAreaW = panelImg.naturalWidth + EXTRA_PANEL_PAD * 2;
+        var panelAreaH = panelImg.naturalHeight + EXTRA_PANEL_PAD * 2;
+        ctx.fillStyle = panelBg;
+        ctx.fillRect(OUTER_PAD, OUTER_PAD, panelAreaW, panelAreaH);
+        /* Step 3: Draw the captured panel image centered inside the
+           panel-bg area. */
+        var panelImgX = OUTER_PAD + EXTRA_PANEL_PAD;
+        var panelImgY = OUTER_PAD + EXTRA_PANEL_PAD;
+        ctx.drawImage(panelImg, panelImgX, panelImgY);
+        /* Step 4: Footer below the panel area. Divider line + URL
+           on left + logo on right, all inset by OUTER_PAD so they
+           align with the panel area's edges. */
+        var footerTopY = OUTER_PAD + panelAreaH;
         var dividerColor = dark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)';
         ctx.fillStyle = dividerColor;
-        ctx.fillRect(
-          OUTER_PAD,
-          OUTER_PAD + panelImg.naturalHeight,
-          panelImg.naturalWidth,
-          1
-        );
-        /* Footer middle Y. */
-        var midY = OUTER_PAD + panelImg.naturalHeight + FOOTER_H / 2;
+        ctx.fillRect(OUTER_PAD, footerTopY, canvas.width - OUTER_PAD * 2, 1);
+        var midY = footerTopY + FOOTER_H / 2;
         var fontColor = dark ? '#c9c1b3' : '#5a5042';
         var text = 'stablebread.com/macro';
         function drawTextOnly() {
@@ -10827,11 +10834,9 @@
           try {
             var logoH = 32;
             var logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
-            /* Logo bottom-RIGHT, aligned with panel's right edge. */
             var logoX = canvas.width - OUTER_PAD - logoW;
             var logoY = midY - logoH / 2;
             ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
-            /* URL bottom-LEFT, aligned with panel's left edge. */
             ctx.fillStyle = fontColor;
             ctx.font = '600 24px Karla, sans-serif';
             ctx.textBaseline = 'middle';
