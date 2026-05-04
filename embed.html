@@ -10645,15 +10645,22 @@
      layout). Stored under its own key so a layout-version bump
      (LAYOUT_KEY) doesn't wipe the orientation preference. */
   var STACK_KEY = 'hm-stack-orientations-v1';
-  /* Vertical-mode default width override, by panel id. Used by the
-     reset button to restore a sensibly-narrow shape when the panel
-     is currently in vertical-stack mode (the wide horizontal default
-     is silly for a single-column stacked list). The stack-toggle
-     button itself does NOT auto-apply this — toggle only changes
-     shape, never width. Only Reset reads it. Panels without an entry
-     here just use their normal def.w in either orientation. */
+  /* Vertical-mode default width per panel id. Both the stack-toggle
+     button AND the reset button apply this — toggling to vertical
+     auto-resizes to the per-panel vertical width, and toggling
+     back to horizontal restores DEFAULT_LAYOUT[id].w. This avoids
+     a class of bugs where toggling at a narrow horizontal width
+     leaves the cell sized for a width-dependent layout state
+     (e.g. wrapped period pills) that doesn't match the user's
+     subsequent resizing.
+     All 5 stack-toggle ranking panels go to width 6 in vertical
+     stack mode — a comfortable single-column-list shape. */
   var STACK_VERTICAL_W = {
+    'hm-factors': 6,
     'hm-fixed-income': 6,
+    'hm-global-indexes': 6,
+    'hm-country-etfs': 6,
+    'hm-commodity-perf': 6,
   };
   function loadStackMap() {
     try {
@@ -10704,23 +10711,30 @@
        on resizeToContent. */
     if (!window.gridInstance) return;
     if (typeof isPinned === 'function' && isPinned(id)) return;
-    /* Mirror resetItemSize's exact gridstack call sequence — that one
-       reliably produces a tight fit, and bare resizeToContent after a
-       class-only change doesn't (gridstack's internal reflow/cache
-       isn't fully invalidated by a maxH update alone). The redundant
-       update(w: currentW) at the same width forces gridstack to run
-       its full reflow path, which is what makes the subsequent
-       resizeToContent measurement actually take effect. void
-       offsetHeight flushes synchronous layout so scrollHeight reads
-       the post-toggle dimensions. */
-    var nodeAtToggle = item.gridstackNode;
-    var currentW = nodeAtToggle ? nodeAtToggle.w
-      : (DEFAULT_LAYOUT[id] ? DEFAULT_LAYOUT[id].w : null);
+    /* Determine the orientation-appropriate width:
+       - Going vertical → STACK_VERTICAL_W[id] (e.g. 6 for ranking panels)
+       - Going horizontal → DEFAULT_LAYOUT[id].w (the original wide default)
+       Auto-applying the width on toggle avoids a class of bugs where
+       toggling at a manually-resized width leaves the cell sized
+       for a width-dependent layout state (e.g. period pills wrapped
+       to 2 rows) that doesn't match the user's subsequent resizing.
+       Reset button uses the same widths via STACK_VERTICAL_W /
+       DEFAULT_LAYOUT lookup, so reset and toggle stay consistent. */
+    var def = DEFAULT_LAYOUT[id];
+    var targetW;
+    if (nowVertical && STACK_VERTICAL_W[id] != null) {
+      targetW = STACK_VERTICAL_W[id];
+    } else if (def) {
+      targetW = def.w;
+    }
+    /* Mirror resetItemSize's call sequence: unlock maxH/minH, set w,
+       force a synchronous layout flush, then resizeToContent so the
+       new height reads off the post-toggle layout. */
     item.classList.add('hm-no-transition');
     try {
       gridInstance.update(item, { maxH: 9999, minH: 1 });
-      if (currentW != null) {
-        gridInstance.update(item, { w: currentW });
+      if (targetW != null) {
+        gridInstance.update(item, { w: targetW });
       }
       void item.offsetHeight;
       gridInstance.resizeToContent(item);
