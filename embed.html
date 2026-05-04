@@ -323,26 +323,36 @@
      even though its parent wrap is wider. With navbar narrower than
      wrap, sticky-left can pin it to viewport-left of the scroll
      container, eliminating the right-side gap on horizontal scroll. */
-  .hm-app .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
-  .hm-app .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
-  .hm-app .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
-  .hm-app .grid-stack-item[gs-id="hm-country-etfs"] > .grid-stack-item-content,
-  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content {
+  /* All five navbar-fix CSS blocks below are SCOPED to horizontal
+     mode only via :not(.hm-stack-vertical). The whole point of
+     wrap=max-content + navbar=100cqw + gold-header-sticky-left is
+     to handle the case where the card extends past cell width
+     (which only happens in horizontal mode for these panels — body
+     has min-width:660). In vertical mode the card is naturally
+     cell-width with no horizontal overflow at any level, so applying
+     these rules there caused subtle layout issues (max-content wrap
+     measuring widest natural row name → wrap > cell → cell-level
+     horizontal scrollbar painting as a tiny gap below the panel). */
+  .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) > .grid-stack-item-content {
     container-type: inline-size;
   }
-  .hm-app .grid-stack-item[gs-id="hm-factors"] .hm-panel-wrap,
-  .hm-app .grid-stack-item[gs-id="hm-fixed-income"] .hm-panel-wrap,
-  .hm-app .grid-stack-item[gs-id="hm-global-indexes"] .hm-panel-wrap,
-  .hm-app .grid-stack-item[gs-id="hm-country-etfs"] .hm-panel-wrap,
-  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"] .hm-panel-wrap {
+  .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-wrap {
     width: max-content;
     min-width: 100%;
   }
-  .hm-app .grid-stack-item[gs-id="hm-factors"] .hm-panel-header,
-  .hm-app .grid-stack-item[gs-id="hm-fixed-income"] .hm-panel-header,
-  .hm-app .grid-stack-item[gs-id="hm-global-indexes"] .hm-panel-header,
-  .hm-app .grid-stack-item[gs-id="hm-country-etfs"] .hm-panel-header,
-  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"] .hm-panel-header {
+  .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-header {
     width: 100cqw;
   }
   /* Same trick for the GOLD header band (.hm-factors-header) on
@@ -356,18 +366,18 @@
      would create an inner scroll container that traps sticky inside
      the card. top:24px puts the gold header just below the cell's
      window-style navbar (which is 24px tall and sticky at top:0). */
-  .hm-app .grid-stack-item[gs-id="hm-factors"] .hm-factors-card,
-  .hm-app .grid-stack-item[gs-id="hm-fixed-income"] .hm-factors-card,
-  .hm-app .grid-stack-item[gs-id="hm-global-indexes"] .hm-factors-card,
-  .hm-app .grid-stack-item[gs-id="hm-country-etfs"] .hm-factors-card,
-  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"] .hm-factors-card {
+  .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-factors-card,
+  .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-factors-card,
+  .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-factors-card,
+  .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-factors-card,
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-factors-card {
     overflow: clip;
   }
-  .hm-app .grid-stack-item[gs-id="hm-factors"] .hm-factors-header,
-  .hm-app .grid-stack-item[gs-id="hm-fixed-income"] .hm-factors-header,
-  .hm-app .grid-stack-item[gs-id="hm-global-indexes"] .hm-factors-header,
-  .hm-app .grid-stack-item[gs-id="hm-country-etfs"] .hm-factors-header,
-  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"] .hm-factors-header {
+  .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-factors-header,
+  .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-factors-header,
+  .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-factors-header,
+  .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-factors-header,
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-factors-header {
     position: sticky;
     top: 24px;
     left: 0;
@@ -3200,22 +3210,14 @@
   .hm-app .grid-stack-item.hm-stack-vertical .hm-fi-col:last-child {
     border-bottom: none;
   }
-  /* Vertical mode override: undo the ranking-panel `wrap:max-content`
-     rule. In vertical-stack mode the body collapses to a single
-     column so there's no wide content to scroll horizontally —
-     keeping wrap at max-content lets the card's natural max-content
-     (long row names with white-space:nowrap) bleed into wrap's
-     measured width, making it >cell width by a few pixels and
-     triggering a horizontal scrollbar at the cell level whose
-     ~8-10px height shows up as a "tiny gap below" the content.
-     Pinning wrap back to block width (= fills parent = cell width)
-     means the card's percentage-width:100% resolves to a definite
-     cell width too, the body collapses into ellipsis-truncated
-     rows, and there's no horizontal overflow at any level. */
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-panel-wrap {
-    width: 100%;
-    min-width: 0;
-  }
+  /* Vertical mode: pin the card to cell width so the body collapses
+     to a single column with ellipsis-truncated names instead of
+     growing the card past cell width. Note the navbar-fix CSS above
+     (wrap=max-content, navbar=100cqw, gold-header sticky+100cqw,
+     card overflow:clip, container-type) is scoped to
+     :not(.hm-stack-vertical), so vertical mode falls back to the
+     base CSS layout — clean, no horizontal-overflow plumbing
+     interfering with the natural cell-width fit. */
   .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-card {
     width: 100%;
     min-width: 0;
