@@ -2106,19 +2106,18 @@
      into 4 cells, instead of 4 separate pills competing for attention. */
   .hm-app .hm-indexes {
     display: grid;
-    /* clamp(140px, 25cqw, 180px) per column — each card is 25% of
-       the cell width (so 4 cards fill the row), clamped between
-       140px (min) and 180px (max). cqw (container query width)
-       resolves against the .grid-stack-item-content cell, which has
-       a definite width set by gridstack — independent of the wrap's
-       max-content sizing from the navbar-fix. Using `25%` here would
-       have resolved against the grid container, which is inside a
-       max-content wrap → ambiguous → tracks lock instead of
-       interpolating. cqw avoids that entirely.
-       Also: with cqw, the grid's max-content evaluates to 4 × 25cqw
-       = cell width (not 4 × 180 = 720), so the wrap doesn't push
-       past the cell on default-width reset. */
-    grid-template-columns: repeat(4, clamp(140px, 25cqw, 180px));
+    /* max(140px, 25cqw) per column — each card is 25% of cell width
+       (so 4 cards fill the row), with a 140px floor so they don't
+       shrink past readability. No upper cap — cards keep growing
+       linearly with the cell width on wider panels. cqw resolves
+       against the .grid-stack-item-content cell (which has a
+       definite gridstack-set width), not against the surrounding
+       max-content wrap from the navbar-fix, so percentages stay
+       consistent regardless of wrap sizing. At cell widths < 4×140
+       = 560px the cards stay at 140 and the cell scrolls
+       horizontally; the navbar-fix CSS keeps the navbar pinned
+       during that scroll. */
+    grid-template-columns: repeat(4, max(140px, 25cqw));
     gap: 0;
     background: var(--hm-panel);
     border: 0;
@@ -2131,7 +2130,7 @@
      forced into a horizontal scroll situation on phones (where
      vertical scrolling is the dominant UX). */
   @media (max-width: 1100px) {
-    .hm-app .hm-indexes { grid-template-columns: repeat(2, clamp(140px, 50cqw, 180px)); }
+    .hm-app .hm-indexes { grid-template-columns: repeat(2, max(140px, 50cqw)); }
   }
   @media (max-width: 600px) {
     .hm-app .hm-indexes { grid-template-columns: 1fr; }
