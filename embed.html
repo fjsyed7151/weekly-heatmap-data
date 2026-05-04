@@ -350,12 +350,19 @@
     user-select: none;
     gap: 2px;
     color: var(--hm-muted, #8a7e5e);
-    /* Sticky to the top of the panel cell scroll container so the
-       drag/pin/reset/close icons are always visible no matter how far
-       the user has scrolled inside a shrunk panel. z-index sits above
-       resize handles AND the sticky thead inside the heat map. */
+    /* Sticky to the top AND left of the panel cell scroll container so
+       the drag/pin/reset/close icons are always visible no matter how
+       the user has scrolled (vertical OR horizontal). The horizontal
+       stickiness is what prevents the "gap on the right of the
+       navbar" bug when a panel's card extends past cell width: the
+       cell scrolls horizontally to reveal the wide content, but the
+       navbar pins to viewport-left and fills the visible area, so
+       there's no naked stripe on the right where the navbar bg used
+       to end. z-index sits above resize handles AND the sticky thead
+       inside the heat map. */
     position: sticky;
     top: 0;
+    left: 0;
     z-index: 6;
   }
   .hm-app.dark .hm-panel-header {
@@ -2961,35 +2968,25 @@
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
   }
-  /* Ranking-panel card width: pin to panel-cell width (override the
-     base .hm-factors-card width:max-content) and let the inner
-     scroll wrapper handle horizontal overflow when the body is wider
-     than the cell.
-     Why: when the card is wider than the cell, the panel-cell scrolls
-     horizontally — but .hm-panel-wrap (and the sticky window navbar
-     inside it) stay at cell-width, leaving a visible gap on the right
-     where the navbar background ends short of the visible content
-     edge. Pinning the card means the navbar always spans the full
-     visible cell, no gap, and any wide body content scrolls within
-     its own .hm-factors-scroll wrapper instead of at the cell level
-     (scrollbar moves from cell-bottom to wrapper-bottom — equivalent
-     UX, eliminates the gap). The base card kept overflow:hidden, so
-     we set overflow-x:auto only on the scroll wrapper. */
-  .hm-app #hm-factors > .hm-factors-card,
-  .hm-app #hm-fixed-income > .hm-factors-card,
-  .hm-app #hm-global-indexes > .hm-factors-card,
-  .hm-app #hm-country-etfs > .hm-factors-card,
-  .hm-app #hm-commodity-perf > .hm-factors-card,
+  /* Currency matrix is a special case: its inner table extends well
+     past most panel widths, and the user wants the period pills to
+     wrap on narrow panels (the unconditional flex-wrap on
+     .hm-factors-header only kicks in if the header's container is
+     panel-width — but max-content cards make the container as wide
+     as the table). Pinning JUST the currency matrix card to cell
+     width + giving its scroll wrapper its own horizontal overflow
+     enables the wrap. The other ranking panels (Factors / FI / GI
+     / CE / CP) keep the original cell-level horizontal scroll. */
   .hm-app #hm-currency-matrix > .hm-factors-card {
     width: 100%;
     min-width: 0;
   }
-  .hm-app #hm-factors .hm-factors-scroll,
-  .hm-app #hm-fixed-income .hm-factors-scroll,
-  .hm-app #hm-global-indexes .hm-factors-scroll,
-  .hm-app #hm-country-etfs .hm-factors-scroll,
-  .hm-app #hm-commodity-perf .hm-factors-scroll,
   .hm-app #hm-currency-matrix .hm-factors-scroll {
+    /* The N×N table is naturally wider than most panel widths; let the
+       scroll wrapper handle horizontal overflow so the gold header
+       (and its period pills) stay panel-width and can wrap. The
+       table's natural height fits its rows, so no vertical scrollbar
+       triggers inside the wrapper. */
     overflow-x: auto;
   }
   /* Window-style header bar squares its top corners — the parent
