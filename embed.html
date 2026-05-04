@@ -375,6 +375,15 @@
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
+    /* Square top corners — overflow-x:auto activates border-radius
+       clipping on children, which made the table's sticky thead
+       (gold #daa520) appear with rounded top corners. The base
+       .hm-scroll rule had border-radius: var(--hm-r) for the whole
+       wrapper, which we want preserved on the BOTTOM (panel ends
+       with rounded corner) but not at the top where the gold band
+       should read as a flat title bar. */
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
   }
   .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-scroll::-webkit-scrollbar {
     display: none;
@@ -5228,6 +5237,11 @@
      buffer for any scrollbar reservation, and updates h. Called
      after the initial fitToContent settles. */
   function refitHeatmap() {
+    /* 200ms delay so font rendering, sticky-thead positioning, and
+       any other async layout settling has finished. 12px buffer
+       wasn't enough — scrollbar persisted because content was just
+       barely taller than measured scrollHeight. 24px buffer covers
+       sub-pixel discrepancies + thead's sticky offset adjustment. */
     setTimeout(function () {
       if (!window.gridInstance) return;
       var item = document.querySelector('.grid-stack-item[gs-id="hm-heatmap-wrap"]');
@@ -5239,7 +5253,7 @@
       var cellH = window.gridInstance.getCellHeight(true) || 1;
       var natural = wrap.scrollHeight;
       if (!natural) return;
-      var rows = Math.max(1, Math.ceil((natural + 12) / cellH));
+      var rows = Math.max(1, Math.ceil((natural + 24) / cellH));
       var minH = (typeof computePanelMinH === 'function')
         ? computePanelMinH(item) : 70;
       window.gridInstance._suppressSave = true;
@@ -5250,7 +5264,7 @@
         if (typeof INITIAL_H !== 'undefined') INITIAL_H['hm-heatmap-wrap'] = rows;
       } catch (e) {}
       window.gridInstance._suppressSave = false;
-    }, 80);
+    }, 200);
   }
 
   /* Re-run resizeToContent + maxH lock for the metrics chart panel.
