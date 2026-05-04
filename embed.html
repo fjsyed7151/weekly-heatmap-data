@@ -10287,6 +10287,36 @@
           } catch (e) {}
         }, 80);
       }
+      /* Stack-toggle panels in vertical mode: the gold header has
+         flex-wrap:wrap, so its height varies with cell width — at
+         narrow widths the period pills wrap onto a 2nd row (header
+         ≈ 60px tall), at wider widths they unwrap to one row
+         (≈ 36px). resizeToContent at toggle-time locks maxH to the
+         CURRENT content height; if the user later resizes the cell
+         WIDER, the gold header shrinks but the cell h stays at the
+         old (taller) value, producing empty space at the bottom.
+         Refitting on resizestop keeps cell h matched to current
+         content. Only relevant for vertical-stack panels — others
+         have width-independent content heights or already handle
+         this via their own logic. */
+      if (el && el.classList && el.classList.contains('hm-stack-vertical')) {
+        var stackId = el.getAttribute('gs-id');
+        setTimeout(function () {
+          try {
+            gridInstance.update(el, { maxH: 9999 });
+            gridInstance.resizeToContent(el);
+            var node = el.gridstackNode;
+            if (node) {
+              var minH = (typeof computePanelMinH === 'function')
+                ? computePanelMinH(el) : 70;
+              gridInstance.update(el, { maxH: node.h, minH: minH });
+              if (typeof INITIAL_H !== 'undefined' && stackId) {
+                INITIAL_H[stackId] = node.h;
+              }
+            }
+          } catch (e) {}
+        }, 80);
+      }
     });
 
     /* Edge auto-scroll while dragging: when the cursor approaches the top
