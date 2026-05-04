@@ -298,17 +298,52 @@
     padding: 0;
     box-sizing: border-box;
   }
-  /* Panel wrap stays at cell width — no max-content. With max-content
-     here, Chart.js responsive canvases (sector / macro regime / index
-     sparklines) fed back into a width-grow loop because a chart's
-     measured parent grew when the canvas drew, which made the canvas
-     re-measure, etc. We accept that a wide table's gold header stops
-     at cell width when scrolled right. */
+  /* Panel wrap stays at cell width by default — Chart.js responsive
+     canvases (sector / macro regime / index sparklines) feed back
+     into a width-grow loop if the wrap is allowed to be max-content
+     (chart measures parent → grows wrap → chart re-measures → ...).
+     For ranking-style panels (no Chart.js inside), we override to
+     max-content below so the sticky-left navbar can actually pin
+     itself horizontally — sticky positioning needs the containing
+     block to be wider than the sticky element to have any effect. */
   .hm-app .hm-panel-wrap {
     box-sizing: border-box;
     background: var(--hm-bg);  /* opaque so content under the sticky header doesn't show through */
     scrollbar-width: thin;
     scrollbar-color: #F2DFB3 var(--hm-bg-alt);
+  }
+  /* Ranking-style panels: enable horizontal sticky on the navbar by
+     letting the wrap grow to max-content + giving the navbar an
+     explicit cell-width via container queries. The card already
+     uses width:max-content; min-width:100%, so wrap:max-content
+     just means wrap follows the card's width (no behavioral change
+     for the wide content itself — cell-level horizontal scroll is
+     preserved). 100cqw on the navbar = 100% of the nearest container
+     (the .grid-stack-item-content cell), so navbar stays cell-width
+     even though its parent wrap is wider. With navbar narrower than
+     wrap, sticky-left can pin it to viewport-left of the scroll
+     container, eliminating the right-side gap on horizontal scroll. */
+  .hm-app .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-country-etfs"] > .grid-stack-item-content,
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content {
+    container-type: inline-size;
+  }
+  .hm-app .grid-stack-item[gs-id="hm-factors"] .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-fixed-income"] .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-global-indexes"] .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-country-etfs"] .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"] .hm-panel-wrap {
+    width: max-content;
+    min-width: 100%;
+  }
+  .hm-app .grid-stack-item[gs-id="hm-factors"] .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-fixed-income"] .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-global-indexes"] .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-country-etfs"] .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"] .hm-panel-header {
+    width: 100cqw;
   }
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar {
     width: 8px;
@@ -352,14 +387,14 @@
     color: var(--hm-muted, #8a7e5e);
     /* Sticky to the top AND left of the panel cell scroll container so
        the drag/pin/reset/close icons are always visible no matter how
-       the user has scrolled (vertical OR horizontal). The horizontal
-       stickiness is what prevents the "gap on the right of the
-       navbar" bug when a panel's card extends past cell width: the
-       cell scrolls horizontally to reveal the wide content, but the
-       navbar pins to viewport-left and fills the visible area, so
-       there's no naked stripe on the right where the navbar bg used
-       to end. z-index sits above resize handles AND the sticky thead
-       inside the heat map. */
+       the user has scrolled (vertical OR horizontal). For horizontal
+       stickiness to actually work, the navbar's containing block
+       (.hm-panel-wrap) must be wider than the navbar so it has room
+       to "move" within the wrap as the user scrolls — otherwise
+       sticky-left has no effect (navbar can only be at one position
+       inside its narrow containing block). See the per-panel
+       max-content wrap rules + 100cqw navbar width below for ranking
+       panels that need this fix. */
     position: sticky;
     top: 0;
     left: 0;
