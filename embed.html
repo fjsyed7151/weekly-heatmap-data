@@ -10918,6 +10918,45 @@
     var inGrid = !!(node && window.gridInstance);
     var needsResize = inGrid && defaults &&
                       (savedW !== defaults.w || savedH !== defaults.h);
+    /* Inject temporary CSS that forces extra right padding on every
+       row-like element. The captured panels' built-in CSS gives rows
+       12px right padding, but in the rendered export the values
+       look flush against the right edge — likely an html-to-image
+       quirk with how it handles padding-right inside flex containers
+       with white-space:nowrap children. Forcing larger padding via
+       !important during the capture window guarantees visible
+       breathing room. The class is applied to .hm-app so all panels
+       are covered. */
+    var exportStyle = document.createElement('style');
+    exportStyle.id = 'hm-export-style';
+    exportStyle.textContent = [
+      '.hm-export-mode .hm-factors-row,',
+      '.hm-export-mode .hm-fi-row,',
+      '.hm-export-mode .hm-gi-row,',
+      '.hm-export-mode .hm-ce-row,',
+      '.hm-export-mode .hm-cp-row,',
+      '.hm-export-mode .hm-cal-row {',
+      '  padding-right: 16px !important;',
+      '}',
+      '.hm-export-mode .hm-factors-header,',
+      '.hm-export-mode .hm-cal-header,',
+      '.hm-export-mode .hm-econ-header,',
+      '.hm-export-mode .hm-sector-header,',
+      '.hm-export-mode .hm-mc-top,',
+      '.hm-export-mode .hm-gave-top,',
+      '.hm-export-mode .hm-sf-header,',
+      '.hm-export-mode .hm-treemap-header,',
+      '.hm-export-mode .hm-gold-header {',
+      '  padding-right: 16px !important;',
+      '}',
+      '.hm-export-mode .hm-factors-col-header,',
+      '.hm-export-mode .hm-fi-col-header,',
+      '.hm-export-mode .hm-gi-col-header,',
+      '.hm-export-mode .hm-ce-col-header,',
+      '.hm-export-mode .hm-cp-col-header {',
+      '  padding-right: 16px !important;',
+      '}'
+    ].join('\n');
     /* Disable transitions globally so the temp resize is instant.
        Reuses the existing hm-grid-dragging body class which has
        `transition: none !important` on all grid items. */
@@ -10931,7 +10970,16 @@
       /* Force synchronous layout. */
       void item.offsetHeight;
     }
+    /* Apply export-mode CSS so the larger padding is visible during
+       the capture. Has to happen AFTER the resize so the layout
+       reflows with the extra padding. */
+    document.head.appendChild(exportStyle);
+    var hmAppRoot = document.querySelector('.hm-app');
+    if (hmAppRoot) hmAppRoot.classList.add('hm-export-mode');
+    void item.offsetHeight;
     function restoreSize() {
+      if (hmAppRoot) hmAppRoot.classList.remove('hm-export-mode');
+      if (exportStyle.parentNode) exportStyle.parentNode.removeChild(exportStyle);
       if (!needsResize) return;
       try {
         gridInstance.update(item, {
