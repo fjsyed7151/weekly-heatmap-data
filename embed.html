@@ -3240,6 +3240,12 @@
     height: 22px;
     display: inline-flex;
     align-items: center;
+    /* Multi-word labels like "vs SPY" should never wrap. Without
+       this, html-to-image's measurement during export sometimes
+       has marginally tighter inline space than the live render and
+       breaks "vs SPY" → "vs" / "SPY" stacked. nowrap fixes it
+       universally (live + export). */
+    white-space: nowrap;
   }
   .hm-app .hm-factors-period-btn.active {
     background: rgba(255,255,255,0.25);
@@ -10755,62 +10761,75 @@
   }
 
   /* Composite the captured panel image with a footer strip below.
-     Done via canvas (not DOM) so the footer is reliably rendered
-     regardless of CSS context, and we can include the StableBread
-     logo without depending on any cross-origin DOM rendering. */
-  function _composeExportWithFooter(panelDataUrl) {
+     Footer layout:
+       - Same background as the panel (no distinct color band)
+       - Subtle 1px divider line at the top, padded inset on left/right
+       - "stablebread.com/macro" text on the bottom-LEFT, padded
+       - StableBread logo on the bottom-RIGHT, padded
+     All drawing in OUTPUT pixels (already 2x from pixelRatio:2). */
+  function _composeExportWithFooter(panelDataUrl, item) {
     return new Promise(function (resolve, reject) {
       var panelImg = new Image();
       panelImg.onload = function () {
         var dark = !!document.querySelector('.hm-app.dark');
-        /* Footer height in OUTPUT pixels (already 2x because
-           html-to-image used pixelRatio:2). 56px output = 28px
-           visual at standard DPI — small but readable. */
-        var FOOTER_H = 56;
+        /* Sample panel bg color so the footer area extends seamlessly
+           — looks like a single block instead of a contrasting strip.
+           Falls back to theme bg if the wrap is transparent. */
+        var wrap = item ? item.querySelector('.hm-panel-wrap') : null;
+        var panelBg = wrap ? getComputedStyle(wrap).backgroundColor : '';
+        if (!panelBg || panelBg === 'rgba(0, 0, 0, 0)' || panelBg === 'transparent') {
+          panelBg = dark ? '#1a181d' : '#fbf6ea';
+        }
+        /* Output pixel dimensions (2x logical). */
+        var FOOTER_H = 64;   /* ~32px visual height */
+        var PAD_X = 32;      /* ~16px visual padding from cell edges */
         var canvas = document.createElement('canvas');
         canvas.width = panelImg.naturalWidth;
         canvas.height = panelImg.naturalHeight + FOOTER_H;
         var ctx = canvas.getContext('2d');
-        /* Draw panel content. */
+        /* Fill the entire canvas with the panel bg first so the footer
+           area blends into the panel instead of looking transparent. */
+        ctx.fillStyle = panelBg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        /* Draw the captured panel image on top. */
         ctx.drawImage(panelImg, 0, 0);
-        /* Footer background + top-border line. */
-        ctx.fillStyle = dark ? '#1f1c22' : '#f4ede0';
-        ctx.fillRect(0, panelImg.naturalHeight, canvas.width, FOOTER_H);
-        ctx.fillStyle = dark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.10)';
-        ctx.fillRect(0, panelImg.naturalHeight, canvas.width, 2);
-        /* Load logo cross-origin for canvas safety. If CORS fails
-           (e.g. when running outside stablebread.com origin) fall
-           back to text-only — image is still usable. */
-        var logoImg = new Image();
-        logoImg.crossOrigin = 'anonymous';
+        /* Subtle divider line at the top of the footer, inset by
+           PAD_X on each side so it reads as a footnote separator
+           respecting the panel's inner padding. */
+        var dividerColor = dark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)';
+        ctx.fillStyle = dividerColor;
+        ctx.fillRect(PAD_X, panelImg.naturalHeight, canvas.width - PAD_X * 2, 1);
         var midY = panelImg.naturalHeight + FOOTER_H / 2;
         var fontColor = dark ? '#c9c1b3' : '#5a5042';
         var text = 'stablebread.com/macro';
         function drawTextOnly() {
+          /* Logo couldn't load → just text on the left. */
           ctx.fillStyle = fontColor;
-          ctx.font = '600 26px Karla, sans-serif';
+          ctx.font = '600 24px Karla, sans-serif';
           ctx.textBaseline = 'middle';
-          ctx.textAlign = 'center';
-          ctx.fillText(text, canvas.width / 2, midY);
+          ctx.textAlign = 'left';
+          ctx.fillText(text, PAD_X, midY);
           try { resolve(canvas.toDataURL('image/png')); }
           catch (e) { reject(e); }
         }
+        var logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
         logoImg.onload = function () {
           try {
-            var logoH = 36; /* output pixels */
+            var logoH = 32; /* output pixels (~16 visual) */
             var logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
+            /* Logo on the bottom-RIGHT (anchored to right edge minus padding). */
+            var logoX = canvas.width - PAD_X - logoW;
+            var logoY = midY - logoH / 2;
+            ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+            /* URL text on the bottom-LEFT (anchored to left edge plus padding). */
             ctx.fillStyle = fontColor;
-            ctx.font = '600 26px Karla, sans-serif';
+            ctx.font = '600 24px Karla, sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'left';
-            var textW = ctx.measureText(text).width;
-            var totalW = logoW + 20 + textW;
-            var startX = Math.round((canvas.width - totalW) / 2);
-            ctx.drawImage(logoImg, startX, midY - logoH / 2, logoW, logoH);
-            ctx.fillText(text, startX + logoW + 20, midY);
+            ctx.fillText(text, PAD_X, midY);
             resolve(canvas.toDataURL('image/png'));
           } catch (e) {
-            /* Tainted canvas (CORS) → fall back to text-only. */
             drawTextOnly();
           }
         };
@@ -10822,26 +10841,91 @@
     });
   }
 
+  /* Compute the panel's default size (w, h) for export. For
+     stack-toggle panels, picks the orientation-specific defaults
+     (vertical → STACK_VERTICAL_W[id], horizontal → DEFAULT_LAYOUT.w).
+     Height comes from INITIAL_H (post-fit content height) when
+     available, falling back to DEFAULT_LAYOUT.h. */
+  function _exportDefaults(item) {
+    var id = item.getAttribute('gs-id');
+    var def = (typeof DEFAULT_LAYOUT !== 'undefined') ? DEFAULT_LAYOUT[id] : null;
+    if (!def) return null;
+    var isVertical = item.classList.contains('hm-stack-vertical');
+    var hasStack = item.classList.contains('hm-has-stack');
+    var w = (hasStack && isVertical &&
+             typeof STACK_VERTICAL_W !== 'undefined' &&
+             STACK_VERTICAL_W[id] != null)
+      ? STACK_VERTICAL_W[id]
+      : def.w;
+    var h = (typeof INITIAL_H !== 'undefined' && INITIAL_H[id] != null)
+      ? INITIAL_H[id]
+      : def.h;
+    return { w: w, h: h };
+  }
+
   /* Capture a single panel as a PNG and trigger a browser download.
-     Approach:
-       1. Capture the LIVE .grid-stack-item-content via html-to-image.
+     Steps:
+       1. Resize the panel to its DEFAULT size (orientation-aware
+          for stack-toggle panels) so every export has consistent
+          dimensions regardless of how the user has sized the cell.
+          Brief flash during the resize is acceptable.
+       2. Capture the LIVE .grid-stack-item-content via html-to-image.
           - filter: skip the .hm-panel-header navbar (no app-chrome
             buttons in the export)
-          - style: override box-shadow to 'none' on the captured root
-            so the gold outline border doesn't appear in the export
-          - pixelRatio:2 for retina-quality
-       2. Composite that image onto a canvas with a footer strip
-          drawn below (StableBread logo + stablebread.com/macro).
-       3. Trigger download.
-     Capturing the live element (not a clone) means all theme/CSS
+          - style: override box-shadow + border-radius so the export
+            has clean square corners and no gold outline border
+       3. Composite that image onto a canvas with a footer strip
+          (URL bottom-left, logo bottom-right, subtle divider above)
+       4. Trigger download
+       5. Restore the panel to the user's pre-export size
+     Capturing the LIVE element (not a clone) preserves all CSS
      scoping (.hm-app, .grid-stack-item[gs-id="..."], container
-     queries, dark mode) applies correctly — the cloned-into-an-
-     offscreen-div approach lost that context and rendered blank. */
+     queries, dark mode) — cloning into a detached div lost it. */
   function exportPanelImage(item, btn) {
     if (!item) return;
     var content = item.querySelector('.grid-stack-item-content');
     if (!content) return;
     if (btn) btn.classList.add('hm-loading');
+    /* Save current dimensions so we can restore after capture. */
+    var node = item.gridstackNode;
+    var defaults = _exportDefaults(item);
+    var savedW = node ? node.w : null;
+    var savedH = node ? node.h : null;
+    var savedMaxH = node ? node.maxH : null;
+    var savedMinH = node ? node.minH : null;
+    var inGrid = !!(node && window.gridInstance);
+    var needsResize = inGrid && defaults &&
+                      (savedW !== defaults.w || savedH !== defaults.h);
+    /* Disable transitions globally so the temp resize is instant.
+       Reuses the existing hm-grid-dragging body class which has
+       `transition: none !important` on all grid items. */
+    var bodyHadDragging = document.body.classList.contains('hm-grid-dragging');
+    if (needsResize) {
+      document.body.classList.add('hm-grid-dragging');
+      try {
+        gridInstance.update(item, { maxH: 9999, minH: 1 });
+        gridInstance.update(item, { w: defaults.w, h: defaults.h });
+      } catch (e) {}
+      /* Force synchronous layout. */
+      void item.offsetHeight;
+    }
+    function restoreSize() {
+      if (!needsResize) return;
+      try {
+        gridInstance.update(item, {
+          w: savedW,
+          h: savedH,
+          maxH: (savedMaxH != null) ? savedMaxH : 9999,
+          minH: (savedMinH != null) ? savedMinH : 1,
+        });
+      } catch (e) {}
+      void item.offsetHeight;
+      if (!bodyHadDragging) {
+        requestAnimationFrame(function () {
+          document.body.classList.remove('hm-grid-dragging');
+        });
+      }
+    }
     loadHtmlToImage().then(function (lib) {
       var idAttr = item.getAttribute('gs-id') || 'panel';
       var dateStr = (new Date()).toISOString().slice(0, 10);
@@ -10850,19 +10934,18 @@
         pixelRatio: 2,
         cacheBust: true,
         filter: function (node) {
-          /* Skip the window-style navbar (pin/reset/close icons). */
           if (node && node.classList && node.classList.contains('hm-panel-header')) {
             return false;
           }
           return true;
         },
         style: {
-          /* Override the cell's outer 1px gold border for the export.
-             html-to-image applies this to the captured root only. */
-            boxShadow: 'none'
+          /* Square corners + no outline border in the export. */
+          boxShadow: 'none',
+          borderRadius: '0'
         },
       }).then(function (panelDataUrl) {
-        return _composeExportWithFooter(panelDataUrl);
+        return _composeExportWithFooter(panelDataUrl, item);
       }).then(function (finalDataUrl) {
         var a = document.createElement('a');
         a.href = finalDataUrl;
@@ -10873,10 +10956,12 @@
       }).catch(function (err) {
         console.error('[heatmap] export failed:', err);
       }).then(function () {
+        restoreSize();
         if (btn) btn.classList.remove('hm-loading');
       });
     }).catch(function (err) {
       console.error('[heatmap] export library load failed:', err);
+      restoreSize();
       if (btn) btn.classList.remove('hm-loading');
     });
   }
