@@ -3200,9 +3200,22 @@
   .hm-app .grid-stack-item.hm-stack-vertical .hm-fi-col:last-child {
     border-bottom: none;
   }
-  /* Vertical mode: pin the card to cell width so the body collapses
-     into a single column and rows ellipsis-truncate long names
-     instead of growing the card past cell width. */
+  /* Vertical mode override: undo the ranking-panel `wrap:max-content`
+     rule. In vertical-stack mode the body collapses to a single
+     column so there's no wide content to scroll horizontally —
+     keeping wrap at max-content lets the card's natural max-content
+     (long row names with white-space:nowrap) bleed into wrap's
+     measured width, making it >cell width by a few pixels and
+     triggering a horizontal scrollbar at the cell level whose
+     ~8-10px height shows up as a "tiny gap below" the content.
+     Pinning wrap back to block width (= fills parent = cell width)
+     means the card's percentage-width:100% resolves to a definite
+     cell width too, the body collapses into ellipsis-truncated
+     rows, and there's no horizontal overflow at any level. */
+  .hm-app .grid-stack-item.hm-stack-vertical .hm-panel-wrap {
+    width: 100%;
+    min-width: 0;
+  }
   .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-card {
     width: 100%;
     min-width: 0;
