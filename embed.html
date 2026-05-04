@@ -5219,6 +5219,40 @@
     return Math.max(DEFAULT_MIN, Math.round(INSET + phH + ghH + BUFFER));
   }
 
+  /* Custom refit for the metrics table panel. The shared
+     resizeToContent in fitToContent doesn't reliably size the
+     heatmap cell to fit ALL rows on initial paint — likely some
+     interaction between the inner overflow-x:auto on .hm-scroll,
+     the sticky table thead, and gridstack's measurement timing.
+     This function explicitly reads wrap.scrollHeight, adds a small
+     buffer for any scrollbar reservation, and updates h. Called
+     after the initial fitToContent settles. */
+  function refitHeatmap() {
+    setTimeout(function () {
+      if (!window.gridInstance) return;
+      var item = document.querySelector('.grid-stack-item[gs-id="hm-heatmap-wrap"]');
+      if (!item) return;
+      var node = item.gridstackNode;
+      if (!node) return;
+      var wrap = item.querySelector('.hm-panel-wrap');
+      if (!wrap) return;
+      var cellH = window.gridInstance.getCellHeight(true) || 1;
+      var natural = wrap.scrollHeight;
+      if (!natural) return;
+      var rows = Math.max(1, Math.ceil((natural + 12) / cellH));
+      var minH = (typeof computePanelMinH === 'function')
+        ? computePanelMinH(item) : 70;
+      window.gridInstance._suppressSave = true;
+      try {
+        window.gridInstance.update(item, { maxH: 4000 });
+        if (rows !== node.h) window.gridInstance.update(item, { h: rows });
+        window.gridInstance.update(item, { maxH: rows, minH: minH });
+        if (typeof INITIAL_H !== 'undefined') INITIAL_H['hm-heatmap-wrap'] = rows;
+      } catch (e) {}
+      window.gridInstance._suppressSave = false;
+    }, 80);
+  }
+
   /* Re-run resizeToContent + maxH lock for the metrics chart panel.
      Called after the canvases inside it change so the cell tracks the
      new content size. Clears maxH first because Gridstack's
@@ -5240,25 +5274,26 @@
       var cellH = window.gridInstance.getCellHeight(true) || 40;
       var natural = wrap.scrollHeight;
       if (!natural) return;
-      /* Breathing-room buffer so the content's bottom edge never lands
-         flush against the cell's clipping border, which is what
-         triggers the persistent vertical scrollbar. Bumped from 12px
-         to 24px because Chart.js's canvas can extend up to ~10px past
-         the measured scrollHeight after async paint settling (the
-         canvas's intrinsic baseline + its own resize triggered by the
-         setTimeout-delayed measurement read). 24px gives clean
-         headroom at the cost of trivial empty pixels at the bottom. */
-      var rows = Math.max(1, Math.ceil((natural + 24) / cellH));
+      /* Tiny buffer (4px) so content's bottom doesn't land flush
+         against the cell's clipping border — just enough to suppress
+         the borderline-fit v-scrollbar without leaving a visible
+         empty stripe below the chart. */
+      var rows = Math.max(1, Math.ceil((natural + 4) / cellH));
       window.gridInstance._suppressSave = true;
       /* Lock maxH to the fitted content height (= rows) like other
          panels so the user can't drag the chart taller than the
          canvas content. Three-step because passing combined keys to
          update can clamp h against the OLD maxH before the new maxH
-         applies. */
+         applies. Also (re)apply minH/minW each refit so chart panel
+         has the same drag-floor as other panels — without this,
+         after metrics are added/removed the panel could drift back
+         to gridstack's default minH:1 / minW:1 (no min). */
+      var chartMinH = (typeof computePanelMinH === 'function')
+        ? computePanelMinH(item) : 70;
       try {
         window.gridInstance.update(item, { maxH: 4000 }); /* unlock to grow */
         if (rows !== node.h) window.gridInstance.update(item, { h: rows });
-        window.gridInstance.update(item, { maxH: rows }); /* lock at content */
+        window.gridInstance.update(item, { maxH: rows, minH: chartMinH, minW: 3 });
       } catch (e) {}
       window.gridInstance._suppressSave = false;
     }, 50);
@@ -10819,6 +10854,11 @@
       gridInstance.update(item, { w: def.w, h: targetH });
       gridInstance.update(item, { maxH: targetH, minH: minH });
     } catch (e) {}
+    /* Heatmap panel needs the custom refit to handle its sticky-thead /
+       inner-scroll measurement quirk — same as on initial paint. */
+    if (id === 'hm-heatmap-wrap' && typeof refitHeatmap === 'function') {
+      refitHeatmap();
+    }
   }
 
   /* Context menu wiring — single shared menu element, positioned per click. */
@@ -10964,6 +11004,14 @@
 
         }
         fitAll();
+        /* Custom refit for the metrics table panel — gridstack's
+           shared resizeToContent loop above doesn't reliably size
+           the heatmap cell to fit ALL rows on initial paint (likely
+           interactions between the table's sticky thead, the inner
+           overflow:auto on .hm-scroll, and gridstack's measurement
+           timing). refitHeatmap explicitly reads scrollHeight + a
+           buffer and updates h. */
+        if (typeof refitHeatmap === 'function') refitHeatmap();
         /* Apply the no-selection state once gridInstance is live: this
            removes the empty metrics-chart panel from the grid until a
            user picks rows from the heat map. */
