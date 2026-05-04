@@ -405,6 +405,15 @@
     /* Right padding pulls the close button slightly inboard so it never
        lands on the east-edge resize hit zone. */
     padding: 0 8px 0 4px;
+    /* border-box so width:100cqw (set per-panel for ranking panels)
+       includes the 12px horizontal padding. Without this, the navbar
+       computes to cell-width + 12px, overflows the cell by 12px, and
+       triggers a horizontal scrollbar at the cell level — which then
+       takes ~10px of vertical space and appears as "padding below"
+       the panel content (especially noticeable after toggling to
+       vertical-stack mode where there's no other horizontal overflow
+       hiding it). */
+    box-sizing: border-box;
     /* Solid background so the bar reads cleanly when content scrolls
        behind it. Different shade in dark mode. */
     background: var(--hm-bg-alt, #efece2);
