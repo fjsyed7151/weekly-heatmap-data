@@ -10761,19 +10761,10 @@
   }
 
   /* Composite the captured panel image with a footer strip below.
-     Layout:
-       - Outer ring of OUTER_PAD (dashboard-bg) on top + left + right
-         giving the "panel-on-dashboard" frame feel
-       - Inside the ring: a panel-bg-colored area that extends from
-         the top OUTER_PAD all the way to the bottom of the canvas,
-         covering both the captured panel image AND the footer area
-         (URL + logo). This eliminates the "black bar at bottom" —
-         no contrasting strip, the gray panel area continues
-         seamlessly down to where the URL/logo sit
-       - EXTRA_PANEL_PAD inside the panel-bg area gives the captured
-         panel content extra breathing room from the apparent panel
-         edge — addressing the "values look flush against the right
-         edge" issue */
+     The whole canvas is panel-bg (no outer dashboard-bg ring).
+     Layout = padding around the panel image + a footer with URL +
+     logo separated by a thin divider. Reads as a self-contained
+     card. */
   function _composeExportWithFooter(panelDataUrl, item) {
     return new Promise(function (resolve, reject) {
       var panelImg = new Image();
@@ -10785,46 +10776,31 @@
           var v = getComputedStyle(hmApp).getPropertyValue(name);
           return (v && v.trim()) || fallback;
         }
-        var dashboardBg = cssVar('--hm-bg', dark ? '#0a0a0a' : '#fbf6ea');
         var panelBg = cssVar('--hm-panel', dark ? '#1a181d' : '#ffffff');
-        /* Output pixel dimensions (2x logical). */
-        var EXTRA_PANEL_PAD_TOP = 32;    /* 16 visual: panel-bg padding above panelImg */
-        var EXTRA_PANEL_PAD_SIDES = 32;  /* 16 visual: panel-bg padding on left/right of panelImg */
-        var DIVIDER_GAP = 16;            /* 8 visual: gap between panelImg bottom and divider — smaller than top so the footer reads as part of the panel */
-        var OUTER_PAD = 32;              /* 16 visual: outer dashboard-bg ring on ALL 4 sides */
-        var FOOTER_H = 64;
+        /* Output pixel dimensions (2x logical).
+           No outer dashboard-bg ring — the whole image is the panel
+           area (panel-bg), with the captured panel image inside +
+           a footer below. Looks like a self-contained card. */
+        var PAD_TOP = 32;         /* 16 visual: panel-bg padding above panelImg */
+        var PAD_SIDES = 32;       /* 16 visual: panel-bg padding on left/right of panelImg */
+        var DIVIDER_GAP = 16;     /* 8 visual: gap between panelImg bottom and divider */
+        var FOOTER_H = 64;        /* URL + logo */
         var canvas = document.createElement('canvas');
-        canvas.width = panelImg.naturalWidth + EXTRA_PANEL_PAD_SIDES * 2 + OUTER_PAD * 2;
-        canvas.height = OUTER_PAD                /* top dashboard-bg ring */
-                      + EXTRA_PANEL_PAD_TOP      /* panel-bg above panelImg */
+        canvas.width = panelImg.naturalWidth + PAD_SIDES * 2;
+        canvas.height = PAD_TOP                  /* panel-bg above panelImg */
                       + panelImg.naturalHeight   /* the captured image */
                       + DIVIDER_GAP              /* small gap above divider */
                       + 1                        /* divider line */
-                      + FOOTER_H                 /* URL + logo */
-                      + OUTER_PAD;               /* bottom dashboard-bg ring */
+                      + FOOTER_H;                /* URL + logo */
         var ctx = canvas.getContext('2d');
-        /* Step 1: Fill entire canvas with dashboard bg (the outer
-           ring on all 4 sides). */
-        ctx.fillStyle = dashboardBg;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        /* Step 2: Fill the panel-bg area between the top + bottom
-           dashboard-bg rings. Spans full panel area width and from
-           y=OUTER_PAD to y=canvas.height-OUTER_PAD. */
-        var panelAreaX = OUTER_PAD;
-        var panelAreaY = OUTER_PAD;
-        var panelAreaW = panelImg.naturalWidth + EXTRA_PANEL_PAD_SIDES * 2;
-        var panelAreaH = canvas.height - OUTER_PAD * 2;
+        /* Fill entire canvas with panel bg — no outer ring. */
         ctx.fillStyle = panelBg;
-        ctx.fillRect(panelAreaX, panelAreaY, panelAreaW, panelAreaH);
-        /* Step 3: Draw captured panel image inside the panel-bg
-           area with EXTRA_PANEL_PAD_TOP gap above and
-           EXTRA_PANEL_PAD_SIDES gap on left/right. */
-        var panelImgX = OUTER_PAD + EXTRA_PANEL_PAD_SIDES;
-        var panelImgY = OUTER_PAD + EXTRA_PANEL_PAD_TOP;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        /* Draw captured panel image inside with PAD_TOP / PAD_SIDES. */
+        var panelImgX = PAD_SIDES;
+        var panelImgY = PAD_TOP;
         ctx.drawImage(panelImg, panelImgX, panelImgY);
-        /* Step 4: Divider line just below the panelImg (DIVIDER_GAP
-           = 8 visual px) — closer than the top padding so the
-           footer reads as part of the panel, not a separate strip. */
+        /* Divider line just below the panelImg. */
         var dividerY = panelImgY + panelImg.naturalHeight + DIVIDER_GAP;
         var dividerColor = dark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)';
         ctx.fillStyle = dividerColor;
