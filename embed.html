@@ -10780,13 +10780,13 @@
           panelBg = dark ? '#1a181d' : '#fbf6ea';
         }
         /* Output pixel dimensions (2x logical).
-           OUTER_PAD = 32 output px = ~16px visual breathing room on
+           OUTER_PAD = 48 output px = 24 visual px breathing room on
            top/left/right. Combined with the panel's internal row
-           padding (12px on factors et al.), the rightmost values
-           sit ~28px visual from the image edge — matches the live
-           app's "panel border + row padding" feel. Bottom uses no
-           outer pad because the footer occupies the bottom. */
-        var OUTER_PAD = 32;
+           padding (12px on factors / FI / etc.), values sit ~36 visual
+           px from the image edge — gives a clear card-on-background
+           feel that matches the live dashboard's spacing-with-border
+           visual weight. Bottom uses no outer pad (footer occupies). */
+        var OUTER_PAD = 48;
         var FOOTER_H = 64;
         var canvas = document.createElement('canvas');
         canvas.width = panelImg.naturalWidth + OUTER_PAD * 2;
