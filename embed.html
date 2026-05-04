@@ -434,6 +434,20 @@
     transition: none !important;
     animation: none !important;
   }
+  /* Snap-instantly flag for scripted reset: gridstack's animate:true
+     transitions width/height/left/top over 300ms. resetItemSize on
+     stack-toggle panels needs to measure scrollHeight RIGHT AFTER
+     the width change — but during the transition window the layout
+     reflects an intermediate width, producing stale (too-tall)
+     measurements that leave a gap below content. Adding this class
+     for the duration of the reset makes the width snap instantly so
+     the measurement is accurate, then the class is removed so future
+     drags/resizes animate as normal. */
+  .hm-app .grid-stack-item.hm-no-transition,
+  .hm-app .grid-stack-item.hm-no-transition * {
+    transition: none !important;
+    animation: none !important;
+  }
   /* While ANY drag is in flight, kill transitions on every grid item.
      Otherwise non-dragged neighbors animate (300ms default) into new
      positions as they reflow around the drag — reads as lag when the
@@ -10584,28 +10598,34 @@
        orientation and produces empty vertical space on reset. */
     if (item.classList.contains('hm-has-stack')) {
       var minHStack = computePanelMinH(item);
+      /* Suspend gridstack's 300ms width-transition for this operation.
+         Otherwise resizeToContent measures scrollHeight while the
+         width is mid-animation and returns a stale (too-tall) value
+         based on the still-narrow layout — exactly the "gap at the
+         bottom on first click" symptom the user reported. With the
+         class on, the width snaps instantly so the very next
+         scrollHeight read reflects the final un-wrapped content. */
+      item.classList.add('hm-no-transition');
       try {
         gridInstance.update(item, { maxH: 9999, minH: 1 });
         gridInstance.update(item, { w: def.w });
+        /* Force synchronous reflow so the browser commits the new
+           width to the layout tree BEFORE we read scrollHeight.
+           Reading offsetHeight is the standard "flush layout" hack. */
+        void item.offsetHeight;
+        gridInstance.resizeToContent(item);
+        var nodeStack = item.gridstackNode;
+        if (nodeStack) {
+          gridInstance.update(item, { maxH: nodeStack.h, minH: minHStack });
+          INITIAL_H[id] = nodeStack.h;
+        }
       } catch (e) {}
-      /* Defer the height measurement to the next frame: when the
-         panel was at a narrower width before reset, the just-issued
-         w-update needs a paint cycle before scrollHeight reflects
-         the un-wrapped content height. Measuring immediately picks
-         up the old (taller, more-wrapped) content height and leaves
-         empty space below content after the width finally widens.
-         requestAnimationFrame x2 = wait for layout + paint to settle. */
+      /* Re-enable transitions on the next frame so any subsequent
+         drag/resize/layout reflow animates normally again. Removing
+         synchronously inside the same frame is fine too — by then all
+         our updates are committed and there's nothing left to animate. */
       requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          try {
-            gridInstance.resizeToContent(item);
-            var nodeStack = item.gridstackNode;
-            if (nodeStack) {
-              gridInstance.update(item, { maxH: nodeStack.h, minH: minHStack });
-              INITIAL_H[id] = nodeStack.h;
-            }
-          } catch (e) {}
-        });
+        item.classList.remove('hm-no-transition');
       });
       return;
     }
