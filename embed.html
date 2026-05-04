@@ -10942,7 +10942,14 @@
         style: {
           /* Square corners + no outline border in the export. */
           boxShadow: 'none',
-          borderRadius: '0'
+          borderRadius: '0',
+          /* Override overflow:auto on the captured root so the
+             scrollbar gutter doesn't reserve space — that gutter
+             showed up as a thin empty strip on the right edge of
+             the export image even when no scrollbar was visible.
+             Inner content that genuinely overflows is clipped
+             (acceptable: at default size content fits anyway). */
+          overflow: 'hidden'
         },
       }).then(function (panelDataUrl) {
         return _composeExportWithFooter(panelDataUrl, item);
