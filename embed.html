@@ -297,11 +297,6 @@
     overflow: auto;
     padding: 0;
     box-sizing: border-box;
-    /* Positioning context for the export-image watermark, which is
-       inserted as an absolute-positioned child of this element only
-       during a capture (then removed). Doesn't affect anything else
-       — sticky descendants still stick within their scroll ancestor. */
-    position: relative;
   }
   /* Panel wrap stays at cell width by default — Chart.js responsive
      canvases (sector / macro regime / index sparklines) feed back
@@ -10751,49 +10746,42 @@
     return _htmlToImageLoading;
   }
 
-  /* Build the watermark element that gets burned into every export.
-     Logo image + " | stablebread.com/macro" text in the bottom-right
-     corner of the captured area. Theme-aware (light vs dark bg).
-     pointer-events:none so it can never block hovers/clicks if we
-     ever forgot to remove it. */
-  function buildExportWatermark(item) {
-    var dark = document.documentElement.classList.contains('dark') ||
-               !!(item && item.closest && item.closest('.hm-app.dark')) ||
-               !!document.querySelector('.hm-app.dark');
-    var w = document.createElement('div');
-    w.className = 'hm-export-watermark';
-    w.style.cssText = [
-      'position: absolute',
-      'bottom: 8px',
-      'right: 8px',
+  /* Build a footer strip with the StableBread logo + URL. Renders
+     as a normal block element BELOW the panel content, not as an
+     overlay. Theme-aware so it matches the panel's dark/light state.
+     This is appended to the off-screen capture wrapper, never to
+     the live DOM (avoids the "flashing watermark before download"
+     problem). */
+  function buildExportFooter() {
+    var dark = !!document.querySelector('.hm-app.dark');
+    var f = document.createElement('div');
+    f.style.cssText = [
       'display: flex',
       'align-items: center',
-      'gap: 8px',
-      'padding: 6px 10px',
-      'background: ' + (dark ? 'rgba(35, 32, 39, 0.92)' : 'rgba(255, 255, 255, 0.92)'),
-      'border: 1px solid ' + (dark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)'),
-      'border-radius: 4px',
+      'justify-content: center',
+      'gap: 12px',
+      'padding: 12px 16px',
+      'background: ' + (dark ? '#1f1c22' : '#f4ede0'),
+      'border-top: 1px solid ' + (dark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.10)'),
       'font-family: Karla, sans-serif',
-      'font-size: 11px',
+      'font-size: 13px',
       'font-weight: 600',
       'letter-spacing: 0.2px',
-      'color: ' + (dark ? '#e8e2d2' : '#2b2521'),
-      'pointer-events: none',
-      'z-index: 9999',
-      'box-shadow: 0 1px 4px rgba(0, 0, 0, 0.10)'
+      'color: ' + (dark ? '#c9c1b3' : '#5a5042'),
+      'box-sizing: border-box'
     ].join('; ');
     var img = document.createElement('img');
     img.src = 'https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png';
     img.alt = 'StableBread';
-    img.style.cssText = 'height: 18px; width: auto; display: block;';
-    w.appendChild(img);
+    img.style.cssText = 'height: 22px; width: auto; display: block;';
+    f.appendChild(img);
     var url = document.createElement('span');
     url.textContent = 'stablebread.com/macro';
-    w.appendChild(url);
-    return w;
+    f.appendChild(url);
+    return f;
   }
 
-  /* Slug a panel id / title into a filename-safe segment. */
+  /* Slug a panel id into a filename-safe segment. */
   function _slug(s) {
     return String(s || 'panel').toLowerCase()
       .replace(/^hm-/, '')
@@ -10801,34 +10789,94 @@
       .replace(/^-+|-+$/g, '');
   }
 
+  /* Copy <canvas> pixel data from live elements to their clones.
+     cloneNode doesn't carry over canvas bitmap data — for panels
+     with Chart.js-rendered canvases (sector chart, sparklines,
+     macro regime charts, metrics chart) the cloned canvases would
+     be blank. This copies the bitmap manually. Same-index iteration
+     works because cloneNode preserves DOM order. */
+  function _copyCanvasContent(originalRoot, cloneRoot) {
+    var origs = originalRoot.querySelectorAll('canvas');
+    var clones = cloneRoot.querySelectorAll('canvas');
+    var n = Math.min(origs.length, clones.length);
+    for (var i = 0; i < n; i++) {
+      var src = origs[i];
+      var dst = clones[i];
+      if (!src.width || !src.height) continue;
+      try {
+        dst.width = src.width;
+        dst.height = src.height;
+        var ctx = dst.getContext('2d');
+        ctx.drawImage(src, 0, 0);
+      } catch (e) {}
+    }
+  }
+
   /* Capture a single panel as a PNG and trigger a browser download.
-     Hides the window-style navbar (pin/reset/close icons) during
-     capture so the exported image shows clean panel content +
-     gold band only — those buttons mean nothing in a shared
-     screenshot. Inserts the StableBread watermark, captures, then
-     restores everything. */
+     Approach:
+       1. Build an off-screen capture wrapper (left:-10000px, fixed
+          position, sized to panel width)
+       2. Clone the .hm-panel-wrap (which holds navbar + content)
+       3. Strip the navbar from the clone — exported image shows
+          ONLY the panel's gold band + body, no app chrome
+       4. Copy canvas bitmaps from live → clone so Chart.js content
+          renders in the export
+       5. Append a footer strip (logo + stablebread.com/macro) BELOW
+          the clone — separate row, not an overlay
+       6. Capture the wrapper with html-to-image
+       7. Trigger download, remove the off-screen wrapper
+     The off-screen approach means the user never sees the watermark
+     flash in the live UI. */
   function exportPanelImage(item, btn) {
     if (!item) return;
     var content = item.querySelector('.grid-stack-item-content');
-    var navbar = item.querySelector('.hm-panel-header');
-    if (!content) return;
+    var wrap = item.querySelector('.hm-panel-wrap');
+    if (!content || !wrap) return;
     if (btn) btn.classList.add('hm-loading');
     loadHtmlToImage().then(function (lib) {
-      /* Hide via visibility:hidden (not display:none) so the navbar
-         still occupies its 24px and the gold band stays at its
-         current position — the captured layout matches what the
-         user was seeing, not a reflowed version. */
-      var prevVis = navbar ? navbar.style.visibility : null;
-      if (navbar) navbar.style.visibility = 'hidden';
-      var watermark = buildExportWatermark(item);
-      content.appendChild(watermark);
+      /* Capture wrapper is fixed off-screen — never flashes for
+         the user, never affects layout. */
+      var captureWrapper = document.createElement('div');
+      var contentBg = getComputedStyle(content).backgroundColor;
+      var wrapBg = getComputedStyle(wrap).backgroundColor;
+      var bg = (wrapBg && wrapBg !== 'rgba(0, 0, 0, 0)') ? wrapBg :
+               (contentBg && contentBg !== 'rgba(0, 0, 0, 0)') ? contentBg :
+               (document.querySelector('.hm-app.dark') ? '#1a181d' : '#fbf6ea');
+      captureWrapper.style.cssText = [
+        'position: fixed',
+        'top: 0',
+        'left: -10000px',
+        'width: ' + content.offsetWidth + 'px',
+        'background: ' + bg,
+        'pointer-events: none',
+        'z-index: -1'
+      ].join('; ');
+      /* Clone .hm-panel-wrap (header + body), strip navbar from clone.
+         Cloning + stripping (rather than hiding navbar in the live
+         DOM) keeps the live UI untouched during export. */
+      var wrapClone = wrap.cloneNode(true);
+      var navbarInClone = wrapClone.querySelector('.hm-panel-header');
+      if (navbarInClone) navbarInClone.parentNode.removeChild(navbarInClone);
+      /* Force the clone's width to match the original cell so layout
+         (column widths, ellipsis, etc.) is preserved. */
+      wrapClone.style.width = '100%';
+      wrapClone.style.boxShadow = 'none';
+      captureWrapper.appendChild(wrapClone);
+      /* Footer below the cloned panel. */
+      var footer = buildExportFooter();
+      captureWrapper.appendChild(footer);
+      document.body.appendChild(captureWrapper);
+      /* Now copy canvas bitmaps — must happen AFTER the clone is
+         in the DOM (before insertion the clone canvases may have
+         no rendering context). */
+      _copyCanvasContent(wrap, wrapClone);
       var idAttr = item.getAttribute('gs-id') || 'panel';
       var dateStr = (new Date()).toISOString().slice(0, 10);
       var fileName = 'stablebread-' + _slug(idAttr) + '-' + dateStr + '.png';
-      return lib.toPng(content, {
+      return lib.toPng(captureWrapper, {
         pixelRatio: 2,
         cacheBust: true,
-        backgroundColor: getComputedStyle(content).backgroundColor || null,
+        backgroundColor: bg,
       }).then(function (dataUrl) {
         var a = document.createElement('a');
         a.href = dataUrl;
@@ -10839,8 +10887,9 @@
       }).catch(function (err) {
         console.error('[heatmap] export failed:', err);
       }).then(function () {
-        if (navbar) navbar.style.visibility = prevVis || '';
-        if (watermark.parentNode) watermark.parentNode.removeChild(watermark);
+        if (captureWrapper.parentNode) {
+          captureWrapper.parentNode.removeChild(captureWrapper);
+        }
         if (btn) btn.classList.remove('hm-loading');
       });
     }).catch(function (err) {
