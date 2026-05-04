@@ -2111,14 +2111,23 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    /* Wrap title + toolbar onto a second row when the panel cell
+       isn't wide enough. Used to be gated behind a 700px viewport
+       media query, but viewport width != panel width — a panel cell
+       can be narrow inside a wide viewport. Unconditional wrap fixes
+       that without affecting wide layouts (no-op when content fits). */
+    flex-wrap: wrap;
+    row-gap: 6px;
   }
   .hm-app .hm-sector-header-title { flex: 1; }
   .hm-app .hm-sector-toolbar {
     display: flex;
     align-items: center;
     gap: 6px;
+    flex-wrap: wrap;
+    row-gap: 4px;
   }
-  .hm-app .hm-sector-period-btns { display: flex; gap: 4px; }
+  .hm-app .hm-sector-period-btns { display: flex; gap: 4px; flex-wrap: wrap; row-gap: 4px; }
   .hm-app .hm-sector-period-btn {
     font-family: 'Karla', sans-serif;
     font-size: 10px;
@@ -2851,8 +2860,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    /* Per-panel wrap when the cell is narrow (the 1100px viewport
+       media query rule still applies for additional gap tweaks). */
+    flex-wrap: wrap;
+    row-gap: 6px;
   }
-  .hm-app .hm-sf-period-btns { display: flex; gap: 4px; }
+  .hm-app .hm-sf-period-btns { display: flex; gap: 4px; flex-wrap: wrap; row-gap: 4px; }
   .hm-app .hm-sf-period-btn {
     font-family: 'Karla', sans-serif;
     font-size: 10px;
@@ -3012,8 +3025,16 @@
     justify-content: space-between;
     align-items: center;
     border-radius: 0;  /* square top corners — sits flush below panel header */
+    /* Wrap title + period pills onto a second row when the panel is
+       narrower than the combined natural width. No-op when content
+       fits on one line; lets users shrink any of the ranking panels
+       (Factors / FI / GI / CE / CP / Currency Matrix) without losing
+       access to the period buttons. row-gap controls the gap between
+       wrapped rows; column-gap is implicit via justify-content. */
+    flex-wrap: wrap;
+    row-gap: 6px;
   }
-  .hm-app .hm-factors-periods { display: flex; gap: 4px; }
+  .hm-app .hm-factors-periods { display: flex; gap: 4px; flex-wrap: wrap; row-gap: 4px; }
   .hm-app .hm-factors-period-btn {
     font-family: 'Karla', sans-serif;
     font-size: 10px;
@@ -3088,20 +3109,9 @@
     width: 100%;
     min-width: 0;
   }
-  /* Once the card is panel-width, the gold header's title + period
-     pills can no longer overflow off the right edge — overflow:hidden
-     on the card just clips them. Allow the header to wrap onto a
-     second row when there isn't enough horizontal space, so all period
-     buttons stay reachable on narrow panels. The pill group itself
-     also wraps internally for very tight widths. */
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-header {
-    flex-wrap: wrap;
-    row-gap: 6px;
-  }
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-periods {
-    flex-wrap: wrap;
-    row-gap: 4px;
-  }
+  /* Header wrapping is now applied unconditionally on .hm-factors-header
+     and .hm-factors-periods themselves (see those rules above), so we
+     no longer need a stack-vertical-scoped variant. */
   .hm-app .hm-factors-col-header {
     font-size: 10px;
     font-weight: 700;
@@ -3613,8 +3623,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    /* Wrap title + period pills onto a second row when narrow. */
+    flex-wrap: wrap;
+    row-gap: 6px;
   }
-  .hm-app .hm-treemap-period-btns { display: flex; gap: 4px; }
+  .hm-app .hm-treemap-period-btns { display: flex; gap: 4px; flex-wrap: wrap; row-gap: 4px; }
   .hm-app .hm-treemap-period-btn {
     font-family: 'Karla', sans-serif;
     font-size: 10px;
