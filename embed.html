@@ -10473,25 +10473,28 @@
     var savedState = loadColsLayout() || buildDefaultColsState();
     applyColsLayout(savedState);
 
-    /* 2. Pre-scale gs-h × GS_SCALE and set gs-y per column based on
-       cumulative height. With column: 1 grids, every item has gs-x=0
-       and gs-w=1 implicitly. gs-y must be explicit and unique per
-       column or gridstack stacks them all at y=0 (overlapping
-       absolutely-positioned cells). */
+    /* 2. Set gs-y per column based on cumulative gs-h. With column:1
+       grids, every item has gs-x=0 and gs-w=1 implicitly. gs-y must
+       be explicit + unique per column or gridstack stacks them all
+       at y=0 (overlapping absolutely-positioned cells). Gs-h stays
+       in HTML units (no scaling) — we use cellHeight: 40 instead of
+       cellHeight: 1 + scaling, which is simpler. */
     COL_IDS.forEach(function (cid) {
       var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
       if (!body) return;
       var y = 0;
       body.querySelectorAll('.grid-stack-item').forEach(function (item) {
         var hOrig = parseInt(item.getAttribute('gs-h') || 4, 10);
-        var hScaled = hOrig * GS_SCALE;
-        item.setAttribute('gs-h', hScaled);
         item.setAttribute('gs-y', y);
         item.removeAttribute('gs-x');
         item.removeAttribute('gs-w');
-        y += hScaled;
+        y += hOrig;
       });
     });
+    console.info('[heatmap] 3-col init: panels distributed', COL_IDS.map(function (cid) {
+      var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
+      return cid + '=' + (body ? body.querySelectorAll('.grid-stack-item').length : 0);
+    }).join(' '));
 
     /* 3. Inject Windows-style header bar into every panel. Must happen
        BEFORE GridStack.init -- gridstack's drag handle selector
@@ -10542,10 +10545,12 @@
     }
 
     /* 4. One GridStack per column, sharing options. Single-column,
-       no user-resize, drag-between-grids enabled, sizeToContent. */
+       no user-resize, drag-between-grids enabled, sizeToContent.
+       cellHeight: 40 means each gs-h unit = 40px (matches the old
+       GS_SCALE * cellHeight:1 setup, but without pre-scaling). */
     var sharedOpts = {
       column: 1,
-      cellHeight: 1,
+      cellHeight: 40,
       marginLeft: 0, marginRight: 0, marginTop: 6, marginBottom: 6,
       float: false,
       animate: true,
@@ -10558,7 +10563,12 @@
     COL_IDS.forEach(function (cid) {
       var sel = '.hm-col[data-col="' + cid + '"] .hm-col-body';
       var el = document.querySelector(sel);
-      if (!el) return;
+      if (!el) {
+        console.warn('[heatmap] no body for col', cid);
+        return;
+      }
+      var rect = el.getBoundingClientRect();
+      console.info('[heatmap] col', cid, 'body width=' + rect.width + ' height=' + rect.height);
       var g = GridStack.init(sharedOpts, el);
       colGrids[cid] = g;
       g.enableMove(true);
