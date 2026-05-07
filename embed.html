@@ -10845,70 +10845,33 @@
     });
   }
 
-  /* Compute the panel's default size (w, h) for export. For
-     stack-toggle panels, picks the orientation-specific defaults
-     (vertical → STACK_VERTICAL_W[id], horizontal → DEFAULT_LAYOUT.w).
-     Height comes from INITIAL_H (post-fit content height) when
-     available, falling back to DEFAULT_LAYOUT.h. */
-  function _exportDefaults(item) {
-    var id = item.getAttribute('gs-id');
-    var def = (typeof DEFAULT_LAYOUT !== 'undefined') ? DEFAULT_LAYOUT[id] : null;
-    if (!def) return null;
-    var isVertical = item.classList.contains('hm-stack-vertical');
-    var hasStack = item.classList.contains('hm-has-stack');
-    var w = (hasStack && isVertical &&
-             typeof STACK_VERTICAL_W !== 'undefined' &&
-             STACK_VERTICAL_W[id] != null)
-      ? STACK_VERTICAL_W[id]
-      : def.w;
-    var h = (typeof INITIAL_H !== 'undefined' && INITIAL_H[id] != null)
-      ? INITIAL_H[id]
-      : def.h;
-    return { w: w, h: h };
-  }
-
   /* Capture a single panel as a PNG and trigger a browser download.
      Steps:
-       1. Resize the panel to its DEFAULT size (orientation-aware
-          for stack-toggle panels) so every export has consistent
-          dimensions regardless of how the user has sized the cell.
-          Brief flash during the resize is acceptable.
-       2. Capture the LIVE .grid-stack-item-content via html-to-image.
+       1. Capture the LIVE .grid-stack-item-content via html-to-image.
           - filter: skip the .hm-panel-header navbar (no app-chrome
             buttons in the export)
           - style: override box-shadow + border-radius so the export
             has clean square corners and no gold outline border
-       3. Composite that image onto a canvas with a footer strip
-          (URL bottom-left, logo bottom-right, subtle divider above)
-       4. Trigger download
-       5. Restore the panel to the user's pre-export size
-     Capturing the LIVE element (not a clone) preserves all CSS
-     scoping (.hm-app, .grid-stack-item[gs-id="..."], container
-     queries, dark mode) — cloning into a detached div lost it. */
+       2. Composite onto a canvas with a footer strip (URL left,
+          logo right, divider above)
+       3. Trigger download
+     The panel is captured at its CURRENT size — no temp-resize, no
+     visible flash. Trade-off: exports vary in size if the user has
+     manually resized panels. Capturing the LIVE element (not a
+     clone) preserves all CSS scoping. */
   function exportPanelImage(item, btn) {
     if (!item) return;
     var content = item.querySelector('.grid-stack-item-content');
     if (!content) return;
     if (btn) btn.classList.add('hm-loading');
-    /* Save current dimensions so we can restore after capture. */
-    var node = item.gridstackNode;
-    var defaults = _exportDefaults(item);
-    var savedW = node ? node.w : null;
-    var savedH = node ? node.h : null;
-    var savedMaxH = node ? node.maxH : null;
-    var savedMinH = node ? node.minH : null;
-    var inGrid = !!(node && window.gridInstance);
-    var needsResize = inGrid && defaults &&
-                      (savedW !== defaults.w || savedH !== defaults.h);
     /* Inject temporary CSS that forces extra right padding on every
-       row-like element. The captured panels' built-in CSS gives rows
-       12px right padding, but in the rendered export the values
-       look flush against the right edge — likely an html-to-image
-       quirk with how it handles padding-right inside flex containers
-       with white-space:nowrap children. Forcing larger padding via
-       !important during the capture window guarantees visible
-       breathing room. The class is applied to .hm-app so all panels
-       are covered. */
+       row-like element + matches .hm-panel-wrap bg to panel bg. The
+       captured panels' built-in CSS gives rows 12px right padding,
+       but html-to-image renders them looking flush; forcing 16px
+       via !important guarantees visible breathing room. The wrap-bg
+       override prevents a dashboard-bg strip from showing wherever
+       the inner card doesn't fully cover the wrap (e.g. where the
+       filtered-out navbar used to occupy 24px). */
     var exportStyle = document.createElement('style');
     exportStyle.id = 'hm-export-style';
     exportStyle.textContent = [
@@ -10938,31 +10901,16 @@
       '.hm-export-mode .hm-cp-col-header {',
       '  padding-right: 16px !important;',
       '}',
-      /* Override .hm-panel-wrap background to match the panel bg
-         so the captured image is uniform and doesn\'t leave a
-         dashboard-bg-colored strip wherever the wrap shows (e.g.
-         where the filtered-out navbar used to occupy 24px at top,
-         or anywhere the inner card doesn\'t fully cover the wrap). */
       '.hm-export-mode .hm-panel-wrap {',
       '  background: var(--hm-panel) !important;',
       '}'
     ].join('\n');
-    /* Disable transitions globally so the temp resize is instant.
-       Reuses the existing hm-grid-dragging body class which has
-       `transition: none !important` on all grid items. */
-    var bodyHadDragging = document.body.classList.contains('hm-grid-dragging');
-    if (needsResize) {
-      document.body.classList.add('hm-grid-dragging');
-      try {
-        gridInstance.update(item, { maxH: 9999, minH: 1 });
-        gridInstance.update(item, { w: defaults.w, h: defaults.h });
-      } catch (e) {}
-      /* Force synchronous layout. */
-      void item.offsetHeight;
-    }
-    /* Apply export-mode CSS so the larger padding is visible during
-       the capture. Has to happen AFTER the resize so the layout
-       reflows with the extra padding. */
+    /* Apply export-mode CSS for the duration of the capture. No
+       temp-resize: capture at the panel's CURRENT size. Earlier
+       behavior temporarily resized the cell to default before
+       capture, which produced a brief visible flash; dropping the
+       resize means panels export at whatever size the user has
+       them, but the UX is smooth (no flash, no neighbor reflow). */
     document.head.appendChild(exportStyle);
     var hmAppRoot = document.querySelector('.hm-app');
     if (hmAppRoot) hmAppRoot.classList.add('hm-export-mode');
@@ -10970,21 +10918,6 @@
     function restoreSize() {
       if (hmAppRoot) hmAppRoot.classList.remove('hm-export-mode');
       if (exportStyle.parentNode) exportStyle.parentNode.removeChild(exportStyle);
-      if (!needsResize) return;
-      try {
-        gridInstance.update(item, {
-          w: savedW,
-          h: savedH,
-          maxH: (savedMaxH != null) ? savedMaxH : 9999,
-          minH: (savedMinH != null) ? savedMinH : 1,
-        });
-      } catch (e) {}
-      void item.offsetHeight;
-      if (!bodyHadDragging) {
-        requestAnimationFrame(function () {
-          document.body.classList.remove('hm-grid-dragging');
-        });
-      }
     }
     loadHtmlToImage().then(function (lib) {
       var idAttr = item.getAttribute('gs-id') || 'panel';
