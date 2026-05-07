@@ -10478,7 +10478,10 @@
   /* Update the CSS grid-template-columns for #hm-cols based on _colWidths
      and collapsed flags. Collapsed column → 0px column track + hide its
      adjacent divider (so a "0px col → 20px gap → next col" doesn't
-     leave a phantom gap on the side of a collapsed column). */
+     leave a phantom gap on the side of a collapsed column).
+     When any side is collapsed, the center column absorbs the freed
+     space — overrides its explicit pixel width with 1fr — so a hidden
+     column doesn't just leave dead space behind. */
   function applyColWidths() {
     var wrap = document.getElementById('hm-cols');
     if (!wrap) return;
@@ -10486,10 +10489,15 @@
       var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
       return !!(c && c.classList.contains('hm-col-collapsed'));
     });
+    var anyCollapsed = collapsedFlags.some(function (f) { return f; });
     var parts = [];
     COL_IDS.forEach(function (cid, i) {
       if (collapsedFlags[i]) {
         parts.push('0px');
+      } else if (anyCollapsed && cid === 'center') {
+        /* Center stretches to absorb space freed by a collapsed
+           side, regardless of its saved pixel width. */
+        parts.push('1fr');
       } else if (_colWidths[i] != null) {
         parts.push(_colWidths[i] + 'px');
       } else {
