@@ -618,12 +618,11 @@
     transform: rotate(-90deg);
   }
   .hm-app .hm-col-body {
-    /* Gridstack target. Border on sides + bottom; top border is
-       supplied by .hm-col-header. No padding — gridstack manages
-       its own item margins via marginTop/marginBottom in init opts. */
+    /* Gridstack target. Full border now that there's no column header
+       above it. No padding — gridstack manages its own item margins via
+       marginTop/marginBottom in init opts. */
     border: 1px solid var(--hm-border);
-    border-top: none;
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: var(--hm-r);
     background: var(--hm-bg);
     flex: 1 1 auto;
     min-height: 100px;
@@ -633,14 +632,31 @@
   .hm-app .hm-col-body.grid-stack {
     position: relative;
   }
+  /* Column dividers — always-visible vertical resize handles between
+     columns. The grid-template-columns track is 8px wide; the visible
+     line is a 1px gold tint centered inside, thickening to 3px on
+     hover for affordance. */
   .hm-app .hm-col-divider {
     cursor: col-resize;
+    position: relative;
     background: transparent;
-    transition: background 0.15s;
   }
-  .hm-app .hm-col-divider:hover,
-  body.hm-col-resizing .hm-app .hm-col-divider {
-    background: rgba(218,165,32,0.30);
+  .hm-app .hm-col-divider::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--hm-border);
+    transition: width 0.15s ease, background 0.15s ease;
+    pointer-events: none;
+  }
+  .hm-app .hm-col-divider:hover::after,
+  body.hm-col-resizing .hm-app .hm-col-divider::after {
+    width: 3px;
+    background: var(--hm-gold);
   }
   /* While resizing a column, suspend text selection on the whole page
      (would otherwise accidentally select content as the cursor moves). */
@@ -862,6 +878,22 @@
      "Market Dashboard" label since the logo serves as branding). */
   .hm-app .hm-topbar-spacer {
     flex: 1;
+  }
+  /* Vertical separator between groups of topbar buttons. */
+  .hm-app .hm-topbar-sep {
+    display: inline-block;
+    width: 1px;
+    height: 22px;
+    background: var(--hm-border);
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+  /* Column-control buttons in the topbar. Active state (column is
+     collapsed / sticky) gets a gold tint so user sees current state
+     at a glance. */
+  .hm-app .hm-topbar-col-btn.active {
+    color: var(--hm-gold);
+    border-color: var(--hm-gold);
   }
 
   .hm-app .hm-btn {
@@ -4371,35 +4403,27 @@
 <div class="hm-app" id="hm-app">
   <div class="hm-inner">
     <div class="hm-topbar">
-      <!-- Back to stablebread.com — leftmost element. Same tab. -->
-      <a class="hm-topbar-back" href="https://stablebread.com" aria-label="Back to StableBread" title="Back to StableBread">
+      <!-- Left-column controls: collapse + sticky toggle for the LEFT
+           column. Replaces the old back arrow. -->
+      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-left-collapse" type="button" aria-label="Collapse / expand left column" title="Collapse / expand left column">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="19" y1="12" x2="5" y2="12"/>
-          <polyline points="12 19 5 12 12 5"/>
+          <line x1="3" y1="3" x2="3" y2="21"/>
+          <polyline points="15 6 9 12 15 18"/>
         </svg>
-      </a>
-      <!-- Logo — also linked to stablebread.com home (standard web
-           convention). Image hosted on stablebread.com WP media. -->
+      </button>
+      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-left-sticky" type="button" aria-label="Pin left column" title="Pin left column to viewport">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="17" x2="12" y2="22"/>
+          <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+        </svg>
+      </button>
+      <span class="hm-topbar-sep"></span>
+      <!-- Logo — links to stablebread.com home. -->
       <a class="hm-topbar-logo" href="https://stablebread.com" aria-label="StableBread home">
         <img src="https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png" alt="StableBread" />
       </a>
       <!-- Spacer pushes the right-side button cluster to the far right. -->
       <span class="hm-topbar-spacer"></span>
-      <!-- Show-collapsed-column buttons. Hidden when the corresponding
-           side column is expanded. Only way to bring back a collapsed
-           column (the column header isn't visible when collapsed). -->
-      <button class="hm-btn" id="hm-show-left-col" type="button" aria-label="Show left column" title="Show left column" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="9 18 15 12 9 6"/>
-          <line x1="3" y1="3" x2="3" y2="21"/>
-        </svg>
-      </button>
-      <button class="hm-btn" id="hm-show-right-col" type="button" aria-label="Show right column" title="Show right column" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="15 18 9 12 15 6"/>
-          <line x1="21" y1="3" x2="21" y2="21"/>
-        </svg>
-      </button>
       <!-- Reset layout: clears saved positions/sizes + reloads to defaults. -->
       <button class="hm-btn" id="hm-reset-layout" type="button" aria-label="Reset layout" title="Reset layout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -4493,6 +4517,23 @@
           <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>
         </svg>
       </button>
+      <span class="hm-topbar-sep"></span>
+      <!-- Right-column controls: pin + collapse for the RIGHT column.
+           Mirror order of the left-cluster (sticky-then-collapse on
+           the right vs. collapse-then-sticky on the left) so the
+           collapse buttons sit at the outer extremes of the topbar. -->
+      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-right-sticky" type="button" aria-label="Pin right column" title="Pin right column to viewport">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="17" x2="12" y2="22"/>
+          <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+        </svg>
+      </button>
+      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-right-collapse" type="button" aria-label="Collapse / expand right column" title="Collapse / expand right column">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="21" y1="3" x2="21" y2="21"/>
+          <polyline points="9 6 15 12 9 18"/>
+        </svg>
+      </button>
     </div>
 
     <div class="hm-layout-wrap" id="hm-layout-wrap">
@@ -4509,20 +4550,6 @@
       <div class="hm-main">
         <div class="hm-cols" id="hm-cols">
           <div class="hm-col" data-col="left">
-            <div class="hm-col-header">
-              <button class="hm-col-btn hm-col-sticky-btn" data-col-action="sticky" type="button" title="Pin column to viewport (column scrolls internally while page scrolls)" aria-label="Toggle sticky">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="12" y1="17" x2="12" y2="22"/>
-                  <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
-                </svg>
-              </button>
-              <span class="hm-col-title">Left</span>
-              <button class="hm-col-btn hm-col-collapse-btn" data-col-action="collapse" type="button" title="Collapse column" aria-label="Collapse column">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
-            </div>
             <div class="hm-col-body grid-stack" data-col-grid="left">
               <div class="grid-stack-item" gs-id="hm-indexes"      gs-y="0"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
               <div class="grid-stack-item" gs-id="hm-macrocompass" gs-y="4"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
@@ -4540,13 +4567,6 @@
           </div>
           <div class="hm-col-divider" data-divider="0" title="Drag to resize columns"></div>
           <div class="hm-col" data-col="center">
-            <!-- Center column is the always-visible "main" column. No
-                 sticky/collapse buttons — only side columns (left,
-                 right) get those. Header kept for visual alignment
-                 with the side column headers, just title only. -->
-            <div class="hm-col-header hm-col-header-static">
-              <span class="hm-col-title">Center</span>
-            </div>
             <div class="hm-col-body grid-stack" data-col-grid="center">
               <div class="grid-stack-item" gs-id="hm-stylefactor"    gs-y="0"   gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
               <div class="grid-stack-item" gs-id="hm-factors"        gs-y="9"   gs-h="14"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
@@ -4558,20 +4578,6 @@
           </div>
           <div class="hm-col-divider" data-divider="1" title="Drag to resize columns"></div>
           <div class="hm-col" data-col="right">
-            <div class="hm-col-header">
-              <button class="hm-col-btn hm-col-sticky-btn" data-col-action="sticky" type="button" title="Pin column to viewport (column scrolls internally while page scrolls)" aria-label="Toggle sticky">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="12" y1="17" x2="12" y2="22"/>
-                  <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
-                </svg>
-              </button>
-              <span class="hm-col-title">Right</span>
-              <button class="hm-col-btn hm-col-collapse-btn" data-col-action="collapse" type="button" title="Collapse column" aria-label="Collapse column">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
-            </div>
             <div class="hm-col-body grid-stack" data-col-grid="right">
               <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-y="0"   gs-h="14"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
               <div class="grid-stack-item" gs-id="hm-commodities"     gs-y="14"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
@@ -10397,65 +10403,45 @@
     wrap.style.gridTemplateColumns = parts.join(' ');
   }
 
-  /* Sync header / topbar button states with the current layout. */
+  /* Sync the 4 topbar column-control buttons (collapse-left, sticky-
+     left, sticky-right, collapse-right) with current column states.
+     'active' class = button reflects an enabled toggle. */
   function refreshAllColHeaderButtons() {
-    COL_IDS.forEach(function (cid) {
-      var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
-      if (!c) return;
-      var stickyOn = c.classList.contains('hm-col-sticky');
-      var collapsed = c.classList.contains('hm-col-collapsed');
-      var sBtn = c.querySelector('.hm-col-sticky-btn');
-      var cBtn = c.querySelector('.hm-col-collapse-btn');
-      if (sBtn) sBtn.classList.toggle('active', stickyOn);
-      if (cBtn) cBtn.classList.toggle('collapsed', collapsed);
-    });
-    /* Topbar Show-Left / Show-Right buttons appear only when their
-       column is collapsed (since collapsed = display:none, the
-       in-column collapse toggle isn't visible to the user). */
     var leftCol = document.querySelector('.hm-col[data-col="left"]');
     var rightCol = document.querySelector('.hm-col[data-col="right"]');
-    var leftBtn = document.getElementById('hm-show-left-col');
-    var rightBtn = document.getElementById('hm-show-right-col');
-    if (leftBtn) leftBtn.hidden = !(leftCol && leftCol.classList.contains('hm-col-collapsed'));
-    if (rightBtn) rightBtn.hidden = !(rightCol && rightCol.classList.contains('hm-col-collapsed'));
+    var leftCollapsed = !!(leftCol && leftCol.classList.contains('hm-col-collapsed'));
+    var leftSticky = !!(leftCol && leftCol.classList.contains('hm-col-sticky'));
+    var rightCollapsed = !!(rightCol && rightCol.classList.contains('hm-col-collapsed'));
+    var rightSticky = !!(rightCol && rightCol.classList.contains('hm-col-sticky'));
+    function setActive(id, on) {
+      var b = document.getElementById(id);
+      if (b) b.classList.toggle('active', !!on);
+    }
+    setActive('hm-toggle-left-collapse', leftCollapsed);
+    setActive('hm-toggle-left-sticky', leftSticky);
+    setActive('hm-toggle-right-collapse', rightCollapsed);
+    setActive('hm-toggle-right-sticky', rightSticky);
   }
 
-  /* Wire column header buttons (sticky/collapse on left+right) AND the
-     topbar Show-Left / Show-Right buttons that bring back collapsed
-     columns. The center column has no sticky/collapse buttons — it's
-     always visible, so there's nothing to wire there. */
+  /* Wire the 4 topbar column-control buttons. */
   function wireColumnHeaders() {
-    document.querySelectorAll('#hm-cols .hm-col-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var col = btn.closest('.hm-col');
-        if (!col) return;
-        var action = btn.getAttribute('data-col-action');
-        if (action === 'sticky') {
-          col.classList.toggle('hm-col-sticky');
-        } else if (action === 'collapse') {
-          col.classList.toggle('hm-col-collapsed');
-          applyColWidths();
-        }
-        refreshAllColHeaderButtons();
-        persistColsLayout();
-      });
-    });
-    /* Topbar buttons that bring back a collapsed side column. */
-    function bindShowCol(btnId, colId) {
+    function bindToggle(btnId, colId, cls) {
       var btn = document.getElementById(btnId);
       if (!btn) return;
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
         var c = document.querySelector('.hm-col[data-col="' + colId + '"]');
         if (!c) return;
-        c.classList.remove('hm-col-collapsed');
-        applyColWidths();
+        c.classList.toggle(cls);
+        if (cls === 'hm-col-collapsed') applyColWidths();
         refreshAllColHeaderButtons();
         persistColsLayout();
       });
     }
-    bindShowCol('hm-show-left-col', 'left');
-    bindShowCol('hm-show-right-col', 'right');
+    bindToggle('hm-toggle-left-collapse', 'left', 'hm-col-collapsed');
+    bindToggle('hm-toggle-left-sticky', 'left', 'hm-col-sticky');
+    bindToggle('hm-toggle-right-collapse', 'right', 'hm-col-collapsed');
+    bindToggle('hm-toggle-right-sticky', 'right', 'hm-col-sticky');
   }
 
   /* Drag-to-resize column dividers. Updates _colWidths in px, respecting
