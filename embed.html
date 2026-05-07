@@ -11152,6 +11152,51 @@
      against a possibly-different DOM state and produced a slightly shorter
      value than initial fit (root cause not pinpointed; likely Chart.js
      responsive canvases reflowing differently the second time). */
+  /* Surgical post-reset compact. After resetItemSize shrinks a panel,
+     neighbors directly below it should pull up to fill the gap — but
+     a global gridInstance.compact('list') reflows EVERY panel with a
+     gap above it, including ones the user intentionally placed with
+     space above them. We only want to move panels that were positioned
+     directly below the reset panel + overlapping its x range, by the
+     exact amount the panel shrunk.
+     Takes a snapshot of the reset panel's pre-reset (x, y, w, h),
+     then after the reset is applied, compares post-reset h to find
+     how much it shrunk, and shifts qualifying neighbors up by that
+     delta. Cascading is handled implicitly because neighbors are
+     shifted from their original positions, not chained. */
+  function compactBelowReset(item, oldRect) {
+    if (!gridInstance || !item || !oldRect) return;
+    var node = item.gridstackNode;
+    if (!node) return;
+    var newH = node.h;
+    if (newH >= oldRect.h) return;  /* grew or stayed same */
+    var shrunkBy = oldRect.h - newH;
+    var rx1 = oldRect.x;
+    var rx2 = oldRect.x + oldRect.w;
+    var oldBottom = oldRect.y + oldRect.h;
+    document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (other) {
+      if (other === item) return;
+      var n = other.gridstackNode;
+      if (!n) return;
+      /* Must have been positioned at or below the reset panel's old bottom edge. */
+      if (n.y < oldBottom) return;
+      /* Must overlap the reset panel's x range — panels in unrelated
+         columns are not affected. */
+      var ox1 = n.x;
+      var ox2 = n.x + n.w;
+      if (ox2 <= rx1 || ox1 >= rx2) return;
+      try { gridInstance.update(other, { y: Math.max(0, n.y - shrunkBy) }); } catch (e) {}
+    });
+  }
+
+  /* Capture the reset panel's pre-reset rect so compactBelowReset can
+     compare post-reset h and shift only the qualifying neighbors. */
+  function captureRect(item) {
+    var n = item && item.gridstackNode;
+    if (!n) return null;
+    return { x: n.x, y: n.y, w: n.w, h: n.h };
+  }
+
   function resetItemSize(id) {
     if (!gridInstance) return;
     var def = DEFAULT_LAYOUT[id];
@@ -11163,6 +11208,10 @@
     }
     var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
+    /* Snapshot pre-reset position/size — used by the surgical compact
+       below to calculate how much the panel shrunk and which
+       neighbors should pull up. */
+    var oldRect = captureRect(item);
     /* For panels that support the orientation toggle, preserve the
        user's chosen orientation across reset (it's their preference,
        not part of "default size") and ALWAYS re-measure the height
@@ -11203,12 +11252,10 @@
           gridInstance.update(item, { maxH: nodeStack.h, minH: minHStack });
           INITIAL_H[id] = nodeStack.h;
         }
-        /* After reset shrinks the panel, neighbors below would stay
-           at their old gs-y (float:true preserves explicit positions),
-           leaving an empty strip between this panel's new bottom and
-           the next panel. compact pulls everything up column-by-column
-           without reordering. */
-        gridInstance.compact('list', false);
+        /* Pull only the neighbors directly below + overlapping the
+           reset panel up to fill the gap. Avoids the global compact's
+           "every panel with a gap above moves" behavior. */
+        compactBelowReset(item, oldRect);
       } catch (e) {}
       /* Re-enable transitions on the next frame so any subsequent
          drag/resize/layout reflow animates normally again. Removing
@@ -11234,7 +11281,7 @@
       try {
         gridInstance.update(item, { maxH: 4000, minH: chartMinH, minW: 3 });
         gridInstance.update(item, { w: def.w });
-        gridInstance.compact('list', false);
+        compactBelowReset(item, oldRect);
       } catch (e) {}
       if (typeof refitChartSection === 'function') refitChartSection();
       return;
@@ -11250,9 +11297,10 @@
       gridInstance.update(item, { maxH: 4000, minH: 1 });
       gridInstance.update(item, { w: def.w, h: targetH });
       gridInstance.update(item, { maxH: targetH, minH: minH });
-      /* Pull neighbors below up to fill the gap left by shrinking
-         this panel. float:true keeps explicit positions otherwise. */
-      gridInstance.compact('list', false);
+      /* Pull only the neighbors directly below + overlapping in x up
+         by exactly how much this panel shrunk. Avoids the global
+         compact's "everything-with-a-gap-moves" side effect. */
+      compactBelowReset(item, oldRect);
     } catch (e) {}
   }
 
