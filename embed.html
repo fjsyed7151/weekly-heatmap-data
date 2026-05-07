@@ -10206,8 +10206,12 @@
   function refreshUnpinAllVisibility() {}
 
   /* Helper: returns the gridstack instance for a panel by walking up to
-     its column ancestor and looking up colGrids by data-col. */
+     its column ancestor and looking up colGrids by data-col. Defensive
+     against being called before colGrids is initialized — happens when
+     applyBlockVisibility runs from the customize-popup IIFE during
+     script parse (before var colGrids = {...} is reached). */
   function gridForPanel(item) {
+    if (typeof colGrids === 'undefined' || !colGrids) return null;
     var col = item && item.closest && item.closest('.hm-col');
     if (!col) return null;
     return colGrids[col.getAttribute('data-col')] || null;
