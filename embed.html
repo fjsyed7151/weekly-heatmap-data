@@ -10357,42 +10357,52 @@
         });
       });
 
-      /* Universal post-resize refit: re-measure each panel's content
-         height and re-lock maxH to it. Catches the broad class of
-         "cell is taller than content after resize" gaps caused by
-         width-dependent content reflow:
-           - gold header period pills wrap/unwrap with cell width
-             (every ranking panel + sector / sf / treemap)
-           - container-query grids restack (economy, indexes, gave)
-           - max-content wrap + grid floors mean wrap > cell at
-             narrow widths, adding a horizontal-scrollbar gutter
-             whose 8px hides under content (indexes, ranking panels)
-           - Chart.js sparklines re-aspect after canvas resize,
-             changing total panel height
-         Replaces the previous per-panel conditionals (economy +
-         vertical-stack only) which left every other panel stuck
-         with stale maxH. Skipping chart-section because it has its
-         own refitChartSection logic triggered separately, and
-         because its h depends on selected metrics (not just width). */
-      if (el && el.gridstackNode) {
-        var rsId = el.getAttribute('gs-id');
-        if (rsId !== 'hm-chart-section') {
-          setTimeout(function () {
-            try {
-              gridInstance.update(el, { maxH: 9999 });
-              gridInstance.resizeToContent(el);
-              var node = el.gridstackNode;
-              if (node) {
-                var minH = (typeof computePanelMinH === 'function')
-                  ? computePanelMinH(el) : 70;
-                gridInstance.update(el, { maxH: node.h, minH: minH });
-                if (typeof INITIAL_H !== 'undefined' && rsId) {
-                  INITIAL_H[rsId] = node.h;
-                }
+      /* Economy panel uses container queries internally, so its
+         content height depends heavily on its width. After ANY
+         resize (even on a sibling that shifts its available
+         width), recompute maxH from the new content height —
+         otherwise the user can drag the cell taller than the
+         freshly-reflowed content, leaving empty space + a
+         stretched border. */
+      if (el && el.getAttribute && el.getAttribute('gs-id') === 'hm-economy') {
+        setTimeout(function () {
+          try {
+            gridInstance.update(el, { maxH: 9999 });
+            gridInstance.resizeToContent(el);
+            var node = el.gridstackNode;
+            if (node) gridInstance.update(el, { maxH: node.h });
+          } catch (e) {}
+        }, 80);
+      }
+      /* Stack-toggle panels in vertical mode: the gold header has
+         flex-wrap:wrap, so its height varies with cell width — at
+         narrow widths the period pills wrap onto a 2nd row (header
+         ≈ 60px tall), at wider widths they unwrap to one row
+         (≈ 36px). resizeToContent at toggle-time locks maxH to the
+         CURRENT content height; if the user later resizes the cell
+         WIDER, the gold header shrinks but the cell h stays at the
+         old (taller) value, producing empty space at the bottom.
+         Refitting on resizestop keeps cell h matched to current
+         content. Only relevant for vertical-stack panels — others
+         have width-independent content heights or already handle
+         this via their own logic. */
+      if (el && el.classList && el.classList.contains('hm-stack-vertical')) {
+        var stackId = el.getAttribute('gs-id');
+        setTimeout(function () {
+          try {
+            gridInstance.update(el, { maxH: 9999 });
+            gridInstance.resizeToContent(el);
+            var node = el.gridstackNode;
+            if (node) {
+              var minH = (typeof computePanelMinH === 'function')
+                ? computePanelMinH(el) : 70;
+              gridInstance.update(el, { maxH: node.h, minH: minH });
+              if (typeof INITIAL_H !== 'undefined' && stackId) {
+                INITIAL_H[stackId] = node.h;
               }
-            } catch (e) {}
-          }, 80);
-        }
+            }
+          } catch (e) {}
+        }, 80);
       }
     });
 
@@ -11303,36 +11313,17 @@
             try { window.gridInstance.compact('list', false); } catch (e) {}
             window.gridInstance._suppressSave = false;
           }, 0);
-          /* Second pass 800ms later: by now Chart.js sparklines and any
-             other async-paint content has settled. Re-run resizeToContent
-             so node.h reflects the post-paint state, then re-lock maxH
-             to it. Without the re-fit + re-lock, panels whose content
-             reflowed after the t=0 measurement were stuck with stale
-             maxH (cell taller than content → empty gap below the panel
-             content + above the gold border). Also refresh INITIAL_H
-             so the per-panel reset button restores the post-paint
-             height, not the pre-paint one. */
+          /* Second snapshot 800ms later: by now Chart.js sparklines and any
+             other async-paint content has settled, so node.h reflects the
+             "what's actually on screen, considered correct" state — which
+             is exactly what we want the per-panel reset button to restore. */
           setTimeout(function () {
-            if (!window.gridInstance) return;
-            window.gridInstance._suppressSave = true;
             document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+              var node = item.gridstackNode;
+              if (!node) return;
               var id = item.getAttribute('gs-id');
-              /* Chart-section has its own refit triggered by metric
-                 selection; don't fight it here. */
-              if (id === 'hm-chart-section') return;
-              try {
-                window.gridInstance.update(item, { maxH: 9999 });
-                window.gridInstance.resizeToContent(item);
-                var node = item.gridstackNode;
-                if (node) {
-                  var minH = (typeof computePanelMinH === 'function')
-                    ? computePanelMinH(item) : 70;
-                  window.gridInstance.update(item, { maxH: node.h, minH: minH });
-                  if (id) INITIAL_H[id] = node.h;
-                }
-              } catch (e) {}
+              if (id) INITIAL_H[id] = node.h;
             });
-            window.gridInstance._suppressSave = false;
           }, 800);
 
         }
