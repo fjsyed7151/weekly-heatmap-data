@@ -648,14 +648,15 @@
     transform: translateX(-50%);
     top: 0;
     bottom: 0;
-    width: 1px;
-    background: var(--hm-border);
+    width: 2px;
+    background: rgba(218, 165, 32, 0.45);  /* always-visible gold tint */
+    border-radius: 1px;
     transition: width 0.15s ease, background 0.15s ease;
     pointer-events: none;
   }
   .hm-app .hm-col-divider:hover::after,
   body.hm-col-resizing .hm-app .hm-col-divider::after {
-    width: 3px;
+    width: 4px;
     background: var(--hm-gold);
   }
   /* While resizing a column, suspend text selection on the whole page
@@ -10237,6 +10238,27 @@
     return colGrids[col.getAttribute('data-col')] || null;
   }
 
+  /* Re-assign gs-y to every panel in a column based on its current
+     DOM order. Gridstack tracks panels by node.y, NOT DOM order — so
+     after we DOM-reorder via insertBefore, we have to push the new
+     y values into gridstack via update() or panels stay rendered at
+     their old positions. */
+  function reflowColumn(colId) {
+    var grid = colGrids && colGrids[colId];
+    if (!grid) return;
+    var body = document.querySelector('.hm-col[data-col="' + colId + '"] .hm-col-body');
+    if (!body) return;
+    var y = 0;
+    body.querySelectorAll('.grid-stack-item').forEach(function (item) {
+      var node = item.gridstackNode;
+      if (!node) return;
+      if (node.y !== y) {
+        try { grid.update(item, { y: y }); } catch (e) {}
+      }
+      y += node.h;
+    });
+  }
+
   /* Move the panel one position up/down within its current column. */
   function movePanelUp(id) {
     var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
@@ -10245,6 +10267,8 @@
     while (prev && !prev.matches('.grid-stack-item')) prev = prev.previousElementSibling;
     if (!prev) return;
     item.parentNode.insertBefore(item, prev);
+    var col = item.closest('.hm-col');
+    if (col) reflowColumn(col.getAttribute('data-col'));
     persistColsLayout();
     refreshAllMoveButtons();
   }
@@ -10255,6 +10279,8 @@
     while (next && !next.matches('.grid-stack-item')) next = next.nextElementSibling;
     if (!next) return;
     item.parentNode.insertBefore(next, item);
+    var col = item.closest('.hm-col');
+    if (col) reflowColumn(col.getAttribute('data-col'));
     persistColsLayout();
     refreshAllMoveButtons();
   }
@@ -10274,11 +10300,17 @@
     if (!fromGrid || !toGrid) return;
     /* Use gridstack's removeWidget(removeDOM:false, triggerEvent:false) +
        makeWidget on the destination grid. We move the DOM element via
-       parentNode.appendChild so it lands at the bottom of the column. */
+       parentNode.appendChild so it lands at the bottom of the column,
+       then reflowColumn pushes correct gs-y values into the source AND
+       destination grids (without it, items in the source column have
+       stale y values, and the destination column may stack on top of
+       existing items). */
     try { fromGrid.removeWidget(item, false, false); } catch (e) {}
     var toBody = document.querySelector('.hm-col[data-col="' + toColId + '"] .hm-col-body');
     if (toBody) toBody.appendChild(item);
     try { toGrid.makeWidget(item); } catch (e) {}
+    reflowColumn(fromColId);
+    reflowColumn(toColId);
     persistColsLayout();
     refreshAllMoveButtons();
   }
