@@ -556,9 +556,16 @@
     background: transparent;
   }
   .hm-app .hm-col-collapsed {
-    /* Collapsed: column is hidden entirely. JS sets the corresponding
-       grid-template-columns track to 0px so neighbors expand to fill. */
-    display: none;
+    /* Collapsed: column track is 0px wide (set in applyColWidths).
+       overflow:hidden + min-width:0 lets it actually shrink to 0 (CSS
+       Grid items default to min-width:auto, which would refuse to go
+       below their content's min size). visibility:hidden suppresses
+       paint on the column's children — keeps gridstack's internal
+       state intact (display:none would zero out child measurements
+       and break gridstack). */
+    overflow: hidden !important;
+    min-width: 0 !important;
+    visibility: hidden;
   }
   .hm-app .hm-col-sticky {
     /* Sticky: column stays pinned in viewport while page scrolls.
@@ -652,17 +659,25 @@
     transform: translateX(-50%);
     top: 0;
     bottom: 0;
-    width: 2px;
-    background: rgba(218, 165, 32, 0.45);  /* always-visible gold tint */
-    border-radius: 1px;
-    transition: width 0.15s ease, background 0.15s ease;
+    width: 0;
+    background: var(--hm-gold);
+    border-radius: 2px;
+    opacity: 0;
+    transition: width 0.15s ease, opacity 0.15s ease;
     pointer-events: none;
   }
   .hm-app .hm-col-divider:hover::after,
   body.hm-col-resizing .hm-app .hm-col-divider::after {
     width: 4px;
-    background: var(--hm-gold);
+    opacity: 1;
   }
+  /* When an adjacent column is collapsed, hide the affordance + cursor
+     on its divider so it doesn't read as a resize target. */
+  .hm-app .hm-col-divider-hidden {
+    cursor: default;
+    pointer-events: none;
+  }
+  .hm-app .hm-col-divider-hidden::after { display: none; }
   /* While resizing a column, suspend text selection on the whole page
      (would otherwise accidentally select content as the cursor moves). */
   body.hm-col-resizing,
@@ -10111,7 +10126,7 @@
     center: { min: 420, max: Infinity },
     right:  { min: 240, max: 560 },
   };
-  var COL_GAP = 8;           /* px — gap between columns */
+  var COL_GAP = 20;          /* px — gap between columns (track width for the divider) */
   var STACK_NARROW_W = 1100; /* px — below this, columns stack vertically */
   /* Maps panel id → its DEFAULT home column. Used by Reset All to
      restore the original arrangement. Order within column comes from
@@ -10461,7 +10476,9 @@
   }
 
   /* Update the CSS grid-template-columns for #hm-cols based on _colWidths
-     and collapsed flags. Uses px when set, else auto-equal split. */
+     and collapsed flags. Collapsed column → 0px column track + hide its
+     adjacent divider (so a "0px col → 20px gap → next col" doesn't
+     leave a phantom gap on the side of a collapsed column). */
   function applyColWidths() {
     var wrap = document.getElementById('hm-cols');
     if (!wrap) return;
@@ -10472,16 +10489,28 @@
     var parts = [];
     COL_IDS.forEach(function (cid, i) {
       if (collapsedFlags[i]) {
-        /* Collapsed: zero width. CSS sets display:none on the column. */
         parts.push('0px');
       } else if (_colWidths[i] != null) {
         parts.push(_colWidths[i] + 'px');
       } else {
         parts.push('1fr');
       }
-      if (i < COL_IDS.length - 1) parts.push(COL_GAP + 'px');
+      if (i < COL_IDS.length - 1) {
+        /* Divider takes 0 width when EITHER adjacent column is
+           collapsed (otherwise the gap stays visible on the side
+           of an invisible column). */
+        var dividerHidden = collapsedFlags[i] || collapsedFlags[i + 1];
+        parts.push((dividerHidden ? 0 : COL_GAP) + 'px');
+      }
     });
     wrap.style.gridTemplateColumns = parts.join(' ');
+    /* Toggle a class on each divider so CSS can hide its handle
+       affordance when its track is 0 wide. */
+    var dividers = wrap.querySelectorAll('.hm-col-divider');
+    dividers.forEach(function (div, i) {
+      var hidden = collapsedFlags[i] || collapsedFlags[i + 1];
+      div.classList.toggle('hm-col-divider-hidden', !!hidden);
+    });
   }
 
   /* Sync the 4 topbar column-control buttons (collapse-left, sticky-
