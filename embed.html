@@ -10008,14 +10008,23 @@
   /* Breakpoints sorted desktop → mobile. minW is the lower viewport
      bound (inclusive). cols = grid column count. layoutOverride is
      a per-id { x, y, w, h } map applied to HTML attributes before
-     gridstack init — null means "use HTML defaults verbatim". */
+     gridstack init — null means "use HTML defaults verbatim".
+     Threshold = 1500: most "smaller screen" laptops (1366×768, 1440×900)
+     should land on compact. Above 1500 (most modern desktops + larger
+     external monitors) gets the wider 24-col layout. */
   var BREAKPOINTS = [
-    { id: 'desktop', minW: 1300, cols: 24, layoutOverride: null },
+    { id: 'desktop', minW: 1500, cols: 24, layoutOverride: null },
     { id: 'compact', minW: 0,    cols: 12, layoutOverride: LAYOUT_12COL },
   ];
 
   function getCurrentBreakpoint() {
-    var vw = window.innerWidth || document.documentElement.clientWidth || 1920;
+    /* documentElement.clientWidth is the most reliable cross-context
+       reading — equals visual viewport width whether we're at the top
+       level or inside an iframe. innerWidth is the same in most cases
+       but can return stale values during early script parse before
+       the layout box is established. */
+    var vw = document.documentElement.clientWidth ||
+             window.innerWidth || 1920;
     for (var i = 0; i < BREAKPOINTS.length; i++) {
       if (vw >= BREAKPOINTS[i].minW) return BREAKPOINTS[i];
     }
@@ -10027,6 +10036,14 @@
      crosses a threshold. */
   var ACTIVE_BREAKPOINT = getCurrentBreakpoint();
   var LAYOUT_KEY = LAYOUT_KEY_BASE + '-' + ACTIVE_BREAKPOINT.id;
+  /* Diagnostic: lets user verify breakpoint detection from console.
+     Read window.HM_BREAKPOINT or check the log at load time. */
+  try {
+    window.HM_BREAKPOINT = ACTIVE_BREAKPOINT;
+    console.info('[heatmap] breakpoint=' + ACTIVE_BREAKPOINT.id +
+                 ' cols=' + ACTIVE_BREAKPOINT.cols +
+                 ' viewportW=' + (document.documentElement.clientWidth || window.innerWidth));
+  } catch (e) {}
 
   /* If a stale-key layout exists from before responsive layouts shipped
      (the un-suffixed LAYOUT_KEY_BASE), migrate it to the desktop key
