@@ -11303,20 +11303,28 @@
       if (typeof refitChartSection === 'function') refitChartSection();
       return;
     }
-    /* Use the post-init snapshot if available, else fall back to the
-       pre-fit gs-h × GS_SCALE value (still better than nothing). */
-    var targetH = (INITIAL_H[id] != null) ? INITIAL_H[id] : def.h;
+    /* Mirror the stack-reset pattern: unlock, set w only, force a
+       synchronous reflow, then resizeToContent (which now actually
+       fits since the grid has sizeToContent: true), then re-lock
+       maxH at the freshly-measured h. The previous code locked h to
+       INITIAL_H[id] — a snapshot from init time — but content can
+       reflow differently when reset happens (different width than
+       at snapshot, async paint settled differently, period pills in
+       a different state, etc.), and the locked-h fought with
+       sizeToContent's measurement, leaving a gap below content. */
     var minH = computePanelMinH(item);
     try {
-      /* Unlock maxH first so we can grow back up if needed, then apply the
-         exact target h, then re-lock maxH at that h. Three-step because
-         passing { maxH, h } in one update may clamp h against the OLD maxH. */
       gridInstance.update(item, { maxH: 4000, minH: 1 });
-      gridInstance.update(item, { w: def.w, h: targetH });
-      gridInstance.update(item, { maxH: targetH, minH: minH });
+      gridInstance.update(item, { w: def.w });
+      void item.offsetHeight;
+      gridInstance.resizeToContent(item);
+      var node = item.gridstackNode;
+      if (node) {
+        gridInstance.update(item, { maxH: node.h, minH: minH });
+        INITIAL_H[id] = node.h;
+      }
       /* Pull only the neighbors directly below + overlapping in x up
-         by exactly how much this panel shrunk. Avoids the global
-         compact's "everything-with-a-gap-moves" side effect. */
+         by exactly how much this panel shrunk. */
       compactBelowReset(item, oldRect);
     } catch (e) {}
   }
