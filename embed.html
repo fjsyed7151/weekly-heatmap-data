@@ -10358,32 +10358,45 @@
       });
 
       /* Universal post-resize refit: re-measure each panel's content
-         height after a user resize and re-lock maxH to it. Without
-         this, panels whose content reflows with cell width — gold
-         header period pills wrap/unwrap, container-query grids,
-         max-content wrap with horizontal-scroll gutter, sparkline
-         re-aspect — keep the maxH that was locked at the OLD content
-         height, so on resize-end the cell ends up taller than the
-         current content + border stretches across the gap.
-         Only triggers on user-initiated resize (not initial load,
-         not toggle, not reset), so it can't shrink panels the user
-         hasn't touched. Skips chart-section since it has its own
-         refitChartSection logic gated on metric selection. */
+         height after a user resize and update cell h to match. The
+         previous version called gridInstance.resizeToContent(el),
+         but in gridstack v12 that method early-bails out unless
+         sizeToContent is set on the grid options or the node — and
+         we don't set it. We have to do the measurement manually:
+         read wrap.scrollHeight, compute h in cell units, call
+         update({h}) explicitly. This way the refit actually fires
+         regardless of the sizeToContent flag. Skips chart-section
+         since it has its own refitChartSection logic. */
       if (el && el.gridstackNode) {
         var rsId = el.getAttribute('gs-id');
         if (rsId !== 'hm-chart-section') {
           setTimeout(function () {
             try {
-              gridInstance.update(el, { maxH: 9999 });
-              gridInstance.resizeToContent(el);
+              var wrap = el.querySelector('.hm-panel-wrap');
+              if (!wrap) return;
+              /* Force synchronous reflow so scrollHeight reads the
+                 post-resize layout, not whatever was cached before
+                 the cell width changed. */
+              void el.offsetHeight;
+              var natural = wrap.scrollHeight;
+              if (!natural) return;
+              var cellHeight = gridInstance.getCellHeight(true) || 1;
+              /* +12px matches gridstack's internal inset for
+                 .grid-stack-item-content (6 top + 6 bottom margin
+                 from marginTop/marginBottom: 8 in init opts… well,
+                 close enough — using 12 keeps it tight). */
+              var newH = Math.max(1, Math.ceil((natural + 12) / cellHeight));
               var node = el.gridstackNode;
-              if (node) {
-                var minH = (typeof computePanelMinH === 'function')
-                  ? computePanelMinH(el) : 70;
-                gridInstance.update(el, { maxH: node.h, minH: minH });
-                if (typeof INITIAL_H !== 'undefined' && rsId) {
-                  INITIAL_H[rsId] = node.h;
-                }
+              if (!node || newH === node.h) return;
+              var minH = (typeof computePanelMinH === 'function')
+                ? computePanelMinH(el) : 70;
+              /* Three-step update: unlock first so the new h isn't
+                 clamped against the old maxH, set h, then lock. */
+              gridInstance.update(el, { maxH: 9999, minH: 1 });
+              gridInstance.update(el, { h: newH });
+              gridInstance.update(el, { maxH: newH, minH: minH });
+              if (typeof INITIAL_H !== 'undefined' && rsId) {
+                INITIAL_H[rsId] = newH;
               }
             } catch (e) {}
           }, 80);
