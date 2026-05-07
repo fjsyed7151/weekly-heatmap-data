@@ -10118,14 +10118,27 @@
   var COLS_LAYOUT_KEY = 'hm-cols-layout-v1';
   var COL_IDS = ['left', 'center', 'right'];
   var GS_SCALE = 40;  /* gs-h raw HTML units multiplied by this for cellHeight:1 px grids */
-  /* Per-column min/max widths in px. Center is the "main" column —
-     wider min, no max cap. Side columns are narrower with a max so
-     they don't dominate the layout. */
+  /* Per-column min (in px) + max (as fraction of #hm-cols container
+     width). Center has the highest min and no effective max; side
+     columns share the same min and cap at 1/3 of the dashboard width
+     so neither can dominate. Computed dynamically against the current
+     container width via getColLimits() so the max scales with the
+     viewport instead of being a hard pixel cap. */
   var COL_W_LIMITS = {
-    left:   { min: 240, max: 560 },
-    center: { min: 420, max: Infinity },
-    right:  { min: 240, max: 560 },
+    left:   { min: 240, maxFrac: 0.33 },
+    center: { min: 420, maxFrac: 1.0  },
+    right:  { min: 240, maxFrac: 0.33 },
   };
+  function getColLimits(colId) {
+    var lim = COL_W_LIMITS[colId] || { min: 240, maxFrac: 0.33 };
+    var wrap = document.getElementById('hm-cols');
+    var containerW = (wrap && wrap.clientWidth) || window.innerWidth || 1920;
+    return {
+      min: lim.min,
+      /* Clamp so max can never go below min (small viewports). */
+      max: Math.max(lim.min, Math.round(lim.maxFrac * containerW)),
+    };
+  }
   var COL_GAP = 20;          /* px — gap between columns (track width for the divider) */
   var STACK_NARROW_W = 1100; /* px — below this, columns stack vertically */
   /* Maps panel id → its DEFAULT home column. Used by Reset All to
@@ -10590,8 +10603,8 @@
       function onMove(e) {
         if (!dragging) return;
         var delta = e.clientX - startX;
-        var leftLimits = COL_W_LIMITS[leftId] || { min: 240, max: Infinity };
-        var rightLimits = COL_W_LIMITS[rightId] || { min: 240, max: Infinity };
+        var leftLimits = getColLimits(leftId);
+        var rightLimits = getColLimits(rightId);
         /* Compute proposed sizes, then clamp delta so both sides stay
            within their min/max. The available range for delta:
              max(leftLimits.min - startLeftW, startRightW - rightLimits.max)
