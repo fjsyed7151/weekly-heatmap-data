@@ -4385,8 +4385,22 @@
       </a>
       <!-- Spacer pushes the right-side button cluster to the far right. -->
       <span class="hm-topbar-spacer"></span>
-      <!-- Reset layout: clears saved positions/sizes + reloads to defaults.
-           Confirms first so users don't nuke their layout by accident. -->
+      <!-- Show-collapsed-column buttons. Hidden when the corresponding
+           side column is expanded. Only way to bring back a collapsed
+           column (the column header isn't visible when collapsed). -->
+      <button class="hm-btn" id="hm-show-left-col" type="button" aria-label="Show left column" title="Show left column" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6"/>
+          <line x1="3" y1="3" x2="3" y2="21"/>
+        </svg>
+      </button>
+      <button class="hm-btn" id="hm-show-right-col" type="button" aria-label="Show right column" title="Show right column" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"/>
+          <line x1="21" y1="3" x2="21" y2="21"/>
+        </svg>
+      </button>
+      <!-- Reset layout: clears saved positions/sizes + reloads to defaults. -->
       <button class="hm-btn" id="hm-reset-layout" type="button" aria-label="Reset layout" title="Reset layout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M3 12a9 9 0 1 0 3-6.7"/>
@@ -4526,19 +4540,12 @@
           </div>
           <div class="hm-col-divider" data-divider="0" title="Drag to resize columns"></div>
           <div class="hm-col" data-col="center">
-            <div class="hm-col-header">
-              <button class="hm-col-btn hm-col-sticky-btn" data-col-action="sticky" type="button" title="Pin column to viewport (column scrolls internally while page scrolls)" aria-label="Toggle sticky">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="12" y1="17" x2="12" y2="22"/>
-                  <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
-                </svg>
-              </button>
+            <!-- Center column is the always-visible "main" column. No
+                 sticky/collapse buttons — only side columns (left,
+                 right) get those. Header kept for visual alignment
+                 with the side column headers, just title only. -->
+            <div class="hm-col-header hm-col-header-static">
               <span class="hm-col-title">Center</span>
-              <button class="hm-col-btn hm-col-collapse-btn" data-col-action="collapse" type="button" title="Collapse column" aria-label="Collapse column">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
             </div>
             <div class="hm-col-body grid-stack" data-col-grid="center">
               <div class="grid-stack-item" gs-id="hm-stylefactor"    gs-y="0"   gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
@@ -10085,7 +10092,14 @@
   var COLS_LAYOUT_KEY = 'hm-cols-layout-v1';
   var COL_IDS = ['left', 'center', 'right'];
   var GS_SCALE = 40;  /* gs-h raw HTML units multiplied by this for cellHeight:1 px grids */
-  var COL_MIN_W = 260;       /* px — minimum column width on resize */
+  /* Per-column min/max widths in px. Center is the "main" column —
+     wider min, no max cap. Side columns are narrower with a max so
+     they don't dominate the layout. */
+  var COL_W_LIMITS = {
+    left:   { min: 240, max: 560 },
+    center: { min: 420, max: Infinity },
+    right:  { min: 240, max: 560 },
+  };
   var COL_GAP = 8;           /* px — gap between columns */
   var STACK_NARROW_W = 1100; /* px — below this, columns stack vertically */
   /* Maps panel id → its DEFAULT home column. Used by Reset All to
@@ -10333,19 +10347,29 @@
       });
     });
     if (state.widths) _colWidths = state.widths.slice();
-    applyColWidths();
     if (state.collapsed) {
       state.collapsed.forEach(function (val, i) {
         var c = document.querySelector('.hm-col[data-col="' + COL_IDS[i] + '"]');
-        if (c) c.classList.toggle('hm-col-collapsed', !!val);
+        if (!c) return;
+        /* Defensive: center column is always expanded — it's the
+           "main" column, never collapsible via UI. Stale saved state
+           with center collapsed (from earlier behavior) gets ignored. */
+        var isCenter = COL_IDS[i] === 'center';
+        c.classList.toggle('hm-col-collapsed', !!val && !isCenter);
       });
     }
     if (state.sticky) {
       state.sticky.forEach(function (val, i) {
         var c = document.querySelector('.hm-col[data-col="' + COL_IDS[i] + '"]');
-        if (c) c.classList.toggle('hm-col-sticky', !!val);
+        if (!c) return;
+        /* Defensive: center column has no sticky toggle. */
+        var isCenter = COL_IDS[i] === 'center';
+        c.classList.toggle('hm-col-sticky', !!val && !isCenter);
       });
     }
+    /* Apply widths after collapse state is set so collapsed-flag
+       lookup inside applyColWidths sees the latest classes. */
+    applyColWidths();
     refreshAllColHeaderButtons();
   }
 
@@ -10373,7 +10397,7 @@
     wrap.style.gridTemplateColumns = parts.join(' ');
   }
 
-  /* Sync each column's header buttons with its current state. */
+  /* Sync header / topbar button states with the current layout. */
   function refreshAllColHeaderButtons() {
     COL_IDS.forEach(function (cid) {
       var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
@@ -10385,9 +10409,21 @@
       if (sBtn) sBtn.classList.toggle('active', stickyOn);
       if (cBtn) cBtn.classList.toggle('collapsed', collapsed);
     });
+    /* Topbar Show-Left / Show-Right buttons appear only when their
+       column is collapsed (since collapsed = display:none, the
+       in-column collapse toggle isn't visible to the user). */
+    var leftCol = document.querySelector('.hm-col[data-col="left"]');
+    var rightCol = document.querySelector('.hm-col[data-col="right"]');
+    var leftBtn = document.getElementById('hm-show-left-col');
+    var rightBtn = document.getElementById('hm-show-right-col');
+    if (leftBtn) leftBtn.hidden = !(leftCol && leftCol.classList.contains('hm-col-collapsed'));
+    if (rightBtn) rightBtn.hidden = !(rightCol && rightCol.classList.contains('hm-col-collapsed'));
   }
 
-  /* Wire column header buttons (sticky toggle, collapse toggle). */
+  /* Wire column header buttons (sticky/collapse on left+right) AND the
+     topbar Show-Left / Show-Right buttons that bring back collapsed
+     columns. The center column has no sticky/collapse buttons — it's
+     always visible, so there's nothing to wire there. */
   function wireColumnHeaders() {
     document.querySelectorAll('#hm-cols .hm-col-btn').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
@@ -10405,22 +10441,40 @@
         persistColsLayout();
       });
     });
+    /* Topbar buttons that bring back a collapsed side column. */
+    function bindShowCol(btnId, colId) {
+      var btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        var c = document.querySelector('.hm-col[data-col="' + colId + '"]');
+        if (!c) return;
+        c.classList.remove('hm-col-collapsed');
+        applyColWidths();
+        refreshAllColHeaderButtons();
+        persistColsLayout();
+      });
+    }
+    bindShowCol('hm-show-left-col', 'left');
+    bindShowCol('hm-show-right-col', 'right');
   }
 
-  /* Drag-to-resize column dividers. Updates _colWidths in px. Skipped
-     when the layout is in narrow-stacked mode (dividers hidden by CSS). */
+  /* Drag-to-resize column dividers. Updates _colWidths in px, respecting
+     per-column min/max from COL_W_LIMITS. Skipped when layout is narrow-
+     stacked (dividers are hidden by CSS). */
   function wireColumnDividers() {
     document.querySelectorAll('#hm-cols .hm-col-divider').forEach(function (div) {
       var dragging = false;
       var startX = 0;
       var leftIdx = parseInt(div.getAttribute('data-divider'), 10); /* 0 or 1 */
       var rightIdx = leftIdx + 1;
+      var leftId = COL_IDS[leftIdx];
+      var rightId = COL_IDS[rightIdx];
       var startLeftW = 0;
       var startRightW = 0;
       div.addEventListener('mousedown', function (e) {
         if (document.body.classList.contains('hm-cols-stacked')) return;
-        var leftCol = document.querySelector('.hm-col[data-col="' + COL_IDS[leftIdx] + '"]');
-        var rightCol = document.querySelector('.hm-col[data-col="' + COL_IDS[rightIdx] + '"]');
+        var leftCol = document.querySelector('.hm-col[data-col="' + leftId + '"]');
+        var rightCol = document.querySelector('.hm-col[data-col="' + rightId + '"]');
         if (!leftCol || !rightCol) return;
         startX = e.clientX;
         startLeftW = leftCol.getBoundingClientRect().width;
@@ -10432,13 +10486,24 @@
       function onMove(e) {
         if (!dragging) return;
         var delta = e.clientX - startX;
-        var newLeft = Math.max(COL_MIN_W, startLeftW + delta);
-        var newRight = Math.max(COL_MIN_W, startRightW - delta);
-        /* Both must respect their min — if the user drags beyond, lock at min. */
-        if (startLeftW + delta < COL_MIN_W) newRight = startRightW + (startLeftW - COL_MIN_W);
-        if (startRightW - delta < COL_MIN_W) newLeft = startLeftW + (startRightW - COL_MIN_W);
-        _colWidths[leftIdx] = Math.round(newLeft);
-        _colWidths[rightIdx] = Math.round(newRight);
+        var leftLimits = COL_W_LIMITS[leftId] || { min: 240, max: Infinity };
+        var rightLimits = COL_W_LIMITS[rightId] || { min: 240, max: Infinity };
+        /* Compute proposed sizes, then clamp delta so both sides stay
+           within their min/max. The available range for delta:
+             max(leftLimits.min - startLeftW, startRightW - rightLimits.max)
+             …
+             min(leftLimits.max - startLeftW, startRightW - rightLimits.min)  */
+        var minDelta = Math.max(
+          leftLimits.min - startLeftW,
+          startRightW - rightLimits.max
+        );
+        var maxDelta = Math.min(
+          leftLimits.max - startLeftW,
+          startRightW - rightLimits.min
+        );
+        delta = Math.max(minDelta, Math.min(maxDelta, delta));
+        _colWidths[leftIdx] = Math.round(startLeftW + delta);
+        _colWidths[rightIdx] = Math.round(startRightW - delta);
         applyColWidths();
       }
       function onUp() {
