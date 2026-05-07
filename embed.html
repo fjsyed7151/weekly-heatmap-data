@@ -10045,23 +10045,12 @@
     } catch (e) {}
   })();
 
-  /* React to viewport crossings. Reload when the user resizes the
-     window past a breakpoint so the new column count + layout takes
-     effect — debounced so tiny window jitter (DPI scaling, scrollbar
-     appearance) doesn't trigger a reload. Only fires when the
-     breakpoint id genuinely changes from where we initialized. */
-  (function watchBreakpointChange() {
-    var resizeTimer = null;
-    window.addEventListener('resize', function () {
-      if (resizeTimer) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(function () {
-        var nowBp = getCurrentBreakpoint();
-        if (nowBp.id !== ACTIVE_BREAKPOINT.id) {
-          window.location.reload();
-        }
-      }, 300);
-    });
-  })();
+  /* No auto-reload on viewport crossings — the page-reload was causing
+     a visible flash on every breakpoint cross while resizing the
+     window. Layout switches still happen, just on the next manual
+     reload. Live column-swap (gridInstance.column(N)) would avoid
+     the flash but doesn't preserve our custom per-breakpoint
+     LAYOUT_12COL cleanly, so it's not worth the complexity. */
 
   /* Snapshot of each panel's settled cell h taken AFTER the initial fitAll
      pass and any async paint (Chart.js sparklines etc.) — so it reflects
@@ -11214,6 +11203,12 @@
           gridInstance.update(item, { maxH: nodeStack.h, minH: minHStack });
           INITIAL_H[id] = nodeStack.h;
         }
+        /* After reset shrinks the panel, neighbors below would stay
+           at their old gs-y (float:true preserves explicit positions),
+           leaving an empty strip between this panel's new bottom and
+           the next panel. compact pulls everything up column-by-column
+           without reordering. */
+        gridInstance.compact('list', false);
       } catch (e) {}
       /* Re-enable transitions on the next frame so any subsequent
          drag/resize/layout reflow animates normally again. Removing
@@ -11239,6 +11234,7 @@
       try {
         gridInstance.update(item, { maxH: 4000, minH: chartMinH, minW: 3 });
         gridInstance.update(item, { w: def.w });
+        gridInstance.compact('list', false);
       } catch (e) {}
       if (typeof refitChartSection === 'function') refitChartSection();
       return;
@@ -11254,6 +11250,9 @@
       gridInstance.update(item, { maxH: 4000, minH: 1 });
       gridInstance.update(item, { w: def.w, h: targetH });
       gridInstance.update(item, { maxH: targetH, minH: minH });
+      /* Pull neighbors below up to fill the gap left by shrinking
+         this panel. float:true keeps explicit positions otherwise. */
+      gridInstance.compact('list', false);
     } catch (e) {}
   }
 
