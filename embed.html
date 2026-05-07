@@ -518,6 +518,154 @@
     color: #c0392b;
   }
   .hm-app .hm-panel-btn svg { width: 13px; height: 13px; display: block; }
+  /* Move-direction buttons in the panel header. Same chrome as the
+     other .hm-panel-btn icons; layout helpers auto-hide them at edges. */
+  .hm-app .hm-panel-move-left,
+  .hm-app .hm-panel-move-right,
+  .hm-app .hm-panel-move-up,
+  .hm-app .hm-panel-move-down {
+    /* No special styling — inherits .hm-panel-btn. */
+  }
+  .hm-app .hm-panel-move-left[hidden],
+  .hm-app .hm-panel-move-right[hidden],
+  .hm-app .hm-panel-move-up[hidden],
+  .hm-app .hm-panel-move-down[hidden] { display: none; }
+
+  /* ---------- 3-column layout ---------- */
+  /* The dashboard's main content lives in #hm-cols, a CSS grid with 3
+     columns separated by 8px draggable dividers. Each column has a
+     compact header (sticky toggle + title + collapse toggle) and a
+     gridstack body that holds the panels. */
+  .hm-app .hm-cols {
+    display: grid;
+    /* JS sets grid-template-columns dynamically based on _colWidths
+       and collapsed flags. Initial value is 3 equal columns. */
+    grid-template-columns: 1fr 8px 1fr 8px 1fr;
+    align-items: start;
+    /* Allow each column to grow independently to its content height
+       — column heights vary depending on which panels are inside. */
+    width: 100%;
+  }
+  .hm-app .hm-col {
+    display: flex;
+    flex-direction: column;
+    /* Each column scrolls internally when its content exceeds the
+       sticky max-height (.hm-col-sticky variant only). Otherwise it
+       just lets content flow naturally. */
+    min-width: 0;
+    background: transparent;
+  }
+  .hm-app .hm-col-collapsed {
+    /* Collapsed: column is hidden entirely. JS sets the corresponding
+       grid-template-columns track to 0px so neighbors expand to fill. */
+    display: none;
+  }
+  .hm-app .hm-col-sticky {
+    /* Sticky: column stays pinned in viewport while page scrolls.
+       max-height + overflow-y means the column scrolls internally
+       if its content exceeds the visible area. top offset matches the
+       site topbar height (40px desktop). */
+    position: sticky;
+    top: 40px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+  .hm-app .hm-col-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 8px;
+    background: var(--hm-bg-warm, var(--hm-panel));
+    border: 1px solid var(--hm-border);
+    border-bottom: none;
+    border-radius: var(--hm-r) var(--hm-r) 0 0;
+    flex-shrink: 0;
+  }
+  .hm-app .hm-col-title {
+    flex: 1;
+    font-family: 'Karla', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--hm-brown);
+  }
+  .hm-app .hm-col-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--hm-brown);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: background 0.12s, color 0.12s;
+  }
+  .hm-app .hm-col-btn:hover {
+    background: rgba(218,165,32,0.10);
+    color: var(--hm-gold);
+  }
+  .hm-app .hm-col-btn.active {
+    color: var(--hm-gold);
+  }
+  .hm-app .hm-col-btn svg { width: 14px; height: 14px; display: block; }
+  /* Rotate the chevron when collapsed so it points right. */
+  .hm-app .hm-col-collapse-btn.collapsed svg {
+    transform: rotate(-90deg);
+  }
+  .hm-app .hm-col-body {
+    /* Gridstack target. Border on sides + bottom; top border is
+       supplied by .hm-col-header. */
+    border: 1px solid var(--hm-border);
+    border-top: none;
+    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    padding: 4px 6px;
+    background: var(--hm-bg);
+    flex: 1 1 auto;
+    min-height: 100px;
+  }
+  .hm-app .hm-col-divider {
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .hm-app .hm-col-divider:hover,
+  body.hm-col-resizing .hm-app .hm-col-divider {
+    background: rgba(218,165,32,0.30);
+  }
+  /* While resizing a column, suspend text selection on the whole page
+     (would otherwise accidentally select content as the cursor moves). */
+  body.hm-col-resizing,
+  body.hm-col-resizing * {
+    user-select: none !important;
+    cursor: col-resize !important;
+  }
+
+  /* Narrow viewport: stack columns vertically. Dividers + their
+     associated grid tracks collapse to zero. The 3 columns become a
+     single vertical stack of all panels. The column headers (sticky
+     toggles, collapse toggles) hide too — the spatial / sticky
+     concepts don't apply when stacked. */
+  body.hm-cols-stacked .hm-app .hm-cols {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+  body.hm-cols-stacked .hm-app .hm-col-divider { display: none; }
+  body.hm-cols-stacked .hm-app .hm-col-header { display: none; }
+  body.hm-cols-stacked .hm-app .hm-col-body {
+    border-radius: var(--hm-r);
+    border-top: 1px solid var(--hm-border);
+  }
+  body.hm-cols-stacked .hm-app .hm-col-sticky {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+  body.hm-cols-stacked .hm-app .hm-col-collapsed { display: flex; }
   /* Panel cards take their natural content height. Grid items auto-fit
      to match via Gridstack's sizeToContent option, so the grid cell and
      the card border are always exactly the size of the rendered content
@@ -4240,17 +4388,6 @@
           <polyline points="3 4 3 10 9 10"/>
         </svg>
       </button>
-      <!-- Unpin All: returns every pinned panel back to its place in the
-           grid. Hidden when nothing is pinned (set via JS on init + after
-           every pin/unpin). Same icon as the per-panel pin button but
-           with a slash through it to read as "unpin". -->
-      <button class="hm-btn" id="hm-unpin-all" type="button" aria-label="Unpin all" title="Unpin all" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="12" y1="17" x2="12" y2="22"/>
-          <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
-          <line x1="3" y1="3" x2="21" y2="21"/>
-        </svg>
-      </button>
       <div class="hm-info-wrap">
         <button class="hm-btn" id="hm-info-toggle" type="button" aria-label="About & sources" title="About & sources">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -4341,157 +4478,128 @@
 
     <div class="hm-layout-wrap" id="hm-layout-wrap">
     <div class="hm-layout" id="hm-layout">
-      <!-- MAIN CONTENT — single-column Gridstack-driven 12-col layout. Sidebar
-           panels (commodities, currencies, calendar, economy) are now grid
-           items alongside the rest, draggable + resizable like everything
-           else. Heat map + metrics chart stay OUTSIDE the grid below. -->
+      <!-- MAIN CONTENT — 3-column layout. Each column is its own
+           single-column Gridstack instance (column: 1, sizeToContent:
+           true, no manual user-resize). Panels can be moved across
+           columns via the move buttons in each panel header or by
+           drag-and-drop. Columns themselves can be resized (drag the
+           dividers), collapsed (header button), or made sticky
+           (header button → column stays pinned in the viewport while
+           the body scrolls). At narrow viewports (<1100px) the 3
+           columns stack vertically. -->
       <div class="hm-main">
-        <!-- Pinned-to-top bar. Sticky below the topbar. Right-click any panel →
-             "Pin to top" moves it here; "Unpin" sends it back to the grid.
-             The resizer below lets the user drag the bar's max-height to
-             give pinned panels more (or less) screen real estate. -->
-        <!-- Pinned-bar SECTION: bar + resizer wrapped together in a single
-             sticky container with a solid background. Wrapping them means
-             the gap between bar and resizer never shows page content
-             scrolling through, and both stick as one visual unit. -->
-        <div class="hm-pinned-stack" id="hm-pinned-stack">
-          <div class="hm-pinned-bar" id="hm-pinned-bar"></div>
-          <div class="hm-pinned-bar-resizer" id="hm-pinned-bar-resizer" title="Drag to resize pinned bar"></div>
-        </div>
-        <!-- Custom context menu for grid panels. Hidden by default. -->
-        <div class="hm-context-menu" id="hm-context-menu" hidden>
-          <button class="hm-context-item" data-action="toggle-pin" type="button"></button>
-        </div>
-        <div class="grid-stack" id="hm-grid">
-          <!-- Default layout: 3-6-3 like the original. Left column (x=0..2)
-               holds Commodities + Currencies. Right column (x=9..11) holds
-               Economic Calendar + Economic Indicators. Middle column
-               (x=3..8) holds the main analytical panels. Users can drag
-               anything anywhere; this is just the reset-to-default state. -->
-          <!--
-            DEFAULT LAYOUT — designed as a top-down read:
-              1. INDEXES (overview)                         — full width
-              2. MACRO REGIME + CREDIT/POLICY               — paired (regime context)
-              3. STYLE + FACTORS                            — paired (equity factor lens)
-              4. SECTOR CHART (centerpiece deep dive)       — half width
-              5. FIXED INCOME + GLOBAL EQUITY               — paired (cross-asset)
-              6. COUNTRY ETFs + COMMODITIES (ranked)        — paired (intl + comm perf)
-              7. CURRENCY MATRIX + THEMATIC TRENDS          — paired
-              8. COMMODITIES + CURRENCIES                   — paired tables
-              9. CALENDAR + ECONOMY                         — paired (forward + macro)
-             10. METRICS CHART (hidden until rows picked)
-             11. HEAT MAP (bottom deep dive)               — full width
-          -->
-          <!--
-            DEFAULT LAYOUT (v7):
-              y=0   Indexes(w=6) | Calendar(w=3) | Economy(w=3)
-              y=4   Gave(w=6)
-              y=14                | Stylefactor(w=3) — 1/4 page width
-              y=20                |                  | (economy ends)
-              y=24  Macrocompass(w=6) | Factors(w=6)
-              y=38-65: Fixed-income / Global / Country / Commodity perf — full width
-              y=65  Sector(w=6) | Currency-matrix(w=6) + Theme-treemap stacked
-              y=...: Commodities(w=6) | Currencies(w=6)
-              y=...: Heatmap(w=12)
-          -->
-          <!-- DEFAULT LAYOUT (v12) — designed to minimize vertical gaps
-               while preserving the user-locked panel sizes (no gs-w/gs-h
-               changes here). Logical order top-to-bottom:
-
-                 Overview row:    indexes | macrocompass | calendar | economy
-                 Regime row:      gave-wrap | factors    | global-indexes
-                 Rankings:        currency-matrix, country-etfs, theme-treemap
-                                  + stylefactor (the odd 2x9 fits where it can)
-                 Wide ranking:    fixed-income (7w)
-                 Deep dive:       sector-chart | commodity-perf
-                 Tables:          commodities | currencies
-                 Bottom:          chart-section (full-width) | heatmap (full)
-
-               Per-column packing keeps strips flush:
-                 cols 0-3:  indexes(0..4) → gave-wrap(4..28) → country-etfs
-                            (28..43) → fixed-income(45..56) → sector-chart
-                            (57..87) → currencies(87..107)
-                 cols 4-7:  macrocompass(0..14) → factors(14..25) →
-                            currency-matrix(25..36) → stylefactor(36..45 in 4-5)
-                            → fixed-income(45..56) → commodity-perf(57..72 in
-                            6-10) → commodities(72..94 in 6-11)
-                 cols 8-11: calendar+economy(0..22) → global-indexes(22..33)
-                            → theme-treemap(33..57) → commodities(72..94) -->
-          <!-- DEFAULT LAYOUT (v33) — tighter packing of the user-spec'd
-               widths. Reading top-to-bottom:
-
-               TOP MACRO STRIP (y=0..27):
-                 cols 0-5  : indexes(4) → stylefactor(9) → factors(7w covers col 6 too)
-                 cols 6-11 : macrocompass(14) → economy(4w covers cols 8-11)
-                 cols 12-19: gave-wrap(24)
-                 cols 20-23: calendar(22)
-
-               MID RANKINGS (y=24..49):
-                 cols 0-7  : country-etfs(15) → global-indexes(8w covers cols 8-15)
-                 cols 12-19: currency-matrix(14)
-                 cols 16-23: commodities(22) → currencies(22)
-
-               WIDE BLOCKS (y=49..130):
-                 cols 0-15: fixed-income(16w,11) → sector-chart(12w,30) →
-                            theme-treemap(10w,24) → chart-section(16w,16)
-                 cols 12-22: commodity-perf(11w,20)
-
-               BOTTOM:
-                 heatmap-wrap (full 16w) -->
-          <div class="grid-stack-item" gs-id="hm-indexes"         gs-x="0"  gs-y="0"   gs-w="6"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-macrocompass"    gs-x="6"  gs-y="0"   gs-w="6"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-gave-wrap"       gs-x="12" gs-y="0"   gs-w="8"  gs-h="24">
-            <div class="grid-stack-item-content">
-              <div class="hm-gave-wrap" id="hm-gave-wrap">
-                <div id="hm-gave-quadrant"></div>
-                <div id="hm-gave-charts"></div>
-              </div>
+        <div class="hm-cols" id="hm-cols">
+          <div class="hm-col" data-col="left">
+            <div class="hm-col-header">
+              <button class="hm-col-btn hm-col-sticky-btn" data-col-action="sticky" type="button" title="Pin column to viewport (column scrolls internally while page scrolls)" aria-label="Toggle sticky">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="17" x2="12" y2="22"/>
+                  <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+                </svg>
+              </button>
+              <span class="hm-col-title">Left</span>
+              <button class="hm-col-btn hm-col-collapse-btn" data-col-action="collapse" type="button" title="Collapse column" aria-label="Collapse column">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
             </div>
-          </div>
-          <div class="grid-stack-item" gs-id="hm-calendar"        gs-x="20" gs-y="0"   gs-w="4"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-stylefactor"     gs-x="0"  gs-y="4"   gs-w="6"  gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-factors"         gs-x="0"  gs-y="14"  gs-w="7"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-economy"         gs-x="8"  gs-y="14"  gs-w="6"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-x="12" gs-y="24"  gs-w="8"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodities"     gs-x="16" gs-y="24"  gs-w="8"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-country-etfs"    gs-x="0"  gs-y="28"  gs-w="8"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-global-indexes"  gs-x="8"  gs-y="38"  gs-w="8"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-currencies"      gs-x="16" gs-y="46"  gs-w="8"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-fixed-income"    gs-x="0"  gs-y="49"  gs-w="16" gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-sector-chart"    gs-x="0"  gs-y="60"  gs-w="12" gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-commodity-perf"  gs-x="12" gs-y="68"  gs-w="11" gs-h="20"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
-          <div class="grid-stack-item" gs-id="hm-theme-treemap"   gs-x="0"  gs-y="90"  gs-w="10" gs-h="24"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
-          <!-- Metrics chart panel (always present in grid; shows empty state
-               of "0/6 metrics selected" until user picks rows from the heat map). -->
-          <div class="grid-stack-item" gs-id="hm-chart-section"  gs-x="0" gs-y="114" gs-w="16" gs-h="16">
-            <div class="grid-stack-item-content">
-              <div class="hm-chart-section" id="hm-chart-section">
-                <div class="hm-gold-header">
-                  <span>Metrics Chart &middot; <b id="hm-chart-count">0</b>/6 selected</span>
-                  <span class="hm-chart-toolbar-btns">
-                    <button class="hm-btn" id="hm-chart-combined" type="button" aria-label="Combined view" title="Combined">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 14 9 10 13 13 21 7"/></svg>
-                    </button>
-                    <button class="hm-btn" id="hm-chart-separated" type="button" aria-label="Separated view" title="Separated">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
-                    </button>
-                    <button class="hm-btn" id="hm-chart-download" type="button" aria-label="Download chart" title="Download">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    </button>
-                  </span>
+            <div class="hm-col-body grid-stack" data-col-grid="left">
+              <div class="grid-stack-item" gs-id="hm-indexes"      gs-y="0"  gs-h="4"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-macrocompass" gs-y="4"  gs-h="14"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-gave-wrap"    gs-y="18" gs-h="24">
+                <div class="grid-stack-item-content">
+                  <div class="hm-gave-wrap" id="hm-gave-wrap">
+                    <div id="hm-gave-quadrant"></div>
+                    <div id="hm-gave-charts"></div>
+                  </div>
                 </div>
-                <div class="hm-chart-canvases combined" id="hm-chart-canvases"></div>
+              </div>
+              <div class="grid-stack-item" gs-id="hm-calendar"     gs-y="42" gs-h="22"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-economy"      gs-y="64" gs-h="22"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+            </div>
+          </div>
+          <div class="hm-col-divider" data-divider="0" title="Drag to resize columns"></div>
+          <div class="hm-col" data-col="center">
+            <div class="hm-col-header">
+              <button class="hm-col-btn hm-col-sticky-btn" data-col-action="sticky" type="button" title="Pin column to viewport (column scrolls internally while page scrolls)" aria-label="Toggle sticky">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="17" x2="12" y2="22"/>
+                  <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+                </svg>
+              </button>
+              <span class="hm-col-title">Center</span>
+              <button class="hm-col-btn hm-col-collapse-btn" data-col-action="collapse" type="button" title="Collapse column" aria-label="Collapse column">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            </div>
+            <div class="hm-col-body grid-stack" data-col-grid="center">
+              <div class="grid-stack-item" gs-id="hm-stylefactor"    gs-y="0"   gs-h="9"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-factors"        gs-y="9"   gs-h="14"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-fixed-income"   gs-y="23"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-country-etfs"   gs-y="34"  gs-h="15"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-global-indexes" gs-y="49"  gs-h="11"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-commodity-perf" gs-y="60"  gs-h="20"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
+            </div>
+          </div>
+          <div class="hm-col-divider" data-divider="1" title="Drag to resize columns"></div>
+          <div class="hm-col" data-col="right">
+            <div class="hm-col-header">
+              <button class="hm-col-btn hm-col-sticky-btn" data-col-action="sticky" type="button" title="Pin column to viewport (column scrolls internally while page scrolls)" aria-label="Toggle sticky">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="17" x2="12" y2="22"/>
+                  <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+                </svg>
+              </button>
+              <span class="hm-col-title">Right</span>
+              <button class="hm-col-btn hm-col-collapse-btn" data-col-action="collapse" type="button" title="Collapse column" aria-label="Collapse column">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            </div>
+            <div class="hm-col-body grid-stack" data-col-grid="right">
+              <div class="grid-stack-item" gs-id="hm-currency-matrix" gs-y="0"   gs-h="14"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-commodities"     gs-y="14"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-currencies"      gs-y="36"  gs-h="22"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-sector-chart"    gs-y="58"  gs-h="30"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-theme-treemap"   gs-y="88"  gs-h="24"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
+              <div class="grid-stack-item" gs-id="hm-chart-section"   gs-y="112" gs-h="16">
+                <div class="grid-stack-item-content">
+                  <div class="hm-chart-section" id="hm-chart-section">
+                    <div class="hm-gold-header">
+                      <span>Metrics Chart &middot; <b id="hm-chart-count">0</b>/6 selected</span>
+                      <span class="hm-chart-toolbar-btns">
+                        <button class="hm-btn" id="hm-chart-combined" type="button" aria-label="Combined view" title="Combined">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 14 9 10 13 13 21 7"/></svg>
+                        </button>
+                        <button class="hm-btn" id="hm-chart-separated" type="button" aria-label="Separated view" title="Separated">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+                        </button>
+                        <button class="hm-btn" id="hm-chart-download" type="button" aria-label="Download chart" title="Download">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        </button>
+                      </span>
+                    </div>
+                    <div class="hm-chart-canvases combined" id="hm-chart-canvases"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="grid-stack-item" gs-id="hm-heatmap-wrap"   gs-y="128" gs-h="22">
+                <div class="grid-stack-item-content">
+                  <div class="hm-scroll" id="hm-heatmap-wrap">
+                    <table class="hm-table" id="hm-table"></table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <!-- Weekly heat map table panel. -->
-          <div class="grid-stack-item" gs-id="hm-heatmap-wrap"   gs-x="0" gs-y="130" gs-w="16" gs-h="22">
-            <div class="grid-stack-item-content">
-              <div class="hm-scroll" id="hm-heatmap-wrap">
-                <table class="hm-table" id="hm-table"></table>
-              </div>
-            </div>
-          </div>
+        </div>
+        <!-- Old pinned-bar / context menu / single grid removed in favor
+             of the 3-column layout above. -->
+        <div class="grid-stack" id="hm-grid" hidden>
         </div>
 
         <!-- Metric tooltip overlay — outside the grid since it's a popover. -->
@@ -5615,21 +5723,21 @@
   function applyBlockVisibility() {
     var hidden = getHiddenBlocks();
     TOGGLEABLE_BLOCKS.forEach(function (b) {
-      /* Main-column panels live inside a .grid-stack-item; toggling the WRAPPER
-         lets Gridstack compact the layout upward. Sidebar panels have no grid
-         wrapper so fall back to toggling the panel itself. */
+      /* Main-column panels live inside a .grid-stack-item inside one of
+         the 3 column gridstacks. Use gridForPanel() to find the right
+         instance — removing/re-adding to the wrong grid would error. */
       var gridItem = document.querySelector('.grid-stack-item[gs-id="' + b.id + '"]');
       var el = gridItem || document.getElementById(b.id);
       if (!el) return;
       var shouldHide = hidden.indexOf(b.id) >= 0;
-      if (gridItem && typeof window !== 'undefined' && window.gridInstance) {
+      var grid = (typeof gridForPanel === 'function') ? gridForPanel(gridItem) : null;
+      if (gridItem && grid) {
         if (shouldHide && gridItem.gridstackNode) {
-          /* Remove from grid without destroying DOM so we can re-add later. */
-          window.gridInstance.removeWidget(gridItem, false, false);
+          grid.removeWidget(gridItem, false, false);
           gridItem.style.display = 'none';
         } else if (!shouldHide && !gridItem.gridstackNode) {
           gridItem.style.removeProperty('display');
-          window.gridInstance.makeWidget(gridItem);
+          grid.makeWidget(gridItem);
         } else if (!shouldHide) {
           gridItem.style.removeProperty('display');
         }
@@ -5722,11 +5830,11 @@
     if (reset) {
       reset.addEventListener('click', function () {
         setHiddenBlocks([]);
-        /* Also nuke any saved grid layout so the user gets a true "reset to
-           default" — both visibility AND panel positions return to their
-           initial states. Since we need to re-create grid items from default
-           sizes, a page reload is the reliable path. */
-        try { localStorage.removeItem('hm-grid-layout-v1'); } catch (e) {}
+        /* Nuke saved 3-column layout so panels go back to their default
+           home columns + widths + collapsed/sticky state. Reload is the
+           reliable path since gridstack instances would need to be
+           rebuilt to honor the fresh layout. */
+        try { localStorage.removeItem('hm-cols-layout-v1'); } catch (e) {}
         if (window.gridInstance) {
           window.location.reload();
           return;
@@ -9961,131 +10069,95 @@
      in the <head>. It measures the document, posts heights to the parent,
      and updates on content changes (charts rendering, etc.) automatically. */
 
-  /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
-  /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
-     to full width so all columns are visible. */
-  var LAYOUT_KEY_BASE = 'hm-grid-layout-v40';
-  var GS_SCALE = 40;
+  /* ---------- 3-column layout with per-column gridstacks ----------
+     Replaces the previous single-grid drag-and-resize layout. Each
+     column hosts its own GridStack instance (column: 1, sizeToContent:
+     true, no manual resize handles). Panels can be moved between
+     columns via header buttons or drag-and-drop. Columns themselves
+     can be resized (drag dividers), collapsed (hide entirely), or
+     made sticky (pin in viewport while page scrolls). At narrow
+     viewports the columns stack vertically. */
+  var COLS_LAYOUT_KEY = 'hm-cols-layout-v1';
+  var COL_IDS = ['left', 'center', 'right'];
+  var GS_SCALE = 40;  /* gs-h raw HTML units multiplied by this for cellHeight:1 px grids */
+  var COL_MIN_W = 260;       /* px — minimum column width on resize */
+  var COL_GAP = 8;           /* px — gap between columns */
+  var STACK_NARROW_W = 1100; /* px — below this, columns stack vertically */
+  /* Maps panel id → its DEFAULT home column. Used by Reset All to
+     restore the original arrangement. Order within column comes from
+     DOM order in the HTML. */
+  var DEFAULT_PANEL_COLUMN = {
+    'hm-indexes':        'left',
+    'hm-macrocompass':   'left',
+    'hm-gave-wrap':      'left',
+    'hm-calendar':       'left',
+    'hm-economy':        'left',
+    'hm-stylefactor':    'center',
+    'hm-factors':        'center',
+    'hm-fixed-income':   'center',
+    'hm-country-etfs':   'center',
+    'hm-global-indexes': 'center',
+    'hm-commodity-perf': 'center',
+    'hm-currency-matrix':'right',
+    'hm-commodities':    'right',
+    'hm-currencies':     'right',
+    'hm-sector-chart':   'right',
+    'hm-theme-treemap':  'right',
+    'hm-chart-section':  'right',
+    'hm-heatmap-wrap':   'right',
+  };
+  /* Per-column GridStack instances, keyed by col id. */
+  var colGrids = { left: null, center: null, right: null };
+  /* Back-compat alias — older code referenced gridInstance singular. */
   var gridInstance = null;
 
-  /* ---------- Responsive breakpoints ----------
-     The HTML default layout is calibrated for desktop (~1700px+). On
-     smaller viewports a 6-of-24 panel renders too narrow in pixels to
-     show its content, even though it's the same 25% proportion. Below
-     a viewport threshold we switch to a 12-column grid with a
-     hand-designed layout where most panels go full-width or 50%, so
-     pixel widths stay in a usable range. Each breakpoint stores its
-     own customization layout in localStorage (suffix-keyed) so user
-     edits at desktop don't get clobbered when the page is opened on a
-     laptop and vice-versa. Crossing a breakpoint mid-session triggers
-     a reload — switching column counts at runtime opens too many
-     edge cases with pinned panels + animated reflow.
-
-     Hand-designed 12-col layout. h values are in raw HTML units and
-     get pre-multiplied by GS_SCALE (40) by the same pass that handles
-     the HTML defaults — keep them small here for readability. */
-  var LAYOUT_12COL = {
-    'hm-indexes':         { x: 0, y: 0,   w: 12, h: 4  },
-    'hm-macrocompass':    { x: 0, y: 4,   w: 6,  h: 14 },
-    'hm-calendar':        { x: 6, y: 4,   w: 6,  h: 22 },
-    'hm-gave-wrap':       { x: 0, y: 26,  w: 12, h: 24 },
-    'hm-stylefactor':     { x: 0, y: 50,  w: 6,  h: 9  },
-    'hm-factors':         { x: 6, y: 50,  w: 6,  h: 14 },
-    'hm-economy':         { x: 0, y: 64,  w: 12, h: 22 },
-    'hm-currency-matrix': { x: 0, y: 86,  w: 12, h: 14 },
-    'hm-commodities':     { x: 0, y: 100, w: 6,  h: 22 },
-    'hm-country-etfs':    { x: 6, y: 100, w: 6,  h: 15 },
-    'hm-global-indexes':  { x: 0, y: 122, w: 6,  h: 11 },
-    'hm-currencies':      { x: 6, y: 122, w: 6,  h: 22 },
-    'hm-fixed-income':    { x: 0, y: 144, w: 12, h: 11 },
-    'hm-sector-chart':    { x: 0, y: 155, w: 12, h: 30 },
-    'hm-commodity-perf':  { x: 0, y: 185, w: 6,  h: 20 },
-    'hm-theme-treemap':   { x: 6, y: 185, w: 6,  h: 24 },
-    'hm-chart-section':   { x: 0, y: 209, w: 12, h: 16 },
-    'hm-heatmap-wrap':    { x: 0, y: 225, w: 12, h: 22 },
-  };
-
-  /* Breakpoints sorted desktop → mobile. minW is the lower viewport
-     bound (inclusive). cols = grid column count. layoutOverride is
-     a per-id { x, y, w, h } map applied to HTML attributes before
-     gridstack init — null means "use HTML defaults verbatim".
-     Threshold = 1500: most "smaller screen" laptops (1366×768, 1440×900)
-     should land on compact. Above 1500 (most modern desktops + larger
-     external monitors) gets the wider 24-col layout. */
-  var BREAKPOINTS = [
-    { id: 'desktop', minW: 1500, cols: 24, layoutOverride: null },
-    { id: 'compact', minW: 0,    cols: 12, layoutOverride: LAYOUT_12COL },
-  ];
-
-  function getCurrentBreakpoint() {
-    /* documentElement.clientWidth is the most reliable cross-context
-       reading — equals visual viewport width whether we're at the top
-       level or inside an iframe. innerWidth is the same in most cases
-       but can return stale values during early script parse before
-       the layout box is established. */
-    var vw = document.documentElement.clientWidth ||
-             window.innerWidth || 1920;
-    for (var i = 0; i < BREAKPOINTS.length; i++) {
-      if (vw >= BREAKPOINTS[i].minW) return BREAKPOINTS[i];
-    }
-    return BREAKPOINTS[BREAKPOINTS.length - 1];
-  }
-
-  /* Capture the breakpoint for the duration of the session. Used to
-     pick the right LAYOUT_KEY and to trigger a reload if the viewport
-     crosses a threshold. */
-  var ACTIVE_BREAKPOINT = getCurrentBreakpoint();
-  var LAYOUT_KEY = LAYOUT_KEY_BASE + '-' + ACTIVE_BREAKPOINT.id;
-  /* Diagnostic: lets user verify breakpoint detection from console.
-     Read window.HM_BREAKPOINT or check the log at load time. */
-  try {
-    window.HM_BREAKPOINT = ACTIVE_BREAKPOINT;
-    console.info('[heatmap] breakpoint=' + ACTIVE_BREAKPOINT.id +
-                 ' cols=' + ACTIVE_BREAKPOINT.cols +
-                 ' viewportW=' + (document.documentElement.clientWidth || window.innerWidth));
-  } catch (e) {}
-
-  /* If a stale-key layout exists from before responsive layouts shipped
-     (the un-suffixed LAYOUT_KEY_BASE), migrate it to the desktop key
-     so existing user customizations aren't lost on first load after
-     this update. Only migrate at the desktop breakpoint — the old
-     layout was always 24-col, so it's only meaningful there. */
-  (function migrateLegacyLayout() {
-    if (ACTIVE_BREAKPOINT.id !== 'desktop') return;
+  /* Layout state persistence shape:
+     {
+       widths: [pxLeft, pxCenter, pxRight],   // null = auto-sized
+       collapsed: [bool, bool, bool],
+       sticky:    [bool, bool, bool],
+       panels:    { left: [...ids], center: [...ids], right: [...ids] }
+     }
+     Saved to localStorage under COLS_LAYOUT_KEY whenever the user
+     edits any of these. Loaded on init; falls back to defaults
+     (DEFAULT_PANEL_COLUMN + DOM order, all widths null/equal, none
+     collapsed, none sticky). */
+  function loadColsLayout() {
     try {
-      var legacy = localStorage.getItem(LAYOUT_KEY_BASE);
-      var current = localStorage.getItem(LAYOUT_KEY);
-      if (legacy && !current) {
-        localStorage.setItem(LAYOUT_KEY, legacy);
-        localStorage.removeItem(LAYOUT_KEY_BASE);
-      }
-    } catch (e) {}
-  })();
-
-  /* No auto-reload on viewport crossings — the page-reload was causing
-     a visible flash on every breakpoint cross while resizing the
-     window. Layout switches still happen, just on the next manual
-     reload. Live column-swap (gridInstance.column(N)) would avoid
-     the flash but doesn't preserve our custom per-breakpoint
-     LAYOUT_12COL cleanly, so it's not worth the complexity. */
-
-  /* Snapshot of each panel's settled cell h taken AFTER the initial fitAll
-     pass and any async paint (Chart.js sparklines etc.) — so it reflects
-     exactly what the user sees on a fresh page load. The per-panel reset
-     button uses this directly; no re-measurement at click time, so reset
-     is guaranteed identical to first paint. */
-  var INITIAL_H = {};
+      var raw = localStorage.getItem(COLS_LAYOUT_KEY);
+      if (!raw) return null;
+      var v = JSON.parse(raw);
+      if (!v || typeof v !== 'object') return null;
+      return v;
+    } catch (e) { return null; }
+  }
+  function saveColsLayout(state) {
+    try { localStorage.setItem(COLS_LAYOUT_KEY, JSON.stringify(state)); }
+    catch (e) {}
+  }
+  /* Build the default state from DEFAULT_PANEL_COLUMN + DOM order. */
+  function buildDefaultColsState() {
+    var panels = { left: [], center: [], right: [] };
+    /* Walk panel DOM order across all 3 columns, group by their default
+       home column. This honors the HTML's authoring-time ordering. */
+    document.querySelectorAll('#hm-cols .grid-stack-item[gs-id]').forEach(function (el) {
+      var id = el.getAttribute('gs-id');
+      var col = DEFAULT_PANEL_COLUMN[id];
+      if (col && panels[col]) panels[col].push(id);
+    });
+    return {
+      widths:    [null, null, null],
+      collapsed: [false, false, false],
+      sticky:    [false, false, false],
+      panels:    panels,
+    };
+  }
 
   /* Per-panel info-popup HTML. Renderers populate this when they have
      data-dependent notes (e.g. "Daily close · 2026-04-24"). The info
      button in the panel header reads from here on click. Function-valued
      so we can pull fresh `as_of` etc. at click time. */
   window.PANEL_INFO_HTML = {};
-
-  /* Per-panel default x/y/w/h captured BEFORE GridStack.init (init mutates
-     the HTML attributes once saved layouts are applied). The reset button
-     in each panel header uses this map to restore the original size. */
-  var DEFAULT_LAYOUT = {};
 
   /* Display titles shown in each panel's window-style header. Kept in sync
      with TOGGLEABLE_BLOCKS (below) — duplicated here because this runs
@@ -10111,132 +10183,341 @@
     'hm-heatmap-wrap':   'Metrics Heat Map',
   };
 
-  /* Reset-layout button (topbar) — clears saved layout + pins, reloads. */
+  /* Reset-layout button (topbar) — clears the saved 3-column layout
+     and reloads. Falls back to defaults: panels in their home columns
+     (DEFAULT_PANEL_COLUMN), even widths, no collapse, no sticky. */
   (function () {
     var rbtn = document.getElementById('hm-reset-layout');
     if (!rbtn) return;
     rbtn.addEventListener('click', function () {
-      try { localStorage.removeItem(LAYOUT_KEY); } catch (e) {}
-      try { localStorage.removeItem('hm-pinned-ids'); } catch (e) {}
-      try { localStorage.removeItem('hm-pinned-bar-h'); } catch (e) {}
+      try { localStorage.removeItem(COLS_LAYOUT_KEY); } catch (e) {}
       window.location.reload();
     });
   })();
 
-  /* Unpin-all button (topbar) — returns every pinned panel to the grid.
-     Visibility is driven by getPinned().length so the button is hidden
-     when nothing is pinned (avoids dead chrome in the topbar). */
-  function refreshUnpinAllVisibility() {
-    var btn = document.getElementById('hm-unpin-all');
-    if (!btn) return;
-    btn.hidden = getPinned().length === 0;
+  /* Stub kept for back-compat — old code paths called
+     refreshUnpinAllVisibility() during pin/unpin operations. The
+     unpin-all button is gone, so this is now a no-op. */
+  function refreshUnpinAllVisibility() {}
+
+  /* Helper: returns the gridstack instance for a panel by walking up to
+     its column ancestor and looking up colGrids by data-col. */
+  function gridForPanel(item) {
+    var col = item && item.closest && item.closest('.hm-col');
+    if (!col) return null;
+    return colGrids[col.getAttribute('data-col')] || null;
   }
-  (function () {
-    var ubtn = document.getElementById('hm-unpin-all');
-    if (!ubtn) return;
-    ubtn.addEventListener('click', function () {
-      /* Snapshot the list since unpinItemById mutates localStorage. */
-      var ids = getPinned().slice();
-      ids.forEach(function (id) { unpinItemById(id); });
-      refreshUnpinAllVisibility();
-      if (typeof refreshAllPinIcons === 'function') refreshAllPinIcons();
+
+  /* Move the panel one position up/down within its current column. */
+  function movePanelUp(id) {
+    var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
+    if (!item) return;
+    var prev = item.previousElementSibling;
+    while (prev && !prev.matches('.grid-stack-item')) prev = prev.previousElementSibling;
+    if (!prev) return;
+    item.parentNode.insertBefore(item, prev);
+    persistColsLayout();
+    refreshAllMoveButtons();
+  }
+  function movePanelDown(id) {
+    var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
+    if (!item) return;
+    var next = item.nextElementSibling;
+    while (next && !next.matches('.grid-stack-item')) next = next.nextElementSibling;
+    if (!next) return;
+    item.parentNode.insertBefore(next, item);
+    persistColsLayout();
+    refreshAllMoveButtons();
+  }
+  /* Move the panel into the adjacent column, appending to its bottom. */
+  function movePanelToCol(id, dir) {
+    var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
+    if (!item) return;
+    var fromCol = item.closest('.hm-col');
+    if (!fromCol) return;
+    var fromColId = fromCol.getAttribute('data-col');
+    var fromIdx = COL_IDS.indexOf(fromColId);
+    var toIdx = fromIdx + (dir === 'left' ? -1 : 1);
+    if (toIdx < 0 || toIdx >= COL_IDS.length) return;
+    var toColId = COL_IDS[toIdx];
+    var toGrid = colGrids[toColId];
+    var fromGrid = colGrids[fromColId];
+    if (!fromGrid || !toGrid) return;
+    /* Use gridstack's removeWidget(removeDOM:false, triggerEvent:false) +
+       makeWidget on the destination grid. We move the DOM element via
+       parentNode.appendChild so it lands at the bottom of the column. */
+    try { fromGrid.removeWidget(item, false, false); } catch (e) {}
+    var toBody = document.querySelector('.hm-col[data-col="' + toColId + '"] .hm-col-body');
+    if (toBody) toBody.appendChild(item);
+    try { toGrid.makeWidget(item); } catch (e) {}
+    persistColsLayout();
+    refreshAllMoveButtons();
+  }
+
+  /* Hide/show move buttons based on the panel's position so users only
+     see valid moves. ← hidden if panel is in the leftmost column, etc. */
+  function refreshMoveButtons(item) {
+    if (!item) return;
+    var col = item.closest('.hm-col');
+    if (!col) return;
+    var colId = col.getAttribute('data-col');
+    var idx = COL_IDS.indexOf(colId);
+    var isFirst = !item.previousElementSibling || !item.previousElementSibling.matches('.grid-stack-item');
+    var isLast = !item.nextElementSibling || !item.nextElementSibling.matches('.grid-stack-item');
+    var isStacked = document.body.classList.contains('hm-cols-stacked');
+    var btnLeft = item.querySelector('.hm-panel-move-left');
+    var btnRight = item.querySelector('.hm-panel-move-right');
+    var btnUp = item.querySelector('.hm-panel-move-up');
+    var btnDown = item.querySelector('.hm-panel-move-down');
+    if (btnLeft) btnLeft.hidden = isStacked || idx <= 0;
+    if (btnRight) btnRight.hidden = isStacked || idx >= COL_IDS.length - 1;
+    if (btnUp) btnUp.hidden = isFirst;
+    if (btnDown) btnDown.hidden = isLast;
+  }
+  function refreshAllMoveButtons() {
+    document.querySelectorAll('.hm-col .grid-stack-item[gs-id]').forEach(refreshMoveButtons);
+  }
+
+  /* Persist the current 3-column state — panel ordering per column,
+     widths, collapsed and sticky flags. Read from DOM for panels
+     (DOM order = display order in each column). Other state read from
+     stashed values + class flags. */
+  var _colWidths = [null, null, null];
+  function persistColsLayout() {
+    var panels = { left: [], center: [], right: [] };
+    COL_IDS.forEach(function (cid) {
+      var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
+      if (!body) return;
+      body.querySelectorAll('.grid-stack-item[gs-id]').forEach(function (el) {
+        panels[cid].push(el.getAttribute('gs-id'));
+      });
     });
-  })();
+    var collapsed = COL_IDS.map(function (cid) {
+      var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
+      return !!(c && c.classList.contains('hm-col-collapsed'));
+    });
+    var sticky = COL_IDS.map(function (cid) {
+      var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
+      return !!(c && c.classList.contains('hm-col-sticky'));
+    });
+    saveColsLayout({
+      widths:    _colWidths.slice(),
+      collapsed: collapsed,
+      sticky:    sticky,
+      panels:    panels,
+    });
+  }
+
+  /* Apply a state object to the DOM: reorder panels into their saved
+     columns, set column widths, collapsed/sticky classes. */
+  function applyColsLayout(state) {
+    if (!state || !state.panels) return;
+    COL_IDS.forEach(function (cid) {
+      var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
+      if (!body) return;
+      var ids = state.panels[cid] || [];
+      ids.forEach(function (id) {
+        /* Find the panel anywhere in #hm-cols and append into target body
+           in the saved order. */
+        var el = document.querySelector('#hm-cols .grid-stack-item[gs-id="' + id + '"]');
+        if (el) body.appendChild(el);
+      });
+    });
+    if (state.widths) _colWidths = state.widths.slice();
+    applyColWidths();
+    if (state.collapsed) {
+      state.collapsed.forEach(function (val, i) {
+        var c = document.querySelector('.hm-col[data-col="' + COL_IDS[i] + '"]');
+        if (c) c.classList.toggle('hm-col-collapsed', !!val);
+      });
+    }
+    if (state.sticky) {
+      state.sticky.forEach(function (val, i) {
+        var c = document.querySelector('.hm-col[data-col="' + COL_IDS[i] + '"]');
+        if (c) c.classList.toggle('hm-col-sticky', !!val);
+      });
+    }
+    refreshAllColHeaderButtons();
+  }
+
+  /* Update the CSS grid-template-columns for #hm-cols based on _colWidths
+     and collapsed flags. Uses px when set, else auto-equal split. */
+  function applyColWidths() {
+    var wrap = document.getElementById('hm-cols');
+    if (!wrap) return;
+    var collapsedFlags = COL_IDS.map(function (cid) {
+      var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
+      return !!(c && c.classList.contains('hm-col-collapsed'));
+    });
+    var parts = [];
+    COL_IDS.forEach(function (cid, i) {
+      if (collapsedFlags[i]) {
+        /* Collapsed: zero width. CSS sets display:none on the column. */
+        parts.push('0px');
+      } else if (_colWidths[i] != null) {
+        parts.push(_colWidths[i] + 'px');
+      } else {
+        parts.push('1fr');
+      }
+      if (i < COL_IDS.length - 1) parts.push(COL_GAP + 'px');
+    });
+    wrap.style.gridTemplateColumns = parts.join(' ');
+  }
+
+  /* Sync each column's header buttons with its current state. */
+  function refreshAllColHeaderButtons() {
+    COL_IDS.forEach(function (cid) {
+      var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
+      if (!c) return;
+      var stickyOn = c.classList.contains('hm-col-sticky');
+      var collapsed = c.classList.contains('hm-col-collapsed');
+      var sBtn = c.querySelector('.hm-col-sticky-btn');
+      var cBtn = c.querySelector('.hm-col-collapse-btn');
+      if (sBtn) sBtn.classList.toggle('active', stickyOn);
+      if (cBtn) cBtn.classList.toggle('collapsed', collapsed);
+    });
+  }
+
+  /* Wire column header buttons (sticky toggle, collapse toggle). */
+  function wireColumnHeaders() {
+    document.querySelectorAll('#hm-cols .hm-col-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var col = btn.closest('.hm-col');
+        if (!col) return;
+        var action = btn.getAttribute('data-col-action');
+        if (action === 'sticky') {
+          col.classList.toggle('hm-col-sticky');
+        } else if (action === 'collapse') {
+          col.classList.toggle('hm-col-collapsed');
+          applyColWidths();
+        }
+        refreshAllColHeaderButtons();
+        persistColsLayout();
+      });
+    });
+  }
+
+  /* Drag-to-resize column dividers. Updates _colWidths in px. Skipped
+     when the layout is in narrow-stacked mode (dividers hidden by CSS). */
+  function wireColumnDividers() {
+    document.querySelectorAll('#hm-cols .hm-col-divider').forEach(function (div) {
+      var dragging = false;
+      var startX = 0;
+      var leftIdx = parseInt(div.getAttribute('data-divider'), 10); /* 0 or 1 */
+      var rightIdx = leftIdx + 1;
+      var startLeftW = 0;
+      var startRightW = 0;
+      div.addEventListener('mousedown', function (e) {
+        if (document.body.classList.contains('hm-cols-stacked')) return;
+        var leftCol = document.querySelector('.hm-col[data-col="' + COL_IDS[leftIdx] + '"]');
+        var rightCol = document.querySelector('.hm-col[data-col="' + COL_IDS[rightIdx] + '"]');
+        if (!leftCol || !rightCol) return;
+        startX = e.clientX;
+        startLeftW = leftCol.getBoundingClientRect().width;
+        startRightW = rightCol.getBoundingClientRect().width;
+        dragging = true;
+        document.body.classList.add('hm-col-resizing');
+        e.preventDefault();
+      });
+      function onMove(e) {
+        if (!dragging) return;
+        var delta = e.clientX - startX;
+        var newLeft = Math.max(COL_MIN_W, startLeftW + delta);
+        var newRight = Math.max(COL_MIN_W, startRightW - delta);
+        /* Both must respect their min — if the user drags beyond, lock at min. */
+        if (startLeftW + delta < COL_MIN_W) newRight = startRightW + (startLeftW - COL_MIN_W);
+        if (startRightW - delta < COL_MIN_W) newLeft = startLeftW + (startRightW - COL_MIN_W);
+        _colWidths[leftIdx] = Math.round(newLeft);
+        _colWidths[rightIdx] = Math.round(newRight);
+        applyColWidths();
+      }
+      function onUp() {
+        if (!dragging) return;
+        dragging = false;
+        document.body.classList.remove('hm-col-resizing');
+        persistColsLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  /* Track viewport width to toggle .hm-cols-stacked on body. Below
+     STACK_NARROW_W, columns stack vertically (CSS-driven); above,
+     the 3-column grid layout applies. */
+  function refreshStackedFlag() {
+    var vw = document.documentElement.clientWidth || window.innerWidth || 1920;
+    var stacked = vw < STACK_NARROW_W;
+    document.body.classList.toggle('hm-cols-stacked', stacked);
+    refreshAllMoveButtons();
+  }
+  window.addEventListener('resize', function () {
+    refreshStackedFlag();
+  });
 
   function initGridStack() {
     if (!window.GridStack) {
       console.warn('[gridstack] library not loaded — skipping layout init');
       return;
     }
-    /* Try to restore saved layout. Shape: [{id, x, y, w, h}, ...] */
-    var saved = null;
-    try {
-      var raw = localStorage.getItem(LAYOUT_KEY);
-      if (raw) saved = JSON.parse(raw);
-    } catch (e) {}
 
-    /* Apply the active breakpoint's layout override to HTML attributes,
-       THEN scale gs-h / gs-y by GS_SCALE (40). The override path lets
-       a non-desktop breakpoint replace x/y/w/h with values designed
-       for its column count — e.g. 12-col layout puts most panels at
-       w=12 (full) or w=6 (half) instead of the 24-col defaults. Heights
-       in the override are raw (not pre-scaled) so the scaling pass
-       below treats them identically to the HTML defaults.
-       Also enforces a universal min width of 3 columns. */
-    var bpLayout = ACTIVE_BREAKPOINT.layoutOverride;
-    document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-      var id = item.getAttribute('gs-id');
-      if (!id) return;
-      /* Apply breakpoint override if one exists for this id. */
-      if (bpLayout && bpLayout[id]) {
-        var o = bpLayout[id];
-        item.setAttribute('gs-x', o.x);
-        item.setAttribute('gs-y', o.y);
-        item.setAttribute('gs-w', o.w);
-        item.setAttribute('gs-h', o.h);
-      }
+    /* 1. Restore saved layout (or build defaults). Apply it BEFORE
+       initializing GridStacks so panels are in their intended columns
+       at init-time and the per-grid instance only sees its own panels. */
+    var savedState = loadColsLayout() || buildDefaultColsState();
+    applyColsLayout(savedState);
+
+    /* 2. Pre-scale gs-h × GS_SCALE so cellHeight: 1 (1px rows) gives
+       the same visual default heights as before. */
+    document.querySelectorAll('#hm-cols .grid-stack-item').forEach(function (item) {
       var hOrig = parseInt(item.getAttribute('gs-h') || 4, 10);
-      var yOrig = parseInt(item.getAttribute('gs-y') || 0, 10);
-      var hNew = hOrig * GS_SCALE;
-      var yNew = yOrig * GS_SCALE;
-      item.setAttribute('gs-h', hNew);
-      item.setAttribute('gs-y', yNew);
-      // Universal min width (only set if not already explicitly overridden).
-      if (!item.hasAttribute('gs-min-w')) item.setAttribute('gs-min-w', '3');
-      DEFAULT_LAYOUT[id] = {
-        x: parseInt(item.getAttribute('gs-x') || 0, 10),
-        y: yNew,
-        w: parseInt(item.getAttribute('gs-w') || ACTIVE_BREAKPOINT.cols, 10),
-        h: hNew,
-      };
+      item.setAttribute('gs-h', hOrig * GS_SCALE);
+      /* y is recomputed by gridstack at init when column: 1, so we
+         can leave gs-y as authored (raw, unscaled) — gridstack will
+         normalize positions per column. Actually safer to drop gs-y
+         entirely so gridstack stacks panels in DOM order without
+         honoring stale y values. */
+      item.removeAttribute('gs-y');
+      /* Drop x — column: 1 means there's only one position. */
+      item.removeAttribute('gs-x');
+      item.removeAttribute('gs-w');
     });
 
-    /* Inject Windows-style header bar into every grid-stack-item. Must happen
-       BEFORE GridStack.init — the draggable.handle selector is bound at
-       init time, so the handle elements need to exist already. We wrap
-       header + panel content in a single .hm-panel-wrap so that
-       Gridstack's resizeToContent (which measures
-       .grid-stack-item-content's firstElementChild) sees the FULL height
-       — header + content — instead of just the 24px header. */
-    document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-      var content = item.querySelector('.grid-stack-item-content');
-      if (!content || content.querySelector('.hm-panel-wrap')) return;
+    /* 3. Inject Windows-style header bar into every panel. Must happen
+       BEFORE GridStack.init -- gridstack's drag handle selector
+       (.hm-panel-header) is bound at init time. Header chrome:
+         info, move-left, up, down, move-right, [stack], download, close
+       Pin and reset buttons removed in the 3-column refactor. */
+    document.querySelectorAll("#hm-cols .grid-stack-item").forEach(function (item) {
+      var content = item.querySelector(".grid-stack-item-content");
+      if (!content || content.querySelector(".hm-panel-wrap")) return;
       var existing = Array.from(content.children);
-      var wrap = document.createElement('div');
-      wrap.className = 'hm-panel-wrap';
-      var header = document.createElement('div');
-      header.className = 'hm-panel-header';
+      var wrap = document.createElement("div");
+      wrap.className = "hm-panel-wrap";
+      var header = document.createElement("div");
+      header.className = "hm-panel-header";
       header.innerHTML =
-        /* Info button is built for ALL panels (cheap), but only OPENED on
-           click if the panel has registered info content. We add it here
-           rather than conditionally so renderers that finish later can
-           register info without re-wiring the header. The button stays
-           hidden via CSS when no info is registered. */
         '<button class="hm-panel-btn hm-panel-info" type="button" data-action="info" title="About this panel" aria-label="About this panel">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>' +
         '</button>' +
-        '<button class="hm-panel-btn hm-panel-pin" type="button" data-action="pin" title="Pin to top" aria-label="Pin to top">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/></svg>' +
+        '<button class="hm-panel-btn hm-panel-move-left" type="button" data-action="move-left" title="Move to column on the left" aria-label="Move left">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
         '</button>' +
-        /* Stack-orientation toggle: hidden by default, shown only on panels
-           tagged `hm-has-stack` (renderer opts in). Switches between
-           horizontal multi-column layout and a single vertical stack.
-           Icon shows three vertical bars (the "columns" layout). When
-           in vertical mode the button gets `.active` (gold tint). */
+        '<button class="hm-panel-btn hm-panel-move-up" type="button" data-action="move-up" title="Move up" aria-label="Move up">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>' +
+        '</button>' +
+        '<button class="hm-panel-btn hm-panel-move-down" type="button" data-action="move-down" title="Move down" aria-label="Move down">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+        '</button>' +
+        '<button class="hm-panel-btn hm-panel-move-right" type="button" data-action="move-right" title="Move to column on the right" aria-label="Move right">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+        '</button>' +
         '<button class="hm-panel-btn hm-panel-stack" type="button" data-action="stack" title="Switch to vertical stack" aria-label="Toggle stack orientation">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="4" height="16"/><rect x="10" y="4" width="4" height="16"/><rect x="16" y="4" width="4" height="16"/></svg>' +
         '</button>' +
-        /* Download as image — captures the panel content (gold band +
-           body, but not the window navbar above) and triggers a PNG
-           download with a stablebread.com/macro watermark burned in.
-           Always visible on every panel. The html-to-image library
-           that powers it is lazy-loaded on first click so the ~95%
-           of users who don't export don't pay the 50KB cost. */
         '<button class="hm-panel-btn hm-panel-export" type="button" data-action="export" title="Download as image" aria-label="Download as image">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-        '</button>' +
-        '<button class="hm-panel-btn hm-panel-reset" type="button" data-action="reset" title="Reset size" aria-label="Reset size">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>' +
         '</button>' +
         '<button class="hm-panel-btn hm-panel-close" type="button" data-action="close" title="Hide panel (re-add via Customize view)" aria-label="Hide panel">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>' +
@@ -10246,98 +10527,38 @@
       content.appendChild(wrap);
     });
 
-    /* Disable GridStack's drag-time auto-scroll entirely. Default
-       behavior chases the cursor on every mousemove (especially
-       runaway when the dragged element is taller than the viewport),
-       making it impossible to place panels precisely. With this
-       disabled the user wheel-scrolls / keyboard-scrolls manually
-       while dragging — predictable and never overshoots. */
+    /* Disable GridStack's drag-time auto-scroll (chases cursor). */
     if (window.GridStack && GridStack.Utils) {
-      GridStack.Utils.updateScrollPosition = function () { /* no-op */ };
-      console.info('[heatmap] gridstack auto-scroll disabled');
+      GridStack.Utils.updateScrollPosition = function () {};
     }
 
-    gridInstance = GridStack.init({
-      /* Column count is breakpoint-dependent: 24 at desktop (≥1300px),
-         12 at smaller viewports. The 24-col grid gives fine-grained
-         width control on desktop; the 12-col one matches a hand-
-         designed layout where panels are sized for laptop/tablet
-         pixel widths (most go full or half). */
-      column: ACTIVE_BREAKPOINT.cols,
-      /* 1px row resolution. With cellHeight: 1, fitToContent's
-         ceil((wrap+inset)/cellHeight) gives EXACT cell heights — no
-         rounding overshoot. HTML gs-h/gs-y values were pre-scaled by
-         GS_SCALE (40) above to keep the visual layout identical. */
+    /* 4. One GridStack per column, sharing options. Single-column,
+       no user-resize, drag-between-grids enabled, sizeToContent. */
+    var sharedOpts = {
+      column: 1,
       cellHeight: 1,
-      marginLeft: 8, marginRight: 8, marginTop: 8, marginBottom: 8,
-      /* float: true preserves explicit gs-y positions (no auto-compact),
-         so users can drag a panel anywhere and leave empty space
-         above/below it. float:false forced grid compaction which made
-         vertical drags feel like swaps (couldn't place freely). */
-      float: true,
-      alwaysShowResizeHandle: true,
-      /* Resize from left, right, bottom, and bottom corners only. The top
-         edge (and top corners) are reserved for the header — that's the
-         drag handle, not a resize zone. Avoids the muscle-memory mistake
-         of grabbing the title bar to "move" the panel and instead doing
-         a vertical resize. */
-      resizable: { handles: 'e, s, w, se, sw' },
-      /* Drag ONLY from the window-style header bar — prevents accidental
-         drags when users interact with charts/tables inside panels.
-         distance:0 removes the ~5px drag-start threshold so drag engages
-         instantly when you grab the header (no "stuck" feel). */
-      draggable: { handle: '.hm-panel-header', distance: 0 },
-      /* animate:true (gridstack default ~300ms) so OTHER panels
-         reflowing around a drop slide smoothly into their new
-         positions. The actively-dragged item + the placeholder
-         keep transitions OFF (via .hm-active-drag CSS) for snappy
-         cursor tracking. */
+      marginLeft: 0, marginRight: 0, marginTop: 6, marginBottom: 6,
+      float: false,
       animate: true,
-      disableOneColumnMode: false,
-      minRow: 1,
-      /* Cap how far down panels can be dragged/resized. Desktop's
-         deepest panel ends at gs-y(130) + gs-h(22) = 152 raw, scaled
-         by GS_SCALE(40) = 6080 cells. Compact (12-col) layout stacks
-         taller — gs-y(225) + gs-h(22) = 247 raw = 9880 cells. 12000
-         cells (= 300 raw units) covers both with ~80 raw headroom for
-         enlarging tall panels. Without this cap, panels could be
-         dragged to gs-y=99999 and the grid expands forever. */
-      maxRow: 12000,
-      /* Native auto-fit-to-content for height. Gridstack uses a
-         ResizeObserver on each panel's content child and adjusts the
-         cell h whenever the content's measured size changes (period
-         pill toggle, container-query reflow on width change, async
-         chart paint, theme switch, etc.). Replaces the manual
-         wrap.scrollHeight measurement we had at v3 — same effective
-         behavior but without our custom timing/re-fit code, and
-         covers content-mutation cases (DOM updates) that the manual
-         on-resizestop pass missed. */
+      resizable: { handles: '' },
+      disableResize: true,
+      draggable: { handle: '.hm-panel-header', distance: 0 },
+      acceptWidgets: '.grid-stack-item',
       sizeToContent: true,
-    }, '#hm-grid');
-    /* Drag + resize are always enabled — the narrow header and hit-zoned
-       resize edges make accidental manipulation unlikely. */
-    gridInstance.enableMove(true);
-    gridInstance.enableResize(true);
-    /* Exposed globally so other modules (pin, reset, customize) can use it. */
+    };
+    COL_IDS.forEach(function (cid) {
+      var sel = '.hm-col[data-col="' + cid + '"] .hm-col-body';
+      var el = document.querySelector(sel);
+      if (!el) return;
+      var g = GridStack.init(sharedOpts, el);
+      colGrids[cid] = g;
+      g.enableMove(true);
+      g.enableResize(false);
+    });
+    gridInstance = colGrids.center || colGrids.left || colGrids.right;
     window.gridInstance = gridInstance;
 
-    if (saved && Array.isArray(saved) && saved.length) {
-      /* Apply saved positions/sizes without re-creating DOM. */
-      try { gridInstance.load(saved, false); }
-      catch (e) { console.warn('[gridstack] failed to restore saved layout:', e); }
-    }
-    /* gs-h values in the HTML are calibrated to match natural content height,
-       so no auto-fit pass is needed — first paint is correct, no flicker. */
-
-    /* Restore pinned panels: any item whose id is in the pinned list gets
-       removed from gridstack tracking and moved into #hm-pinned-bar. Done
-       AFTER load(saved) so saved positions are honored before pinning. */
-    restorePinnedFromStorage();
-    refreshAllPinIcons();
-
-    /* Wire header button clicks via delegation — works for items in both
-       #hm-grid and #hm-pinned-bar. stopPropagation prevents the click from
-       being interpreted as the start of a drag. */
+    /* 5. Header button click delegation. */
     document.addEventListener('click', function (e) {
       var btn = e.target.closest && e.target.closest('.hm-panel-btn');
       if (!btn) return;
@@ -10347,24 +10568,21 @@
       if (!id) return;
       e.stopPropagation();
       var action = btn.getAttribute('data-action');
-      if (action === 'pin') {
-        if (isPinned(id)) unpinItemById(id);
-        else pinItemById(id);
-        refreshAllPinIcons();
-      } else if (action === 'reset') {
-        resetItemSize(id);
-      } else if (action === 'stack') {
+      if (action === 'stack') {
         toggleStackOrientation(id);
       } else if (action === 'export') {
         exportPanelImage(item, btn);
       } else if (action === 'info') {
         toggleInfoPopup(item, id, btn);
+      } else if (action === 'move-up') {
+        movePanelUp(id);
+      } else if (action === 'move-down') {
+        movePanelDown(id);
+      } else if (action === 'move-left') {
+        movePanelToCol(id, 'left');
+      } else if (action === 'move-right') {
+        movePanelToCol(id, 'right');
       } else if (action === 'close') {
-        /* Special case: the chart panel only exists in the grid while
-           metrics are selected from the heat map. Clicking close should
-           clear the selection so the panel disappears (and so re-selecting
-           a metric brings it back). setBlockHidden would just toggle the
-           Customize visibility flag, which loses sync with chartState. */
         if (id === 'hm-chart-section' && typeof chartState !== 'undefined') {
           chartState.selected = [];
           document.querySelectorAll('.hm-cb').forEach(function (cb) { cb.checked = false; });
@@ -10374,45 +10592,23 @@
           if (typeof renderCharts === 'function') renderCharts();
           return;
         }
-        /* Default: hide the panel via the existing customize-view system so
-           the Customize panel checkbox reflects state and re-add works. If
-           the panel is currently pinned, unpin first so it's back in the
-           grid when applyBlockVisibility runs. */
-        if (isPinned(id)) {
-          unpinItemById(id);
-          refreshAllPinIcons();
-        }
         if (typeof setBlockHidden === 'function') setBlockHidden(id, true);
       }
     });
-    /* Header buttons swallow mousedown so Gridstack's drag-start handler
-       doesn't treat a click on the button as the start of a drag. */
     document.addEventListener('mousedown', function (e) {
       if (e.target.closest && e.target.closest('.hm-panel-btn')) {
         e.stopPropagation();
       }
     }, true);
 
-    /* Mark the actively-dragged / resized item with .hm-active-drag so
-       CSS can disable its transition (and the placeholder's) for snappy
-       cursor tracking. Other items keep transitions for smooth reflow.
-       Defensive: GridStack v12's event signature can be (event, item) or
-       (event, items[]) depending on dragger backend, so handle both. */
+    /* 6. Drag-class management for snappy cursor tracking. */
     function _activeDragOn(_event, payload) {
       var nodes = Array.isArray(payload) ? payload : (payload ? [payload] : []);
       nodes.forEach(function (n) {
         var el = n && n.el ? n.el : (n && n.tagName ? n : null);
         if (el && el.classList) el.classList.add('hm-active-drag');
       });
-      /* Body-level flag → CSS disables transitions on ALL grid items
-         while the drag is in flight, so neighbors don't slowly slide
-         into reflow positions (reads as lag when dropping into gaps). */
       document.body.classList.add('hm-grid-dragging');
-      /* Suspend iframe-resizer's MutationObserver during drag.
-         Without this, every panel reflow (push-to-fit shifts ALL
-         neighbors per cursor tick) triggers a body-height
-         recompute + postMessage to the parent page. Compounds
-         into perceptible drag lag in the WordPress embed. */
       if (window.parentIFrame && typeof parentIFrame.autoResize === 'function') {
         try { parentIFrame.autoResize(false); } catch (e) {}
       }
@@ -10422,49 +10618,32 @@
         el.classList.remove('hm-active-drag');
       });
       document.body.classList.remove('hm-grid-dragging');
-      /* Resume iframe-resizer + force one final size sync so the
-         parent page picks up the post-drag layout's true height. */
       if (window.parentIFrame && typeof parentIFrame.autoResize === 'function') {
         try {
           parentIFrame.autoResize(true);
           if (typeof parentIFrame.size === 'function') parentIFrame.size();
         } catch (e) {}
       }
+      refreshAllMoveButtons();
+      persistColsLayout();
     }
-    gridInstance.on('dragstart resizestart', _activeDragOn);
-    gridInstance.on('dragstop resizestop',  _activeDragOff);
-    /* Defensive cleanup: if the drag is canceled (Esc, blur, pointer lost)
-       we still want the class gone so the panel doesn't get stuck without
-       transitions. */
+    COL_IDS.forEach(function (cid) {
+      var g = colGrids[cid];
+      if (!g) return;
+      g.on('dragstart', _activeDragOn);
+      g.on('dragstop', _activeDragOff);
+      g.on('change added removed', function () {
+        if (g._suppressSave) return;
+        refreshAllMoveButtons();
+        persistColsLayout();
+      });
+    });
     window.addEventListener('mouseup', _activeDragOff, true);
     window.addEventListener('pointerup', _activeDragOff, true);
     window.addEventListener('pointercancel', _activeDragOff, true);
 
-    /* Persist layout — debounced so we save AFTER the drag/resize
-       settles, not on every mouse-move. The 'change' event fires
-       continuously during a drag (gridstack reflows other panels
-       on every cursor tick); serializing all 18 panels + writing
-       localStorage on every fire was the cause of perceived
-       drag-lag. 250ms after activity stops, we save once. */
-    var saveLayoutTimer = null;
-    gridInstance.on('change removed added', function () {
-      if (gridInstance._suppressSave) return;
-      if (saveLayoutTimer) clearTimeout(saveLayoutTimer);
-      saveLayoutTimer = setTimeout(function () {
-        saveLayoutTimer = null;
-        try {
-          var layout = gridInstance.save(false);  /* false: positions only, no content */
-          localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
-        } catch (e) { /* localStorage quota / private-mode — silently ignore */ }
-      }, 250);
-    });
-
-    /* When a panel resizes, Chart.js instances inside it need to be told to
-       re-measure. The charts themselves have responsive: true + maintainAspectRatio:
-       false, so they'll auto-fit once their canvas box changes — but Chart.js
-       only listens to window resize. Poke each chart manually. */
-    gridInstance.on('resizestop', function (event, el) {
-      /* Iterate all chart instances we track and ask each to resize. Cheap. */
+    /* 7. Window-resize re-measures Chart.js instances. */
+    window.addEventListener('resize', function () {
       var pools = [
         typeof chartInstances !== 'undefined' ? chartInstances : [],
         typeof gaveChartInstances !== 'undefined' ? gaveChartInstances : [],
@@ -10480,241 +10659,21 @@
           }
         });
       });
-
-      /* Height refit on resize is now handled natively by
-         gridstack's sizeToContent: true (set in init opts) — the
-         library's ResizeObserver detects content reflow on cell
-         width change and adjusts h automatically. */
     });
 
-    /* Edge auto-scroll while dragging: when the cursor approaches the top
-       or bottom of the (parent) viewport during a drag, scroll the page
-       proportionally so the user can drop the panel anywhere on the
-       dashboard without having to manually scroll mid-drag.
-       Standard pattern used in Trello/Linear/Asana drag-drop. */
-    setupDragAutoScroll();
+    /* 8. Wire column features. */
+    wireColumnHeaders();
+    wireColumnDividers();
+    refreshStackedFlag();
+    refreshAllMoveButtons();
   }
 
-  function setupDragAutoScroll() {
-    var HOT_ZONE = 80;       /* px from edge that triggers scroll */
-    var MAX_SPEED = 14;      /* max px per frame at the very edge */
-    var dragging = false;
-    var mouseY = 0;
-    var rafId = null;
-    /* iframe-resizer (when running embedded in WordPress) caches parent
-       page geometry here so we can compute the cursor's position in the
-       PARENT viewport and scroll the parent — not the iframe. */
-    var pageInfo = null;
-    if (window.parentIFrame && typeof parentIFrame.getPageInfo === 'function') {
-      try { parentIFrame.getPageInfo(function (info) { pageInfo = info; }); }
-      catch (e) {}
-    }
-
-    function onMouseMove(e) { mouseY = e.clientY; }
-
-    function tick() {
-      if (!dragging) { rafId = null; return; }
-      var topDist, bottomDist, vh;
-      if (pageInfo && window.parentIFrame) {
-        /* In parent-viewport coords. iframe top in parent viewport =
-           iframe doc offset - parent scroll. */
-        var iframeTopInParent = pageInfo.offsetTop - pageInfo.scrollTop;
-        var cursorInParent = mouseY + iframeTopInParent;
-        topDist = cursorInParent;
-        bottomDist = pageInfo.windowHeight - cursorInParent;
-        vh = pageInfo.windowHeight;
-      } else {
-        topDist = mouseY;
-        bottomDist = window.innerHeight - mouseY;
-        vh = window.innerHeight;
-      }
-      var speed = 0;
-      if (topDist < HOT_ZONE) {
-        speed = -Math.ceil(MAX_SPEED * (1 - Math.max(0, topDist) / HOT_ZONE));
-      } else if (bottomDist < HOT_ZONE) {
-        speed = Math.ceil(MAX_SPEED * (1 - Math.max(0, bottomDist) / HOT_ZONE));
-      }
-      if (speed !== 0) {
-        if (window.parentIFrame && typeof parentIFrame.scrollBy === 'function') {
-          try { parentIFrame.scrollBy(0, speed); } catch (e) { window.scrollBy(0, speed); }
-        } else {
-          window.scrollBy(0, speed);
-        }
-      }
-      rafId = requestAnimationFrame(tick);
-    }
-
-    function startDrag() {
-      if (dragging) return;
-      dragging = true;
-      document.addEventListener('mousemove', onMouseMove, true);
-      if (rafId == null) rafId = requestAnimationFrame(tick);
-    }
-    function stopDrag() {
-      dragging = false;
-      document.removeEventListener('mousemove', onMouseMove, true);
-      if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
-    }
-
-    gridInstance.on('dragstart resizestart', startDrag);
-    gridInstance.on('dragstop resizestop', stopDrag);
-
-    /* Safety nets: if Gridstack ever fires dragstart/resizestart without a
-       matching stop (drag canceled, pointer capture lost, tab blurred, etc.),
-       the mousemove listener would stay attached and the page would auto-scroll
-       on every cursor movement near the edges — exactly the "scrolls by mouse
-       hover" bug. These listeners ensure stopDrag fires no matter what. */
-    window.addEventListener('mouseup',     stopDrag, true);
-    window.addEventListener('pointerup',   stopDrag, true);
-    window.addEventListener('pointercancel', stopDrag, true);
-    window.addEventListener('blur',        stopDrag);
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) stopDrag();
-    });
-  }
-
-  /* Expose a reset function for the customize panel "Show all" button to clear
-     the saved layout too, returning to the default DOM-order sizes. */
+  /* Customize panel "Show all" button: clear saved layout, reload. */
   function resetGridLayout() {
-    try { localStorage.removeItem(LAYOUT_KEY); } catch (e) {}
-    if (gridInstance) {
-      /* Easiest reliable reset: reload the page. Rebuilding the grid in place
-         is fragile because each panel's internal Chart.js instances would need
-         to be destroyed and re-created. */
-      window.location.reload();
-    }
+    try { localStorage.removeItem(COLS_LAYOUT_KEY); } catch (e) {}
+    window.location.reload();
   }
 
-  /* ---------- Pin to top ---------- */
-  /* Right-click any panel → context menu offers "Pin to top". Pinned panels
-     are detached from Gridstack and moved into #hm-pinned-bar (sticky below
-     topbar). DOM nodes are preserved so Chart.js instances inside keep
-     working. State persists in localStorage. */
-  var PINNED_KEY = 'hm-pinned-ids';
-  /* User-resizable pinned-bar height: persisted as a px integer.
-     Default falls back to CSS max-height: 50vh when key is unset.
-     Minimum height = the smallest possible panel (Index Snapshot,
-     gs-h=4 → 4 × GS_SCALE = 160px) + the bar's own 12px top + 12px
-     bottom padding = 184px. Lets a user shrink the bar to exactly
-     fit one Index Snapshot card without clipping. */
-  var PINNED_BAR_H_KEY = 'hm-pinned-bar-h';
-  var PINNED_BAR_MIN_PX = (4 * GS_SCALE) + 24;
-
-  function applyPinnedBarHeight() {
-    var bar = document.getElementById('hm-pinned-bar');
-    if (!bar) return;
-    var saved = parseInt(localStorage.getItem(PINNED_BAR_H_KEY) || '0', 10);
-    if (saved > 0) {
-      var clamped = Math.max(PINNED_BAR_MIN_PX, Math.min(window.innerHeight * 0.9, saved));
-      bar.style.maxHeight = clamped + 'px';
-    } else {
-      bar.style.maxHeight = '';  /* fall back to CSS default (50vh) */
-    }
-  }
-
-  function _initPinnedBarResizer() {
-    var resizer = document.getElementById('hm-pinned-bar-resizer');
-    var bar = document.getElementById('hm-pinned-bar');
-    if (!resizer || !bar) return;
-    resizer.addEventListener('mousedown', function (e) {
-      e.preventDefault();
-      var startY = e.clientY;
-      var startH = bar.getBoundingClientRect().height;
-      resizer.classList.add('is-dragging');
-      document.body.classList.add('hm-pinned-bar-resizing');
-      function onMove(ev) {
-        var delta = ev.clientY - startY;
-        var newH = Math.max(PINNED_BAR_MIN_PX,
-                            Math.min(window.innerHeight * 0.9, startH + delta));
-        bar.style.maxHeight = newH + 'px';
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        resizer.classList.remove('is-dragging');
-        document.body.classList.remove('hm-pinned-bar-resizing');
-        var h = parseInt(bar.style.maxHeight, 10);
-        if (h > 0) {
-          try { localStorage.setItem(PINNED_BAR_H_KEY, h); } catch (e) {}
-        }
-      }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-    /* Re-clamp on window resize so a saved height larger than the new
-       viewport collapses to 90vh instead of going off-screen. */
-    window.addEventListener('resize', applyPinnedBarHeight);
-  }
-  applyPinnedBarHeight();
-  _initPinnedBarResizer();
-
-  function getPinned() {
-    try {
-      var arr = JSON.parse(localStorage.getItem(PINNED_KEY) || '[]');
-      return Array.isArray(arr) ? arr : [];
-    } catch (e) { return []; }
-  }
-  function savePinned(ids) {
-    try { localStorage.setItem(PINNED_KEY, JSON.stringify(ids)); } catch (e) {}
-  }
-  function isPinned(id) { return getPinned().indexOf(id) >= 0; }
-
-  function pinItemById(id) {
-    if (!gridInstance) return;
-    /* Idempotent move: only act if the item is still in the grid. (On
-       initial restore, the localStorage list already contains the id —
-       the DOM move is what's missing.) */
-    var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
-    if (!item) return;
-    /* Save current size so we can restore on unpin. node.w is in grid
-       columns (24-col grid). node.h is in cells; with cellHeight:1 and
-       gs-h pre-scaled by GS_SCALE, node.h equals the rendered pixel
-       height — perfect for inline `height: Xpx` on the pinned item. */
-    var node = item.gridstackNode;
-    var origW = (node && node.w) || parseInt(item.getAttribute('gs-w') || 24, 10);
-    var origH = (node && node.h) || parseInt(item.getAttribute('gs-h') || (4 * GS_SCALE), 10);
-    if (node) {
-      item.dataset.unpinW = node.w;
-      item.dataset.unpinH = node.h;
-    }
-    /* Remove from gridstack tracking but keep DOM (second arg = removeDOM=false). */
-    try { gridInstance.removeWidget(item, false, false); } catch (e) {}
-    /* Strip Gridstack's inline positioning, then write back the user's
-       chosen size so the pinned panel keeps the W×H they had in the
-       grid (instead of resetting to a fixed pinned-bar size). */
-    item.style.left = '';
-    item.style.top = '';
-    item.style.transform = '';
-    /* Width: % of the dashboard width matching the user's column span
-       (out of 24). Minimum 240px so a 3-col panel still reads. The
-       `% - 12px` offset accounts for the pinned-bar's gap between items. */
-    var pct = Math.max(20, Math.min(100, Math.round((origW / 24) * 100)));
-    item.style.width = 'max(240px, ' + pct + '% - 12px)';
-    /* Height: cap at the user's gs-h (so a tall heatmap still scrolls
-       inside the bar instead of swallowing the page) but let panels
-       SHRINK to natural content height when their content is shorter
-       than gs-h. Otherwise pinned panels show a large dead band of
-       empty space below their content (their grid cells are sized for
-       headroom, not measured to fit). */
-    item.style.height = '';
-    item.style.maxHeight = origH + 'px';
-    var bar = document.getElementById('hm-pinned-bar');
-    if (bar) bar.appendChild(item);
-    /* Persist if not already there. */
-    var pinned = getPinned();
-    if (pinned.indexOf(id) < 0) {
-      pinned.push(id);
-      savePinned(pinned);
-    }
-    if (typeof refreshUnpinAllVisibility === 'function') refreshUnpinAllVisibility();
-  }
-
-  /* Toggle a per-panel info popup. Renderers populate
-     window.PANEL_INFO_HTML[id] (string OR function returning a string) when
-     they want to expose explanation. The popup is built fresh on each open
-     so dynamic data (e.g. as_of date) stays current. Single-popup-at-a-time:
-     opening a new one closes any other. Clicking outside or pressing Escape
-     closes. */
   function toggleInfoPopup(item, id, anchorBtn) {
     /* Close any open popup. If it's THIS panel's popup, return (toggle off). */
     var existingForThis = document.querySelector('.hm-panel-info-popup[data-for-id="' + id + '"]');
@@ -10767,45 +10726,6 @@
       document.querySelectorAll('.hm-panel-info-popup').forEach(function (p) { p.remove(); });
     }
   });
-
-  function unpinItemById(id) {
-    if (!gridInstance) return;
-    var item = document.querySelector('#hm-pinned-bar > .grid-stack-item[gs-id="' + id + '"]');
-    if (!item) return;
-    var w = parseInt(item.dataset.unpinW || item.getAttribute('gs-w') || 24, 10);
-    var h = parseInt(item.dataset.unpinH || item.getAttribute('gs-h') || (4 * GS_SCALE), 10);
-    item.setAttribute('gs-w', w);
-    item.setAttribute('gs-h', h);
-    /* Clear the inline width + height + maxHeight we set in pinItemById
-       so Gridstack can size the item by gs-w/gs-h again. */
-    item.style.width = '';
-    item.style.height = '';
-    item.style.maxHeight = '';
-    var grid = document.getElementById('hm-grid');
-    if (grid) grid.appendChild(item);
-    try { gridInstance.makeWidget(item); } catch (e) {}
-    var pinned = getPinned().filter(function (p) { return p !== id; });
-    savePinned(pinned);
-    if (typeof refreshUnpinAllVisibility === 'function') refreshUnpinAllVisibility();
-  }
-
-  function restorePinnedFromStorage() {
-    var pinned = getPinned();
-    pinned.forEach(function (id) { pinItemById(id); });
-  }
-
-  /* Update the pin-button active state on every panel's header so the icon
-     reflects current pin state. Called after any pin/unpin. */
-  function refreshAllPinIcons() {
-    document.querySelectorAll('.grid-stack-item[gs-id]').forEach(function (item) {
-      var id = item.getAttribute('gs-id');
-      var btn = item.querySelector('.hm-panel-pin');
-      if (!btn) return;
-      var pinned = isPinned(id);
-      btn.classList.toggle('active', pinned);
-      btn.setAttribute('title', pinned ? 'Unpin from top' : 'Pin to top');
-    });
-  }
 
   /* ---- Image export ---- */
   /* Lazy-load html-to-image: ~50KB, only fetched on first export click.
@@ -11053,20 +10973,12 @@
      layout). Stored under its own key so a layout-version bump
      (LAYOUT_KEY) doesn't wipe the orientation preference. */
   var STACK_KEY = 'hm-stack-orientations-v1';
-  /* Vertical-mode default width per panel id. Both the stack-toggle
-     button AND the reset button apply this — toggling to vertical
-     auto-resizes to the per-panel vertical width, and toggling
-     back to horizontal restores DEFAULT_LAYOUT[id].w.
-     Breakpoint-aware: at 24 cols a 6-cell width = 25% of grid; at
-     12 cols the equivalent visual width is 3 cells (still 25%) —
-     but 3 is too narrow for a list, so we use 6 (= 50% of grid)
-     for the 12-col breakpoint, matching the breakpoint's "half-
-     width panel" convention. */
-  var STACK_VERTICAL_W_BY_COLS = {
-    24: { 'hm-factors': 6, 'hm-fixed-income': 6, 'hm-global-indexes': 6, 'hm-country-etfs': 6, 'hm-commodity-perf': 6 },
-    12: { 'hm-factors': 6, 'hm-fixed-income': 6, 'hm-global-indexes': 6, 'hm-country-etfs': 6, 'hm-commodity-perf': 6 },
-  };
-  var STACK_VERTICAL_W = STACK_VERTICAL_W_BY_COLS[ACTIVE_BREAKPOINT.cols] || STACK_VERTICAL_W_BY_COLS[24];
+  /* Stack-toggle no longer changes panel widths in the 3-column
+     refactor — column width sets panel width, period. The vertical
+     stack class flip changes only the panel's internal layout (cols
+     -> single column). Kept this sentinel for any older code that
+     reads STACK_VERTICAL_W. */
+  var STACK_VERTICAL_W = {};
   function loadStackMap() {
     try {
       var raw = localStorage.getItem(STACK_KEY);
@@ -11100,10 +11012,11 @@
       : 'Switch to vertical stack');
   }
   /* Toggle a panel's orientation: flip the .hm-stack-vertical class,
-     persist, refresh button, then refit the cell to its new content
-     height (vertical mode is much taller — 3 cols stacked vs. 3 cols
-     side-by-side). Uses the same maxH-unlock-then-relock dance that
-     resetItemSize uses so the panel can grow past its old height. */
+     persist the choice. With sizeToContent: true on each per-column
+     gridstack, the cell h adjusts automatically when the internal
+     layout reflows. No width changes (column width sets panel width
+     in the 3-column layout). No maxH dance — height is always
+     content-driven now. */
   function toggleStackOrientation(id) {
     var item = document.querySelector('.grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
@@ -11111,275 +11024,7 @@
     item.classList.toggle('hm-stack-vertical', nowVertical);
     setStackOrientation(id, nowVertical ? 'vertical' : 'horizontal');
     refreshStackBtn(item);
-    /* Refit cell height to the reflowed content. Skip if the panel is
-       pinned (lives outside gridInstance) or pinned items would error
-       on resizeToContent. */
-    if (!window.gridInstance) return;
-    if (typeof isPinned === 'function' && isPinned(id)) return;
-    /* Determine the orientation-appropriate width:
-       - Going vertical → STACK_VERTICAL_W[id] (e.g. 6 for ranking panels)
-       - Going horizontal → DEFAULT_LAYOUT[id].w (the original wide default)
-       Auto-applying the width on toggle avoids a class of bugs where
-       toggling at a manually-resized width leaves the cell sized
-       for a width-dependent layout state (e.g. period pills wrapped
-       to 2 rows) that doesn't match the user's subsequent resizing.
-       Reset button uses the same widths via STACK_VERTICAL_W /
-       DEFAULT_LAYOUT lookup, so reset and toggle stay consistent. */
-    var def = DEFAULT_LAYOUT[id];
-    var targetW;
-    if (nowVertical && STACK_VERTICAL_W[id] != null) {
-      targetW = STACK_VERTICAL_W[id];
-    } else if (def) {
-      targetW = def.w;
-    }
-    /* Mirror resetItemSize's call sequence: unlock maxH/minH, set w,
-       force a synchronous layout flush, then resizeToContent so the
-       new height reads off the post-toggle layout. */
-    item.classList.add('hm-no-transition');
-    try {
-      gridInstance.update(item, { maxH: 9999, minH: 1 });
-      if (targetW != null) {
-        gridInstance.update(item, { w: targetW });
-      }
-      void item.offsetHeight;
-      gridInstance.resizeToContent(item);
-      var node = item.gridstackNode;
-      if (node) {
-        var minH = (typeof computePanelMinH === 'function')
-          ? computePanelMinH(item) : 70;
-        gridInstance.update(item, { maxH: node.h, minH: minH });
-        /* Refresh the per-panel reset snapshot so a later reset click
-           restores to THIS orientation's content height — not the
-           stale one captured at first paint in the other layout. */
-        if (typeof INITIAL_H !== 'undefined') INITIAL_H[id] = node.h;
-      }
-    } catch (e) {}
-    requestAnimationFrame(function () {
-      item.classList.remove('hm-no-transition');
-    });
   }
-
-  /* Reset a single panel to its default size (and return to grid if pinned).
-     Both w and h are restored verbatim from snapshots:
-       - w  comes from DEFAULT_LAYOUT (raw HTML gs-w, doesn't change post-init)
-       - h  comes from INITIAL_H (post-fitAll, post-async-paint settled value)
-     No re-measurement at click time — the snapshot IS what the user saw on
-     fresh load, so reset is guaranteed identical to first paint. Earlier
-     versions called resizeToContent here, but that re-measured wrap.scrollHeight
-     against a possibly-different DOM state and produced a slightly shorter
-     value than initial fit (root cause not pinpointed; likely Chart.js
-     responsive canvases reflowing differently the second time). */
-  /* Surgical post-reset compact. After resetItemSize shrinks a panel,
-     neighbors directly below it should pull up to fill the gap — but
-     a global gridInstance.compact('list') reflows EVERY panel with a
-     gap above it, including ones the user intentionally placed with
-     space above them. We only want to move panels that were positioned
-     directly below the reset panel + overlapping its x range, by the
-     exact amount the panel shrunk.
-     Takes a snapshot of the reset panel's pre-reset (x, y, w, h),
-     then after the reset is applied, compares post-reset h to find
-     how much it shrunk, and shifts qualifying neighbors up by that
-     delta. Cascading is handled implicitly because neighbors are
-     shifted from their original positions, not chained. */
-  function compactBelowReset(item, oldRect) {
-    if (!gridInstance || !item || !oldRect) return;
-    var node = item.gridstackNode;
-    if (!node) return;
-    var newH = node.h;
-    if (newH >= oldRect.h) return;  /* grew or stayed same */
-    var shrunkBy = oldRect.h - newH;
-    var rx1 = oldRect.x;
-    var rx2 = oldRect.x + oldRect.w;
-    var oldBottom = oldRect.y + oldRect.h;
-    document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (other) {
-      if (other === item) return;
-      var n = other.gridstackNode;
-      if (!n) return;
-      /* Must have been positioned at or below the reset panel's old bottom edge. */
-      if (n.y < oldBottom) return;
-      /* Must overlap the reset panel's x range — panels in unrelated
-         columns are not affected. */
-      var ox1 = n.x;
-      var ox2 = n.x + n.w;
-      if (ox2 <= rx1 || ox1 >= rx2) return;
-      try { gridInstance.update(other, { y: Math.max(0, n.y - shrunkBy) }); } catch (e) {}
-    });
-  }
-
-  /* Capture the reset panel's pre-reset rect so compactBelowReset can
-     compare post-reset h and shift only the qualifying neighbors. */
-  function captureRect(item) {
-    var n = item && item.gridstackNode;
-    if (!n) return null;
-    return { x: n.x, y: n.y, w: n.w, h: n.h };
-  }
-
-  function resetItemSize(id) {
-    if (!gridInstance) return;
-    var def = DEFAULT_LAYOUT[id];
-    if (!def) return;
-    /* If currently pinned, unpin first so the panel is back in the grid. */
-    if (isPinned(id)) {
-      unpinItemById(id);
-      refreshAllPinIcons();
-    }
-    var item = document.querySelector('#hm-grid > .grid-stack-item[gs-id="' + id + '"]');
-    if (!item) return;
-    /* Snapshot pre-reset position/size — used by the surgical compact
-       below to calculate how much the panel shrunk and which
-       neighbors should pull up. */
-    var oldRect = captureRect(item);
-    /* For panels that support the orientation toggle, preserve the
-       user's chosen orientation across reset (it's their preference,
-       not part of "default size") and ALWAYS re-measure the height
-       fresh via resizeToContent. The INITIAL_H snapshot was designed
-       around Chart.js panels whose canvases reflow inconsistently on
-       the second measurement — but the stack-toggle panels (Factors)
-       have no canvases, so resizeToContent is accurate AND avoids the
-       stale-snapshot bug where INITIAL_H was captured in the OTHER
-       orientation and produces empty vertical space on reset. */
-    if (item.classList.contains('hm-has-stack')) {
-      var minHStack = computePanelMinH(item);
-      /* Pick the orientation-appropriate default width: panels with a
-         STACK_VERTICAL_W entry get a narrower default when currently
-         in vertical-stack mode. Falls back to the normal horizontal
-         default everywhere else. */
-      var resetW = (item.classList.contains('hm-stack-vertical') &&
-                    STACK_VERTICAL_W[id] != null)
-        ? STACK_VERTICAL_W[id]
-        : def.w;
-      /* Suspend gridstack's 300ms width-transition for this operation.
-         Otherwise resizeToContent measures scrollHeight while the
-         width is mid-animation and returns a stale (too-tall) value
-         based on the still-narrow layout — exactly the "gap at the
-         bottom on first click" symptom the user reported. With the
-         class on, the width snaps instantly so the very next
-         scrollHeight read reflects the final un-wrapped content. */
-      item.classList.add('hm-no-transition');
-      try {
-        gridInstance.update(item, { maxH: 9999, minH: 1 });
-        gridInstance.update(item, { w: resetW });
-        /* Force synchronous reflow so the browser commits the new
-           width to the layout tree BEFORE we read scrollHeight.
-           Reading offsetHeight is the standard "flush layout" hack. */
-        void item.offsetHeight;
-        gridInstance.resizeToContent(item);
-        var nodeStack = item.gridstackNode;
-        if (nodeStack) {
-          gridInstance.update(item, { maxH: nodeStack.h, minH: minHStack });
-          INITIAL_H[id] = nodeStack.h;
-        }
-        /* Pull only the neighbors directly below + overlapping the
-           reset panel up to fill the gap. Avoids the global compact's
-           "every panel with a gap above moves" behavior. */
-        compactBelowReset(item, oldRect);
-      } catch (e) {}
-      /* Re-enable transitions on the next frame so any subsequent
-         drag/resize/layout reflow animates normally again. Removing
-         synchronously inside the same frame is fine too — by then all
-         our updates are committed and there's nothing left to animate. */
-      requestAnimationFrame(function () {
-        item.classList.remove('hm-no-transition');
-      });
-      return;
-    }
-    /* Chart panel is a special case: the "right" height depends on how
-       many metrics are selected and which view mode is active, so reset
-       width to default and let refitChartSection auto-fit the height
-       to the current chart content. Otherwise the user would reset to a
-       static height that's wrong for their current selection count.
-       minH/minW: same treatment as other panels — minH from
-       computePanelMinH (so the user can't shrink the cell below
-       window-header + gold-band height), minW = a small floor (3
-       cells ≈ 250px) so the chart toolbar buttons stay reachable. */
-    if (id === 'hm-chart-section') {
-      var chartMinH = (typeof computePanelMinH === 'function')
-        ? computePanelMinH(item) : 70;
-      try {
-        gridInstance.update(item, { maxH: 4000, minH: chartMinH, minW: 3 });
-        gridInstance.update(item, { w: def.w });
-        compactBelowReset(item, oldRect);
-      } catch (e) {}
-      if (typeof refitChartSection === 'function') refitChartSection();
-      return;
-    }
-    /* Mirror the stack-reset pattern: unlock, set w only, force a
-       synchronous reflow, then resizeToContent (which now actually
-       fits since the grid has sizeToContent: true), then re-lock
-       maxH at the freshly-measured h. The previous code locked h to
-       INITIAL_H[id] — a snapshot from init time — but content can
-       reflow differently when reset happens (different width than
-       at snapshot, async paint settled differently, period pills in
-       a different state, etc.), and the locked-h fought with
-       sizeToContent's measurement, leaving a gap below content. */
-    var minH = computePanelMinH(item);
-    try {
-      gridInstance.update(item, { maxH: 4000, minH: 1 });
-      gridInstance.update(item, { w: def.w });
-      void item.offsetHeight;
-      gridInstance.resizeToContent(item);
-      var node = item.gridstackNode;
-      if (node) {
-        gridInstance.update(item, { maxH: node.h, minH: minH });
-        INITIAL_H[id] = node.h;
-      }
-      /* Pull only the neighbors directly below + overlapping in x up
-         by exactly how much this panel shrunk. */
-      compactBelowReset(item, oldRect);
-    } catch (e) {}
-  }
-
-  /* Context menu wiring — single shared menu element, positioned per click. */
-  (function setupContextMenu() {
-    var menu = document.getElementById('hm-context-menu');
-    var btn = menu && menu.querySelector('.hm-context-item[data-action="toggle-pin"]');
-    if (!menu || !btn) return;
-    var activeId = null;
-
-    function closeMenu() {
-      menu.hidden = true;
-      activeId = null;
-    }
-    function openMenu(x, y, id) {
-      activeId = id;
-      btn.textContent = isPinned(id) ? 'Unpin from top' : 'Pin to top';
-      menu.hidden = false;
-      /* Clamp to viewport so menu doesn't render off-screen. */
-      var rect = menu.getBoundingClientRect();
-      var maxX = window.innerWidth - rect.width - 4;
-      var maxY = window.innerHeight - rect.height - 4;
-      menu.style.left = Math.max(4, Math.min(x, maxX)) + 'px';
-      menu.style.top = Math.max(4, Math.min(y, maxY)) + 'px';
-    }
-
-    /* Delegate contextmenu on document — fires for items in #hm-grid AND
-       in #hm-pinned-bar. */
-    document.addEventListener('contextmenu', function (e) {
-      var item = e.target.closest && e.target.closest('.grid-stack-item[gs-id]');
-      if (!item) { closeMenu(); return; }
-      /* Only handle items inside our two containers. */
-      var inGrid = !!item.closest('#hm-grid');
-      var inBar = !!item.closest('#hm-pinned-bar');
-      if (!inGrid && !inBar) { closeMenu(); return; }
-      e.preventDefault();
-      openMenu(e.clientX, e.clientY, item.getAttribute('gs-id'));
-    });
-
-    btn.addEventListener('click', function () {
-      if (!activeId) return;
-      if (isPinned(activeId)) unpinItemById(activeId);
-      else pinItemById(activeId);
-      closeMenu();
-    });
-
-    document.addEventListener('click', function (e) {
-      if (menu.hidden) return;
-      if (e.target.closest('#hm-context-menu')) return;
-      closeMenu();
-    });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
-    window.addEventListener('scroll', closeMenu, { passive: true });
-  })();
 
   fetch(HEATMAP_URL + "?t=" + Math.floor(Date.now() / 600000))
     .then(function (r) {
@@ -11418,75 +11063,11 @@
          content would just produce empty space.) */
       safeRender('fitToContent', function () {
         if (!window.gridInstance) return;
-        /* Height auto-fit is now native: sizeToContent: true on grid
-           init opts means gridstack's ResizeObserver auto-resizes each
-           cell h to match its content as soon as the panels render.
-           Replaces the previous manualFitToContent + per-breakpoint
-           branching. We still lock maxH + snapshot INITIAL_H + compact
-           below, all of which run after gridstack has settled. */
-        function fitAll() {
-          window.gridInstance._suppressSave = true;
-          /* Lock maxH on the next tick so it picks up the post-fit h.
-             Also set minH so the user can't shrink a panel below its
-             window-style header (24px) plus the panel's own gold header
-             (~32-44px depending on the panel). minH is computed by
-             measuring the panel-header + the first non-header child
-             inside the card (the gold title bar). 70px minimum keeps
-             "no header" panels (index sparklines) usable. */
-          setTimeout(function () {
-            document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-              var node = item.gridstackNode;
-              if (!node) return;
-              var minH = computePanelMinH(item);
-              try { window.gridInstance.update(item, { maxH: node.h, minH: minH }); } catch (e) {}
-              /* Initial snapshot — what the user sees right now. */
-              var id = item.getAttribute('gs-id');
-              if (id) INITIAL_H[id] = node.h;
-            });
-            /* Compact upward: fitToContent shrunk panels to their actual
-               content size, but with float: true the items kept their
-               original gs-y positions — leaving visible vertical gaps
-               anywhere a panel ended shorter than its declared gs-h.
-               compact('list', false) re-flows items to fill those gaps
-               while preserving each panel's x position (it pulls items
-               up column-by-column without reordering them across
-               columns). Runs once on initial load + after any reset. */
-            try { window.gridInstance.compact('list', false); } catch (e) {}
-            window.gridInstance._suppressSave = false;
-          }, 0);
-          /* Second snapshot 800ms later: by now Chart.js sparklines and any
-             other async-paint content has settled, so node.h reflects the
-             "what's actually on screen, considered correct" state — which
-             is exactly what we want the per-panel reset button to restore. */
-          setTimeout(function () {
-            document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-              var node = item.gridstackNode;
-              if (!node) return;
-              var id = item.getAttribute('gs-id');
-              if (id) INITIAL_H[id] = node.h;
-            });
-          }, 800);
-
-        }
-        fitAll();
-        /* Apply the no-selection state once gridInstance is live: this
-           removes the empty metrics-chart panel from the grid until a
-           user picks rows from the heat map. */
-        updateChartSectionVisibility();
-        /* Visual workaround for the cell-vs-content height gap. */
-        setTimeout(applyCardFillHeights, 200);
-        if (window.gridInstance) {
-          /* Only re-run on user-driven resize/drag END — NOT on every
-             'change' event. 'change' fires for size adjustments triggered
-             by the fill itself (or by Chart.js responsive resize), and
-             that creates a feedback loop where charts (sector / gave /
-             index sparklines) infinitely scroll/resize horizontally. */
-          gridInstance.on('resizestop', function () {
-            requestAnimationFrame(applyCardFillHeights);
-          });
-          gridInstance.on('dragstop', function () {
-            requestAnimationFrame(applyCardFillHeights);
-          });
+        /* sizeToContent: true on each per-column gridstack means
+           panels auto-fit their content height via ResizeObserver.
+           No init-time fit pass needed -- the library handles it. */
+        if (typeof updateChartSectionVisibility === 'function') {
+          updateChartSectionVisibility();
         }
       });
     })
