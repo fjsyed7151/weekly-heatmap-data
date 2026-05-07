@@ -10297,6 +10297,16 @@
          enlarging tall panels. Without this cap, panels could be
          dragged to gs-y=99999 and the grid expands forever. */
       maxRow: 12000,
+      /* Native auto-fit-to-content for height. Gridstack uses a
+         ResizeObserver on each panel's content child and adjusts the
+         cell h whenever the content's measured size changes (period
+         pill toggle, container-query reflow on width change, async
+         chart paint, theme switch, etc.). Replaces the manual
+         wrap.scrollHeight measurement we had at v3 — same effective
+         behavior but without our custom timing/re-fit code, and
+         covers content-mutation cases (DOM updates) that the manual
+         on-resizestop pass missed. */
+      sizeToContent: true,
     }, '#hm-grid');
     /* Drag + resize are always enabled — the narrow header and hit-zoned
        resize edges make accidental manipulation unlikely. */
@@ -10465,51 +10475,10 @@
         });
       });
 
-      /* Universal post-resize refit: re-measure each panel's content
-         height after a user resize and update cell h to match. The
-         previous version called gridInstance.resizeToContent(el),
-         but in gridstack v12 that method early-bails out unless
-         sizeToContent is set on the grid options or the node — and
-         we don't set it. We have to do the measurement manually:
-         read wrap.scrollHeight, compute h in cell units, call
-         update({h}) explicitly. This way the refit actually fires
-         regardless of the sizeToContent flag. Skips chart-section
-         since it has its own refitChartSection logic. */
-      if (el && el.gridstackNode) {
-        var rsId = el.getAttribute('gs-id');
-        if (rsId !== 'hm-chart-section') {
-          setTimeout(function () {
-            try {
-              var wrap = el.querySelector('.hm-panel-wrap');
-              if (!wrap) return;
-              /* Force synchronous reflow so scrollHeight reads the
-                 post-resize layout, not whatever was cached before
-                 the cell width changed. */
-              void el.offsetHeight;
-              var natural = wrap.scrollHeight;
-              if (!natural) return;
-              var cellHeight = gridInstance.getCellHeight(true) || 1;
-              /* +12px matches gridstack's internal inset for
-                 .grid-stack-item-content (6 top + 6 bottom margin
-                 from marginTop/marginBottom: 8 in init opts… well,
-                 close enough — using 12 keeps it tight). */
-              var newH = Math.max(1, Math.ceil((natural + 12) / cellHeight));
-              var node = el.gridstackNode;
-              if (!node || newH === node.h) return;
-              var minH = (typeof computePanelMinH === 'function')
-                ? computePanelMinH(el) : 70;
-              /* Three-step update: unlock first so the new h isn't
-                 clamped against the old maxH, set h, then lock. */
-              gridInstance.update(el, { maxH: 9999, minH: 1 });
-              gridInstance.update(el, { h: newH });
-              gridInstance.update(el, { maxH: newH, minH: minH });
-              if (typeof INITIAL_H !== 'undefined' && rsId) {
-                INITIAL_H[rsId] = newH;
-              }
-            } catch (e) {}
-          }, 80);
-        }
-      }
+      /* Height refit on resize is now handled natively by
+         gridstack's sizeToContent: true (set in init opts) — the
+         library's ResizeObserver detects content reflow on cell
+         width change and adjusts h automatically. */
     });
 
     /* Edge auto-scroll while dragging: when the cursor approaches the top
@@ -11377,49 +11346,14 @@
          content would just produce empty space.) */
       safeRender('fitToContent', function () {
         if (!window.gridInstance) return;
-        /* Single immediate pass — the previous 1500ms second pass was
-           re-measuring everything well after layout settled, causing
-           visible "things shift for no reason" jumps a second after
-           the user clicked Reset. Charts that paint async still get
-           proper sizing because Chart.js's responsive: true adapts to
-           whatever container size we set here. */
-        /* Manual fit-to-content (gridstack v12's resizeToContent is a
-           no-op without sizeToContent flag set on grid options). Reads
-           wrap.scrollHeight after a synchronous reflow and updates h
-           via gridInstance.update({h}). Same approach the resizestop
-           refit uses — keeps the two paths consistent. */
-        function manualFitToContent(item) {
-          var wrap = item.querySelector('.hm-panel-wrap');
-          if (!wrap) return;
-          void item.offsetHeight;
-          var natural = wrap.scrollHeight;
-          if (!natural) return;
-          var cellHeight = window.gridInstance.getCellHeight(true) || 1;
-          var newH = Math.max(1, Math.ceil((natural + 12) / cellHeight));
-          var node = item.gridstackNode;
-          if (!node || newH === node.h) return;
-          try {
-            window.gridInstance.update(item, { maxH: 9999, minH: 1 });
-            window.gridInstance.update(item, { h: newH });
-          } catch (e) {}
-        }
+        /* Height auto-fit is now native: sizeToContent: true on grid
+           init opts means gridstack's ResizeObserver auto-resizes each
+           cell h to match its content as soon as the panels render.
+           Replaces the previous manualFitToContent + per-breakpoint
+           branching. We still lock maxH + snapshot INITIAL_H + compact
+           below, all of which run after gridstack has settled. */
         function fitAll() {
           window.gridInstance._suppressSave = true;
-          /* Only run manual fit-to-content at non-desktop breakpoints
-             where the LAYOUT_12COL h values are best-guess estimates
-             that don't match the panels' real reflowed content height.
-             At desktop the HTML gs-h values are user-calibrated so we
-             leave them alone — touching them would visibly shrink
-             panels the user is already happy with. */
-          if (ACTIVE_BREAKPOINT.id !== 'desktop') {
-            document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-              try { manualFitToContent(item); } catch (e) {}
-            });
-          } else {
-            document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-              try { window.gridInstance.resizeToContent(item); } catch (e) {}
-            });
-          }
           /* Lock maxH on the next tick so it picks up the post-fit h.
              Also set minH so the user can't shrink a panel below its
              window-style header (24px) plus the panel's own gold header
