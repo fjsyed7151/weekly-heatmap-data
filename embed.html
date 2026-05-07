@@ -635,11 +635,15 @@
   /* Column dividers — always-visible vertical resize handles between
      columns. The grid-template-columns track is 8px wide; the visible
      line is a 1px gold tint centered inside, thickening to 3px on
-     hover for affordance. */
+     hover for affordance. align-self:stretch overrides the parent's
+     align-items:start (which would collapse empty dividers to 0
+     height). */
   .hm-app .hm-col-divider {
     cursor: col-resize;
     position: relative;
     background: transparent;
+    align-self: stretch;
+    min-height: 100%;
   }
   .hm-app .hm-col-divider::after {
     content: '';
@@ -10242,12 +10246,17 @@
      DOM order. Gridstack tracks panels by node.y, NOT DOM order — so
      after we DOM-reorder via insertBefore, we have to push the new
      y values into gridstack via update() or panels stay rendered at
-     their old positions. */
+     their old positions. Wrapped in batchUpdate so float:false's
+     auto-compact doesn't run between updates and shuffle things
+     around mid-rewrite. */
   function reflowColumn(colId) {
     var grid = colGrids && colGrids[colId];
     if (!grid) return;
     var body = document.querySelector('.hm-col[data-col="' + colId + '"] .hm-col-body');
     if (!body) return;
+    if (typeof grid.batchUpdate === 'function') {
+      try { grid.batchUpdate(); } catch (e) {}
+    }
     var y = 0;
     body.querySelectorAll('.grid-stack-item').forEach(function (item) {
       var node = item.gridstackNode;
@@ -10257,18 +10266,43 @@
       }
       y += node.h;
     });
+    if (typeof grid.commit === 'function') {
+      try { grid.commit(); } catch (e) {}
+    } else if (typeof grid.batchUpdate === 'function') {
+      try { grid.batchUpdate(false); } catch (e) {}
+    }
   }
 
-  /* Move the panel one position up/down within its current column. */
+  /* Move the panel one position up/down within its current column.
+     Strategy: directly swap the gs-y values of the two adjacent
+     panels using gridstack's update(). This works regardless of
+     float:true / float:false. Then DOM-reorder via insertBefore so
+     the panel is in the new logical position when persistColsLayout
+     reads DOM order. */
   function movePanelUp(id) {
     var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
     var prev = item.previousElementSibling;
     while (prev && !prev.matches('.grid-stack-item')) prev = prev.previousElementSibling;
     if (!prev) return;
+    var grid = gridForPanel(item);
+    var aNode = item.gridstackNode;
+    var bNode = prev.gridstackNode;
+    if (!grid || !aNode || !bNode) return;
+    /* Place item where prev started, place prev right after item. */
+    var startY = bNode.y;
+    var aH = aNode.h;
+    if (typeof grid.batchUpdate === 'function') {
+      try { grid.batchUpdate(); } catch (e) {}
+    }
+    try { grid.update(item, { y: startY }); } catch (e) {}
+    try { grid.update(prev, { y: startY + aH }); } catch (e) {}
+    if (typeof grid.commit === 'function') {
+      try { grid.commit(); } catch (e) {}
+    } else if (typeof grid.batchUpdate === 'function') {
+      try { grid.batchUpdate(false); } catch (e) {}
+    }
     item.parentNode.insertBefore(item, prev);
-    var col = item.closest('.hm-col');
-    if (col) reflowColumn(col.getAttribute('data-col'));
     persistColsLayout();
     refreshAllMoveButtons();
   }
@@ -10278,9 +10312,24 @@
     var next = item.nextElementSibling;
     while (next && !next.matches('.grid-stack-item')) next = next.nextElementSibling;
     if (!next) return;
+    var grid = gridForPanel(item);
+    var aNode = item.gridstackNode;
+    var bNode = next.gridstackNode;
+    if (!grid || !aNode || !bNode) return;
+    /* Place next where item started, place item right after next. */
+    var startY = aNode.y;
+    var bH = bNode.h;
+    if (typeof grid.batchUpdate === 'function') {
+      try { grid.batchUpdate(); } catch (e) {}
+    }
+    try { grid.update(next, { y: startY }); } catch (e) {}
+    try { grid.update(item, { y: startY + bH }); } catch (e) {}
+    if (typeof grid.commit === 'function') {
+      try { grid.commit(); } catch (e) {}
+    } else if (typeof grid.batchUpdate === 'function') {
+      try { grid.batchUpdate(false); } catch (e) {}
+    }
     item.parentNode.insertBefore(next, item);
-    var col = item.closest('.hm-col');
-    if (col) reflowColumn(col.getAttribute('data-col'));
     persistColsLayout();
     refreshAllMoveButtons();
   }
