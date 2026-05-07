@@ -10778,27 +10778,25 @@
         }
         var panelBg = cssVar('--hm-panel', dark ? '#1a181d' : '#ffffff');
         /* Output pixel dimensions (2x logical).
-           No outer dashboard-bg ring — the whole image is the panel
-           area (panel-bg), with the captured panel image inside +
-           a footer below. Looks like a self-contained card. */
-        var PAD_TOP = 32;         /* 16 visual: panel-bg padding above panelImg */
+           No top padding — panel image flush to image top. Sides
+           and bottom (below URL/logo) all have matching 16 visual
+           panel-bg padding so the URL/logo are inset symmetrically. */
         var PAD_SIDES = 32;       /* 16 visual: panel-bg padding on left/right of panelImg */
         var DIVIDER_GAP = 16;     /* 8 visual: gap between panelImg bottom and divider */
-        var FOOTER_H = 64;        /* URL + logo */
+        var FOOTER_H = 64;        /* URL + logo (16 visual above + 16 visual below the centered text/logo) */
         var canvas = document.createElement('canvas');
         canvas.width = panelImg.naturalWidth + PAD_SIDES * 2;
-        canvas.height = PAD_TOP                  /* panel-bg above panelImg */
-                      + panelImg.naturalHeight   /* the captured image */
+        canvas.height = panelImg.naturalHeight   /* the captured image, flush at top */
                       + DIVIDER_GAP              /* small gap above divider */
                       + 1                        /* divider line */
-                      + FOOTER_H;                /* URL + logo */
+                      + FOOTER_H;                /* URL + logo with 16 visual top + bottom panel-bg around them */
         var ctx = canvas.getContext('2d');
         /* Fill entire canvas with panel bg — no outer ring. */
         ctx.fillStyle = panelBg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        /* Draw captured panel image inside with PAD_TOP / PAD_SIDES. */
+        /* Draw captured panel image flush at top (no PAD_TOP). */
         var panelImgX = PAD_SIDES;
-        var panelImgY = PAD_TOP;
+        var panelImgY = 0;
         ctx.drawImage(panelImg, panelImgX, panelImgY);
         /* Divider line just below the panelImg. */
         var dividerY = panelImgY + panelImg.naturalHeight + DIVIDER_GAP;
