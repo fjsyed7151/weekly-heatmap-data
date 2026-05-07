@@ -11383,11 +11383,43 @@
            the user clicked Reset. Charts that paint async still get
            proper sizing because Chart.js's responsive: true adapts to
            whatever container size we set here. */
+        /* Manual fit-to-content (gridstack v12's resizeToContent is a
+           no-op without sizeToContent flag set on grid options). Reads
+           wrap.scrollHeight after a synchronous reflow and updates h
+           via gridInstance.update({h}). Same approach the resizestop
+           refit uses — keeps the two paths consistent. */
+        function manualFitToContent(item) {
+          var wrap = item.querySelector('.hm-panel-wrap');
+          if (!wrap) return;
+          void item.offsetHeight;
+          var natural = wrap.scrollHeight;
+          if (!natural) return;
+          var cellHeight = window.gridInstance.getCellHeight(true) || 1;
+          var newH = Math.max(1, Math.ceil((natural + 12) / cellHeight));
+          var node = item.gridstackNode;
+          if (!node || newH === node.h) return;
+          try {
+            window.gridInstance.update(item, { maxH: 9999, minH: 1 });
+            window.gridInstance.update(item, { h: newH });
+          } catch (e) {}
+        }
         function fitAll() {
           window.gridInstance._suppressSave = true;
-          document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
-            try { window.gridInstance.resizeToContent(item); } catch (e) {}
-          });
+          /* Only run manual fit-to-content at non-desktop breakpoints
+             where the LAYOUT_12COL h values are best-guess estimates
+             that don't match the panels' real reflowed content height.
+             At desktop the HTML gs-h values are user-calibrated so we
+             leave them alone — touching them would visibly shrink
+             panels the user is already happy with. */
+          if (ACTIVE_BREAKPOINT.id !== 'desktop') {
+            document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+              try { manualFitToContent(item); } catch (e) {}
+            });
+          } else {
+            document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
+              try { window.gridInstance.resizeToContent(item); } catch (e) {}
+            });
+          }
           /* Lock maxH on the next tick so it picks up the post-fit h.
              Also set minH so the user can't shrink a panel below its
              window-style header (24px) plus the panel's own gold header
