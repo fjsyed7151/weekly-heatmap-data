@@ -297,6 +297,13 @@
     overflow: auto;
     padding: 0;
     box-sizing: border-box;
+    /* Restored from the b758f69 state. Without this, gridstack's
+       library default `position: absolute; inset: 0` rule applies,
+       which renders the cells differently — user observed the grid
+       looking smaller after this was removed. Removal in 47bb9d7
+       was intended to fix grid gaps but the gaps were actually a
+       symptom of the removed positioning, not the cause. */
+    position: relative;
   }
   /* Panel wrap stays at cell width by default — Chart.js responsive
      canvases (sector / macro regime / index sparklines) feed back
