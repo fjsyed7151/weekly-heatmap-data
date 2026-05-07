@@ -619,14 +619,19 @@
   }
   .hm-app .hm-col-body {
     /* Gridstack target. Border on sides + bottom; top border is
-       supplied by .hm-col-header. */
+       supplied by .hm-col-header. No padding — gridstack manages
+       its own item margins via marginTop/marginBottom in init opts. */
     border: 1px solid var(--hm-border);
     border-top: none;
     border-radius: 0 0 var(--hm-r) var(--hm-r);
-    padding: 4px 6px;
     background: var(--hm-bg);
     flex: 1 1 auto;
     min-height: 100px;
+  }
+  /* Gridstack v12 uses position: absolute for cell items. Make the
+     column body a positioning context. */
+  .hm-app .hm-col-body.grid-stack {
+    position: relative;
   }
   .hm-app .hm-col-divider {
     cursor: col-resize;
@@ -10468,20 +10473,24 @@
     var savedState = loadColsLayout() || buildDefaultColsState();
     applyColsLayout(savedState);
 
-    /* 2. Pre-scale gs-h × GS_SCALE so cellHeight: 1 (1px rows) gives
-       the same visual default heights as before. */
-    document.querySelectorAll('#hm-cols .grid-stack-item').forEach(function (item) {
-      var hOrig = parseInt(item.getAttribute('gs-h') || 4, 10);
-      item.setAttribute('gs-h', hOrig * GS_SCALE);
-      /* y is recomputed by gridstack at init when column: 1, so we
-         can leave gs-y as authored (raw, unscaled) — gridstack will
-         normalize positions per column. Actually safer to drop gs-y
-         entirely so gridstack stacks panels in DOM order without
-         honoring stale y values. */
-      item.removeAttribute('gs-y');
-      /* Drop x — column: 1 means there's only one position. */
-      item.removeAttribute('gs-x');
-      item.removeAttribute('gs-w');
+    /* 2. Pre-scale gs-h × GS_SCALE and set gs-y per column based on
+       cumulative height. With column: 1 grids, every item has gs-x=0
+       and gs-w=1 implicitly. gs-y must be explicit and unique per
+       column or gridstack stacks them all at y=0 (overlapping
+       absolutely-positioned cells). */
+    COL_IDS.forEach(function (cid) {
+      var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
+      if (!body) return;
+      var y = 0;
+      body.querySelectorAll('.grid-stack-item').forEach(function (item) {
+        var hOrig = parseInt(item.getAttribute('gs-h') || 4, 10);
+        var hScaled = hOrig * GS_SCALE;
+        item.setAttribute('gs-h', hScaled);
+        item.setAttribute('gs-y', y);
+        item.removeAttribute('gs-x');
+        item.removeAttribute('gs-w');
+        y += hScaled;
+      });
     });
 
     /* 3. Inject Windows-style header bar into every panel. Must happen
