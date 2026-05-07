@@ -9964,9 +9964,104 @@
   /* ---------- Gridstack.js: drag + resize + persist layout ---------- */
   /* v7: indexes/calendar/stylefactor narrowed; ranking tables widened
      to full width so all columns are visible. */
-  var LAYOUT_KEY = 'hm-grid-layout-v40';
+  var LAYOUT_KEY_BASE = 'hm-grid-layout-v40';
   var GS_SCALE = 40;
   var gridInstance = null;
+
+  /* ---------- Responsive breakpoints ----------
+     The HTML default layout is calibrated for desktop (~1700px+). On
+     smaller viewports a 6-of-24 panel renders too narrow in pixels to
+     show its content, even though it's the same 25% proportion. Below
+     a viewport threshold we switch to a 12-column grid with a
+     hand-designed layout where most panels go full-width or 50%, so
+     pixel widths stay in a usable range. Each breakpoint stores its
+     own customization layout in localStorage (suffix-keyed) so user
+     edits at desktop don't get clobbered when the page is opened on a
+     laptop and vice-versa. Crossing a breakpoint mid-session triggers
+     a reload — switching column counts at runtime opens too many
+     edge cases with pinned panels + animated reflow.
+
+     Hand-designed 12-col layout. h values are in raw HTML units and
+     get pre-multiplied by GS_SCALE (40) by the same pass that handles
+     the HTML defaults — keep them small here for readability. */
+  var LAYOUT_12COL = {
+    'hm-indexes':         { x: 0, y: 0,   w: 12, h: 4  },
+    'hm-macrocompass':    { x: 0, y: 4,   w: 6,  h: 14 },
+    'hm-calendar':        { x: 6, y: 4,   w: 6,  h: 22 },
+    'hm-gave-wrap':       { x: 0, y: 26,  w: 12, h: 24 },
+    'hm-stylefactor':     { x: 0, y: 50,  w: 6,  h: 9  },
+    'hm-factors':         { x: 6, y: 50,  w: 6,  h: 14 },
+    'hm-economy':         { x: 0, y: 64,  w: 12, h: 22 },
+    'hm-currency-matrix': { x: 0, y: 86,  w: 12, h: 14 },
+    'hm-commodities':     { x: 0, y: 100, w: 6,  h: 22 },
+    'hm-country-etfs':    { x: 6, y: 100, w: 6,  h: 15 },
+    'hm-global-indexes':  { x: 0, y: 122, w: 6,  h: 11 },
+    'hm-currencies':      { x: 6, y: 122, w: 6,  h: 22 },
+    'hm-fixed-income':    { x: 0, y: 144, w: 12, h: 11 },
+    'hm-sector-chart':    { x: 0, y: 155, w: 12, h: 30 },
+    'hm-commodity-perf':  { x: 0, y: 185, w: 6,  h: 20 },
+    'hm-theme-treemap':   { x: 6, y: 185, w: 6,  h: 24 },
+    'hm-chart-section':   { x: 0, y: 209, w: 12, h: 16 },
+    'hm-heatmap-wrap':    { x: 0, y: 225, w: 12, h: 22 },
+  };
+
+  /* Breakpoints sorted desktop → mobile. minW is the lower viewport
+     bound (inclusive). cols = grid column count. layoutOverride is
+     a per-id { x, y, w, h } map applied to HTML attributes before
+     gridstack init — null means "use HTML defaults verbatim". */
+  var BREAKPOINTS = [
+    { id: 'desktop', minW: 1300, cols: 24, layoutOverride: null },
+    { id: 'compact', minW: 0,    cols: 12, layoutOverride: LAYOUT_12COL },
+  ];
+
+  function getCurrentBreakpoint() {
+    var vw = window.innerWidth || document.documentElement.clientWidth || 1920;
+    for (var i = 0; i < BREAKPOINTS.length; i++) {
+      if (vw >= BREAKPOINTS[i].minW) return BREAKPOINTS[i];
+    }
+    return BREAKPOINTS[BREAKPOINTS.length - 1];
+  }
+
+  /* Capture the breakpoint for the duration of the session. Used to
+     pick the right LAYOUT_KEY and to trigger a reload if the viewport
+     crosses a threshold. */
+  var ACTIVE_BREAKPOINT = getCurrentBreakpoint();
+  var LAYOUT_KEY = LAYOUT_KEY_BASE + '-' + ACTIVE_BREAKPOINT.id;
+
+  /* If a stale-key layout exists from before responsive layouts shipped
+     (the un-suffixed LAYOUT_KEY_BASE), migrate it to the desktop key
+     so existing user customizations aren't lost on first load after
+     this update. Only migrate at the desktop breakpoint — the old
+     layout was always 24-col, so it's only meaningful there. */
+  (function migrateLegacyLayout() {
+    if (ACTIVE_BREAKPOINT.id !== 'desktop') return;
+    try {
+      var legacy = localStorage.getItem(LAYOUT_KEY_BASE);
+      var current = localStorage.getItem(LAYOUT_KEY);
+      if (legacy && !current) {
+        localStorage.setItem(LAYOUT_KEY, legacy);
+        localStorage.removeItem(LAYOUT_KEY_BASE);
+      }
+    } catch (e) {}
+  })();
+
+  /* React to viewport crossings. Reload when the user resizes the
+     window past a breakpoint so the new column count + layout takes
+     effect — debounced so tiny window jitter (DPI scaling, scrollbar
+     appearance) doesn't trigger a reload. Only fires when the
+     breakpoint id genuinely changes from where we initialized. */
+  (function watchBreakpointChange() {
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        var nowBp = getCurrentBreakpoint();
+        if (nowBp.id !== ACTIVE_BREAKPOINT.id) {
+          window.location.reload();
+        }
+      }, 300);
+    });
+  })();
 
   /* Snapshot of each panel's settled cell h taken AFTER the initial fitAll
      pass and any async paint (Chart.js sparklines etc.) — so it reflects
@@ -10054,15 +10149,26 @@
       if (raw) saved = JSON.parse(raw);
     } catch (e) {}
 
-    /* Scale HTML gs-h / gs-y by GS_SCALE (40) so the same visual layout
-       applies under cellHeight: 1 (1px row resolution = exact-fit cells).
-       Also enforces a universal min width of 3 columns (in 24-col grid =
-       12.5% of dashboard width) so no panel can be resized into an
-       unreadable sliver. Applied before GridStack.init reads the
-       attributes so the constraint is wired into the node from the start. */
+    /* Apply the active breakpoint's layout override to HTML attributes,
+       THEN scale gs-h / gs-y by GS_SCALE (40). The override path lets
+       a non-desktop breakpoint replace x/y/w/h with values designed
+       for its column count — e.g. 12-col layout puts most panels at
+       w=12 (full) or w=6 (half) instead of the 24-col defaults. Heights
+       in the override are raw (not pre-scaled) so the scaling pass
+       below treats them identically to the HTML defaults.
+       Also enforces a universal min width of 3 columns. */
+    var bpLayout = ACTIVE_BREAKPOINT.layoutOverride;
     document.querySelectorAll('#hm-grid > .grid-stack-item').forEach(function (item) {
       var id = item.getAttribute('gs-id');
       if (!id) return;
+      /* Apply breakpoint override if one exists for this id. */
+      if (bpLayout && bpLayout[id]) {
+        var o = bpLayout[id];
+        item.setAttribute('gs-x', o.x);
+        item.setAttribute('gs-y', o.y);
+        item.setAttribute('gs-w', o.w);
+        item.setAttribute('gs-h', o.h);
+      }
       var hOrig = parseInt(item.getAttribute('gs-h') || 4, 10);
       var yOrig = parseInt(item.getAttribute('gs-y') || 0, 10);
       var hNew = hOrig * GS_SCALE;
@@ -10074,7 +10180,7 @@
       DEFAULT_LAYOUT[id] = {
         x: parseInt(item.getAttribute('gs-x') || 0, 10),
         y: yNew,
-        w: parseInt(item.getAttribute('gs-w') || 24, 10),
+        w: parseInt(item.getAttribute('gs-w') || ACTIVE_BREAKPOINT.cols, 10),
         h: hNew,
       };
     });
@@ -10146,11 +10252,12 @@
     }
 
     gridInstance = GridStack.init({
-      /* 24-column grid (was 12). Doubles width-resize granularity to
-         ~40-50px per step instead of ~85-100px while preserving snap-to-
-         grid edge alignment. All HTML default gs-x/gs-w values are
-         pre-multiplied × 2 to keep the visual layout identical. */
-      column: 24,
+      /* Column count is breakpoint-dependent: 24 at desktop (≥1300px),
+         12 at smaller viewports. The 24-col grid gives fine-grained
+         width control on desktop; the 12-col one matches a hand-
+         designed layout where panels are sized for laptop/tablet
+         pixel widths (most go full or half). */
+      column: ACTIVE_BREAKPOINT.cols,
       /* 1px row resolution. With cellHeight: 1, fitToContent's
          ceil((wrap+inset)/cellHeight) gives EXACT cell heights — no
          rounding overshoot. HTML gs-h/gs-y values were pre-scaled by
@@ -10182,13 +10289,14 @@
       animate: true,
       disableOneColumnMode: false,
       minRow: 1,
-      /* Cap how far down panels can be dragged/resized. Default
-         layout's deepest panel ends at gs-y(130) + gs-h(22) = 152
-         (HTML units), scaled by GS_SCALE(40) = 6080 internal cells.
-         8000 leaves ~1900 cells of headroom for users who enlarge
-         tall panels (heatmap, sector chart). Without this cap, users
-         can drag a panel to gs-y=99999 and the grid expands forever. */
-      maxRow: 8000,
+      /* Cap how far down panels can be dragged/resized. Desktop's
+         deepest panel ends at gs-y(130) + gs-h(22) = 152 raw, scaled
+         by GS_SCALE(40) = 6080 cells. Compact (12-col) layout stacks
+         taller — gs-y(225) + gs-h(22) = 247 raw = 9880 cells. 12000
+         cells (= 300 raw units) covers both with ~80 raw headroom for
+         enlarging tall panels. Without this cap, panels could be
+         dragged to gs-y=99999 and the grid expands forever. */
+      maxRow: 12000,
     }, '#hm-grid');
     /* Drag + resize are always enabled — the narrow header and hit-zoned
        resize edges make accidental manipulation unlikely. */
@@ -10973,20 +11081,17 @@
   /* Vertical-mode default width per panel id. Both the stack-toggle
      button AND the reset button apply this — toggling to vertical
      auto-resizes to the per-panel vertical width, and toggling
-     back to horizontal restores DEFAULT_LAYOUT[id].w. This avoids
-     a class of bugs where toggling at a narrow horizontal width
-     leaves the cell sized for a width-dependent layout state
-     (e.g. wrapped period pills) that doesn't match the user's
-     subsequent resizing.
-     All 5 stack-toggle ranking panels go to width 6 in vertical
-     stack mode — a comfortable single-column-list shape. */
-  var STACK_VERTICAL_W = {
-    'hm-factors': 6,
-    'hm-fixed-income': 6,
-    'hm-global-indexes': 6,
-    'hm-country-etfs': 6,
-    'hm-commodity-perf': 6,
+     back to horizontal restores DEFAULT_LAYOUT[id].w.
+     Breakpoint-aware: at 24 cols a 6-cell width = 25% of grid; at
+     12 cols the equivalent visual width is 3 cells (still 25%) —
+     but 3 is too narrow for a list, so we use 6 (= 50% of grid)
+     for the 12-col breakpoint, matching the breakpoint's "half-
+     width panel" convention. */
+  var STACK_VERTICAL_W_BY_COLS = {
+    24: { 'hm-factors': 6, 'hm-fixed-income': 6, 'hm-global-indexes': 6, 'hm-country-etfs': 6, 'hm-commodity-perf': 6 },
+    12: { 'hm-factors': 6, 'hm-fixed-income': 6, 'hm-global-indexes': 6, 'hm-country-etfs': 6, 'hm-commodity-perf': 6 },
   };
+  var STACK_VERTICAL_W = STACK_VERTICAL_W_BY_COLS[ACTIVE_BREAKPOINT.cols] || STACK_VERTICAL_W_BY_COLS[24];
   function loadStackMap() {
     try {
       var raw = localStorage.getItem(STACK_KEY);
