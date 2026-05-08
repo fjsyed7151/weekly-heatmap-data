@@ -570,12 +570,11 @@
   }
   .hm-app .hm-col-sticky {
     /* Sticky: column stays pinned in viewport, BELOW the topbar.
-       Topbar is itself sticky (height ≈ 56px including margins).
-       top:64px puts the column safely below the topbar's bottom
-       edge. Lower z-index than the topbar (1000) so column never
-       paints over the topbar. */
+       --hm-sticky-top is set dynamically in JS to topbar.offsetHeight + 8
+       so the column always clears the topbar regardless of its actual
+       rendered height. Falls back to 72px if JS hasn't set it yet. */
     position: sticky !important;
-    top: 64px;
+    top: var(--hm-sticky-top, 72px);
     align-self: start;
     z-index: 5;
   }
@@ -629,10 +628,11 @@
   .hm-app .hm-col-body {
     /* Gridstack target. No border or padding — each panel inside
        carries its own gold outline (the .grid-stack-item-content
-       box-shadow), so an outer border would just double-wrap. No
-       min-height — let the body shrink to its content's height; an
-       empty body (all panels hidden) just disappears. */
-    background: transparent;
+       box-shadow), so an outer border would just double-wrap. Use
+       background-color (not the background shorthand) so the grid
+       pattern + linen texture from .grid-stack above shows through.
+       (background: transparent would reset background-image too.) */
+    background-color: transparent;
     flex: 0 1 auto;
   }
   /* Gridstack v12 uses position: absolute for cell items. Make the
@@ -10682,9 +10682,30 @@
     document.body.classList.toggle('hm-cols-stacked', stacked);
     refreshAllMoveButtons();
   }
+
+  /* Measure the topbar's actual rendered height and expose it as
+     --hm-sticky-top so .hm-col-sticky can sit just below it. Re-runs
+     on viewport resize because topbar wraps differently at narrow
+     widths. */
+  function refreshStickyOffset() {
+    var topbar = document.querySelector('.hm-topbar');
+    if (!topbar) return;
+    var h = topbar.offsetHeight || 0;
+    if (!h) return;
+    /* +8 for breathing room between topbar bottom and sticky column top. */
+    document.documentElement.style.setProperty('--hm-sticky-top', (h + 8) + 'px');
+  }
   window.addEventListener('resize', function () {
     refreshStackedFlag();
+    refreshStickyOffset();
   });
+  /* Run once at DOM ready in case the script-time body wasn't fully
+     laid out yet. */
+  if (document.readyState !== 'loading') {
+    refreshStickyOffset();
+  } else {
+    document.addEventListener('DOMContentLoaded', refreshStickyOffset);
+  }
 
   function initGridStack() {
     if (!window.GridStack) {
@@ -10919,6 +10940,7 @@
     wireColumnHeaders();
     wireColumnDividers();
     refreshStackedFlag();
+    refreshStickyOffset();
     refreshAllMoveButtons();
 
     /* 9. Manual fit-to-content pass: walk every panel and snap its
