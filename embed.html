@@ -570,11 +570,12 @@
   }
   .hm-app .hm-col-sticky {
     /* Sticky: column stays pinned in viewport, BELOW the topbar.
-       Topbar is itself sticky (height ≈ 52px). top:56px puts the
-       column flush below the topbar with a 4px gap. Lower z-index
-       than the topbar (1000) so column never paints over it. */
+       Topbar is itself sticky (height ≈ 56px including margins).
+       top:64px puts the column safely below the topbar's bottom
+       edge. Lower z-index than the topbar (1000) so column never
+       paints over the topbar. */
     position: sticky !important;
-    top: 56px;
+    top: 64px;
     align-self: start;
     z-index: 5;
   }
@@ -10270,6 +10271,41 @@
     return colGrids[col.getAttribute('data-col')] || null;
   }
 
+  /* v3-era manual fit-to-content. Reads wrap.scrollHeight after a
+     synchronous reflow, computes new h in cell units, updates the cell
+     via gridstack.update + locks maxH at the freshly-measured h so the
+     user can't drag past content. Replaces sizeToContent: true (which
+     left a "bottom padding" gap inside each panel — not exact). */
+  function fitItemToContent(el) {
+    if (!el) return;
+    var grid = gridForPanel(el);
+    if (!grid) return;
+    var wrap = el.querySelector('.hm-panel-wrap');
+    if (!wrap) return;
+    void el.offsetHeight;  /* flush layout so scrollHeight reads current */
+    var natural = wrap.scrollHeight;
+    if (!natural) return;
+    var cellH = grid.getCellHeight(true) || 1;
+    var newH = Math.max(1, Math.ceil((natural + 12) / cellH));
+    var node = el.gridstackNode;
+    if (!node) return;
+    try {
+      grid.update(el, { maxH: 9999, minH: 1 });
+      if (newH !== node.h) grid.update(el, { h: newH });
+      grid.update(el, { maxH: newH, minH: 1 });
+    } catch (e) {}
+  }
+
+  /* Per-panel reset: refit the panel to its content height. With
+     column-driven width (no horizontal user-resize) there's no
+     "default size" to restore — reset just collapses the panel back
+     to a tight content fit, undoing whatever vertical drag the user
+     did. */
+  function resetPanelSize(id) {
+    var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
+    if (item) fitItemToContent(item);
+  }
+
   /* Re-assign gs-y to every panel in a column based on its current
      DOM order. Gridstack tracks panels by node.y, NOT DOM order — so
      after we DOM-reorder via insertBefore, we have to push the new
@@ -10717,6 +10753,9 @@
         '<button class="hm-panel-btn hm-panel-export" type="button" data-action="export" title="Download as image" aria-label="Download as image">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
         '</button>' +
+        '<button class="hm-panel-btn hm-panel-reset" type="button" data-action="reset" title="Reset size (refit to content)" aria-label="Reset size">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>' +
+        '</button>' +
         '<button class="hm-panel-btn hm-panel-close" type="button" data-action="close" title="Hide panel (re-add via Customize view)" aria-label="Hide panel">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>' +
         '</button>';
@@ -10737,31 +10776,31 @@
     var sharedOpts = {
       column: 1,
       cellHeight: 40,
-      /* 4px gap between stacked panels (2px above + 2px below each).
-         Just enough that the gold outlines don't double up into a 2px
-         line where panels touch. */
+      /* 4px gap between stacked panels (2px above + 2px below each). */
       marginLeft: 0, marginRight: 0, marginTop: 2, marginBottom: 2,
       float: false,
       animate: true,
-      resizable: { handles: '' },
-      disableResize: true,
+      /* User can resize panel HEIGHT only (south handle). Column
+         width is set by the parent CSS Grid track — no horizontal
+         user-resize. */
+      resizable: { handles: 's' },
+      alwaysShowResizeHandle: true,
       draggable: { handle: '.hm-panel-header', distance: 0 },
       acceptWidgets: '.grid-stack-item',
-      sizeToContent: true,
+      /* Manual fit-to-content via fitItemToContent. sizeToContent: true
+         left a "bottom padding" gap inside each panel — its observer's
+         measurement was off by a few pixels. v3-era manual measurement
+         is exact. */
+      sizeToContent: false,
     };
     COL_IDS.forEach(function (cid) {
       var sel = '.hm-col[data-col="' + cid + '"] .hm-col-body';
       var el = document.querySelector(sel);
-      if (!el) {
-        console.warn('[heatmap] no body for col', cid);
-        return;
-      }
-      var rect = el.getBoundingClientRect();
-      console.info('[heatmap] col', cid, 'body width=' + rect.width + ' height=' + rect.height);
+      if (!el) return;
       var g = GridStack.init(sharedOpts, el);
       colGrids[cid] = g;
       g.enableMove(true);
-      g.enableResize(false);
+      g.enableResize(true);
     });
     gridInstance = colGrids.center || colGrids.left || colGrids.right;
     window.gridInstance = gridInstance;
@@ -10782,6 +10821,8 @@
         exportPanelImage(item, btn);
       } else if (action === 'info') {
         toggleInfoPopup(item, id, btn);
+      } else if (action === 'reset') {
+        resetPanelSize(id);
       } else if (action === 'move-up') {
         movePanelUp(id);
       } else if (action === 'move-down') {
@@ -10874,6 +10915,24 @@
     wireColumnDividers();
     refreshStackedFlag();
     refreshAllMoveButtons();
+
+    /* 9. Manual fit-to-content pass: walk every panel and snap its
+       cell h to its measured content height. The HTML's gs-h values
+       are rough estimates; without this pass each panel ends up with
+       a few-px gap below the content (the "bottom padding" issue). */
+    function fitAllPanels() {
+      document.querySelectorAll('#hm-cols .grid-stack-item').forEach(function (it) {
+        try { fitItemToContent(it); } catch (e) {}
+      });
+    }
+    /* Run twice: once now (synchronous content), once at 800ms after
+       async paint (Chart.js sparklines etc. settle). */
+    fitAllPanels();
+    setTimeout(fitAllPanels, 800);
+
+    /* No automatic refit on resize-stop — that would undo the user's
+       drag. They can hit the per-panel reset button to fit content
+       again on demand. */
   }
 
   /* Customize panel "Show all" button: clear saved layout, reload. */
