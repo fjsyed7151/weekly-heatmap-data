@@ -4445,80 +4445,77 @@
   }
 
   /* ===================================================================
-     SECTIONED LAYOUT (replaces the previous 3-column gridstack layout).
-     Each .hm-band is a labeled band stacked vertically. Inside each
-     band, .hm-band-tiles is a 2-column CSS grid; panels with
-     data-span="full" span both columns, panels with data-span="half"
-     take one. Below 900px viewport everything drops to a single
-     column. Band labels are sticky at the top of the viewport.
-
-     Class prefix is .hm-band-* (NOT .hm-section-*) because .hm-section
-     and .hm-section-label are already in use by the heatmap table for
-     its group-header rows (tr.hm-section, td.hm-section-label) — using
-     the same names made my layout rules accidentally apply
-     position:sticky / display:block to those table rows + cells,
-     destroying the table layout.
+     3-COLUMN LAYOUT (no gridstack). Page is a CSS Grid with three
+     resizable columns (left | divider | center | divider | right).
+     Inside each column, panels are block-flowed at natural content
+     height — no absolute positioning, no fixed cell sizes. Side
+     columns can be made sticky via the topbar buttons. Below 1100px,
+     all columns stack vertically (single column).
      =================================================================== */
-  .hm-app .hm-bands {
+  .hm-app .hm-cols {
+    display: grid;
+    /* Default 1fr/1fr/1fr split. JS updates this with explicit pixel
+       widths once the user drags a divider. The 8px tracks are the
+       divider hit-zones. */
+    grid-template-columns: 1fr 8px 1fr 8px 1fr;
+    align-items: start;
+    width: 100%;
+    column-gap: 0;
+    row-gap: 12px;
+  }
+  .hm-app .hm-col {
     display: flex;
     flex-direction: column;
-    gap: 0;
-    width: 100%;
-    position: static;
-    height: auto;
-    min-height: 0;
+    gap: 12px;
+    min-width: 0;
   }
-  .hm-app .hm-band {
-    display: block;
-    padding: 0 0 24px 0;
-    margin: 16px 0 0 0;
-    border-top: 1px solid var(--hm-border);
+  .hm-app .hm-col-divider {
+    /* Visible vertical handle, click-and-drag to resize columns. */
+    position: relative;
+    cursor: col-resize;
+    /* Track is 8px wide. Hairline guide painted via ::after. */
+    background: transparent;
+    user-select: none;
   }
-  .hm-app .hm-band:first-child {
-    border-top: 0;
-    margin-top: 0;
+  .hm-app .hm-col-divider::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+    background: var(--hm-border);
+    transition: background 0.15s ease, width 0.15s ease;
   }
-  .hm-app .hm-band-label {
-    /* Sticky to top of viewport while the band is on screen.
-       --hm-sticky-top is set by JS to topbar height + 16px. */
+  .hm-app .hm-col-divider:hover::after,
+  body.hm-col-resizing .hm-app .hm-col-divider::after {
+    background: var(--hm-gold);
+    width: 4px;
+  }
+  body.hm-col-resizing { cursor: col-resize; }
+  body.hm-col-resizing * { cursor: col-resize !important; }
+
+  /* Sticky side column: pinned to viewport while the page scrolls.
+     Its own contents scroll inside the column (max-height + overflow
+     so a tall column doesn't get cut off below the fold). */
+  .hm-app .hm-col-sticky {
     position: sticky;
     top: var(--hm-sticky-top, 72px);
-    z-index: 5;
-    margin: 0 0 12px 0;
-    padding: 8px 12px;
-    font-family: 'Karla', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--hm-brown, #513C0C);
-    background: var(--hm-bg-warm, #fdf9f1);
-    border-bottom: 2px solid var(--hm-gold, #daa520);
+    align-self: start;
+    max-height: calc(100vh - var(--hm-sticky-top, 72px) - 16px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Scrollbar styling matches the rest of the dashboard. */
+    scrollbar-width: thin;
+    scrollbar-color: #F2DFB3 var(--hm-bg-alt);
   }
-  .hm-app.dark .hm-band-label {
-    background: #1a1d23;
-    color: var(--hm-gold-light, #e6bf66);
-    border-bottom-color: var(--hm-gold, #daa520);
-  }
-  .hm-app .hm-band-tiles {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    align-items: start;
-    position: static;
-    height: auto;
-    min-height: 0;
-  }
-  /* Full-width panels span both columns of the 2-up grid. */
-  .hm-app .hm-band-tiles > .grid-stack-item[data-span="full"] {
-    grid-column: 1 / -1;
-  }
-  /* Each panel slot in the new layout: take its content's natural
-     size, no absolute positioning, no gridstack inset. The
-     .grid-stack-item class is kept purely so the existing per-panel
-     styling rules (e.g. .hm-app .grid-stack-item[gs-id="..."] ...)
-     keep matching. */
-  .hm-app .hm-band-tiles > .grid-stack-item {
+
+  /* Each panel slot: natural-flow block element. .grid-stack-item is
+     kept as a class purely so the existing per-panel CSS keeps
+     matching. The !important here overrides any leftover gridstack
+     absolute-positioning rule. */
+  .hm-app .hm-col > .grid-stack-item {
     position: static !important;
     left: auto !important;
     top: auto !important;
@@ -4530,7 +4527,7 @@
     transform: none !important;
     border-radius: 0;
   }
-  .hm-app .hm-band-tiles > .grid-stack-item > .grid-stack-item-content {
+  .hm-app .hm-col > .grid-stack-item > .grid-stack-item-content {
     position: static !important;
     inset: auto !important;
     width: 100% !important;
@@ -4538,39 +4535,38 @@
     min-height: 0 !important;
     overflow: visible;
   }
-  /* For panels with internal scrolling (heatmap table, ranking
-     navbars), keep their scroll containers self-contained. They
-     manage their own overflow internally. */
-  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content,
-  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
-  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
-  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
-  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-country-etfs"] > .grid-stack-item-content,
-  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content,
-  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content,
-  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-indexes"] > .grid-stack-item-content {
+  /* Panels with internal scroll (heatmap table, ranking navbars)
+     manage their own overflow. */
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-country-etfs"] > .grid-stack-item-content,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-indexes"] > .grid-stack-item-content {
     overflow: auto;
   }
-  /* Cap heatmap height so the page stays a reasonable length — the
-     internal scroll container handles long tables. */
-  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content {
+  /* Cap heatmap height — internal scroll container handles long tables. */
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content {
     max-height: 80vh;
   }
 
-  /* Drop to single column on narrow viewports. */
-  @media (max-width: 900px) {
-    .hm-app .hm-band-tiles {
-      grid-template-columns: 1fr;
+  /* Stacked mode (narrow viewport): single column, dividers hidden,
+     no sticky. */
+  @media (max-width: 1100px) {
+    .hm-app .hm-cols {
+      grid-template-columns: 1fr !important;
     }
-    .hm-app .hm-band-tiles > .grid-stack-item[data-span="half"],
-    .hm-app .hm-band-tiles > .grid-stack-item[data-span="full"] {
-      grid-column: 1 / -1;
+    .hm-app .hm-col-divider { display: none !important; }
+    .hm-app .hm-col-sticky {
+      position: static !important;
+      max-height: none !important;
+      overflow: visible !important;
     }
   }
 
-  /* Square corners everywhere — explicit user request. Heavy hand
-     with !important to win against the dozens of border-radius rules
-     scattered through the per-panel CSS above. */
+  /* Square corners everywhere — explicit user request. */
   .hm-app,
   .hm-app *,
   .hm-app *::before,
@@ -4578,43 +4574,30 @@
     border-radius: 0 !important;
   }
 
-  /* Defense in depth: hide leftover dead nodes from the old layout
-     in case any are still in the DOM. */
-  .hm-app .hm-cols,
-  .hm-app .hm-col-divider,
-  .hm-app .hm-col {
-    display: none !important;
-  }
-
-  /* Kill panel-header sticky in the new sectioned layout. Band
-     labels handle the "always visible" need; panel headers just sit
-     at the top of each panel and scroll with the page. (The original
-     sticky was for in-cell scroll containers; with content-driven
-     panel heights most panels don't have internal scroll, and a
-     sticky header with no scroll ancestor inside the cell would
-     escape to the page and overlap the band label above.) */
-  .hm-app .hm-band-tiles .hm-panel-header {
+  /* Kill panel-header sticky inside columns. With sticky-column
+     providing the always-visible role, panel headers just flow at
+     the top of each panel. */
+  .hm-app .hm-col .hm-panel-header {
     position: static !important;
     top: auto !important;
     z-index: auto !important;
   }
-  /* Kill the in-panel filter navbar sticky on ranking panels. The
-     band label is now the "always visible" element; the filter
-     navbar would otherwise escape to the page and overlap band
-     labels. */
-  .hm-app .hm-band-tiles .hm-factors-header {
+  /* Kill the in-panel filter navbar sticky on ranking panels — same
+     reason. */
+  .hm-app .hm-col .hm-factors-header {
     position: static !important;
     top: auto !important;
     left: auto !important;
   }
-
-  /* Heatmap thead: still sticky inside the cell-level scroll
-     container (cell has max-height:80vh + overflow:auto). With
-     panel-header now static, thead sticks at top:0 of the cell
-     instead of the original 24px (which assumed a sticky
-     panel-header was above it). */
-  .hm-app .hm-band-tiles .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
+  /* Heatmap thead: still sticky inside the cell-level scroll container. */
+  .hm-app .hm-col .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
     top: 0 !important;
+  }
+
+  /* Topbar sticky button active state (mirrors the .active rule the
+     button gets when its column is currently sticky). */
+  .hm-app .hm-topbar-col-btn.active {
+    color: var(--hm-gold);
   }
 </style>
 
@@ -4712,6 +4695,22 @@
           <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>
         </svg>
       </button>
+      <span class="hm-topbar-sep"></span>
+      <!-- Sticky toggles for the side columns. Click to pin that column
+           to the viewport while the page scrolls. Active class reflects
+           current state. -->
+      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-left-sticky" type="button" aria-label="Pin left column" title="Pin left column to viewport">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="17" x2="12" y2="22"/>
+          <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+        </svg>
+      </button>
+      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-right-sticky" type="button" aria-label="Pin right column" title="Pin right column to viewport">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="17" x2="12" y2="22"/>
+          <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+        </svg>
+      </button>
     </div>
 
     <div class="hm-layout-wrap" id="hm-layout-wrap">
@@ -4724,110 +4723,73 @@
            tiles drop to single column. No drag, resize, collapse, or
            move features — the layout is fixed by design. -->
       <div class="hm-main">
-        <div class="hm-bands" id="hm-bands">
-
-          <section class="hm-band" data-band="snapshot">
-            <h2 class="hm-band-label">Snapshot</h2>
-            <div class="hm-band-tiles grid-stack">
-              <div class="grid-stack-item" gs-id="hm-indexes" data-span="full"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
-            </div>
-          </section>
-
-          <section class="hm-band" data-band="macro">
-            <h2 class="hm-band-label">Macro</h2>
-            <div class="hm-band-tiles grid-stack">
-              <div class="grid-stack-item" gs-id="hm-macrocompass" data-span="full"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
-              <div class="grid-stack-item" gs-id="hm-gave-wrap" data-span="full">
-                <div class="grid-stack-item-content">
-                  <div class="hm-gave-wrap" id="hm-gave-wrap">
-                    <div id="hm-gave-quadrant"></div>
-                    <div id="hm-gave-charts"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="grid-stack-item" gs-id="hm-economy"  data-span="half"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
-              <div class="grid-stack-item" gs-id="hm-calendar" data-span="half"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
-            </div>
-          </section>
-
-          <section class="hm-band" data-band="us-equities">
-            <h2 class="hm-band-label">US Equities</h2>
-            <div class="hm-band-tiles grid-stack">
-              <div class="grid-stack-item" gs-id="hm-heatmap-wrap" data-span="full">
-                <div class="grid-stack-item-content">
-                  <div class="hm-scroll" id="hm-heatmap-wrap">
-                    <table class="hm-table" id="hm-table"></table>
-                  </div>
-                </div>
-              </div>
-              <div class="grid-stack-item" gs-id="hm-stylefactor"  data-span="full"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
-              <div class="grid-stack-item" gs-id="hm-factors"      data-span="half"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
-              <div class="grid-stack-item" gs-id="hm-sector-chart" data-span="half"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
-              <div class="grid-stack-item" gs-id="hm-theme-treemap" data-span="full"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
-            </div>
-          </section>
-
-          <section class="hm-band" data-band="global-equities">
-            <h2 class="hm-band-label">Global Equities</h2>
-            <div class="hm-band-tiles grid-stack">
-              <div class="grid-stack-item" gs-id="hm-country-etfs"   data-span="half"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
-              <div class="grid-stack-item" gs-id="hm-global-indexes" data-span="half"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
-            </div>
-          </section>
-
-          <section class="hm-band" data-band="fixed-income">
-            <h2 class="hm-band-label">Fixed Income</h2>
-            <div class="hm-band-tiles grid-stack">
-              <div class="grid-stack-item" gs-id="hm-fixed-income" data-span="full"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
-            </div>
-          </section>
-
-          <section class="hm-band" data-band="commodities">
-            <h2 class="hm-band-label">Commodities</h2>
-            <div class="hm-band-tiles grid-stack">
-              <div class="grid-stack-item" gs-id="hm-commodity-perf" data-span="half"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
-              <div class="grid-stack-item" gs-id="hm-commodities"    data-span="half"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
-            </div>
-          </section>
-
-          <section class="hm-band" data-band="fx">
-            <h2 class="hm-band-label">FX</h2>
-            <div class="hm-band-tiles grid-stack">
-              <div class="grid-stack-item" gs-id="hm-currency-matrix" data-span="full"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
-              <div class="grid-stack-item" gs-id="hm-currencies"      data-span="full"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
-            </div>
-          </section>
-
-          <section class="hm-band" data-band="charts">
-            <h2 class="hm-band-label">Charts</h2>
-            <div class="hm-band-tiles grid-stack">
-              <div class="grid-stack-item" gs-id="hm-chart-section" data-span="full">
-                <div class="grid-stack-item-content">
-                  <div class="hm-chart-section" id="hm-chart-section">
-                    <div class="hm-gold-header">
-                      <span>Metrics Chart &middot; <b id="hm-chart-count">0</b>/6 selected</span>
-                      <span class="hm-chart-toolbar-btns">
-                        <button class="hm-btn" id="hm-chart-combined" type="button" aria-label="Combined view" title="Combined">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 14 9 10 13 13 21 7"/></svg>
-                        </button>
-                        <button class="hm-btn" id="hm-chart-separated" type="button" aria-label="Separated view" title="Separated">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
-                        </button>
-                        <button class="hm-btn" id="hm-chart-download" type="button" aria-label="Download chart" title="Download">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        </button>
-                      </span>
-                    </div>
-                    <div class="hm-chart-canvases combined" id="hm-chart-canvases"></div>
-                  </div>
+        <!-- 3-column layout. Each column is a vertical stack of panels
+             (block flow — no gridstack). Dividers between columns are
+             draggable to resize. Side columns can be made sticky via
+             topbar buttons. Below 1100px, columns stack vertically. -->
+        <div class="hm-cols grid-stack" id="hm-cols">
+          <div class="hm-col" data-col="left">
+            <div class="grid-stack-item" gs-id="hm-indexes"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-macrocompass"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-gave-wrap">
+              <div class="grid-stack-item-content">
+                <div class="hm-gave-wrap" id="hm-gave-wrap">
+                  <div id="hm-gave-quadrant"></div>
+                  <div id="hm-gave-charts"></div>
                 </div>
               </div>
             </div>
-          </section>
-
+            <div class="grid-stack-item" gs-id="hm-calendar"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-economy"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
+          </div>
+          <div class="hm-col-divider" data-divider="0" title="Drag to resize columns"></div>
+          <div class="hm-col" data-col="center">
+            <div class="grid-stack-item" gs-id="hm-stylefactor"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-factors"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-fixed-income"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-country-etfs"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-global-indexes"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-commodity-perf"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
+          </div>
+          <div class="hm-col-divider" data-divider="1" title="Drag to resize columns"></div>
+          <div class="hm-col" data-col="right">
+            <div class="grid-stack-item" gs-id="hm-currency-matrix"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-commodities"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-currencies"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-sector-chart"><div class="grid-stack-item-content"><div id="hm-sector-chart"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-theme-treemap"><div class="grid-stack-item-content"><div id="hm-theme-treemap"></div></div></div>
+            <div class="grid-stack-item" gs-id="hm-chart-section">
+              <div class="grid-stack-item-content">
+                <div class="hm-chart-section" id="hm-chart-section">
+                  <div class="hm-gold-header">
+                    <span>Metrics Chart &middot; <b id="hm-chart-count">0</b>/6 selected</span>
+                    <span class="hm-chart-toolbar-btns">
+                      <button class="hm-btn" id="hm-chart-combined" type="button" aria-label="Combined view" title="Combined">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 14 9 10 13 13 21 7"/></svg>
+                      </button>
+                      <button class="hm-btn" id="hm-chart-separated" type="button" aria-label="Separated view" title="Separated">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+                      </button>
+                      <button class="hm-btn" id="hm-chart-download" type="button" aria-label="Download chart" title="Download">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      </button>
+                    </span>
+                  </div>
+                  <div class="hm-chart-canvases combined" id="hm-chart-canvases"></div>
+                </div>
+              </div>
+            </div>
+            <div class="grid-stack-item" gs-id="hm-heatmap-wrap">
+              <div class="grid-stack-item-content">
+                <div class="hm-scroll" id="hm-heatmap-wrap">
+                  <table class="hm-table" id="hm-table"></table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <!-- Hidden legacy node kept so any orphan code that selects
-             #hm-grid doesn't error. Will be removed in a follow-up. -->
+             #hm-grid doesn't error. -->
         <div class="grid-stack" id="hm-grid" hidden></div>
 
         <!-- Metric tooltip overlay — outside the grid since it's a popover. -->
@@ -6030,12 +5992,14 @@
     if (reset) {
       reset.addEventListener('click', function () {
         setHiddenBlocks([]);
-        /* Wipe orphan key from the old 3-column layout so it doesn't
-           rot in localStorage. Cheap, no-op for users who never had
-           that version. */
+        /* Also clear the saved column layout (widths, sticky, panel
+           order) so panels go back to their default home columns and
+           sizes. Reload because the panels are already in the DOM in
+           whatever order the user moved them — easiest way to apply
+           a fresh default state is a fresh page. */
+        try { localStorage.removeItem('hm-cols-layout-v2'); } catch (e) {}
         try { localStorage.removeItem('hm-cols-layout-v1'); } catch (e) {}
-        applyBlockVisibility();
-        buildCustomizePanel();
+        window.location.reload();
       });
     }
   })();
@@ -10264,43 +10228,36 @@
      in the <head>. It measures the document, posts heights to the parent,
      and updates on content changes (charts rendering, etc.) automatically. */
 
-  /* ---------- 3-column layout with per-column gridstacks ----------
-     Replaces the previous single-grid drag-and-resize layout. Each
-     column hosts its own GridStack instance (column: 1, sizeToContent:
-     true, no manual resize handles). Panels can be moved between
-     columns via header buttons or drag-and-drop. Columns themselves
-     can be resized (drag dividers), collapsed (hide entirely), or
-     made sticky (pin in viewport while page scrolls). At narrow
-     viewports the columns stack vertically. */
-  var COLS_LAYOUT_KEY = 'hm-cols-layout-v1';
+  /* ---------- 3-column layout (no gridstack) ----------
+     Three columns (left | center | right) with draggable dividers
+     between. Side columns can be made sticky via topbar buttons.
+     Panels in each column are plain block elements at natural
+     content height — no gridstack, no absolute positioning, no
+     fixed cell sizes. */
+  var COLS_LAYOUT_KEY = 'hm-cols-layout-v2';
   var COL_IDS = ['left', 'center', 'right'];
-  var GS_SCALE = 40;  /* gs-h raw HTML units multiplied by this for cellHeight:1 px grids */
-  /* Per-column min (in px) + max (as fraction of #hm-cols container
-     width). Center has the highest min and no effective max; side
-     columns share the same min and cap at 1/3 of the dashboard width
-     so neither can dominate. Computed dynamically against the current
-     container width via getColLimits() so the max scales with the
-     viewport instead of being a hard pixel cap. */
+
+  /* Per-column min width (px) and max width (as fraction of the
+     #hm-cols container width). Side columns cap at 1/3 of total so
+     neither can dominate. */
   var COL_W_LIMITS = {
-    left:   { min: 240, maxFrac: 0.33 },
-    center: { min: 420, maxFrac: 1.0  },
-    right:  { min: 240, maxFrac: 0.33 },
+    left:   { min: 240, maxFrac: 0.40 },
+    center: { min: 380, maxFrac: 1.0  },
+    right:  { min: 240, maxFrac: 0.40 },
   };
   function getColLimits(colId) {
-    var lim = COL_W_LIMITS[colId] || { min: 240, maxFrac: 0.33 };
+    var lim = COL_W_LIMITS[colId] || { min: 240, maxFrac: 0.40 };
     var wrap = document.getElementById('hm-cols');
     var containerW = (wrap && wrap.clientWidth) || window.innerWidth || 1920;
     return {
       min: lim.min,
-      /* Clamp so max can never go below min (small viewports). */
       max: Math.max(lim.min, Math.round(lim.maxFrac * containerW)),
     };
   }
-  var COL_GAP = 20;          /* px — gap between columns (track width for the divider) */
+  var COL_DIVIDER_W = 8;     /* px — divider track width */
   var STACK_NARROW_W = 1100; /* px — below this, columns stack vertically */
-  /* Maps panel id → its DEFAULT home column. Used by Reset All to
-     restore the original arrangement. Order within column comes from
-     DOM order in the HTML. */
+
+  /* Default home column for each panel. Restore-button paths use this. */
   var DEFAULT_PANEL_COLUMN = {
     'hm-indexes':        'left',
     'hm-macrocompass':   'left',
@@ -10321,62 +10278,12 @@
     'hm-chart-section':  'right',
     'hm-heatmap-wrap':   'right',
   };
-  /* Per-column GridStack instances, keyed by col id. */
-  var colGrids = { left: null, center: null, right: null };
-  /* Back-compat alias — older code referenced gridInstance singular. */
-  var gridInstance = null;
-
-  /* Layout state persistence shape:
-     {
-       widths: [pxLeft, pxCenter, pxRight],   // null = auto-sized
-       collapsed: [bool, bool, bool],
-       sticky:    [bool, bool, bool],
-       panels:    { left: [...ids], center: [...ids], right: [...ids] }
-     }
-     Saved to localStorage under COLS_LAYOUT_KEY whenever the user
-     edits any of these. Loaded on init; falls back to defaults
-     (DEFAULT_PANEL_COLUMN + DOM order, all widths null/equal, none
-     collapsed, none sticky). */
-  function loadColsLayout() {
-    try {
-      var raw = localStorage.getItem(COLS_LAYOUT_KEY);
-      if (!raw) return null;
-      var v = JSON.parse(raw);
-      if (!v || typeof v !== 'object') return null;
-      return v;
-    } catch (e) { return null; }
-  }
-  function saveColsLayout(state) {
-    try { localStorage.setItem(COLS_LAYOUT_KEY, JSON.stringify(state)); }
-    catch (e) {}
-  }
-  /* Build the default state from DEFAULT_PANEL_COLUMN + DOM order. */
-  function buildDefaultColsState() {
-    var panels = { left: [], center: [], right: [] };
-    /* Walk panel DOM order across all 3 columns, group by their default
-       home column. This honors the HTML's authoring-time ordering. */
-    document.querySelectorAll('#hm-cols .grid-stack-item[gs-id]').forEach(function (el) {
-      var id = el.getAttribute('gs-id');
-      var col = DEFAULT_PANEL_COLUMN[id];
-      if (col && panels[col]) panels[col].push(id);
-    });
-    return {
-      widths:    [null, null, null],
-      collapsed: [false, false, false],
-      sticky:    [false, false, false],
-      panels:    panels,
-    };
-  }
 
   /* Per-panel info-popup HTML. Renderers populate this when they have
-     data-dependent notes (e.g. "Daily close · 2026-04-24"). The info
-     button in the panel header reads from here on click. Function-valued
-     so we can pull fresh `as_of` etc. at click time. */
+     data-dependent notes. */
   window.PANEL_INFO_HTML = {};
 
-  /* Display titles shown in each panel's window-style header. Kept in sync
-     with TOGGLEABLE_BLOCKS (below) — duplicated here because this runs
-     before that list exists in the IIFE. */
+  /* Display titles shown in each panel's window-style header. */
   var PANEL_TITLES = {
     'hm-commodities':    'Commodities',
     'hm-currencies':     'Currencies',
@@ -10384,7 +10291,7 @@
     'hm-economy':        'Economic Indicators',
     'hm-indexes':        'Index Snapshot',
     'hm-gave-wrap':      'Macro Regime',
-    'hm-macrocompass':   'Growth \u00d7 Policy',
+    'hm-macrocompass':   'Growth × Policy',
     'hm-stylefactor':    'Size vs Value',
     'hm-factors':        'Factors Performance',
     'hm-fixed-income':   'Fixed Income Performance',
@@ -10398,167 +10305,72 @@
     'hm-heatmap-wrap':   'Metrics Heat Map',
   };
 
-  /* Reset-layout button (topbar) — clears the saved 3-column layout
-     and reloads. Falls back to defaults: panels in their home columns
-     (DEFAULT_PANEL_COLUMN), even widths, no collapse, no sticky. */
-  (function () {
-    var rbtn = document.getElementById('hm-reset-layout');
-    if (!rbtn) return;
-    rbtn.addEventListener('click', function () {
-      try { localStorage.removeItem(COLS_LAYOUT_KEY); } catch (e) {}
-      window.location.reload();
-    });
-  })();
+  /* Layout state: per-column pixel widths (null = auto/1fr), sticky
+     flags for side columns, and per-column ordered list of panel
+     gs-ids. Persisted to localStorage. */
+  var _colWidths = [null, null, null];
 
-  /* Stub kept for back-compat — old code paths called
-     refreshUnpinAllVisibility() during pin/unpin operations. The
-     unpin-all button is gone, so this is now a no-op. */
+  function loadColsLayout() {
+    try {
+      var raw = localStorage.getItem(COLS_LAYOUT_KEY);
+      if (!raw) return null;
+      var v = JSON.parse(raw);
+      if (!v || typeof v !== 'object') return null;
+      return v;
+    } catch (e) { return null; }
+  }
+  function saveColsLayout(state) {
+    try { localStorage.setItem(COLS_LAYOUT_KEY, JSON.stringify(state)); }
+    catch (e) {}
+  }
+  function buildDefaultColsState() {
+    var panels = { left: [], center: [], right: [] };
+    document.querySelectorAll('#hm-cols .grid-stack-item[gs-id]').forEach(function (el) {
+      var id = el.getAttribute('gs-id');
+      var col = DEFAULT_PANEL_COLUMN[id];
+      if (col && panels[col]) panels[col].push(id);
+    });
+    return {
+      widths:  [null, null, null],
+      sticky:  [false, false],   /* [left, right] */
+      panels:  panels,
+    };
+  }
+
+  /* Stubs kept for back-compat with code paths still referencing them.
+     Without gridstack, gridForPanel returns null (so the legacy
+     gridstack-aware branch in applyBlockVisibility falls through to
+     the plain display toggle), and fitItemToContent is a no-op since
+     panels render at natural content height. */
+  function gridForPanel(_item) { return null; }
+  function fitItemToContent(_el) { /* no-op */ }
   function refreshUnpinAllVisibility() {}
 
-  /* Helper: returns the gridstack instance for a panel by walking up to
-     its column ancestor and looking up colGrids by data-col. Defensive
-     against being called before colGrids is initialized — happens when
-     applyBlockVisibility runs from the customize-popup IIFE during
-     script parse (before var colGrids = {...} is reached). */
-  function gridForPanel(item) {
-    if (typeof colGrids === 'undefined' || !colGrids) return null;
-    var col = item && item.closest && item.closest('.hm-col');
-    if (!col) return null;
-    return colGrids[col.getAttribute('data-col')] || null;
-  }
-
-  /* v3-era manual fit-to-content. Reads wrap.scrollHeight after a
-     synchronous reflow, computes new h in cell units, updates the cell
-     via gridstack.update + locks maxH at the freshly-measured h so the
-     user can't drag past content. Pixel-precise because cellHeight: 1
-     means cell.h = px directly. */
-  function fitItemToContent(el) {
-    if (!el) return;
-    var grid = gridForPanel(el);
-    if (!grid) return;
-    var wrap = el.querySelector('.hm-panel-wrap');
-    if (!wrap) return;
-    void el.offsetHeight;  /* flush layout so scrollHeight reads current */
-    var natural = wrap.scrollHeight;
-    if (!natural) return;
-    var cellH = grid.getCellHeight(true) || 1;
-    /* +4 = matches the gridstack marginTop:2 + marginBottom:2 inset
-       around each cell. Without it the cell is just barely shorter
-       than its content and a 1px scrollbar appears at the bottom. */
-    var newH = Math.max(1, Math.ceil((natural + 4) / cellH));
-    var node = el.gridstackNode;
-    if (!node) return;
-    try {
-      grid.update(el, { maxH: 9999, minH: 1 });
-      if (newH !== node.h) grid.update(el, { h: newH });
-      grid.update(el, { maxH: newH, minH: 1 });
-    } catch (e) {}
-  }
-
-  /* Per-panel reset: refit the panel to its content height. With
-     column-driven width (no horizontal user-resize) there's no
-     "default size" to restore — reset just collapses the panel back
-     to a tight content fit, undoing whatever vertical drag the user
-     did. */
-  function resetPanelSize(id) {
-    var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
-    if (item) fitItemToContent(item);
-  }
-
-  /* Re-assign gs-y to every panel in a column based on its current
-     DOM order. Gridstack tracks panels by node.y, NOT DOM order — so
-     after we DOM-reorder via insertBefore, we have to push the new
-     y values into gridstack via update() or panels stay rendered at
-     their old positions. Wrapped in batchUpdate so float:false's
-     auto-compact doesn't run between updates and shuffle things
-     around mid-rewrite. */
-  function reflowColumn(colId) {
-    var grid = colGrids && colGrids[colId];
-    if (!grid) return;
-    var body = document.querySelector('.hm-col[data-col="' + colId + '"] .hm-col-body');
-    if (!body) return;
-    if (typeof grid.batchUpdate === 'function') {
-      try { grid.batchUpdate(); } catch (e) {}
-    }
-    var y = 0;
-    body.querySelectorAll('.grid-stack-item').forEach(function (item) {
-      var node = item.gridstackNode;
-      if (!node) return;
-      if (node.y !== y) {
-        try { grid.update(item, { y: y }); } catch (e) {}
-      }
-      y += node.h;
-    });
-    if (typeof grid.commit === 'function') {
-      try { grid.commit(); } catch (e) {}
-    } else if (typeof grid.batchUpdate === 'function') {
-      try { grid.batchUpdate(false); } catch (e) {}
-    }
-  }
-
-  /* Move the panel one position up/down within its current column.
-     Strategy: directly swap the gs-y values of the two adjacent
-     panels using gridstack's update(). This works regardless of
-     float:true / float:false. Then DOM-reorder via insertBefore so
-     the panel is in the new logical position when persistColsLayout
-     reads DOM order. */
+  /* Move a panel one slot up within its current column. Plain DOM
+     swap — without gridstack there's no internal node.y to track. */
   function movePanelUp(id) {
-    var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
+    var item = document.querySelector('#hm-cols .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
     var prev = item.previousElementSibling;
     while (prev && !prev.matches('.grid-stack-item')) prev = prev.previousElementSibling;
     if (!prev) return;
-    var grid = gridForPanel(item);
-    var aNode = item.gridstackNode;
-    var bNode = prev.gridstackNode;
-    if (!grid || !aNode || !bNode) return;
-    /* Place item where prev started, place prev right after item. */
-    var startY = bNode.y;
-    var aH = aNode.h;
-    if (typeof grid.batchUpdate === 'function') {
-      try { grid.batchUpdate(); } catch (e) {}
-    }
-    try { grid.update(item, { y: startY }); } catch (e) {}
-    try { grid.update(prev, { y: startY + aH }); } catch (e) {}
-    if (typeof grid.commit === 'function') {
-      try { grid.commit(); } catch (e) {}
-    } else if (typeof grid.batchUpdate === 'function') {
-      try { grid.batchUpdate(false); } catch (e) {}
-    }
     item.parentNode.insertBefore(item, prev);
     persistColsLayout();
     refreshAllMoveButtons();
   }
   function movePanelDown(id) {
-    var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
+    var item = document.querySelector('#hm-cols .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
     var next = item.nextElementSibling;
     while (next && !next.matches('.grid-stack-item')) next = next.nextElementSibling;
     if (!next) return;
-    var grid = gridForPanel(item);
-    var aNode = item.gridstackNode;
-    var bNode = next.gridstackNode;
-    if (!grid || !aNode || !bNode) return;
-    /* Place next where item started, place item right after next. */
-    var startY = aNode.y;
-    var bH = bNode.h;
-    if (typeof grid.batchUpdate === 'function') {
-      try { grid.batchUpdate(); } catch (e) {}
-    }
-    try { grid.update(next, { y: startY }); } catch (e) {}
-    try { grid.update(item, { y: startY + bH }); } catch (e) {}
-    if (typeof grid.commit === 'function') {
-      try { grid.commit(); } catch (e) {}
-    } else if (typeof grid.batchUpdate === 'function') {
-      try { grid.batchUpdate(false); } catch (e) {}
-    }
     item.parentNode.insertBefore(next, item);
     persistColsLayout();
     refreshAllMoveButtons();
   }
-  /* Move the panel into the adjacent column, appending to its bottom. */
+  /* Move a panel into the adjacent column, appending to its bottom. */
   function movePanelToCol(id, dir) {
-    var item = document.querySelector('.hm-col .grid-stack-item[gs-id="' + id + '"]');
+    var item = document.querySelector('#hm-cols .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
     var fromCol = item.closest('.hm-col');
     if (!fromCol) return;
@@ -10566,213 +10378,135 @@
     var fromIdx = COL_IDS.indexOf(fromColId);
     var toIdx = fromIdx + (dir === 'left' ? -1 : 1);
     if (toIdx < 0 || toIdx >= COL_IDS.length) return;
-    var toColId = COL_IDS[toIdx];
-    var toGrid = colGrids[toColId];
-    var fromGrid = colGrids[fromColId];
-    if (!fromGrid || !toGrid) return;
-    /* Use gridstack's removeWidget(removeDOM:false, triggerEvent:false) +
-       makeWidget on the destination grid. We move the DOM element via
-       parentNode.appendChild so it lands at the bottom of the column,
-       then reflowColumn pushes correct gs-y values into the source AND
-       destination grids (without it, items in the source column have
-       stale y values, and the destination column may stack on top of
-       existing items). */
-    try { fromGrid.removeWidget(item, false, false); } catch (e) {}
-    var toBody = document.querySelector('.hm-col[data-col="' + toColId + '"] .hm-col-body');
-    if (toBody) toBody.appendChild(item);
-    try { toGrid.makeWidget(item); } catch (e) {}
-    reflowColumn(fromColId);
-    reflowColumn(toColId);
+    var toCol = document.querySelector('.hm-col[data-col="' + COL_IDS[toIdx] + '"]');
+    if (!toCol) return;
+    toCol.appendChild(item);
     persistColsLayout();
     refreshAllMoveButtons();
   }
 
-  /* Hide/show move buttons based on the panel's position so users only
-     see valid moves. ← hidden if panel is in the leftmost column, etc. */
+  /* Hide/show move buttons based on current panel position so users
+     only see valid moves. ←: hidden in leftmost column. →: hidden in
+     rightmost. ↑: hidden when first in column. ↓: hidden when last. */
   function refreshMoveButtons(item) {
     if (!item) return;
     var col = item.closest('.hm-col');
     if (!col) return;
     var colId = col.getAttribute('data-col');
     var idx = COL_IDS.indexOf(colId);
-    var isFirst = !item.previousElementSibling || !item.previousElementSibling.matches('.grid-stack-item');
-    var isLast = !item.nextElementSibling || !item.nextElementSibling.matches('.grid-stack-item');
+    var prevSib = item.previousElementSibling;
+    while (prevSib && !prevSib.matches('.grid-stack-item')) prevSib = prevSib.previousElementSibling;
+    var nextSib = item.nextElementSibling;
+    while (nextSib && !nextSib.matches('.grid-stack-item')) nextSib = nextSib.nextElementSibling;
+    var isFirst = !prevSib;
+    var isLast = !nextSib;
     var isStacked = document.body.classList.contains('hm-cols-stacked');
     var btnLeft = item.querySelector('.hm-panel-move-left');
     var btnRight = item.querySelector('.hm-panel-move-right');
     var btnUp = item.querySelector('.hm-panel-move-up');
     var btnDown = item.querySelector('.hm-panel-move-down');
-    if (btnLeft) btnLeft.hidden = isStacked || idx <= 0;
+    if (btnLeft)  btnLeft.hidden  = isStacked || idx <= 0;
     if (btnRight) btnRight.hidden = isStacked || idx >= COL_IDS.length - 1;
-    if (btnUp) btnUp.hidden = isFirst;
-    if (btnDown) btnDown.hidden = isLast;
+    if (btnUp)    btnUp.hidden    = isFirst;
+    if (btnDown)  btnDown.hidden  = isLast;
   }
   function refreshAllMoveButtons() {
-    document.querySelectorAll('.hm-col .grid-stack-item[gs-id]').forEach(refreshMoveButtons);
+    document.querySelectorAll('#hm-cols .grid-stack-item[gs-id]').forEach(refreshMoveButtons);
   }
 
-  /* Persist the current 3-column state — panel ordering per column,
-     widths, collapsed and sticky flags. Read from DOM for panels
-     (DOM order = display order in each column). Other state read from
-     stashed values + class flags. */
-  var _colWidths = [null, null, null];
+  /* Read current state from DOM + cached widths and persist it. */
   function persistColsLayout() {
     var panels = { left: [], center: [], right: [] };
     COL_IDS.forEach(function (cid) {
-      var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
-      if (!body) return;
-      body.querySelectorAll('.grid-stack-item[gs-id]').forEach(function (el) {
+      var col = document.querySelector('.hm-col[data-col="' + cid + '"]');
+      if (!col) return;
+      col.querySelectorAll(':scope > .grid-stack-item[gs-id]').forEach(function (el) {
         panels[cid].push(el.getAttribute('gs-id'));
       });
     });
-    var collapsed = COL_IDS.map(function (cid) {
-      var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
-      return !!(c && c.classList.contains('hm-col-collapsed'));
-    });
-    var sticky = COL_IDS.map(function (cid) {
+    var sticky = ['left', 'right'].map(function (cid) {
       var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
       return !!(c && c.classList.contains('hm-col-sticky'));
     });
     saveColsLayout({
-      widths:    _colWidths.slice(),
-      collapsed: collapsed,
-      sticky:    sticky,
-      panels:    panels,
+      widths:  _colWidths.slice(),
+      sticky:  sticky,
+      panels:  panels,
     });
   }
 
-  /* Apply a state object to the DOM: reorder panels into their saved
-     columns, set column widths, collapsed/sticky classes. */
+  /* Apply a saved state to the DOM: reorder panels into their saved
+     columns + slot positions, restore widths, restore sticky flags. */
   function applyColsLayout(state) {
     if (!state || !state.panels) return;
     COL_IDS.forEach(function (cid) {
-      var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
-      if (!body) return;
+      var col = document.querySelector('.hm-col[data-col="' + cid + '"]');
+      if (!col) return;
       var ids = state.panels[cid] || [];
       ids.forEach(function (id) {
-        /* Find the panel anywhere in #hm-cols and append into target body
-           in the saved order. */
         var el = document.querySelector('#hm-cols .grid-stack-item[gs-id="' + id + '"]');
-        if (el) body.appendChild(el);
+        if (el) col.appendChild(el);
       });
     });
     if (state.widths) _colWidths = state.widths.slice();
-    if (state.collapsed) {
-      state.collapsed.forEach(function (val, i) {
-        var c = document.querySelector('.hm-col[data-col="' + COL_IDS[i] + '"]');
-        if (!c) return;
-        /* Defensive: center column is always expanded — it's the
-           "main" column, never collapsible via UI. Stale saved state
-           with center collapsed (from earlier behavior) gets ignored. */
-        var isCenter = COL_IDS[i] === 'center';
-        c.classList.toggle('hm-col-collapsed', !!val && !isCenter);
-      });
-    }
     if (state.sticky) {
-      state.sticky.forEach(function (val, i) {
-        var c = document.querySelector('.hm-col[data-col="' + COL_IDS[i] + '"]');
-        if (!c) return;
-        /* Defensive: center column has no sticky toggle. */
-        var isCenter = COL_IDS[i] === 'center';
-        c.classList.toggle('hm-col-sticky', !!val && !isCenter);
+      ['left', 'right'].forEach(function (cid, i) {
+        var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
+        if (c) c.classList.toggle('hm-col-sticky', !!state.sticky[i]);
       });
     }
-    /* Apply widths after collapse state is set so collapsed-flag
-       lookup inside applyColWidths sees the latest classes. */
     applyColWidths();
     refreshAllColHeaderButtons();
   }
 
-  /* Update the CSS grid-template-columns for #hm-cols based on _colWidths
-     and collapsed flags. Collapsed column → 0px column track + hide its
-     adjacent divider (so a "0px col → 20px gap → next col" doesn't
-     leave a phantom gap on the side of a collapsed column).
-     When any side is collapsed, the center column absorbs the freed
-     space — overrides its explicit pixel width with 1fr — so a hidden
-     column doesn't just leave dead space behind. */
+  /* Update the CSS grid-template-columns based on _colWidths. Each
+     column track is either an explicit pixel width (if dragged) or
+     1fr (default / auto-fill). Dividers stay at 8px each. */
   function applyColWidths() {
     var wrap = document.getElementById('hm-cols');
     if (!wrap) return;
-    var collapsedFlags = COL_IDS.map(function (cid) {
-      var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
-      return !!(c && c.classList.contains('hm-col-collapsed'));
-    });
-    var anyCollapsed = collapsedFlags.some(function (f) { return f; });
     var parts = [];
     COL_IDS.forEach(function (cid, i) {
-      if (collapsedFlags[i]) {
-        parts.push('0px');
-      } else if (anyCollapsed && cid === 'center') {
-        /* Center stretches to absorb space freed by a collapsed
-           side, regardless of its saved pixel width. */
-        parts.push('1fr');
-      } else if (_colWidths[i] != null) {
-        parts.push(_colWidths[i] + 'px');
-      } else {
-        parts.push('1fr');
-      }
-      if (i < COL_IDS.length - 1) {
-        /* Divider takes 0 width when EITHER adjacent column is
-           collapsed (otherwise the gap stays visible on the side
-           of an invisible column). */
-        var dividerHidden = collapsedFlags[i] || collapsedFlags[i + 1];
-        parts.push((dividerHidden ? 0 : COL_GAP) + 'px');
-      }
+      if (_colWidths[i] != null) parts.push(_colWidths[i] + 'px');
+      else                       parts.push('1fr');
+      if (i < COL_IDS.length - 1) parts.push(COL_DIVIDER_W + 'px');
     });
     wrap.style.gridTemplateColumns = parts.join(' ');
-    /* Toggle a class on each divider so CSS can hide its handle
-       affordance when its track is 0 wide. */
-    var dividers = wrap.querySelectorAll('.hm-col-divider');
-    dividers.forEach(function (div, i) {
-      var hidden = collapsedFlags[i] || collapsedFlags[i + 1];
-      div.classList.toggle('hm-col-divider-hidden', !!hidden);
-    });
   }
 
-  /* Sync the 4 topbar column-control buttons (collapse-left, sticky-
-     left, sticky-right, collapse-right) with current column states.
-     'active' class = button reflects an enabled toggle. */
+  /* Sync topbar sticky-toggle buttons with current column state. */
   function refreshAllColHeaderButtons() {
     var leftCol = document.querySelector('.hm-col[data-col="left"]');
     var rightCol = document.querySelector('.hm-col[data-col="right"]');
-    var leftCollapsed = !!(leftCol && leftCol.classList.contains('hm-col-collapsed'));
     var leftSticky = !!(leftCol && leftCol.classList.contains('hm-col-sticky'));
-    var rightCollapsed = !!(rightCol && rightCol.classList.contains('hm-col-collapsed'));
     var rightSticky = !!(rightCol && rightCol.classList.contains('hm-col-sticky'));
-    function setActive(id, on) {
-      var b = document.getElementById(id);
-      if (b) b.classList.toggle('active', !!on);
-    }
-    setActive('hm-toggle-left-collapse', leftCollapsed);
-    setActive('hm-toggle-left-sticky', leftSticky);
-    setActive('hm-toggle-right-collapse', rightCollapsed);
-    setActive('hm-toggle-right-sticky', rightSticky);
+    var lb = document.getElementById('hm-toggle-left-sticky');
+    var rb = document.getElementById('hm-toggle-right-sticky');
+    if (lb) lb.classList.toggle('active', leftSticky);
+    if (rb) rb.classList.toggle('active', rightSticky);
   }
 
-  /* Wire the 4 topbar column-control buttons. */
+  /* Wire the topbar sticky-toggle buttons. */
   function wireColumnHeaders() {
-    function bindToggle(btnId, colId, cls) {
+    function bindSticky(btnId, colId) {
       var btn = document.getElementById(btnId);
       if (!btn) return;
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         var c = document.querySelector('.hm-col[data-col="' + colId + '"]');
         if (!c) return;
-        c.classList.toggle(cls);
-        if (cls === 'hm-col-collapsed') applyColWidths();
+        c.classList.toggle('hm-col-sticky');
         refreshAllColHeaderButtons();
         persistColsLayout();
       });
     }
-    bindToggle('hm-toggle-left-collapse', 'left', 'hm-col-collapsed');
-    bindToggle('hm-toggle-left-sticky', 'left', 'hm-col-sticky');
-    bindToggle('hm-toggle-right-collapse', 'right', 'hm-col-collapsed');
-    bindToggle('hm-toggle-right-sticky', 'right', 'hm-col-sticky');
+    bindSticky('hm-toggle-left-sticky', 'left');
+    bindSticky('hm-toggle-right-sticky', 'right');
   }
 
-  /* Drag-to-resize column dividers. Updates _colWidths in px, respecting
-     per-column min/max from COL_W_LIMITS. Skipped when layout is narrow-
-     stacked (dividers are hidden by CSS). */
+  /* Drag-to-resize column dividers. Updates _colWidths in px,
+     respecting per-column min/max from COL_W_LIMITS. Skipped when
+     stacked (dividers are CSS-hidden). */
   function wireColumnDividers() {
     document.querySelectorAll('#hm-cols .hm-col-divider').forEach(function (div) {
       var dragging = false;
@@ -10800,11 +10534,7 @@
         var delta = e.clientX - startX;
         var leftLimits = getColLimits(leftId);
         var rightLimits = getColLimits(rightId);
-        /* Compute proposed sizes, then clamp delta so both sides stay
-           within their min/max. The available range for delta:
-             max(leftLimits.min - startLeftW, startRightW - rightLimits.max)
-             …
-             min(leftLimits.max - startLeftW, startRightW - rightLimits.min)  */
+        /* Clamp delta so both sides stay within their min/max. */
         var minDelta = Math.max(
           leftLimits.min - startLeftW,
           startRightW - rightLimits.max
@@ -10829,9 +10559,9 @@
     });
   }
 
-  /* Track viewport width to toggle .hm-cols-stacked on body. Below
-     STACK_NARROW_W, columns stack vertically (CSS-driven); above,
-     the 3-column grid layout applies. */
+  /* Track viewport width to toggle .hm-cols-stacked on body. The CSS
+     handles the actual stack-vs-grid via @media (max-width: 1100px),
+     so this class is mainly used by JS (move-button visibility). */
   function refreshStackedFlag() {
     var vw = document.documentElement.clientWidth || window.innerWidth || 1920;
     var stacked = vw < STACK_NARROW_W;
@@ -10839,31 +10569,20 @@
     refreshAllMoveButtons();
   }
 
-  /* Measure the topbar's actual rendered height + its bordered-box
-     bottom edge in viewport coords, and expose as --hm-sticky-top so
-     .hm-col-sticky can sit just below it. Use getBoundingClientRect
-     so we account for box-shadow / margin / negative-margin / any
-     visual extension past offsetHeight. */
+  /* Measure the topbar's actual rendered height and expose as
+     --hm-sticky-top so .hm-col-sticky sits just below it. */
   function refreshStickyOffset() {
     var topbar = document.querySelector('.hm-topbar');
     if (!topbar) return;
-    /* When the topbar is in its sticky-stuck state, its bottom edge
-       in viewport coords = its rendered height + its top offset. We
-       use offsetHeight (full bordered box) and add a generous 16px
-       so the panel header inside the first sticky-column panel
-       doesn't visually butt against the topbar. */
     var h = topbar.offsetHeight || 0;
     if (!h) return;
     var top = h + 16;
     document.documentElement.style.setProperty('--hm-sticky-top', top + 'px');
-    try { console.info('[heatmap] sticky-top =', top, 'topbar.offsetHeight =', h); } catch (e) {}
   }
   window.addEventListener('resize', function () {
     refreshStackedFlag();
     refreshStickyOffset();
   });
-  /* Run once at DOM ready in case the script-time body wasn't fully
-     laid out yet. */
   if (document.readyState !== 'loading') {
     refreshStickyOffset();
   } else {
@@ -10877,8 +10596,11 @@
      in HTML. Function name kept (initGridStack) so the safeRender
      pipeline at the bottom of the script doesn't need to change. */
   function initGridStack() {
-    /* 1. Inject panel header bar into every panel slot. */
-    document.querySelectorAll("#hm-bands .grid-stack-item").forEach(function (item) {
+    /* 1. Inject panel header bar into every panel slot. Header
+       chrome: info, ←, ↑, ↓, →, [stack], download, close. Move
+       buttons auto-hide at column/position edges via
+       refreshAllMoveButtons. */
+    document.querySelectorAll("#hm-cols .grid-stack-item").forEach(function (item) {
       var content = item.querySelector(".grid-stack-item-content");
       if (!content || content.querySelector(".hm-panel-wrap")) return;
       var existing = Array.from(content.children);
@@ -10889,6 +10611,18 @@
       header.innerHTML =
         '<button class="hm-panel-btn hm-panel-info" type="button" data-action="info" title="About this panel" aria-label="About this panel">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>' +
+        '</button>' +
+        '<button class="hm-panel-btn hm-panel-move-left" type="button" data-action="move-left" title="Move to column on the left" aria-label="Move left">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
+        '</button>' +
+        '<button class="hm-panel-btn hm-panel-move-up" type="button" data-action="move-up" title="Move up" aria-label="Move up">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>' +
+        '</button>' +
+        '<button class="hm-panel-btn hm-panel-move-down" type="button" data-action="move-down" title="Move down" aria-label="Move down">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+        '</button>' +
+        '<button class="hm-panel-btn hm-panel-move-right" type="button" data-action="move-right" title="Move to column on the right" aria-label="Move right">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
         '</button>' +
         '<button class="hm-panel-btn hm-panel-stack" type="button" data-action="stack" title="Switch to vertical stack" aria-label="Toggle stack orientation">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="4" height="16"/><rect x="10" y="4" width="4" height="16"/><rect x="16" y="4" width="4" height="16"/></svg>' +
@@ -10920,6 +10654,14 @@
         exportPanelImage(item, btn);
       } else if (action === 'info') {
         toggleInfoPopup(item, id, btn);
+      } else if (action === 'move-up') {
+        movePanelUp(id);
+      } else if (action === 'move-down') {
+        movePanelDown(id);
+      } else if (action === 'move-left') {
+        movePanelToCol(id, 'left');
+      } else if (action === 'move-right') {
+        movePanelToCol(id, 'right');
       } else if (action === 'close') {
         if (id === 'hm-chart-section' && typeof chartState !== 'undefined') {
           chartState.selected = [];
@@ -10953,15 +10695,21 @@
       });
     });
 
-    /* 4. Sticky-label offset. Section labels are sticky at top:
-       --hm-sticky-top, set to topbar height + a small breathing-room
-       gap so they don't overlap the topbar. Re-run on resize. */
-    refreshStickyOffset();
+    /* 4. Restore saved layout (panel order, widths, sticky flags).
+       Falls back to defaults built from DEFAULT_PANEL_COLUMN. */
+    var savedState = loadColsLayout() || buildDefaultColsState();
+    applyColsLayout(savedState);
 
-    /* gridInstance back-compat: nothing to wire, but the customize
-       "Show all" path checks window.gridInstance to decide whether to
-       reload. Set a sentinel so that path STILL reloads (cheapest way
-       to clear stale cached state). */
+    /* 5. Wire column features: topbar sticky toggles + draggable
+       dividers between columns. */
+    wireColumnHeaders();
+    wireColumnDividers();
+    refreshStackedFlag();
+    refreshStickyOffset();
+    refreshAllMoveButtons();
+
+    /* gridInstance back-compat: legacy code paths gate on
+       window.gridInstance being truthy. Sentinel keeps them happy. */
     window.gridInstance = true;
   }
 
