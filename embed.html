@@ -4446,37 +4446,40 @@
 
   /* ===================================================================
      SECTIONED LAYOUT (replaces the previous 3-column gridstack layout).
-     Each .hm-section is a labeled band stacked vertically. Inside each
-     section, .hm-section-tiles is a 2-column CSS grid; panels with
+     Each .hm-band is a labeled band stacked vertically. Inside each
+     band, .hm-band-tiles is a 2-column CSS grid; panels with
      data-span="full" span both columns, panels with data-span="half"
      take one. Below 900px viewport everything drops to a single
-     column. Section labels are sticky at the top of the viewport.
+     column. Band labels are sticky at the top of the viewport.
+
+     Class prefix is .hm-band-* (NOT .hm-section-*) because .hm-section
+     and .hm-section-label are already in use by the heatmap table for
+     its group-header rows (tr.hm-section, td.hm-section-label) — using
+     the same names made my layout rules accidentally apply
+     position:sticky / display:block to those table rows + cells,
+     destroying the table layout.
      =================================================================== */
-  .hm-app .hm-sections {
+  .hm-app .hm-bands {
     display: flex;
     flex-direction: column;
     gap: 0;
     width: 100%;
-    /* Override any leftover gridstack absolute-positioning rule that
-       targets .grid-stack ancestors. The gridstack CDN is no longer
-       loaded so this is just defense in depth. */
     position: static;
     height: auto;
     min-height: 0;
   }
-  .hm-app .hm-section {
+  .hm-app .hm-band {
     display: block;
     padding: 0 0 24px 0;
-    margin: 0;
+    margin: 16px 0 0 0;
     border-top: 1px solid var(--hm-border);
-    margin-top: 16px;
   }
-  .hm-app .hm-section:first-child {
+  .hm-app .hm-band:first-child {
     border-top: 0;
     margin-top: 0;
   }
-  .hm-app .hm-section-label {
-    /* Sticky to top of viewport while the section is on screen.
+  .hm-app .hm-band-label {
+    /* Sticky to top of viewport while the band is on screen.
        --hm-sticky-top is set by JS to topbar height + 16px. */
     position: sticky;
     top: var(--hm-sticky-top, 72px);
@@ -4492,23 +4495,22 @@
     background: var(--hm-bg-warm, #fdf9f1);
     border-bottom: 2px solid var(--hm-gold, #daa520);
   }
-  .hm-app.dark .hm-section-label {
+  .hm-app.dark .hm-band-label {
     background: #1a1d23;
     color: var(--hm-gold-light, #e6bf66);
     border-bottom-color: var(--hm-gold, #daa520);
   }
-  .hm-app .hm-section-tiles {
+  .hm-app .hm-band-tiles {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     align-items: start;
-    /* Reset any leftover gridstack positioning. */
     position: static;
     height: auto;
     min-height: 0;
   }
   /* Full-width panels span both columns of the 2-up grid. */
-  .hm-app .hm-section-tiles > .grid-stack-item[data-span="full"] {
+  .hm-app .hm-band-tiles > .grid-stack-item[data-span="full"] {
     grid-column: 1 / -1;
   }
   /* Each panel slot in the new layout: take its content's natural
@@ -4516,7 +4518,7 @@
      .grid-stack-item class is kept purely so the existing per-panel
      styling rules (e.g. .hm-app .grid-stack-item[gs-id="..."] ...)
      keep matching. */
-  .hm-app .hm-section-tiles > .grid-stack-item {
+  .hm-app .hm-band-tiles > .grid-stack-item {
     position: static !important;
     left: auto !important;
     top: auto !important;
@@ -4526,10 +4528,9 @@
     height: auto !important;
     min-height: 0 !important;
     transform: none !important;
-    /* Square corners — explicit user request. */
     border-radius: 0;
   }
-  .hm-app .hm-section-tiles > .grid-stack-item > .grid-stack-item-content {
+  .hm-app .hm-band-tiles > .grid-stack-item > .grid-stack-item-content {
     position: static !important;
     inset: auto !important;
     width: 100% !important;
@@ -4540,29 +4541,29 @@
   /* For panels with internal scrolling (heatmap table, ranking
      navbars), keep their scroll containers self-contained. They
      manage their own overflow internally. */
-  .hm-app .hm-section-tiles > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content,
-  .hm-app .hm-section-tiles > .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
-  .hm-app .hm-section-tiles > .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
-  .hm-app .hm-section-tiles > .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
-  .hm-app .hm-section-tiles > .grid-stack-item[gs-id="hm-country-etfs"] > .grid-stack-item-content,
-  .hm-app .hm-section-tiles > .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content,
-  .hm-app .hm-section-tiles > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content,
-  .hm-app .hm-section-tiles > .grid-stack-item[gs-id="hm-indexes"] > .grid-stack-item-content {
+  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content,
+  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
+  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
+  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
+  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-country-etfs"] > .grid-stack-item-content,
+  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content,
+  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content,
+  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-indexes"] > .grid-stack-item-content {
     overflow: auto;
   }
   /* Cap heatmap height so the page stays a reasonable length — the
      internal scroll container handles long tables. */
-  .hm-app .hm-section-tiles > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content {
+  .hm-app .hm-band-tiles > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content {
     max-height: 80vh;
   }
 
   /* Drop to single column on narrow viewports. */
   @media (max-width: 900px) {
-    .hm-app .hm-section-tiles {
+    .hm-app .hm-band-tiles {
       grid-template-columns: 1fr;
     }
-    .hm-app .hm-section-tiles > .grid-stack-item[data-span="half"],
-    .hm-app .hm-section-tiles > .grid-stack-item[data-span="full"] {
+    .hm-app .hm-band-tiles > .grid-stack-item[data-span="half"],
+    .hm-app .hm-band-tiles > .grid-stack-item[data-span="full"] {
       grid-column: 1 / -1;
     }
   }
@@ -4585,23 +4586,23 @@
     display: none !important;
   }
 
-  /* Kill panel-header sticky in the new sectioned layout. Section
+  /* Kill panel-header sticky in the new sectioned layout. Band
      labels handle the "always visible" need; panel headers just sit
      at the top of each panel and scroll with the page. (The original
      sticky was for in-cell scroll containers; with content-driven
      panel heights most panels don't have internal scroll, and a
      sticky header with no scroll ancestor inside the cell would
-     escape to the page and overlap the section label above.) */
-  .hm-app .hm-section-tiles .hm-panel-header {
+     escape to the page and overlap the band label above.) */
+  .hm-app .hm-band-tiles .hm-panel-header {
     position: static !important;
     top: auto !important;
     z-index: auto !important;
   }
   /* Kill the in-panel filter navbar sticky on ranking panels. The
-     section label is now the "always visible" element; the filter
-     navbar would otherwise escape to the page and overlap section
+     band label is now the "always visible" element; the filter
+     navbar would otherwise escape to the page and overlap band
      labels. */
-  .hm-app .hm-section-tiles .hm-factors-header {
+  .hm-app .hm-band-tiles .hm-factors-header {
     position: static !important;
     top: auto !important;
     left: auto !important;
@@ -4612,7 +4613,7 @@
      panel-header now static, thead sticks at top:0 of the cell
      instead of the original 24px (which assumed a sticky
      panel-header was above it). */
-  .hm-app .hm-section-tiles .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
+  .hm-app .hm-band-tiles .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
     top: 0 !important;
   }
 </style>
@@ -4723,18 +4724,18 @@
            tiles drop to single column. No drag, resize, collapse, or
            move features — the layout is fixed by design. -->
       <div class="hm-main">
-        <div class="hm-sections" id="hm-sections">
+        <div class="hm-bands" id="hm-bands">
 
-          <section class="hm-section" data-section="snapshot">
-            <h2 class="hm-section-label">Snapshot</h2>
-            <div class="hm-section-tiles grid-stack">
+          <section class="hm-band" data-band="snapshot">
+            <h2 class="hm-band-label">Snapshot</h2>
+            <div class="hm-band-tiles grid-stack">
               <div class="grid-stack-item" gs-id="hm-indexes" data-span="full"><div class="grid-stack-item-content"><div id="hm-indexes"></div></div></div>
             </div>
           </section>
 
-          <section class="hm-section" data-section="macro">
-            <h2 class="hm-section-label">Macro</h2>
-            <div class="hm-section-tiles grid-stack">
+          <section class="hm-band" data-band="macro">
+            <h2 class="hm-band-label">Macro</h2>
+            <div class="hm-band-tiles grid-stack">
               <div class="grid-stack-item" gs-id="hm-macrocompass" data-span="full"><div class="grid-stack-item-content"><div id="hm-macrocompass"></div></div></div>
               <div class="grid-stack-item" gs-id="hm-gave-wrap" data-span="full">
                 <div class="grid-stack-item-content">
@@ -4749,9 +4750,9 @@
             </div>
           </section>
 
-          <section class="hm-section" data-section="us-equities">
-            <h2 class="hm-section-label">US Equities</h2>
-            <div class="hm-section-tiles grid-stack">
+          <section class="hm-band" data-band="us-equities">
+            <h2 class="hm-band-label">US Equities</h2>
+            <div class="hm-band-tiles grid-stack">
               <div class="grid-stack-item" gs-id="hm-heatmap-wrap" data-span="full">
                 <div class="grid-stack-item-content">
                   <div class="hm-scroll" id="hm-heatmap-wrap">
@@ -4766,40 +4767,40 @@
             </div>
           </section>
 
-          <section class="hm-section" data-section="global-equities">
-            <h2 class="hm-section-label">Global Equities</h2>
-            <div class="hm-section-tiles grid-stack">
+          <section class="hm-band" data-band="global-equities">
+            <h2 class="hm-band-label">Global Equities</h2>
+            <div class="hm-band-tiles grid-stack">
               <div class="grid-stack-item" gs-id="hm-country-etfs"   data-span="half"><div class="grid-stack-item-content"><div id="hm-country-etfs"></div></div></div>
               <div class="grid-stack-item" gs-id="hm-global-indexes" data-span="half"><div class="grid-stack-item-content"><div id="hm-global-indexes"></div></div></div>
             </div>
           </section>
 
-          <section class="hm-section" data-section="fixed-income">
-            <h2 class="hm-section-label">Fixed Income</h2>
-            <div class="hm-section-tiles grid-stack">
+          <section class="hm-band" data-band="fixed-income">
+            <h2 class="hm-band-label">Fixed Income</h2>
+            <div class="hm-band-tiles grid-stack">
               <div class="grid-stack-item" gs-id="hm-fixed-income" data-span="full"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
             </div>
           </section>
 
-          <section class="hm-section" data-section="commodities">
-            <h2 class="hm-section-label">Commodities</h2>
-            <div class="hm-section-tiles grid-stack">
+          <section class="hm-band" data-band="commodities">
+            <h2 class="hm-band-label">Commodities</h2>
+            <div class="hm-band-tiles grid-stack">
               <div class="grid-stack-item" gs-id="hm-commodity-perf" data-span="half"><div class="grid-stack-item-content"><div id="hm-commodity-perf"></div></div></div>
               <div class="grid-stack-item" gs-id="hm-commodities"    data-span="half"><div class="grid-stack-item-content"><div id="hm-commodities"></div></div></div>
             </div>
           </section>
 
-          <section class="hm-section" data-section="fx">
-            <h2 class="hm-section-label">FX</h2>
-            <div class="hm-section-tiles grid-stack">
+          <section class="hm-band" data-band="fx">
+            <h2 class="hm-band-label">FX</h2>
+            <div class="hm-band-tiles grid-stack">
               <div class="grid-stack-item" gs-id="hm-currency-matrix" data-span="full"><div class="grid-stack-item-content"><div id="hm-currency-matrix"></div></div></div>
               <div class="grid-stack-item" gs-id="hm-currencies"      data-span="full"><div class="grid-stack-item-content"><div id="hm-currencies"></div></div></div>
             </div>
           </section>
 
-          <section class="hm-section" data-section="charts">
-            <h2 class="hm-section-label">Charts</h2>
-            <div class="hm-section-tiles grid-stack">
+          <section class="hm-band" data-band="charts">
+            <h2 class="hm-band-label">Charts</h2>
+            <div class="hm-band-tiles grid-stack">
               <div class="grid-stack-item" gs-id="hm-chart-section" data-span="full">
                 <div class="grid-stack-item-content">
                   <div class="hm-chart-section" id="hm-chart-section">
@@ -10877,7 +10878,7 @@
      pipeline at the bottom of the script doesn't need to change. */
   function initGridStack() {
     /* 1. Inject panel header bar into every panel slot. */
-    document.querySelectorAll("#hm-sections .grid-stack-item").forEach(function (item) {
+    document.querySelectorAll("#hm-bands .grid-stack-item").forEach(function (item) {
       var content = item.querySelector(".grid-stack-item-content");
       if (!content || content.querySelector(".hm-panel-wrap")) return;
       var existing = Array.from(content.children);
