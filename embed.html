@@ -569,14 +569,12 @@
     visibility: hidden;
   }
   .hm-app .hm-col-sticky {
-    /* Sticky: column stays pinned in viewport while page scrolls.
-       No max-height/overflow — those created an internal scrollbar
-       that obscured whether sticky was actually working. The column
-       just sticks at top: 8px from viewport. If a column is taller
-       than the viewport, its bottom goes off-screen as user scrolls,
-       which is standard sticky behavior. */
+    /* Sticky: column stays pinned in viewport, BELOW the topbar.
+       Topbar is itself sticky (height ≈ 52px). top:56px puts the
+       column flush below the topbar with a 4px gap. Lower z-index
+       than the topbar (1000) so column never paints over it. */
     position: sticky !important;
-    top: 8px;
+    top: 56px;
     align-self: start;
     z-index: 5;
   }
@@ -630,10 +628,11 @@
   .hm-app .hm-col-body {
     /* Gridstack target. No border or padding — each panel inside
        carries its own gold outline (the .grid-stack-item-content
-       box-shadow), so an outer border would just double-wrap. */
+       box-shadow), so an outer border would just double-wrap. No
+       min-height — let the body shrink to its content's height; an
+       empty body (all panels hidden) just disappears. */
     background: transparent;
-    flex: 1 1 auto;
-    min-height: 100px;
+    flex: 0 1 auto;
   }
   /* Gridstack v12 uses position: absolute for cell items. Make the
      column body a positioning context. */
@@ -10738,10 +10737,10 @@
     var sharedOpts = {
       column: 1,
       cellHeight: 40,
-      /* All margins zero — panels stack flush with no gridstack-added
-         padding around them. Each panel's gold outline (1px box-shadow
-         on .grid-stack-item-content) is the only visual chrome. */
-      marginLeft: 0, marginRight: 0, marginTop: 0, marginBottom: 0,
+      /* 4px gap between stacked panels (2px above + 2px below each).
+         Just enough that the gold outlines don't double up into a 2px
+         line where panels touch. */
+      marginLeft: 0, marginRight: 0, marginTop: 2, marginBottom: 2,
       float: false,
       animate: true,
       resizable: { handles: '' },
