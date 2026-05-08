@@ -4652,6 +4652,26 @@
     top: 0 !important;
   }
 
+  /* Defensive stretch: when columns collapse/expand the cell width
+     changes. The panel-wrap should grow to fill the new cell width
+     so the gold header band (#daa520) and any internal navbar
+     stretch with it. min-width:100% on every panel-wrap inside a
+     column ensures this — panels that have width:max-content
+     already get this; this rule covers the rest with the same
+     guarantee so behavior is uniform. */
+  .hm-app .hm-col > .grid-stack-item > .grid-stack-item-content > .hm-panel-wrap {
+    min-width: 100%;
+    box-sizing: border-box;
+  }
+  /* And direct gold-header descendants stretch to the wrap width
+     (which is now at least cell width). */
+  .hm-app .hm-col > .grid-stack-item .hm-gold-header,
+  .hm-app .hm-col > .grid-stack-item .hm-sf-header,
+  .hm-app .hm-col > .grid-stack-item .hm-mc-header {
+    min-width: 100%;
+    box-sizing: border-box;
+  }
+
   /* Topbar sticky button active state (mirrors the .active rule the
      button gets when its column is currently sticky). */
   .hm-app .hm-topbar-col-btn.active {
@@ -10555,18 +10575,21 @@
 
   /* Update the CSS grid-template-columns based on _colWidths,
      collapsed flags, and saved pixel widths. Rules:
-       - Collapsed column → 0px track. Adjacent divider hidden too
-         (otherwise an 8px gap would float on the side of an
-         invisible column).
-       - When any side is collapsed, center stretches to absorb
-         the freed space (use minmax(0, 1fr) regardless of saved
-         pixel width).
+       - Collapsed column → 0px track. Adjacent divider also 0px
+         and gets a "hidden" class so CSS skips its handle.
+       - When any side is collapsed, center stretches via
+         minmax(0, 1fr) regardless of its saved pixel width.
        - Otherwise: saved px width if dragged, else minmax(0, 1fr).
-       - Saved pixel widths are clamped so a stale wide value can't
-         squeeze the other columns below their minimums.
-     minmax(0, 1fr) is critical here — bare `1fr` would let tracks
-     grow to fit min-content of wide panels (currency matrix,
-     rankings). */
+       - If sum of fixed widths + flex-column minimums exceeds the
+         container width (e.g. saved widths from a wider viewport
+         being applied at a narrower viewport, or a saved layout
+         being restored after collapse/expand round-trip), scale
+         down the fixed widths PROPORTIONALLY so the layout fits.
+         Without this, the right column would visually overflow
+         past the page edge — exactly the bug the user hit.
+     minmax(0, 1fr) is critical for the flex columns — bare `1fr`
+     would let tracks grow to fit min-content of wide panels
+     (currency matrix, rankings). */
   function applyColWidths() {
     var wrap = document.getElementById('hm-cols');
     if (!wrap) return;
@@ -10576,33 +10599,65 @@
     });
     var anyCollapsed = collapsedFlags.some(function (f) { return f; });
     var containerW = wrap.clientWidth || window.innerWidth || 1920;
-    var avail = Math.max(0, containerW - COL_DIVIDER_W * (COL_IDS.length - 1));
+    /* Subtract only VISIBLE divider widths (a divider next to a
+       collapsed column shrinks to 0px). */
+    var visibleDividers = 0;
+    for (var k = 0; k < COL_IDS.length - 1; k++) {
+      if (!collapsedFlags[k] && !collapsedFlags[k + 1]) visibleDividers++;
+    }
+    var avail = Math.max(0, containerW - COL_DIVIDER_W * visibleDividers);
+
+    /* Per-column intent: collapsed (0px), fixed (px), or flex
+       (minmax(0, 1fr)). Center force-flex when anyCollapsed. */
+    var lims = COL_IDS.map(function (cid) {
+      return COL_W_LIMITS[cid] || { min: 240, maxFrac: 0.40 };
+    });
+    var intents = COL_IDS.map(function (cid, i) {
+      if (collapsedFlags[i]) return { kind: 'collapsed' };
+      if (anyCollapsed && cid === 'center') return { kind: 'flex' };
+      if (_colWidths[i] != null) {
+        return { kind: 'fixed', px: Math.max(lims[i].min, _colWidths[i]) };
+      }
+      return { kind: 'flex' };
+    });
+
+    /* Total width demanded: sum of fixed widths + minimums for each
+       flex column (because flex columns will be at least their min
+       in the final layout). If this exceeds avail, scale down the
+       fixed columns proportionally — but never below their per-col
+       min. */
+    var fixedSum = intents.reduce(function (s, it, i) {
+      return s + (it.kind === 'fixed' ? it.px : 0);
+    }, 0);
+    var flexMinSum = intents.reduce(function (s, it, i) {
+      return s + (it.kind === 'flex' ? lims[i].min : 0);
+    }, 0);
+    if (fixedSum + flexMinSum > avail && fixedSum > 0) {
+      var availForFixed = Math.max(0, avail - flexMinSum);
+      var scale = availForFixed / fixedSum;
+      intents.forEach(function (it, i) {
+        if (it.kind === 'fixed') {
+          it.px = Math.max(lims[i].min, Math.floor(it.px * scale));
+        }
+      });
+    }
+
+    /* Build the grid-template-columns string. */
     var parts = [];
     COL_IDS.forEach(function (cid, i) {
-      if (collapsedFlags[i]) {
-        parts.push('0px');
-      } else if (anyCollapsed && cid === 'center') {
-        parts.push('minmax(0, 1fr)');
-      } else if (_colWidths[i] != null) {
-        var lim = COL_W_LIMITS[cid] || { min: 240, maxFrac: 0.40 };
-        var otherMin = 0;
-        COL_IDS.forEach(function (c, j) {
-          if (j !== i && !collapsedFlags[j]) otherMin += (COL_W_LIMITS[c] || { min: 240 }).min;
-        });
-        var maxAllowed = Math.max(lim.min, avail - otherMin);
-        var w = Math.max(lim.min, Math.min(_colWidths[i], maxAllowed));
-        parts.push(w + 'px');
-      } else {
-        parts.push('minmax(0, 1fr)');
-      }
+      var it = intents[i];
+      if (it.kind === 'collapsed')   parts.push('0px');
+      else if (it.kind === 'fixed')  parts.push(it.px + 'px');
+      else                            parts.push('minmax(0, 1fr)');
       if (i < COL_IDS.length - 1) {
         var dividerHidden = collapsedFlags[i] || collapsedFlags[i + 1];
         parts.push((dividerHidden ? 0 : COL_DIVIDER_W) + 'px');
       }
     });
     wrap.style.gridTemplateColumns = parts.join(' ');
-    /* Toggle a class on each divider so CSS can hide its handle
-       affordance when its track is 0 wide. */
+
+    /* Toggle a class on each divider so CSS can skip painting its
+       handle when its track is 0 wide. */
     var dividers = wrap.querySelectorAll('.hm-col-divider');
     dividers.forEach(function (div, i) {
       var hidden = collapsedFlags[i] || collapsedFlags[i + 1];
@@ -10632,7 +10687,14 @@
   /* Wire the topbar collapse + sticky toggle buttons. Collapsing a
      column also re-runs applyColWidths so the grid template updates
      (track shrinks to 0, adjacent divider hides, center column
-     stretches to fill freed space). */
+     stretches to fill freed space). After a layout-changing toggle
+     we dispatch a window resize event so anything that watches
+     viewport changes — Chart.js's `responsive: true` ResizeObserver,
+     panel-internal responsive code, the column-width clamp on
+     resize itself — gets a chance to re-measure to the new cell
+     widths. Without this, charts that were rendered at the OLD
+     width keep their old internal canvas size after the cell grows
+     and look squished against an empty stretched gold-header. */
   function wireColumnHeaders() {
     function bindToggle(btnId, colId, cls, recomputeWidths) {
       var btn = document.getElementById(btnId);
@@ -10642,7 +10704,14 @@
         var c = document.querySelector('.hm-col[data-col="' + colId + '"]');
         if (!c) return;
         c.classList.toggle(cls);
-        if (recomputeWidths) applyColWidths();
+        if (recomputeWidths) {
+          applyColWidths();
+          /* Defer the resize event to next frame so the new grid
+             template has actually reflowed before charts measure. */
+          requestAnimationFrame(function () {
+            try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+          });
+        }
         refreshAllColHeaderButtons();
         persistColsLayout();
       });
@@ -10731,6 +10800,10 @@
   window.addEventListener('resize', function () {
     refreshStackedFlag();
     refreshStickyOffset();
+    /* Re-apply column widths on viewport change so saved widths
+       that no longer fit get scaled down (and grow back if the
+       viewport widens again). */
+    if (typeof applyColWidths === 'function') applyColWidths();
   });
   if (document.readyState !== 'loading') {
     refreshStickyOffset();
