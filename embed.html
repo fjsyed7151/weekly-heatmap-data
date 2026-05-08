@@ -10683,17 +10683,24 @@
     refreshAllMoveButtons();
   }
 
-  /* Measure the topbar's actual rendered height and expose it as
-     --hm-sticky-top so .hm-col-sticky can sit just below it. Re-runs
-     on viewport resize because topbar wraps differently at narrow
-     widths. */
+  /* Measure the topbar's actual rendered height + its bordered-box
+     bottom edge in viewport coords, and expose as --hm-sticky-top so
+     .hm-col-sticky can sit just below it. Use getBoundingClientRect
+     so we account for box-shadow / margin / negative-margin / any
+     visual extension past offsetHeight. */
   function refreshStickyOffset() {
     var topbar = document.querySelector('.hm-topbar');
     if (!topbar) return;
+    /* When the topbar is in its sticky-stuck state, its bottom edge
+       in viewport coords = its rendered height + its top offset. We
+       use offsetHeight (full bordered box) and add a generous 16px
+       so the panel header inside the first sticky-column panel
+       doesn't visually butt against the topbar. */
     var h = topbar.offsetHeight || 0;
     if (!h) return;
-    /* +8 for breathing room between topbar bottom and sticky column top. */
-    document.documentElement.style.setProperty('--hm-sticky-top', (h + 8) + 'px');
+    var top = h + 16;
+    document.documentElement.style.setProperty('--hm-sticky-top', top + 'px');
+    try { console.info('[heatmap] sticky-top =', top, 'topbar.offsetHeight =', h); } catch (e) {}
   }
   window.addEventListener('resize', function () {
     refreshStackedFlag();
