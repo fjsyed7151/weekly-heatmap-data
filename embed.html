@@ -570,13 +570,15 @@
   }
   .hm-app .hm-col-sticky {
     /* Sticky: column stays pinned in viewport while page scrolls.
-       max-height + overflow-y means the column scrolls internally
-       if its content exceeds the visible area. top offset matches the
-       site topbar height (40px desktop). */
-    position: sticky;
-    top: 40px;
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
+       No max-height/overflow — those created an internal scrollbar
+       that obscured whether sticky was actually working. The column
+       just sticks at top: 8px from viewport. If a column is taller
+       than the viewport, its bottom goes off-screen as user scrolls,
+       which is standard sticky behavior. */
+    position: sticky !important;
+    top: 8px;
+    align-self: start;
+    z-index: 5;
   }
   .hm-app .hm-col-header {
     display: flex;
@@ -10736,7 +10738,10 @@
     var sharedOpts = {
       column: 1,
       cellHeight: 40,
-      marginLeft: 0, marginRight: 0, marginTop: 2, marginBottom: 2,
+      /* All margins zero — panels stack flush with no gridstack-added
+         padding around them. Each panel's gold outline (1px box-shadow
+         on .grid-stack-item-content) is the only visual chrome. */
+      marginLeft: 0, marginRight: 0, marginTop: 0, marginBottom: 0,
       float: false,
       animate: true,
       resizable: { handles: '' },
