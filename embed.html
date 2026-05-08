@@ -4504,6 +4504,27 @@
   body.hm-col-resizing { cursor: col-resize; }
   body.hm-col-resizing * { cursor: col-resize !important; }
 
+  /* Divider hidden when its adjacent column is collapsed —
+     applyColWidths sets the track width to 0 AND adds this class
+     so the visible 2px hairline (the ::after handle) doesn't paint
+     a stray vertical line where a 0-wide column meets the next. */
+  .hm-app .hm-col-divider-hidden::after { display: none !important; }
+  .hm-app .hm-col-divider-hidden { pointer-events: none; }
+
+  /* Collapsed column: track width is 0 (set by applyColWidths). The
+     column element still exists in the DOM but its contents are
+     visually hidden + non-interactive. Using overflow:hidden +
+     visibility:hidden + min-width:0 instead of display:none so the
+     CSS Grid still sees a valid item in the track and sticky
+     positioning on other columns isn't disturbed by a layout
+     reflow when collapse toggles. */
+  .hm-app .hm-col-collapsed {
+    overflow: hidden !important;
+    visibility: hidden;
+    min-width: 0 !important;
+    pointer-events: none;
+  }
+
   /* Sticky side column: pinned to viewport while the page scrolls.
      Its own contents scroll inside the column (max-height + overflow
      so a tall column doesn't get cut off below the fold). */
@@ -4612,9 +4633,17 @@
 <div class="hm-app" id="hm-app">
   <div class="hm-inner">
     <div class="hm-topbar">
-      <!-- Left-column pin (sticky toggle) — sits at the topbar's left
-           edge, mirroring the right-column pin at the right edge so
-           each button is on the side of the column it controls. -->
+      <!-- Left-column controls. Outer-to-inner order:
+             [collapse]  [pin]  | sep | logo
+           Collapse hides the column entirely; pin keeps it on screen
+           while the page scrolls. Each button sits on the side of
+           the column it controls. -->
+      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-left-collapse" type="button" aria-label="Collapse / expand left column" title="Collapse / expand left column">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="3" x2="3" y2="21"/>
+          <polyline points="15 6 9 12 15 18"/>
+        </svg>
+      </button>
       <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-left-sticky" type="button" aria-label="Pin left column" title="Pin left column to viewport">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="12" y1="17" x2="12" y2="22"/>
@@ -4714,12 +4743,20 @@
         </svg>
       </button>
       <span class="hm-topbar-sep"></span>
-      <!-- Right-column pin (sticky toggle) — sits at the topbar's
-           right edge. -->
+      <!-- Right-column controls. Inner-to-outer order:
+             ... | sep | [pin]  [collapse]
+           Mirrors the left side so collapse is on the outermost
+           edge and pin is closer to center. -->
       <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-right-sticky" type="button" aria-label="Pin right column" title="Pin right column to viewport">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="12" y1="17" x2="12" y2="22"/>
           <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+        </svg>
+      </button>
+      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-right-collapse" type="button" aria-label="Collapse / expand right column" title="Collapse / expand right column">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="21" y1="3" x2="21" y2="21"/>
+          <polyline points="9 6 15 12 9 18"/>
         </svg>
       </button>
     </div>
@@ -10347,9 +10384,10 @@
       if (col && panels[col]) panels[col].push(id);
     });
     return {
-      widths:  [null, null, null],
-      sticky:  [false, false],   /* [left, right] */
-      panels:  panels,
+      widths:    [null, null, null],
+      sticky:    [false, false],   /* [left, right] */
+      collapsed: [false, false],   /* [left, right] — center can't collapse */
+      panels:    panels,
     };
   }
 
@@ -10444,10 +10482,15 @@
       var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
       return !!(c && c.classList.contains('hm-col-sticky'));
     });
+    var collapsed = ['left', 'right'].map(function (cid) {
+      var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
+      return !!(c && c.classList.contains('hm-col-collapsed'));
+    });
     saveColsLayout({
-      widths:  _colWidths.slice(),
-      sticky:  sticky,
-      panels:  panels,
+      widths:    _colWidths.slice(),
+      sticky:    sticky,
+      collapsed: collapsed,
+      panels:    panels,
     });
   }
 
@@ -10471,34 +10514,51 @@
         if (c) c.classList.toggle('hm-col-sticky', !!state.sticky[i]);
       });
     }
+    if (state.collapsed) {
+      ['left', 'right'].forEach(function (cid, i) {
+        var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
+        if (c) c.classList.toggle('hm-col-collapsed', !!state.collapsed[i]);
+      });
+    }
     applyColWidths();
     refreshAllColHeaderButtons();
   }
 
-  /* Update the CSS grid-template-columns based on _colWidths. Each
-     column track is either an explicit pixel width (if dragged) or
-     minmax(0, 1fr) (default / auto-fill). Bare `1fr` would let the
-     track grow to fit min-content of wide panels (currency matrix,
-     rankings) — minmax(0, 1fr) caps it at its fair share. Dividers
-     stay at 8px each. Saved pixel widths get clamped to the
-     container width so a stale wide value can't break layout. */
+  /* Update the CSS grid-template-columns based on _colWidths,
+     collapsed flags, and saved pixel widths. Rules:
+       - Collapsed column → 0px track. Adjacent divider hidden too
+         (otherwise an 8px gap would float on the side of an
+         invisible column).
+       - When any side is collapsed, center stretches to absorb
+         the freed space (use minmax(0, 1fr) regardless of saved
+         pixel width).
+       - Otherwise: saved px width if dragged, else minmax(0, 1fr).
+       - Saved pixel widths are clamped so a stale wide value can't
+         squeeze the other columns below their minimums.
+     minmax(0, 1fr) is critical here — bare `1fr` would let tracks
+     grow to fit min-content of wide panels (currency matrix,
+     rankings). */
   function applyColWidths() {
     var wrap = document.getElementById('hm-cols');
     if (!wrap) return;
+    var collapsedFlags = COL_IDS.map(function (cid) {
+      var c = document.querySelector('.hm-col[data-col="' + cid + '"]');
+      return !!(c && c.classList.contains('hm-col-collapsed'));
+    });
+    var anyCollapsed = collapsedFlags.some(function (f) { return f; });
     var containerW = wrap.clientWidth || window.innerWidth || 1920;
-    /* Subtract divider track widths from available column space. */
     var avail = Math.max(0, containerW - COL_DIVIDER_W * (COL_IDS.length - 1));
     var parts = [];
     COL_IDS.forEach(function (cid, i) {
-      if (_colWidths[i] != null) {
-        /* Clamp explicit pixel widths to per-column min and an
-           upper bound that leaves room for the other columns'
-           minimums — prevents a stale wide value from squeezing
-           the others to nothing. */
+      if (collapsedFlags[i]) {
+        parts.push('0px');
+      } else if (anyCollapsed && cid === 'center') {
+        parts.push('minmax(0, 1fr)');
+      } else if (_colWidths[i] != null) {
         var lim = COL_W_LIMITS[cid] || { min: 240, maxFrac: 0.40 };
         var otherMin = 0;
         COL_IDS.forEach(function (c, j) {
-          if (j !== i) otherMin += (COL_W_LIMITS[c] || { min: 240 }).min;
+          if (j !== i && !collapsedFlags[j]) otherMin += (COL_W_LIMITS[c] || { min: 240 }).min;
         });
         var maxAllowed = Math.max(lim.min, avail - otherMin);
         var w = Math.max(lim.min, Math.min(_colWidths[i], maxAllowed));
@@ -10506,39 +10566,62 @@
       } else {
         parts.push('minmax(0, 1fr)');
       }
-      if (i < COL_IDS.length - 1) parts.push(COL_DIVIDER_W + 'px');
+      if (i < COL_IDS.length - 1) {
+        var dividerHidden = collapsedFlags[i] || collapsedFlags[i + 1];
+        parts.push((dividerHidden ? 0 : COL_DIVIDER_W) + 'px');
+      }
     });
     wrap.style.gridTemplateColumns = parts.join(' ');
+    /* Toggle a class on each divider so CSS can hide its handle
+       affordance when its track is 0 wide. */
+    var dividers = wrap.querySelectorAll('.hm-col-divider');
+    dividers.forEach(function (div, i) {
+      var hidden = collapsedFlags[i] || collapsedFlags[i + 1];
+      div.classList.toggle('hm-col-divider-hidden', !!hidden);
+    });
   }
 
-  /* Sync topbar sticky-toggle buttons with current column state. */
+  /* Sync topbar collapse + sticky buttons with current column state.
+     'active' class = the toggle is on. */
   function refreshAllColHeaderButtons() {
     var leftCol = document.querySelector('.hm-col[data-col="left"]');
     var rightCol = document.querySelector('.hm-col[data-col="right"]');
     var leftSticky = !!(leftCol && leftCol.classList.contains('hm-col-sticky'));
     var rightSticky = !!(rightCol && rightCol.classList.contains('hm-col-sticky'));
-    var lb = document.getElementById('hm-toggle-left-sticky');
-    var rb = document.getElementById('hm-toggle-right-sticky');
-    if (lb) lb.classList.toggle('active', leftSticky);
-    if (rb) rb.classList.toggle('active', rightSticky);
+    var leftCollapsed = !!(leftCol && leftCol.classList.contains('hm-col-collapsed'));
+    var rightCollapsed = !!(rightCol && rightCol.classList.contains('hm-col-collapsed'));
+    function setActive(id, on) {
+      var b = document.getElementById(id);
+      if (b) b.classList.toggle('active', !!on);
+    }
+    setActive('hm-toggle-left-sticky', leftSticky);
+    setActive('hm-toggle-right-sticky', rightSticky);
+    setActive('hm-toggle-left-collapse', leftCollapsed);
+    setActive('hm-toggle-right-collapse', rightCollapsed);
   }
 
-  /* Wire the topbar sticky-toggle buttons. */
+  /* Wire the topbar collapse + sticky toggle buttons. Collapsing a
+     column also re-runs applyColWidths so the grid template updates
+     (track shrinks to 0, adjacent divider hides, center column
+     stretches to fill freed space). */
   function wireColumnHeaders() {
-    function bindSticky(btnId, colId) {
+    function bindToggle(btnId, colId, cls, recomputeWidths) {
       var btn = document.getElementById(btnId);
       if (!btn) return;
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         var c = document.querySelector('.hm-col[data-col="' + colId + '"]');
         if (!c) return;
-        c.classList.toggle('hm-col-sticky');
+        c.classList.toggle(cls);
+        if (recomputeWidths) applyColWidths();
         refreshAllColHeaderButtons();
         persistColsLayout();
       });
     }
-    bindSticky('hm-toggle-left-sticky', 'left');
-    bindSticky('hm-toggle-right-sticky', 'right');
+    bindToggle('hm-toggle-left-sticky', 'left', 'hm-col-sticky', false);
+    bindToggle('hm-toggle-right-sticky', 'right', 'hm-col-sticky', false);
+    bindToggle('hm-toggle-left-collapse', 'left', 'hm-col-collapsed', true);
+    bindToggle('hm-toggle-right-collapse', 'right', 'hm-col-collapsed', true);
   }
 
   /* Drag-to-resize column dividers. Updates _colWidths in px,
