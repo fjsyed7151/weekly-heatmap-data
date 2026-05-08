@@ -4634,37 +4634,31 @@
     border-radius: 0 !important;
   }
 
-  /* Panel-header (Windows-style title bar with info/move/close
-     icons): keep its ORIGINAL design behavior — position: sticky
-     at top: 0 of its cell scroll context. In the new column
-     architecture this lets the action buttons stay at the top of
-     the panel as the user scrolls within a sticky column or
-     within a panel that has internal scroll (heatmap etc.). For
-     non-sticky columns + non-scrolling cells, this effectively
-     behaves like static (it sticks at the top of the cell, which
-     is wherever the cell is in the page flow).
-
-     z-index: 6 — above panel content, below the topbar (1000). */
+  /* Kill panel-header / factors-header sticky inside the new
+     column layout. Each sticks at top:0 in the original design
+     because the gridstack cells had explicit pixel heights and
+     internal scroll, so "stick to top of cell" was a useful
+     in-cell scroll behavior. In the new flow-layout columns
+     panels render at natural content height with no internal
+     scroll, so the only thing sticky positioning did here was
+     create flicker / overlap edge cases when the column scroll
+     ancestor changed. Static is correct. */
   .hm-app .hm-col > .grid-stack-item .hm-panel-header {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 6 !important;
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
   }
-
-  /* In-panel filter band (.hm-factors-header — gold band with
-     1W/1M/3M/.../10Y period buttons on ranking panels): sticky
-     left: 0 so it stays visible while the user horizontally
-     scrolls the wide ranking grid. top: 24px puts it just below
-     the 24px-tall panel-header above. */
   .hm-app .hm-col > .grid-stack-item .hm-factors-header {
-    position: sticky !important;
-    top: 24px !important;
-    left: 0 !important;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
   }
-
-  /* Heatmap thead: sticky just below the panel-header. */
+  /* Heatmap thead can stay sticky (tables conventionally have
+     sticky headers) — it has its own scroll container (.hm-scroll
+     or the cell with overflow:auto). top:0 since the panel-header
+     above it is now static, not sticky 24px. */
   .hm-app .hm-col .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
-    top: 24px !important;
+    top: 0 !important;
   }
 
   /* Defensive stretch: when columns collapse/expand the cell width
