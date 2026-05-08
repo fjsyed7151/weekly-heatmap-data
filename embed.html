@@ -10274,8 +10274,8 @@
   /* v3-era manual fit-to-content. Reads wrap.scrollHeight after a
      synchronous reflow, computes new h in cell units, updates the cell
      via gridstack.update + locks maxH at the freshly-measured h so the
-     user can't drag past content. Replaces sizeToContent: true (which
-     left a "bottom padding" gap inside each panel — not exact). */
+     user can't drag past content. Pixel-precise because cellHeight: 1
+     means cell.h = px directly. */
   function fitItemToContent(el) {
     if (!el) return;
     var grid = gridForPanel(el);
@@ -10286,7 +10286,10 @@
     var natural = wrap.scrollHeight;
     if (!natural) return;
     var cellH = grid.getCellHeight(true) || 1;
-    var newH = Math.max(1, Math.ceil((natural + 12) / cellH));
+    /* +4 = matches the gridstack marginTop:2 + marginBottom:2 inset
+       around each cell. Without it the cell is just barely shorter
+       than its content and a 1px scrollbar appears at the bottom. */
+    var newH = Math.max(1, Math.ceil((natural + 4) / cellH));
     var node = el.gridstackNode;
     if (!node) return;
     try {
@@ -10695,28 +10698,25 @@
     var savedState = loadColsLayout() || buildDefaultColsState();
     applyColsLayout(savedState);
 
-    /* 2. Set gs-y per column based on cumulative gs-h. With column:1
-       grids, every item has gs-x=0 and gs-w=1 implicitly. gs-y must
-       be explicit + unique per column or gridstack stacks them all
-       at y=0 (overlapping absolutely-positioned cells). Gs-h stays
-       in HTML units (no scaling) — we use cellHeight: 40 instead of
-       cellHeight: 1 + scaling, which is simpler. */
+    /* 2. Pre-scale each panel's gs-h by GS_SCALE (40) and set gs-y
+       per column based on cumulative scaled h. Combined with
+       cellHeight: 1 (1 cell = 1 px), this gives PIXEL-PRECISE cell
+       heights — no rounding-up to the nearest 40px chunk that leaves
+       a "bottom padding" gap inside each panel. */
     COL_IDS.forEach(function (cid) {
       var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
       if (!body) return;
       var y = 0;
       body.querySelectorAll('.grid-stack-item').forEach(function (item) {
         var hOrig = parseInt(item.getAttribute('gs-h') || 4, 10);
+        var hScaled = hOrig * GS_SCALE;
+        item.setAttribute('gs-h', hScaled);
         item.setAttribute('gs-y', y);
         item.removeAttribute('gs-x');
         item.removeAttribute('gs-w');
-        y += hOrig;
+        y += hScaled;
       });
     });
-    console.info('[heatmap] 3-col init: panels distributed', COL_IDS.map(function (cid) {
-      var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
-      return cid + '=' + (body ? body.querySelectorAll('.grid-stack-item').length : 0);
-    }).join(' '));
 
     /* 3. Inject Windows-style header bar into every panel. Must happen
        BEFORE GridStack.init -- gridstack's drag handle selector
@@ -10775,7 +10775,13 @@
        doesn't waste 12px on inter-panel padding. */
     var sharedOpts = {
       column: 1,
-      cellHeight: 40,
+      /* cellHeight: 1 means each gridstack cell = 1 pixel of height,
+         so cell.h directly equals the panel's pixel height. With
+         cellHeight: 40 there was a 40px rounding granularity that
+         left up to 39px of empty space below content inside each
+         panel. With 1, fitItemToContent's measured scrollHeight maps
+         straight to cell.h with no rounding gap. */
+      cellHeight: 1,
       /* 4px gap between stacked panels (2px above + 2px below each). */
       marginLeft: 0, marginRight: 0, marginTop: 2, marginBottom: 2,
       float: false,
