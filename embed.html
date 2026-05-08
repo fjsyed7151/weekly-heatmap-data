@@ -596,12 +596,13 @@
     min-width: 0 !important;
     max-width: none !important;
   }
-  /* Also drop container-type on .grid-stack-item-content for sticky
-     columns so any 100cqw rules inside fall back gracefully. */
-  .hm-app .hm-col-sticky .grid-stack-item-content {
-    container-type: normal !important;
-    overflow: visible !important;
-  }
+  /* (Removed: a leftover !important rule that killed container-type
+     on the indexes / ranking panels' cells, making their cqw-based
+     responsive grids fall back to viewport-relative widths. That's
+     why cards/columns inside those panels rendered far too wide and
+     overflowed when a column was pinned. We KEEP container-type:
+     inline-size on those panels — it's how their internal layouts
+     stay cell-relative.) */
   .hm-app .hm-col-header {
     display: flex;
     align-items: center;
@@ -4527,7 +4528,14 @@
 
   /* Sticky side column: pinned to viewport while the page scrolls.
      Its own contents scroll inside the column (max-height + overflow
-     so a tall column doesn't get cut off below the fold). */
+     so a tall column doesn't get cut off below the fold). The
+     scrollbar is hidden visually (scrollbar-width: none + webkit
+     pseudo) so it doesn't take width — a visible scrollbar would
+     reduce the panel cell width by ~17px and trigger chart resize
+     events / container-query reflows that visually "change" the
+     panel's layout (Chart.js axis re-tick, ranking panels with
+     container queries flipping breakpoints, etc). Column still
+     scrolls via mouse wheel / touch / trackpad. */
   .hm-app .hm-col-sticky {
     position: sticky;
     top: var(--hm-sticky-top, 72px);
@@ -4535,9 +4543,13 @@
     max-height: calc(100vh - var(--hm-sticky-top, 72px) - 16px);
     overflow-y: auto;
     overflow-x: hidden;
-    /* Scrollbar styling matches the rest of the dashboard. */
-    scrollbar-width: thin;
-    scrollbar-color: #F2DFB3 var(--hm-bg-alt);
+    scrollbar-width: none;          /* Firefox */
+    -ms-overflow-style: none;       /* legacy Edge / IE */
+  }
+  .hm-app .hm-col-sticky::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;                  /* Chrome, Safari, modern Edge */
   }
 
   /* Each panel slot: natural-flow block element. .grid-stack-item is
