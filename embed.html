@@ -541,17 +541,18 @@
     /* JS sets grid-template-columns dynamically based on _colWidths
        and collapsed flags. Initial value is 3 equal columns. */
     grid-template-columns: 1fr 8px 1fr 8px 1fr;
-    align-items: start;
-    /* Allow each column to grow independently to its content height
-       — column heights vary depending on which panels are inside. */
+    /* align-items: stretch (default) — grid cells take row-height
+       (= max column content height). This is required for
+       position: sticky to have room to operate inside its cell.
+       Each column inside its cell uses align-self: start so the
+       column itself stays content-height (visually identical to
+       align-items:start when nothing is sticky). */
     width: 100%;
   }
   .hm-app .hm-col {
+    align-self: start;
     display: flex;
     flex-direction: column;
-    /* Each column scrolls internally when its content exceeds the
-       sticky max-height (.hm-col-sticky variant only). Otherwise it
-       just lets content flow naturally. */
     min-width: 0;
     background: transparent;
   }
@@ -625,12 +626,10 @@
     transform: rotate(-90deg);
   }
   .hm-app .hm-col-body {
-    /* Gridstack target. Full border now that there's no column header
-       above it. No padding — gridstack manages its own item margins via
-       marginTop/marginBottom in init opts. */
-    border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
-    background: var(--hm-bg);
+    /* Gridstack target. No border or padding — each panel inside
+       carries its own gold outline (the .grid-stack-item-content
+       box-shadow), so an outer border would just double-wrap. */
+    background: transparent;
     flex: 1 1 auto;
     min-height: 100px;
   }
@@ -10732,12 +10731,12 @@
 
     /* 4. One GridStack per column, sharing options. Single-column,
        no user-resize, drag-between-grids enabled, sizeToContent.
-       cellHeight: 40 means each gs-h unit = 40px (matches the old
-       GS_SCALE * cellHeight:1 setup, but without pre-scaling). */
+       Tighter vertical margins (4px between panels) so the column
+       doesn't waste 12px on inter-panel padding. */
     var sharedOpts = {
       column: 1,
       cellHeight: 40,
-      marginLeft: 0, marginRight: 0, marginTop: 6, marginBottom: 6,
+      marginLeft: 0, marginRight: 0, marginTop: 2, marginBottom: 2,
       float: false,
       animate: true,
       resizable: { handles: '' },
