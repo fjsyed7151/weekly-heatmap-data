@@ -4624,32 +4624,62 @@
     }
   }
 
-  /* Square corners everywhere — explicit user request. */
-  .hm-app,
-  .hm-app *,
-  .hm-app *::before,
-  .hm-app *::after {
+  /* Square corners on the PANEL CONTAINERS only. Everything else
+     (buttons, popups, badges, period pills, sparklines, etc) keeps
+     its natural border-radius (--hm-r = 5px). The user explicitly
+     asked for only the component frames to be squared. */
+  .hm-app .grid-stack-item,
+  .hm-app .grid-stack-item > .grid-stack-item-content,
+  .hm-app .grid-stack-item > .grid-stack-item-content > .hm-panel-wrap {
     border-radius: 0 !important;
   }
 
-  /* Kill panel-header sticky inside columns. With sticky-column
-     providing the always-visible role, panel headers just flow at
-     the top of each panel. */
-  .hm-app .hm-col .hm-panel-header {
-    position: static !important;
-    top: auto !important;
-    z-index: auto !important;
+  /* Restore .hm-panel-header sticky inside columns. The 24px
+     Windows-style title bar (info/move/close icons) needs to stay
+     visible while the user scrolls through a tall panel; otherwise
+     the action buttons disappear off-screen. The earlier override
+     killed this and caused the topmost panel's navbar to fall
+     behind the topbar.
+
+     Two cases:
+       - In a STICKY column, the column is the scroll ancestor
+         (overflow-y: auto + max-height). Panel-header sticks at
+         top: 0 of the column, which already sits below the topbar.
+       - In a NON-sticky column, the page is the scroll ancestor.
+         Panel-header would stick at viewport top:0 — which the
+         topbar covers. Push it down to var(--hm-sticky-top).
+
+     z-index: 6 keeps it above panel content but below the topbar
+     (z-index 1000). */
+  .hm-app .hm-col > .grid-stack-item .hm-panel-header {
+    position: sticky !important;
+    top: var(--hm-sticky-top, 72px) !important;
+    z-index: 6 !important;
   }
-  /* Kill the in-panel filter navbar sticky on ranking panels — same
-     reason. */
-  .hm-app .hm-col .hm-factors-header {
-    position: static !important;
-    top: auto !important;
-    left: auto !important;
-  }
-  /* Heatmap thead: still sticky inside the cell-level scroll container. */
-  .hm-app .hm-col .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
+  .hm-app .hm-col-sticky > .grid-stack-item .hm-panel-header {
     top: 0 !important;
+  }
+
+  /* Restore the in-panel filter navbar (.hm-factors-header — the
+     gold band with 1W/1M/3M/.../10Y period buttons on ranking
+     panels). Sticks below the panel-header (24px tall) AND
+     left-pinned so the buttons stay visible while the user
+     horizontally scrolls a wide ranking grid. left: 0 + the
+     existing width: 100cqw rule keeps it cell-width even when the
+     wrap is wider. */
+  .hm-app .hm-col > .grid-stack-item .hm-factors-header {
+    position: sticky !important;
+    top: calc(var(--hm-sticky-top, 72px) + 24px) !important;
+    left: 0 !important;
+  }
+  .hm-app .hm-col-sticky > .grid-stack-item .hm-factors-header {
+    top: 24px !important;
+  }
+
+  /* Heatmap thead: sticky just below the panel-header (which is now
+     24px tall and sticky at top:0 of its scroll context). */
+  .hm-app .hm-col .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
+    top: 24px !important;
   }
 
   /* Defensive stretch: when columns collapse/expand the cell width
