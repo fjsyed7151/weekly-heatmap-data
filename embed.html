@@ -4543,9 +4543,17 @@
   /* Each panel slot: natural-flow block element. .grid-stack-item is
      kept as a class purely so the existing per-panel CSS keeps
      matching. The !important here overrides any leftover gridstack
-     absolute-positioning rule. */
+     absolute-positioning rule.
+     IMPORTANT: position: relative (not static) so that any
+     absolute-positioned descendants inside a panel (the macrocompass
+     quadrant labels "Q1 Risk On" etc., the GAVE quadrant labels,
+     chart overlays, etc.) resolve their containing block to the
+     panel itself. With position: static, they'd bubble up to the
+     nearest positioned ancestor — which becomes the column when the
+     column is sticky — and ALL panels' labels would stack at the
+     column's top, producing the overlap-from-hell bug. */
   .hm-app .hm-col > .grid-stack-item {
-    position: static !important;
+    position: relative !important;
     left: auto !important;
     top: auto !important;
     right: auto !important;
@@ -4557,7 +4565,7 @@
     border-radius: 0;
   }
   .hm-app .hm-col > .grid-stack-item > .grid-stack-item-content {
-    position: static !important;
+    position: relative !important;
     inset: auto !important;
     width: 100% !important;
     height: auto !important;
