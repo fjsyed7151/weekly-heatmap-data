@@ -4594,15 +4594,21 @@
     overflow: visible;
   }
   /* Panels with internal scroll (heatmap table, ranking navbars)
-     manage their own overflow. */
+     manage their own overflow. NOTE: hm-indexes deliberately uses
+     overflow: visible — the index card grid wraps to multiple
+     rows when narrow (via @media query) instead of overflowing
+     horizontally, so it doesn't need a scroll container. Keeping
+     it overflow: visible matters because if its cell were a
+     scroll container, sticky descendants (panel-header on the
+     topmost panel) would stick relative to the cell, not the
+     page — which positions them WRONG. */
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-global-indexes"] > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-country-etfs"] > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-commodity-perf"] > .grid-stack-item-content,
-  .hm-app .hm-col > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content,
-  .hm-app .hm-col > .grid-stack-item[gs-id="hm-indexes"] > .grid-stack-item-content {
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content {
     overflow: auto;
   }
   /* Cap heatmap height — internal scroll container handles long tables. */
@@ -4634,15 +4640,13 @@
     border-radius: 0 !important;
   }
 
-  /* Kill panel-header / factors-header sticky inside the new
-     column layout. Each sticks at top:0 in the original design
-     because the gridstack cells had explicit pixel heights and
-     internal scroll, so "stick to top of cell" was a useful
-     in-cell scroll behavior. In the new flow-layout columns
-     panels render at natural content height with no internal
-     scroll, so the only thing sticky positioning did here was
-     create flicker / overlap edge cases when the column scroll
-     ancestor changed. Static is correct. */
+  /* Panel-headers / factors-headers: STATIC. They flow at the
+     top of each panel. At scroll=0 the topmost panel's navbar
+     sits 4px below the topbar, fully visible. As you scroll,
+     the navbar goes behind the topbar with the rest of the
+     content (briefly half-cut during the transition, then fully
+     past). Sticky alternatives all introduce overlap with the
+     gold band below — accepting the brief scroll-transition cut. */
   .hm-app .hm-col > .grid-stack-item .hm-panel-header {
     position: static !important;
     top: auto !important;
@@ -4653,10 +4657,15 @@
     top: auto !important;
     left: auto !important;
   }
-  /* Heatmap thead can stay sticky (tables conventionally have
-     sticky headers) — it has its own scroll container (.hm-scroll
-     or the cell with overflow:auto). top:0 since the panel-header
-     above it is now static, not sticky 24px. */
+
+  /* Add 16px breathing room between the topbar and the first
+     panel of each column so the navbar isn't flush against the
+     topbar's bottom edge — gives a comfortable gap at scroll=0. */
+  .hm-app .hm-col > .grid-stack-item:first-child {
+    margin-top: 16px;
+  }
+
+  /* Heatmap thead stays sticky inside its own scroll container. */
   .hm-app .hm-col .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
     top: 0 !important;
   }
