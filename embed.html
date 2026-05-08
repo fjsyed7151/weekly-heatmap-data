@@ -10698,11 +10698,13 @@
     var savedState = loadColsLayout() || buildDefaultColsState();
     applyColsLayout(savedState);
 
-    /* 2. Pre-scale each panel's gs-h by GS_SCALE (40) and set gs-y
-       per column based on cumulative scaled h. Combined with
-       cellHeight: 1 (1 cell = 1 px), this gives PIXEL-PRECISE cell
-       heights — no rounding-up to the nearest 40px chunk that leaves
-       a "bottom padding" gap inside each panel. */
+    /* 2. Set per-panel gs attributes for the per-column 12-col grids:
+         gs-x = 0 (always-leftmost in its row by default)
+         gs-w = 12 (full column width — user can drag east/west to
+                    narrow it, allowing 2 panels side-by-side at
+                    gs-w=6 each)
+         gs-h = HTML default × GS_SCALE (pixel-precise with cellHeight:1)
+         gs-y = cumulative sum (so panels stack vertically at init) */
     COL_IDS.forEach(function (cid) {
       var body = document.querySelector('.hm-col[data-col="' + cid + '"] .hm-col-body');
       if (!body) return;
@@ -10712,8 +10714,8 @@
         var hScaled = hOrig * GS_SCALE;
         item.setAttribute('gs-h', hScaled);
         item.setAttribute('gs-y', y);
-        item.removeAttribute('gs-x');
-        item.removeAttribute('gs-w');
+        item.setAttribute('gs-x', 0);
+        item.setAttribute('gs-w', 12);
         y += hScaled;
       });
     });
@@ -10774,29 +10776,26 @@
        Tighter vertical margins (4px between panels) so the column
        doesn't waste 12px on inter-panel padding. */
     var sharedOpts = {
-      column: 1,
+      /* 12 columns inside each macro column (left/center/right).
+         Default panels are gs-w: 12 (full column width); user can
+         resize east/west to shrink to 6 (half) so two panels can sit
+         side-by-side inside one macro column. */
+      column: 12,
       /* cellHeight: 1 means each gridstack cell = 1 pixel of height,
-         so cell.h directly equals the panel's pixel height. With
-         cellHeight: 40 there was a 40px rounding granularity that
-         left up to 39px of empty space below content inside each
-         panel. With 1, fitItemToContent's measured scrollHeight maps
-         straight to cell.h with no rounding gap. */
+         so cell.h directly equals panel pixel height — no 40px-chunk
+         rounding granularity. */
       cellHeight: 1,
-      /* 4px gap between stacked panels (2px above + 2px below each). */
-      marginLeft: 0, marginRight: 0, marginTop: 2, marginBottom: 2,
-      float: false,
+      /* 8px gap between stacked panels (4px above + 4px below each). */
+      marginLeft: 0, marginRight: 0, marginTop: 4, marginBottom: 4,
+      float: true,
       animate: true,
-      /* User can resize panel HEIGHT only (south handle). Column
-         width is set by the parent CSS Grid track — no horizontal
-         user-resize. */
-      resizable: { handles: 's' },
+      /* User can resize panel WIDTH (east/west) and HEIGHT (south +
+         corners). Width-resize works because column: 12 gives 12
+         positions per macro column. */
+      resizable: { handles: 'e, s, w, se, sw' },
       alwaysShowResizeHandle: true,
       draggable: { handle: '.hm-panel-header', distance: 0 },
       acceptWidgets: '.grid-stack-item',
-      /* Manual fit-to-content via fitItemToContent. sizeToContent: true
-         left a "bottom padding" gap inside each panel — its observer's
-         measurement was off by a few pixels. v3-era manual measurement
-         is exact. */
       sizeToContent: false,
     };
     COL_IDS.forEach(function (cid) {
@@ -11285,11 +11284,11 @@
       : 'Switch to vertical stack');
   }
   /* Toggle a panel's orientation: flip the .hm-stack-vertical class,
-     persist the choice. With sizeToContent: true on each per-column
-     gridstack, the cell h adjusts automatically when the internal
-     layout reflows. No width changes (column width sets panel width
-     in the 3-column layout). No maxH dance — height is always
-     content-driven now. */
+     persist the choice, refit cell h to the new content layout.
+     Vertical mode stacks ranking columns into one tall list (so the
+     panel grows taller); horizontal mode does the reverse. Without
+     fitItemToContent, the cell h stays at its pre-toggle value so
+     content overflows or there's empty space below. */
   function toggleStackOrientation(id) {
     var item = document.querySelector('.grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
@@ -11297,6 +11296,8 @@
     item.classList.toggle('hm-stack-vertical', nowVertical);
     setStackOrientation(id, nowVertical ? 'vertical' : 'horizontal');
     refreshStackBtn(item);
+    /* Defer one frame so CSS reflow commits before we measure. */
+    requestAnimationFrame(function () { fitItemToContent(item); });
   }
 
   fetch(HEATMAP_URL + "?t=" + Math.floor(Date.now() / 600000))
