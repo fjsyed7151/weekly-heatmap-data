@@ -4544,16 +4544,25 @@
      kept as a class purely so the existing per-panel CSS keeps
      matching. The !important here overrides any leftover gridstack
      absolute-positioning rule.
-     IMPORTANT: position: relative (not static) so that any
-     absolute-positioned descendants inside a panel (the macrocompass
-     quadrant labels "Q1 Risk On" etc., the GAVE quadrant labels,
-     chart overlays, etc.) resolve their containing block to the
-     panel itself. With position: static, they'd bubble up to the
-     nearest positioned ancestor — which becomes the column when the
-     column is sticky — and ALL panels' labels would stack at the
-     column's top, producing the overlap-from-hell bug. */
+
+     position: relative (not static) so that any absolute-positioned
+     descendants inside a panel (macrocompass quadrant labels "Q1
+     Risk On" etc., GAVE quadrant labels, chart overlays) resolve
+     their containing block to the panel itself, not the sticky
+     column. With static, they'd bubble up to the column when it
+     becomes positioned (sticky) and ALL panels' labels would stack
+     at the column's top — the overlap-from-hell bug.
+
+     flex-shrink: 0 so panels keep natural content height. Without
+     it, when the column gets max-height (sticky pin) + display:flex,
+     panels compete for space and SHRINK proportionally. Content
+     with overflow:visible then bleeds out of its box and overlaps
+     the next panel. With shrink:0, sum-of-panel-heights can exceed
+     column max-height; the column's own overflow-y:auto handles it
+     with an internal scrollbar instead. */
   .hm-app .hm-col > .grid-stack-item {
     position: relative !important;
+    flex-shrink: 0;
     left: auto !important;
     top: auto !important;
     right: auto !important;
