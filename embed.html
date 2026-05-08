@@ -4454,12 +4454,20 @@
      =================================================================== */
   .hm-app .hm-cols {
     display: grid;
-    /* Default 1fr/1fr/1fr split. JS updates this with explicit pixel
-       widths once the user drags a divider. The 8px tracks are the
-       divider hit-zones. */
-    grid-template-columns: 1fr 8px 1fr 8px 1fr;
+    /* Default minmax(0, 1fr) split — bare `1fr` lets the track grow
+       to fit min-content (e.g. the currency-matrix's max-content
+       width) which blows the column out to ~1789px and breaks
+       layout when sticky kicks in. minmax(0, 1fr) caps each track
+       at its 1fr share regardless of how wide its content wants
+       to be; horizontal overflow stays inside the panel cell. The
+       8px tracks are divider hit-zones. */
+    grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr) 8px minmax(0, 1fr);
     align-items: start;
     width: 100%;
+    /* Clamp container to the available width so it can't grow past
+       its parent on min-content reflow. */
+    max-width: 100%;
+    min-width: 0;
     column-gap: 0;
     row-gap: 12px;
   }
@@ -4604,6 +4612,16 @@
 <div class="hm-app" id="hm-app">
   <div class="hm-inner">
     <div class="hm-topbar">
+      <!-- Left-column pin (sticky toggle) — sits at the topbar's left
+           edge, mirroring the right-column pin at the right edge so
+           each button is on the side of the column it controls. -->
+      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-left-sticky" type="button" aria-label="Pin left column" title="Pin left column to viewport">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="17" x2="12" y2="22"/>
+          <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
+        </svg>
+      </button>
+      <span class="hm-topbar-sep"></span>
       <!-- Logo — links to stablebread.com home. -->
       <a class="hm-topbar-logo" href="https://stablebread.com" aria-label="StableBread home">
         <img src="https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png" alt="StableBread" />
@@ -4696,15 +4714,8 @@
         </svg>
       </button>
       <span class="hm-topbar-sep"></span>
-      <!-- Sticky toggles for the side columns. Click to pin that column
-           to the viewport while the page scrolls. Active class reflects
-           current state. -->
-      <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-left-sticky" type="button" aria-label="Pin left column" title="Pin left column to viewport">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="12" y1="17" x2="12" y2="22"/>
-          <path d="M5 17h14l-1.5-2V9l2-2V3H5.5v4l2 2v6z"/>
-        </svg>
-      </button>
+      <!-- Right-column pin (sticky toggle) — sits at the topbar's
+           right edge. -->
       <button class="hm-btn hm-topbar-col-btn" id="hm-toggle-right-sticky" type="button" aria-label="Pin right column" title="Pin right column to viewport">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="12" y1="17" x2="12" y2="22"/>
@@ -5997,6 +6008,7 @@
            sizes. Reload because the panels are already in the DOM in
            whatever order the user moved them — easiest way to apply
            a fresh default state is a fresh page. */
+        try { localStorage.removeItem('hm-cols-layout-v3'); } catch (e) {}
         try { localStorage.removeItem('hm-cols-layout-v2'); } catch (e) {}
         try { localStorage.removeItem('hm-cols-layout-v1'); } catch (e) {}
         window.location.reload();
@@ -10234,7 +10246,11 @@
      Panels in each column are plain block elements at natural
      content height — no gridstack, no absolute positioning, no
      fixed cell sizes. */
-  var COLS_LAYOUT_KEY = 'hm-cols-layout-v2';
+  /* v3: bumped after fixing the wide-track sticky bug — saved
+     widths from v2 could be > viewport because grid tracks weren't
+     constrained, so clearing those out ensures a clean default
+     layout for everyone. */
+  var COLS_LAYOUT_KEY = 'hm-cols-layout-v3';
   var COL_IDS = ['left', 'center', 'right'];
 
   /* Per-column min width (px) and max width (as fraction of the
@@ -10461,14 +10477,35 @@
 
   /* Update the CSS grid-template-columns based on _colWidths. Each
      column track is either an explicit pixel width (if dragged) or
-     1fr (default / auto-fill). Dividers stay at 8px each. */
+     minmax(0, 1fr) (default / auto-fill). Bare `1fr` would let the
+     track grow to fit min-content of wide panels (currency matrix,
+     rankings) — minmax(0, 1fr) caps it at its fair share. Dividers
+     stay at 8px each. Saved pixel widths get clamped to the
+     container width so a stale wide value can't break layout. */
   function applyColWidths() {
     var wrap = document.getElementById('hm-cols');
     if (!wrap) return;
+    var containerW = wrap.clientWidth || window.innerWidth || 1920;
+    /* Subtract divider track widths from available column space. */
+    var avail = Math.max(0, containerW - COL_DIVIDER_W * (COL_IDS.length - 1));
     var parts = [];
     COL_IDS.forEach(function (cid, i) {
-      if (_colWidths[i] != null) parts.push(_colWidths[i] + 'px');
-      else                       parts.push('1fr');
+      if (_colWidths[i] != null) {
+        /* Clamp explicit pixel widths to per-column min and an
+           upper bound that leaves room for the other columns'
+           minimums — prevents a stale wide value from squeezing
+           the others to nothing. */
+        var lim = COL_W_LIMITS[cid] || { min: 240, maxFrac: 0.40 };
+        var otherMin = 0;
+        COL_IDS.forEach(function (c, j) {
+          if (j !== i) otherMin += (COL_W_LIMITS[c] || { min: 240 }).min;
+        });
+        var maxAllowed = Math.max(lim.min, avail - otherMin);
+        var w = Math.max(lim.min, Math.min(_colWidths[i], maxAllowed));
+        parts.push(w + 'px');
+      } else {
+        parts.push('minmax(0, 1fr)');
+      }
       if (i < COL_IDS.length - 1) parts.push(COL_DIVIDER_W + 'px');
     });
     wrap.style.gridTemplateColumns = parts.join(' ');
