@@ -570,13 +570,23 @@
   }
   .hm-app .hm-col-sticky {
     /* Sticky: column stays pinned in viewport, BELOW the topbar.
-       --hm-sticky-top is set dynamically in JS to topbar.offsetHeight + 8
+       --hm-sticky-top is set dynamically in JS to topbar.offsetHeight + 16
        so the column always clears the topbar regardless of its actual
        rendered height. Falls back to 72px if JS hasn't set it yet. */
     position: sticky !important;
     top: var(--hm-sticky-top, 72px);
     align-self: start;
     z-index: 5;
+  }
+  /* When the column is sticky, the container-query context that
+     resolves `width: 100cqw` on certain panel headers (Index Snapshot
+     + ranking panels) gets broken — the cqw collapses to 0 and the
+     header becomes invisible. Force width: 100% inside sticky columns
+     so the header is always full-cell-width regardless of cqw state. */
+  .hm-app .hm-col-sticky .hm-panel-header,
+  .hm-app .hm-col-sticky .hm-panel-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
   }
   .hm-app .hm-col-header {
     display: flex;
