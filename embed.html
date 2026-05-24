@@ -2418,17 +2418,15 @@
     overflow: hidden;  /* clip child content to the rounded bottom corners */
   }
   /* Responsive cell-width breakpoints (@container queries, not
-     @media — so they trigger on the cell's width, not the
-     viewport's). At narrow cells (e.g. when the column is dragged
-     narrow or sticky-pinned with the user scrolled), the 4-card
-     row drops to 2-col, then to 1-col stack. Matches how
-     .hm-econ-grid handles the same width range. The container
-     ancestor is the .grid-stack-item-content cell, which has
-     container-type: inline-size set per-panel. */
+     @media — they trigger on the cell's width, not the viewport).
+     Thresholds picked from the card's min-content: each card needs
+     ~170px (label + change line "+520.44 (+7.57%)" with white-
+     space:nowrap + 32px padding). 4-col needs ~680px; 2-col needs
+     ~340px; below that, stack to 1 col. */
   @container (max-width: 720px) {
     .hm-app .hm-indexes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
-  @container (max-width: 360px) {
+  @container (max-width: 480px) {
     .hm-app .hm-indexes { grid-template-columns: 1fr; }
   }
   .hm-app .hm-idx-card {
@@ -2445,12 +2443,21 @@
     min-width: 0;
   }
   .hm-app .hm-idx-card:last-child { border-right: none; }
-  /* Responsive: when stacked to 2 columns, reset right-borders to vertical
-     dividers between the 2 cells per row + horizontal divider between rows. */
+  /* In 2-col mode (≤720cqw cell width): right-borders become
+     vertical dividers between the 2 cells per row, plus a
+     horizontal divider between rows. */
   @container (max-width: 720px) {
     .hm-app .hm-idx-card { border-right: 1px solid var(--hm-border); }
     .hm-app .hm-idx-card:nth-child(2n) { border-right: none; }
     .hm-app .hm-idx-card:nth-child(-n+2) { border-bottom: 1px solid var(--hm-border); }
+  }
+  /* In 1-col stack (≤480cqw): each card is full-width, dividers
+     become horizontal between stacked rows. */
+  @container (max-width: 480px) {
+    .hm-app .hm-idx-card,
+    .hm-app .hm-idx-card:nth-child(2n) { border-right: none; }
+    .hm-app .hm-idx-card { border-bottom: 1px solid var(--hm-border); }
+    .hm-app .hm-idx-card:last-child { border-bottom: none; }
   }
   @media (max-width: 600px) {
     .hm-app .hm-idx-card,
@@ -4650,13 +4657,9 @@
     border-radius: 0 !important;
   }
 
-  /* Panel-headers / factors-headers: STATIC. They flow at the
-     top of each panel. At scroll=0 the topmost panel's navbar
-     sits 4px below the topbar, fully visible. As you scroll,
-     the navbar goes behind the topbar with the rest of the
-     content (briefly half-cut during the transition, then fully
-     past). Sticky alternatives all introduce overlap with the
-     gold band below — accepting the brief scroll-transition cut. */
+  /* Panel-headers + factors-headers: STATIC by default in the
+     new column layout. They flow at the top of each panel and
+     scroll with the page. */
   .hm-app .hm-col > .grid-stack-item .hm-panel-header {
     position: static !important;
     top: auto !important;
@@ -4666,6 +4669,56 @@
     position: static !important;
     top: auto !important;
     left: auto !important;
+  }
+
+  /* EXCEPTION: panels whose CELL has overflow:auto (the heatmap +
+     ranking panels + currency matrix) have wide content that can
+     horizontally scroll inside the cell. For THOSE panels, the
+     panel-header (action icons) and the gold filter band need to
+     stay pinned at the cell's visible top-left as the user scrolls
+     horizontally — otherwise they slide off the left edge along
+     with the table, leaving a visual gap on the right.
+
+       - Panel-header: sticky top:0 left:0, width: 100cqw (so it
+         spans the full visible cell width regardless of how wide
+         the underlying wrap is).
+       - Factors-header (.hm-factors-header on rankings): sticky
+         top:24 (just below the 24px panel-header above it),
+         left:0, width: 100cqw.
+
+     container-type: inline-size is already set on these cells via
+     the per-panel rules above, so 100cqw resolves to cell width. */
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-header {
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 6 !important;
+    width: 100cqw !important;
+  }
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-factors-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-factors-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-factors-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-factors-header,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-factors-header {
+    position: sticky !important;
+    top: 24px !important;
+    left: 0 !important;
+    width: 100cqw !important;
+    z-index: 5 !important;
+  }
+  /* Currency-matrix cell needs container-type so the 100cqw on its
+     panel-header resolves correctly. (The ranking panels already
+     have this set via the per-panel rule earlier in the file; the
+     heatmap and currency-matrix don't.) */
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content,
+  .hm-app .hm-col > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content {
+    container-type: inline-size;
   }
 
   /* Add 16px breathing room between the topbar and the first
@@ -10535,6 +10588,14 @@
     refreshAllMoveButtons();
   }
   /* Move a panel into the adjacent column, appending to its bottom. */
+  /* Move a panel into the adjacent column. Instead of always
+     appending to the bottom, position it at roughly the same
+     vertical height as where it started — find the first panel in
+     the destination column whose top is BELOW the moved panel's
+     current top, and insert before that one. So if you move a
+     panel that's halfway down the left column to the right column,
+     it lands halfway down the right column too. Falls back to
+     appending to the bottom when the moved panel was the lowest. */
   function movePanelToCol(id, dir) {
     var item = document.querySelector('#hm-cols .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
@@ -10546,7 +10607,24 @@
     if (toIdx < 0 || toIdx >= COL_IDS.length) return;
     var toCol = document.querySelector('.hm-col[data-col="' + COL_IDS[toIdx] + '"]');
     if (!toCol) return;
-    toCol.appendChild(item);
+    /* Capture from-panel's vertical position BEFORE moving so we
+       can match it in the destination. */
+    var fromTop = item.getBoundingClientRect().top;
+    var siblings = Array.prototype.slice.call(
+      toCol.querySelectorAll(':scope > .grid-stack-item[gs-id]')
+    );
+    var insertBefore = null;
+    for (var i = 0; i < siblings.length; i++) {
+      if (siblings[i].getBoundingClientRect().top > fromTop) {
+        insertBefore = siblings[i];
+        break;
+      }
+    }
+    if (insertBefore) {
+      toCol.insertBefore(item, insertBefore);
+    } else {
+      toCol.appendChild(item);
+    }
     if (id === 'hm-chart-section') window._chartPanelManuallyMoved = true;
     persistColsLayout();
     refreshAllMoveButtons();
