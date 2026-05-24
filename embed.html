@@ -11481,8 +11481,8 @@
            own 16-visual inset from each edge (handled below). */
         var FOOTER_TEXT_INSET = 32;  /* 16 visual: link sits 16 visual px in from the panel's left edge */
         var FOOTER_LOGO_INSET = 32;  /* 16 visual: logo sits 16 visual px in from the panel's right edge */
-        var DIVIDER_GAP = 16;     /* 8 visual: gap between panelImg bottom and divider */
-        var FOOTER_H = 64;        /* URL + logo (16 visual above + 16 visual below the centered text/logo) */
+        var DIVIDER_GAP = 8;      /* 4 visual: minimal gap between panelImg bottom and divider */
+        var FOOTER_H = 48;        /* 24 visual: 32-output (16 visual) logo centered in 48 → 8 visual breathing room above + below */
         var canvas = document.createElement('canvas');
         canvas.width = panelImg.naturalWidth;
         canvas.height = panelImg.naturalHeight   /* the captured image, flush at top */
@@ -11603,6 +11603,25 @@
       '}',
       '.hm-export-mode .hm-panel-wrap {',
       '  background: var(--hm-panel) !important;',
+      '}',
+      /* Apply outline/scroll removals to the LIVE element BEFORE
+         html-to-image measures it. If we relied on the inline
+         style: {} option alone, the library would compute the
+         bounding box from the ORIGINAL element (which still has
+         the 1px border + scrollbar-gutter), then clone + apply
+         the inline styles to the clone. The clone renders
+         narrower than the captured rect, leaving a 1-4px panel-bg
+         sliver on the right edge. Mutating the live element here
+         makes its layout match what we want to capture. Also drop
+         max-height so capped panels (heatmap) export their full
+         table, and override overflow so scrollable content isn't
+         clipped — html-to-image will then capture scrollWidth/
+         scrollHeight, not just the visible area. */
+      '.hm-export-mode .grid-stack-item > .grid-stack-item-content {',
+      '  border: none !important;',
+      '  scrollbar-gutter: auto !important;',
+      '  overflow: visible !important;',
+      '  max-height: none !important;',
       '}'
     ].join('\n');
     /* Apply export-mode CSS for the duration of the capture. No
@@ -11623,9 +11642,22 @@
       var idAttr = item.getAttribute('gs-id') || 'panel';
       var dateStr = (new Date()).toISOString().slice(0, 10);
       var fileName = 'stablebread-' + _slug(idAttr) + '-' + dateStr + '.png';
+      /* Capture the FULL content, not just the visible area. The
+         live cell has overflow:auto, so wide tables / long heatmaps
+         clip horizontally + vertically. The export-mode CSS above
+         has already set overflow:visible + max-height:none on the
+         cell, so by now scrollWidth/scrollHeight reflect the full
+         inner content size. Pass those to html-to-image so the
+         capture canvas is sized accordingly. Math.max with client*
+         is a safety net for elements where scrollW < clientW
+         (rare, but seen with sub-pixel rounding). */
+      var captureW = Math.max(content.scrollWidth, content.clientWidth);
+      var captureH = Math.max(content.scrollHeight, content.clientHeight);
       return lib.toPng(content, {
         pixelRatio: 2,
         cacheBust: true,
+        width: captureW,
+        height: captureH,
         filter: function (node) {
           if (node && node.classList && node.classList.contains('hm-panel-header')) {
             return false;
@@ -11633,21 +11665,23 @@
           return true;
         },
         style: {
-          /* Square corners + no border / shadow in the export. The
-             panel uses a real 1px border (not a box-shadow) for the
-             outline on the live dashboard, so we explicitly null it
-             out here — otherwise the export would carry a thin
-             border around the whole image. */
+          /* Square corners + no shadow. The 1px border + scrollbar-
+             gutter are killed via the .hm-export-mode CSS rule
+             above (which mutates the live element BEFORE html-to-
+             image measures it — relying on the inline `style` here
+             alone left a 1-4px panel-bg sliver on the right). */
           boxShadow: 'none',
-          border: 'none',
           borderRadius: '0',
-          /* Override overflow:auto on the captured root so the
-             scrollbar gutter doesn't reserve space — that gutter
-             showed up as a thin empty strip on the right edge of
-             the export image even when no scrollbar was visible.
-             Inner content that genuinely overflows is clipped
-             (acceptable: at default size content fits anyway). */
-          overflow: 'hidden'
+          /* Lock the cloned root to the full-content dimensions
+             we just computed. Without this, the clone reverts to
+             its CSS-driven size and content gets clipped again. */
+          width: captureW + 'px',
+          height: captureH + 'px',
+          maxWidth: 'none',
+          maxHeight: 'none',
+          /* Let the inner content flow naturally at the full
+             scrollWidth/scrollHeight — no scroll clipping. */
+          overflow: 'visible'
         },
       }).then(function (panelDataUrl) {
         return _composeExportWithFooter(panelDataUrl, item);
