@@ -4830,18 +4830,6 @@
     display: inline-flex;
     align-items: center;
   }
-  .hm-app .hm-universal-period-btn {
-    /* Override the default 32x32 icon-button sizing — make it
-       text-width with a comfortable horizontal padding. */
-    width: auto !important;
-    min-width: 48px;
-    padding: 0 12px !important;
-    font-family: 'Karla', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--hm-gold);
-  }
   .hm-app .hm-universal-period-panel {
     position: absolute;
     top: calc(100% + 6px);
@@ -4898,12 +4886,6 @@
     border-color: var(--hm-gold);
     color: var(--hm-white);
   }
-  .hm-app .hm-universal-period-note {
-    margin-top: 10px;
-    font-size: 11px;
-    color: var(--hm-muted, #8a7e5e);
-    line-height: 1.45;
-  }
 
   /* Visual marker on individual panel period buttons whose text
      matches the currently-set UNIVERSAL period. A gold inset
@@ -4954,7 +4936,14 @@
            work locally; this is a quick bulk-change. -->
       <div class="hm-universal-period-wrap">
         <button class="hm-btn hm-universal-period-btn" id="hm-universal-period-toggle" type="button" aria-label="Set universal time period" title="Set time period for all components">
-          <span id="hm-universal-period-label">3M</span>
+          <!-- Static clock/time icon. Stays the same regardless of the
+               currently-selected universal period — the popup itself
+               (and the gold outline marker on each panel's period
+               button) reflects the active choice. -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <polyline points="12 7 12 12 15.5 14"/>
+          </svg>
         </button>
         <div class="hm-universal-period-panel" id="hm-universal-period-panel" hidden>
           <div class="hm-universal-period-title">Universal time period</div>
@@ -4968,9 +4957,6 @@
             <button type="button" class="hm-universal-period-opt" data-period="3Y">3Y</button>
             <button type="button" class="hm-universal-period-opt" data-period="5Y">5Y</button>
             <button type="button" class="hm-universal-period-opt" data-period="10Y">10Y</button>
-          </div>
-          <div class="hm-universal-period-note">
-            Syncs every panel that has its own time selector. Individual selections still work — a panel keeps its own choice until you change the universal again.
           </div>
         </div>
       </div>
@@ -6229,9 +6215,8 @@
 
     var toggle = document.getElementById('hm-universal-period-toggle');
     var panel = document.getElementById('hm-universal-period-panel');
-    var label = document.getElementById('hm-universal-period-label');
     var opts = document.querySelectorAll('.hm-universal-period-opt');
-    if (!toggle || !panel || !label) return;
+    if (!toggle || !panel) return;
 
     var savedPeriod = null;
     try { savedPeriod = localStorage.getItem(UNIV_KEY); } catch (e) {}
@@ -6245,7 +6230,10 @@
     }
 
     function markUniversal() {
-      label.textContent = currentPeriod;
+      /* Toggle .active on the popup options (popup is the only place
+         the current universal period appears as text — the topbar
+         button is a static clock icon). Then mark each matching
+         panel period button with .hm-universal-active. */
       opts.forEach(function (o) {
         o.classList.toggle('active', o.getAttribute('data-period') === currentPeriod);
       });
@@ -6321,10 +6309,9 @@
       }
     });
 
-    /* Initial label paint (without click-firing — panels haven't
-       rendered yet). applyUniversalPeriod() below in the data-
-       fetch chain will do the actual sync. */
-    label.textContent = currentPeriod;
+    /* Initial popup state (without click-firing on panels — they
+       haven't rendered yet). applyUniversalPeriod() below in the
+       data-fetch chain will do the actual sync. */
     opts.forEach(function (o) {
       o.classList.toggle('active', o.getAttribute('data-period') === currentPeriod);
     });
@@ -11487,15 +11474,17 @@
           return (v && v.trim()) || fallback;
         }
         var panelBg = cssVar('--hm-panel', dark ? '#1a181d' : '#ffffff');
-        /* Output pixel dimensions (2x logical).
-           No top padding — panel image flush to image top. Sides
-           and bottom (below URL/logo) all have matching 16 visual
-           panel-bg padding so the URL/logo are inset symmetrically. */
-        var PAD_SIDES = 32;       /* 16 visual: panel-bg padding on left/right of panelImg */
+        /* Output pixel dimensions (2x logical because the panel was
+           captured at pixelRatio:2). Canvas is exactly as wide as
+           the panel image — no horizontal panel-bg padding outside
+           the panel itself. The footer text + logo still get their
+           own 16-visual inset from each edge (handled below). */
+        var FOOTER_TEXT_INSET = 32;  /* 16 visual: link sits 16 visual px in from the panel's left edge */
+        var FOOTER_LOGO_INSET = 32;  /* 16 visual: logo sits 16 visual px in from the panel's right edge */
         var DIVIDER_GAP = 16;     /* 8 visual: gap between panelImg bottom and divider */
         var FOOTER_H = 64;        /* URL + logo (16 visual above + 16 visual below the centered text/logo) */
         var canvas = document.createElement('canvas');
-        canvas.width = panelImg.naturalWidth + PAD_SIDES * 2;
+        canvas.width = panelImg.naturalWidth;
         canvas.height = panelImg.naturalHeight   /* the captured image, flush at top */
                       + DIVIDER_GAP              /* small gap above divider */
                       + 1                        /* divider line */
@@ -11504,15 +11493,16 @@
         /* Fill entire canvas with panel bg — no outer ring. */
         ctx.fillStyle = panelBg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        /* Draw captured panel image flush at top (no PAD_TOP). */
-        var panelImgX = PAD_SIDES;
+        /* Draw captured panel image flush at top + flush to both
+           sides (no PAD_SIDES). */
+        var panelImgX = 0;
         var panelImgY = 0;
         ctx.drawImage(panelImg, panelImgX, panelImgY);
-        /* Divider line just below the panelImg. */
+        /* Divider line just below the panelImg — full canvas width. */
         var dividerY = panelImgY + panelImg.naturalHeight + DIVIDER_GAP;
         var dividerColor = dark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)';
         ctx.fillStyle = dividerColor;
-        ctx.fillRect(panelImgX, dividerY, panelImg.naturalWidth, 1);
+        ctx.fillRect(0, dividerY, canvas.width, 1);
         var midY = dividerY + FOOTER_H / 2;
         var fontColor = dark ? '#c9c1b3' : '#5a5042';
         var text = 'stablebread.com/macro';
@@ -11521,7 +11511,7 @@
           ctx.font = '600 24px Karla, sans-serif';
           ctx.textBaseline = 'middle';
           ctx.textAlign = 'left';
-          ctx.fillText(text, panelImgX, midY);
+          ctx.fillText(text, FOOTER_TEXT_INSET, midY);
           try { resolve(canvas.toDataURL('image/png')); }
           catch (e) { reject(e); }
         }
@@ -11531,17 +11521,17 @@
           try {
             var logoH = 32;
             var logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
-            /* URL anchored to panel image's left edge; logo to its
-               right edge — so both align with the panel content
-               above (not the canvas's outer dashboard-bg edge). */
-            var logoX = panelImgX + panelImg.naturalWidth - logoW;
+            /* Link sits 16 visual px in from the LEFT edge of the
+               canvas; logo sits 16 visual px in from the RIGHT edge.
+               Both insets are independent of panel width. */
+            var logoX = canvas.width - logoW - FOOTER_LOGO_INSET;
             var logoY = midY - logoH / 2;
             ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
             ctx.fillStyle = fontColor;
             ctx.font = '600 24px Karla, sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'left';
-            ctx.fillText(text, panelImgX, midY);
+            ctx.fillText(text, FOOTER_TEXT_INSET, midY);
             resolve(canvas.toDataURL('image/png'));
           } catch (e) {
             drawTextOnly();
@@ -11643,8 +11633,13 @@
           return true;
         },
         style: {
-          /* Square corners + no outline border in the export. */
+          /* Square corners + no border / shadow in the export. The
+             panel uses a real 1px border (not a box-shadow) for the
+             outline on the live dashboard, so we explicitly null it
+             out here — otherwise the export would carry a thin
+             border around the whole image. */
           boxShadow: 'none',
+          border: 'none',
           borderRadius: '0',
           /* Override overflow:auto on the captured root so the
              scrollbar gutter doesn't reserve space — that gutter
