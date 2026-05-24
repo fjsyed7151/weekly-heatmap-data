@@ -370,9 +370,35 @@
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-header,
+  /* Sticky-left navbars on the horizontally-scrollable panels.
+     Two issues being fixed here:
+       1) Sub-pixel gap: width: 100cqw can resolve to a fractional
+          pixel (e.g. 941.66px on a 942px content area), leaving
+          a ~0.3px strip on the right where the table peeks
+          through. calc(100cqw + 2px) covers that fully — the
+          extra 2px overlaps the start of the scrollbar gutter,
+          which the scrollbar itself then paints on top of, so
+          the user never sees a gap.
+       2) Rounded top corners: the 5px border-radius left a
+          quarter-circle notch at the top-right where the thead
+          gold band showed through behind the navbar. Squaring
+          the top corners makes the navbar bg fully cover the
+          strip. (The cell's own rounded corner still clips
+          content beyond the cell, so the outer panel outline
+          stays rounded — only the navbar's bg edge is square.) */
   .hm-app .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header {
-    width: 100cqw;
+    width: calc(100cqw + 2px);
+  }
+  .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
   }
   /* Metrics table (hm-heatmap-wrap): make the table's gold thead
      (column-header row) sticky JUST BELOW the panel navbar so it
@@ -4727,7 +4753,12 @@
     top: 0 !important;
     left: 0 !important;
     z-index: 6 !important;
-    width: 100cqw !important;
+    /* +2px to absorb sub-pixel rounding of 100cqw (e.g.
+       941.66px on a 942px content area) so the navbar bg fully
+       covers the right edge; the 2px extra overlaps the start
+       of the scrollbar gutter which the scrollbar paints on
+       top of, so it's not visible. */
+    width: calc(100cqw + 2px) !important;
   }
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-factors-header,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-factors-header,
@@ -4737,7 +4768,7 @@
     position: sticky !important;
     top: 24px !important;
     left: 0 !important;
-    width: 100cqw !important;
+    width: calc(100cqw + 2px) !important;
     z-index: 5 !important;
   }
   /* Currency-matrix cell needs container-type so the 100cqw on its
