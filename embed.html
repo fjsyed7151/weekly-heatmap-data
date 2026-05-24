@@ -290,15 +290,20 @@
      where panels sit at .hm-col > .grid-stack-item (one level
      deeper). Color: var(--hm-border) — the standard subtle
      theme border (#d9d9d9 light / #232731 dark), matching the
-     rest of the dashboard's neutral chrome. */
+     rest of the dashboard's neutral chrome.
+
+     Real 1px border (not outset box-shadow) so that when a
+     column is pinned (.hm-col-sticky has overflow-x: hidden),
+     the cell's left and right edges don't get clipped — an
+     outset box-shadow renders OUTSIDE the cell box, which the
+     parent's overflow:hidden then trims away. Border is INSIDE
+     the box, so it's always visible regardless of parent
+     clipping. box-sizing: border-box keeps the cell's total
+     size the same. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item > .grid-stack-item-content {
     background: transparent;
-    /* 1px outline drawn OUTSIDE the box so it doesn't eat into
-       content area (a real border would push inner content in
-       by 1px). box-shadow with spread 1px + zero blur acts as
-       an outset stroke that follows border-radius. */
-    box-shadow: 0 0 0 1px var(--hm-border);
+    border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     overflow: auto;
     padding: 0;
@@ -4818,6 +4823,102 @@
   .hm-app .hm-topbar-col-btn.active {
     color: var(--hm-gold);
   }
+
+  /* Universal time-period selector (topbar). */
+  .hm-app .hm-universal-period-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  .hm-app .hm-universal-period-btn {
+    /* Override the default 32x32 icon-button sizing — make it
+       text-width with a comfortable horizontal padding. */
+    width: auto !important;
+    min-width: 48px;
+    padding: 0 12px !important;
+    font-family: 'Karla', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--hm-gold);
+  }
+  .hm-app .hm-universal-period-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 1001;
+    background: var(--hm-panel);
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    padding: 12px 14px;
+    min-width: 260px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
+  .hm-app.dark .hm-universal-period-panel {
+    background: var(--hm-bg-alt);
+    border-color: var(--hm-border-strong);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+  .hm-app .hm-universal-period-panel[hidden] { display: none; }
+  .hm-app .hm-universal-period-title {
+    font-family: 'Karla', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hm-brown, #513C0C);
+    margin-bottom: 8px;
+  }
+  .hm-app.dark .hm-universal-period-title { color: var(--hm-gold-light, #e6bf66); }
+  .hm-app .hm-universal-period-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .hm-app .hm-universal-period-opt {
+    font-family: 'Karla', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    background: transparent;
+    color: var(--hm-dark);
+    cursor: pointer;
+    min-width: 40px;
+    transition: border-color 120ms, color 120ms, background 120ms;
+  }
+  .hm-app.dark .hm-universal-period-opt { color: var(--hm-white); border-color: var(--hm-border-strong); }
+  .hm-app .hm-universal-period-opt:hover {
+    border-color: var(--hm-gold);
+    color: var(--hm-gold);
+  }
+  .hm-app .hm-universal-period-opt.active {
+    background: var(--hm-gold);
+    border-color: var(--hm-gold);
+    color: var(--hm-white);
+  }
+  .hm-app .hm-universal-period-note {
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--hm-muted, #8a7e5e);
+    line-height: 1.45;
+  }
+
+  /* Visual marker on individual panel period buttons whose text
+     matches the currently-set UNIVERSAL period. A gold inset
+     outline (1px inside the button) so it doesn't overlap
+     neighbors but is still visible when the button is also
+     active (gold bg). The user can see at a glance which period
+     is the universal vs which one is locally selected. */
+  .hm-app .hm-indexes-period-btn.hm-universal-active,
+  .hm-app .hm-sector-period-btn.hm-universal-active,
+  .hm-app .hm-sf-period-btn.hm-universal-active,
+  .hm-app .hm-factors-period-btn.hm-universal-active,
+  .hm-app .hm-treemap-period-btn.hm-universal-active {
+    outline: 1px solid var(--hm-gold);
+    outline-offset: -3px;
+  }
 </style>
 
 <div class="hm-app" id="hm-app">
@@ -4847,6 +4948,32 @@
       </a>
       <!-- Spacer pushes the right-side button cluster to the far right. -->
       <span class="hm-topbar-spacer"></span>
+      <!-- Universal time-period selector. Click → popup with period
+           options. Selecting one syncs every panel that has its own
+           period control to that period. Per-panel selections still
+           work locally; this is a quick bulk-change. -->
+      <div class="hm-universal-period-wrap">
+        <button class="hm-btn hm-universal-period-btn" id="hm-universal-period-toggle" type="button" aria-label="Set universal time period" title="Set time period for all components">
+          <span id="hm-universal-period-label">3M</span>
+        </button>
+        <div class="hm-universal-period-panel" id="hm-universal-period-panel" hidden>
+          <div class="hm-universal-period-title">Universal time period</div>
+          <div class="hm-universal-period-options">
+            <button type="button" class="hm-universal-period-opt" data-period="1W">1W</button>
+            <button type="button" class="hm-universal-period-opt" data-period="1M">1M</button>
+            <button type="button" class="hm-universal-period-opt" data-period="3M">3M</button>
+            <button type="button" class="hm-universal-period-opt" data-period="6M">6M</button>
+            <button type="button" class="hm-universal-period-opt" data-period="YTD">YTD</button>
+            <button type="button" class="hm-universal-period-opt" data-period="1Y">1Y</button>
+            <button type="button" class="hm-universal-period-opt" data-period="3Y">3Y</button>
+            <button type="button" class="hm-universal-period-opt" data-period="5Y">5Y</button>
+            <button type="button" class="hm-universal-period-opt" data-period="10Y">10Y</button>
+          </div>
+          <div class="hm-universal-period-note">
+            Syncs every panel that has its own time selector. Individual selections still work — a panel keeps its own choice until you change the universal again.
+          </div>
+        </div>
+      </div>
       <div class="hm-info-wrap">
         <button class="hm-btn" id="hm-info-toggle" type="button" aria-label="About & sources" title="About & sources">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -5008,9 +5135,8 @@
                       <button class="hm-btn" id="hm-chart-separated" type="button" aria-label="Separated view" title="Separated">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
                       </button>
-                      <button class="hm-btn" id="hm-chart-download" type="button" aria-label="Download chart" title="Download">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                      </button>
+                      <!-- Download button removed: redundant with the
+                           download icon in the panel-header chrome. -->
                     </span>
                   </div>
                   <div class="hm-chart-canvases combined" id="hm-chart-canvases"></div>
@@ -5661,15 +5787,8 @@
     var canvas = document.createElement('canvas');
     wrap.appendChild(canvas);
 
-    /* Per-unit download button (gold circle, top-right of canvas). */
-    var dlBtn = document.createElement('button');
-    dlBtn.className = 'hm-btn hm-unit-download';
-    dlBtn.setAttribute('aria-label', 'Download this chart');
-    dlBtn.setAttribute('title', 'Download');
-    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-    dlBtn.addEventListener('click', function () { downloadUnit(unit, entries); });
-    wrap.appendChild(dlBtn);
-
+    /* Per-unit download button removed — redundant with the
+       download icon in the panel-header chrome. */
     unit.appendChild(wrap);
 
     var legendContainer = document.createElement('div');
@@ -6016,9 +6135,6 @@
     chartState.viewMode = mode;
     document.getElementById('hm-chart-combined').classList.toggle('active', mode === 'combined');
     document.getElementById('hm-chart-separated').classList.toggle('active', mode === 'separated');
-    var dlBtn = document.getElementById('hm-chart-download');
-    dlBtn.setAttribute('title', mode === 'separated' ? 'Download all' : 'Download');
-    dlBtn.setAttribute('aria-label', mode === 'separated' ? 'Download all charts' : 'Download chart');
     renderCharts();
   }
   document.getElementById('hm-chart-combined').addEventListener('click', function () { setViewMode('combined'); });
@@ -6065,12 +6181,18 @@
       .catch(function () { unitEl.classList.remove('hm-exporting'); });
   }
 
-  /* Global download: downloads all chart units. */
-  document.getElementById('hm-chart-download').addEventListener('click', function () {
-    chartInstances.forEach(function (inst) {
-      downloadUnit(inst.unit, inst.entries);
+  /* Global download button was removed from the gold header (the
+     download icon in the panel chrome handles it). Wiring kept
+     here-defensively in case the button is re-added later. */
+  (function () {
+    var dlBtn = document.getElementById('hm-chart-download');
+    if (!dlBtn) return;
+    dlBtn.addEventListener('click', function () {
+      chartInstances.forEach(function (inst) {
+        downloadUnit(inst.unit, inst.entries);
+      });
     });
-  });
+  })();
 
   /* ---------- Init ---------- */
   setViewMode('combined');
@@ -6082,6 +6204,131 @@
   document.getElementById("hm-theme-toggle").addEventListener("click", function () {
     setTheme(getTheme() === "dark" ? "light" : "dark");
   });
+
+  /* Universal time-period selector.
+     - Stores the current "universal" period in localStorage.
+     - On click of a period option, walks every panel that has a
+       period-button (.hm-*-period-btn classes) and clicks the one
+       whose text matches the selected period. Filters by text
+       against PERIOD_LABELS so mode buttons (Abs / vs SPY / USD
+       / etc.) that share the same class names are NOT triggered.
+     - Marks every matching period button across panels with the
+       .hm-universal-active class so the user can see which
+       period is currently the universal vs. which one is locally
+       active (gold bg). */
+  (function () {
+    var UNIV_KEY = 'hm-universal-period';
+    var PERIOD_LABELS = ['1W', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y'];
+    var PANEL_SELECTORS = [
+      '.hm-indexes-period-btn',
+      '.hm-sector-period-btn',
+      '.hm-sf-period-btn',
+      '.hm-factors-period-btn',
+      '.hm-treemap-period-btn'
+    ].join(', ');
+
+    var toggle = document.getElementById('hm-universal-period-toggle');
+    var panel = document.getElementById('hm-universal-period-panel');
+    var label = document.getElementById('hm-universal-period-label');
+    var opts = document.querySelectorAll('.hm-universal-period-opt');
+    if (!toggle || !panel || !label) return;
+
+    var savedPeriod = null;
+    try { savedPeriod = localStorage.getItem(UNIV_KEY); } catch (e) {}
+    var currentPeriod = (savedPeriod && PERIOD_LABELS.indexOf(savedPeriod) >= 0) ? savedPeriod : '3M';
+
+    function isPeriodBtn(btn) {
+      /* Only treat as a period button if its text matches one of
+         PERIOD_LABELS (excludes mode buttons like "Abs" / "vs SPY"
+         that share the .hm-factors-period-btn class). */
+      return PERIOD_LABELS.indexOf((btn.textContent || '').trim()) >= 0;
+    }
+
+    function markUniversal() {
+      label.textContent = currentPeriod;
+      opts.forEach(function (o) {
+        o.classList.toggle('active', o.getAttribute('data-period') === currentPeriod);
+      });
+      document.querySelectorAll(PANEL_SELECTORS).forEach(function (btn) {
+        btn.classList.toggle(
+          'hm-universal-active',
+          isPeriodBtn(btn) && btn.textContent.trim() === currentPeriod
+        );
+      });
+    }
+
+    function applyUniversal() {
+      /* Click every matching period button across all panels to
+         sync them to the universal period. Uses native click so
+         each panel's existing handler runs naturally.
+
+         Snapshot first so we don't lose track when a click triggers
+         a panel re-render (which detaches the old buttons mid-loop).
+         Idempotent — only clicks buttons that aren't already active,
+         so this is safe to call multiple times. */
+      var btns = Array.prototype.slice.call(document.querySelectorAll(PANEL_SELECTORS));
+      btns.forEach(function (btn) {
+        if (!btn.isConnected) return;  /* skip stale nodes from re-renders */
+        if (isPeriodBtn(btn) && btn.textContent.trim() === currentPeriod && !btn.classList.contains('active')) {
+          try { btn.click(); } catch (e) {}
+        }
+      });
+      markUniversal();
+    }
+
+    function setPeriod(p) {
+      if (PERIOD_LABELS.indexOf(p) === -1) return;
+      currentPeriod = p;
+      try { localStorage.setItem(UNIV_KEY, p); } catch (e) {}
+      applyUniversal();
+    }
+
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) markUniversal();
+    });
+    opts.forEach(function (opt) {
+      opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setPeriod(opt.getAttribute('data-period'));
+        panel.hidden = true;
+      });
+    });
+    document.addEventListener('click', function (e) {
+      if (panel.hidden) return;
+      if (panel.contains(e.target) || toggle.contains(e.target)) return;
+      panel.hidden = true;
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) panel.hidden = true;
+    });
+
+    /* Expose hooks so the data-fetch chain can apply the universal
+       period after all panels have initially rendered their period
+       buttons, AND re-mark when a panel re-renders. */
+    window.applyUniversalPeriod = applyUniversal;
+    window.markUniversalPeriod = markUniversal;
+    window.getUniversalPeriod = function () { return currentPeriod; };
+
+    /* Re-mark after ANY click on a period button (the panel may
+       have stripped the .hm-universal-active class as part of its
+       own siblings.forEach remove-active flow). Defer to next
+       frame so the panel's handler runs first. */
+    document.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest(PANEL_SELECTORS)) {
+        requestAnimationFrame(markUniversal);
+      }
+    });
+
+    /* Initial label paint (without click-firing — panels haven't
+       rendered yet). applyUniversalPeriod() below in the data-
+       fetch chain will do the actual sync. */
+    label.textContent = currentPeriod;
+    opts.forEach(function (o) {
+      o.classList.toggle('active', o.getAttribute('data-period') === currentPeriod);
+    });
+  })();
 
   /* Info popover: toggle open on click, close on outside click or Escape. */
   (function () {
@@ -11053,7 +11300,7 @@
         '<button class="hm-panel-btn hm-panel-export" type="button" data-action="export" title="Download as image" aria-label="Download as image">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
         '</button>' +
-        '<button class="hm-panel-btn hm-panel-close" type="button" data-action="close" title="Hide panel (re-add via Customize view)" aria-label="Hide panel">' +
+        '<button class="hm-panel-btn hm-panel-close" type="button" data-action="close" title="Hide panel" aria-label="Hide panel">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>' +
         '</button>';
       wrap.appendChild(header);
@@ -11533,6 +11780,20 @@
         if (typeof updateChartSectionVisibility === 'function') {
           updateChartSectionVisibility();
         }
+      });
+      /* Apply the saved universal time period now that every panel
+         has rendered its period buttons. Run on the next frame AND
+         schedule a few retries at increasing delays — some panels
+         re-render their period buttons asynchronously (e.g. via
+         ResizeObserver / Gridstack init), so a single early call
+         can miss them. applyUniversal is idempotent so extra runs
+         are harmless. */
+      safeRender('universalPeriod', function () {
+        if (typeof window.applyUniversalPeriod !== 'function') return;
+        requestAnimationFrame(window.applyUniversalPeriod);
+        setTimeout(window.applyUniversalPeriod, 50);
+        setTimeout(window.applyUniversalPeriod, 250);
+        setTimeout(window.applyUniversalPeriod, 800);
       });
     })
     .catch(function (err) {
