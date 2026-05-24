@@ -374,15 +374,6 @@
   .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header {
     width: 100cqw;
   }
-  /* Heatmap-specific: the cell has a vertical scrollbar (overflow:
-     auto + max-height: 80vh). The panel-header at 100cqw spans the
-     full cell width — including the area the scrollbar occupies —
-     so the close (×) button at the right edge ends up partly behind
-     the scrollbar. Bump right padding to the scrollbar's typical
-     width + a little margin so the button stays clear. */
-  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header {
-    padding-right: 20px;
-  }
   /* Metrics table (hm-heatmap-wrap): make the table's gold thead
      (column-header row) sticky JUST BELOW the panel navbar so it
      stays visible when the user scrolls vertically inside the
