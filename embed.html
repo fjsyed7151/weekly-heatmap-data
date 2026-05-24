@@ -446,7 +446,9 @@
     /* Top corners rounded to match the cell's outer radius; bottom
        corners square so the navbar sits flush against the gold header. */
     border-radius: var(--hm-r) var(--hm-r) 0 0;
-    cursor: grab;
+    /* Drag/drop was removed when we left gridstack — cursor stays
+       default (no grab/grabbing). */
+    cursor: default;
     user-select: none;
     gap: 2px;
     color: var(--hm-muted, #8a7e5e);
@@ -468,7 +470,7 @@
   .hm-app.dark .hm-panel-header {
     background: var(--hm-bg-alt, #232027);
   }
-  .hm-app .hm-panel-header:active { cursor: grabbing; }
+  /* .hm-panel-header:active grabbing-cursor rule removed — no drag. */
   .hm-app .hm-panel-btn {
     flex: 0 0 auto;
     display: inline-flex;
@@ -2415,14 +2417,18 @@
     margin-bottom: 0; /* Gridstack handles spacing */
     overflow: hidden;  /* clip child content to the rounded bottom corners */
   }
-  /* Mobile viewport fallbacks — when the whole page is narrower than
-     these breakpoints, drop to 2-col / 1-col so the cards aren't
-     forced into a horizontal scroll situation on phones (where
-     vertical scrolling is the dominant UX). */
-  @media (max-width: 1100px) {
-    .hm-app .hm-indexes { grid-template-columns: repeat(2, max(140px, 50cqw)); }
+  /* Responsive cell-width breakpoints (@container queries, not
+     @media — so they trigger on the cell's width, not the
+     viewport's). At narrow cells (e.g. when the column is dragged
+     narrow or sticky-pinned with the user scrolled), the 4-card
+     row drops to 2-col, then to 1-col stack. Matches how
+     .hm-econ-grid handles the same width range. The container
+     ancestor is the .grid-stack-item-content cell, which has
+     container-type: inline-size set per-panel. */
+  @container (max-width: 720px) {
+    .hm-app .hm-indexes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
-  @media (max-width: 600px) {
+  @container (max-width: 360px) {
     .hm-app .hm-indexes { grid-template-columns: 1fr; }
   }
   .hm-app .hm-idx-card {
@@ -2436,11 +2442,12 @@
     gap: 4px;
     position: relative;
     overflow: hidden;
+    min-width: 0;
   }
   .hm-app .hm-idx-card:last-child { border-right: none; }
   /* Responsive: when stacked to 2 columns, reset right-borders to vertical
      dividers between the 2 cells per row + horizontal divider between rows. */
-  @media (max-width: 1100px) {
+  @container (max-width: 720px) {
     .hm-app .hm-idx-card { border-right: 1px solid var(--hm-border); }
     .hm-app .hm-idx-card:nth-child(2n) { border-right: none; }
     .hm-app .hm-idx-card:nth-child(-n+2) { border-bottom: 1px solid var(--hm-border); }
@@ -4477,6 +4484,9 @@
     flex-direction: column;
     gap: 12px;
     min-width: 0;
+    /* Breathing room below the last panel so it doesn't sit flush
+       against the bottom of the page when scrolled to the end. */
+    padding-bottom: 32px;
   }
   .hm-app .hm-col-divider {
     /* Visible vertical handle, click-and-drag to resize columns. */
@@ -4665,9 +4675,10 @@
     margin-top: 16px;
   }
 
-  /* Heatmap thead stays sticky inside its own scroll container. */
+  /* Heatmap thead sticks inside the cell's scroll container, just
+     below the 24px panel-header at the top of the wrap. */
   .hm-app .hm-col .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
-    top: 0 !important;
+    top: 24px !important;
   }
 
   /* Defensive stretch: when columns collapse/expand the cell width
@@ -5285,17 +5296,46 @@
     renderCharts();
   }
 
+  /* Tracks whether the user has manually repositioned the chart
+     panel (via the ←/↑/↓/→ buttons). When true, we don't auto-move
+     it to "above the heatmap" on metric select. Reset to false
+     whenever ALL metrics get cleared — so the next selection
+     after a clear-all gets the auto-position behavior again. */
+  window._chartPanelManuallyMoved = false;
+
   function updateChartSectionVisibility() {
     /* Show the chart panel only when at least one metric is selected;
        otherwise hide it so the empty "0/6 metrics selected" toolbar
-       isn't taking space. (Sectioned layout: just toggle display on
-       the panel slot — no gridstack add/remove needed.) */
+       isn't taking space.
+       AUTO-POSITION: when the panel transitions from hidden to
+       visible (0 → 1+ metrics selected), move it to sit directly
+       ABOVE the heatmap panel in whatever column the heatmap lives
+       in — unless the user has manually moved it since the last
+       clear. On the clear (1+ → 0), reset the manually-moved flag
+       so the next first-select re-auto-positions. */
     var item = document.querySelector('.grid-stack-item[gs-id="hm-chart-section"]');
     if (!item) return;
+    var wasVisible = item.style.display !== 'none' && !item.hidden;
     var hasSelection = chartState.selected.length > 0;
     var canvases = document.getElementById('hm-chart-canvases');
     if (canvases) canvases.style.display = hasSelection ? '' : 'none';
     item.style.display = hasSelection ? '' : 'none';
+
+    if (hasSelection && !wasVisible && !window._chartPanelManuallyMoved) {
+      /* Just transitioned to visible AND user hasn't manually moved
+         — position chart panel immediately before the heatmap. */
+      var heatmap = document.querySelector('.grid-stack-item[gs-id="hm-heatmap-wrap"]');
+      if (heatmap && heatmap.parentNode) {
+        heatmap.parentNode.insertBefore(item, heatmap);
+        if (typeof persistColsLayout === 'function') persistColsLayout();
+        if (typeof refreshAllMoveButtons === 'function') refreshAllMoveButtons();
+      }
+    }
+    if (!hasSelection) {
+      /* All metrics cleared — reset the manual-move flag so the
+         next select re-auto-positions above the heatmap. */
+      window._chartPanelManuallyMoved = false;
+    }
   }
   function updateCheckboxAvailability() {
     var atMax = chartState.selected.length >= MAX_METRICS;
@@ -10468,7 +10508,10 @@
   function refreshUnpinAllVisibility() {}
 
   /* Move a panel one slot up within its current column. Plain DOM
-     swap — without gridstack there's no internal node.y to track. */
+     swap — without gridstack there's no internal node.y to track.
+     When the user moves the chart-section panel, set the manual-
+     move flag so updateChartSectionVisibility stops auto-moving it
+     above the heatmap on each select. */
   function movePanelUp(id) {
     var item = document.querySelector('#hm-cols .grid-stack-item[gs-id="' + id + '"]');
     if (!item) return;
@@ -10476,6 +10519,7 @@
     while (prev && !prev.matches('.grid-stack-item')) prev = prev.previousElementSibling;
     if (!prev) return;
     item.parentNode.insertBefore(item, prev);
+    if (id === 'hm-chart-section') window._chartPanelManuallyMoved = true;
     persistColsLayout();
     refreshAllMoveButtons();
   }
@@ -10486,6 +10530,7 @@
     while (next && !next.matches('.grid-stack-item')) next = next.nextElementSibling;
     if (!next) return;
     item.parentNode.insertBefore(next, item);
+    if (id === 'hm-chart-section') window._chartPanelManuallyMoved = true;
     persistColsLayout();
     refreshAllMoveButtons();
   }
@@ -10502,6 +10547,7 @@
     var toCol = document.querySelector('.hm-col[data-col="' + COL_IDS[toIdx] + '"]');
     if (!toCol) return;
     toCol.appendChild(item);
+    if (id === 'hm-chart-section') window._chartPanelManuallyMoved = true;
     persistColsLayout();
     refreshAllMoveButtons();
   }
