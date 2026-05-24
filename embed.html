@@ -286,17 +286,38 @@
      same as Bloomberg / Koyfin / Linear data tables). At default size
      content matches cell exactly so scrollbars stay hidden. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content {
-    background: transparent;
-    /* 1px outline drawn OUTSIDE the box so it doesn't eat into content
-       area (border would push inner content in by 1px). box-shadow with
-       spread 1px + zero blur acts as an outset stroke that follows
-       border-radius. Hairline weight reads as subtle panel chrome
-       rather than a heavy band between cells. */
-    box-shadow: 0 0 0 1px var(--hm-panel-outline);
+    /* Solid panel background (was transparent) — makes each panel
+       read as a distinct card lifted off the warm dashboard
+       surface, instead of blending into it. The previous
+       transparent + 1px pale-gold outline was too subtle: the
+       navbar/header at the top of each panel had nearly the same
+       background as the dashboard, so its boundary disappeared.
+       With a white card + soft drop shadow, the whole panel is
+       clearly defined and the navbar reads as chrome ON the
+       card. */
+    background: var(--hm-panel);
+    /* Outline stays the brand gold tone (preserves StableBread
+       look), but we add a soft drop shadow underneath so the
+       panel appears slightly elevated from the dashboard. The
+       shadow's near-zero blur outline + small offset blur is
+       the standard "card on surface" pattern. */
+    box-shadow:
+      0 0 0 1px var(--hm-panel-outline),
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 12px rgba(0, 0, 0, 0.03);
     border-radius: var(--hm-r);
     overflow: auto;
     padding: 0;
     box-sizing: border-box;
+  }
+  /* Dark mode: rgba(0,0,0,...) shadows disappear against the dark
+     dashboard. Use a heavier outline + a subtle dark shadow so
+     panels still read as distinct cards. */
+  .hm-app.dark .grid-stack > .grid-stack-item > .grid-stack-item-content {
+    box-shadow:
+      0 0 0 1px var(--hm-border-strong),
+      0 1px 3px rgba(0, 0, 0, 0.4),
+      0 4px 12px rgba(0, 0, 0, 0.25);
   }
   /* Panel wrap stays at cell width by default — Chart.js responsive
      canvases (sector / macro regime / index sparklines) feed back
@@ -460,6 +481,10 @@
        default (no grab/grabbing). */
     cursor: default;
     user-select: none;
+    /* Hairline separator below the navbar so it reads as a
+       distinct chrome band rather than blending into the panel
+       content area below. */
+    border-bottom: 1px solid var(--hm-border);
     gap: 2px;
     color: var(--hm-muted, #8a7e5e);
     /* Sticky to the top AND left of the panel cell scroll container so
