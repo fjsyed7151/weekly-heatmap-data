@@ -26,10 +26,7 @@
     --hm-bg-alt:      #faf9f8;
     --hm-border:      #d9d9d9;
     --hm-border-strong: #bfbab0;
-    /* Panel cell outline — slightly more saturated gold than the
-       original #F2DFB3 so panel edges actually read against the
-       warm cream dashboard background. Same brand family. */
-    --hm-panel-outline: #e6c878;
+    --hm-panel-outline: #F2DFB3;
     --hm-brown:       #513C0C;
     --hm-blue:        #2c40d0;
     --hm-green:       #1a7a42;
@@ -54,9 +51,7 @@
     --hm-bg-alt:      #171a21;
     --hm-border:      #232731;
     --hm-border-strong: #3a3f4e;
-    /* Dark-mode panel outline — bumped from #8c7a4a so panel
-       edges register against the dark dashboard. */
-    --hm-panel-outline: #b39756;
+    --hm-panel-outline: #8c7a4a;
     --hm-brown:       #c7ab6d;
     --hm-blue:        #5b6ef5;
     --hm-green:       #2f8a3e;
@@ -293,21 +288,17 @@
   /* Panel cell outline. The selector covers BOTH legacy
      .grid-stack direct-child grids AND the new column layout
      where panels sit at .hm-col > .grid-stack-item (one level
-     deeper). Without the second selector this rule never matched
-     in the column layout — which is why the panel borders looked
-     invisible before. */
+     deeper). Color: var(--hm-border) — the standard subtle
+     theme border (#d9d9d9 light / #232731 dark), matching the
+     rest of the dashboard's neutral chrome. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item > .grid-stack-item-content {
     background: transparent;
     /* 1px outline drawn OUTSIDE the box so it doesn't eat into
        content area (a real border would push inner content in
        by 1px). box-shadow with spread 1px + zero blur acts as
-       an outset stroke that follows border-radius.
-       Color: var(--hm-panel-outline) — the brand pale-gold
-       tone, bumped to a slightly more saturated shade so the
-       panel edges actually register against the warm cream
-       dashboard background. */
-    box-shadow: 0 0 0 1px var(--hm-panel-outline);
+       an outset stroke that follows border-radius. */
+    box-shadow: 0 0 0 1px var(--hm-border);
     border-radius: var(--hm-r);
     overflow: auto;
     padding: 0;
