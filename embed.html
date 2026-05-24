@@ -341,12 +341,21 @@
   .hm-app .grid-stack-item[gs-id="hm-indexes"] > .grid-stack-item-content {
     container-type: inline-size;
   }
+  /* For panels with horizontally-scrolling content, set the
+     panel-wrap to width:max-content so the wrap is wider than
+     the panel-header. The sticky-left:0 + width:100cqw navbar
+     needs ROOM TO SLIDE within its containing block — if wrap
+     and navbar are the same width, sticky has nothing to do.
+     Indexes is NOT in this list anymore: its grid uses @container
+     queries to fit cell width, so panel-wrap should stay at cell
+     width (no horizontal scroll needed). */
   .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-wrap,
-  .hm-app .grid-stack-item[gs-id="hm-indexes"] .hm-panel-wrap {
+  .hm-app .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-wrap {
     width: max-content;
     min-width: 100%;
   }
@@ -355,7 +364,8 @@
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-header,
-  .hm-app .grid-stack-item[gs-id="hm-indexes"] .hm-panel-header {
+  .hm-app .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header {
     width: 100cqw;
   }
   /* Metrics table (hm-heatmap-wrap): make the table's gold thead
@@ -2846,7 +2856,13 @@
   /* Period pills inside the indexes gold header. Visual styling matches
      the factors panel pills (10px Karla, white outline, fill on active)
      so the dashboard reads as one cohesive control language. */
-  .hm-app .hm-indexes-periods { display: flex; gap: 4px; }
+  /* Period buttons wrap to multiple rows when the gold-header
+     can't fit them all on one line — otherwise 9 buttons (1W /
+     1M / 3M / 6M / YTD / 1Y / 3Y / 5Y / 10Y) force the gold
+     header to a min-content of ~500px, which then pushes the
+     whole indexes panel wider than its cell at narrow column
+     widths. */
+  .hm-app .hm-indexes-periods { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
   .hm-app .hm-indexes-period-btn {
     font-family: 'Karla', sans-serif;
     font-size: 10px;
