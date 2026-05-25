@@ -5383,13 +5383,6 @@
           <div class="hm-export-section-hint">Pixel density. Higher = sharper, larger file.</div>
         </div>
         <div class="hm-export-section">
-          <div class="hm-export-section-label">Background</div>
-          <label class="hm-export-checkbox">
-            <input type="checkbox" id="hm-export-transparent">
-            <span>Transparent background</span>
-          </label>
-        </div>
-        <div class="hm-export-section">
           <div class="hm-export-section-label">Footer handle</div>
           <input type="text" class="hm-export-input" id="hm-export-handle" value="StableBread" maxlength="30" autocomplete="off">
           <div class="hm-export-section-hint">@username shown in the footer next to the logo.</div>
@@ -5408,7 +5401,7 @@
         </div>
       </aside>
       <main class="hm-export-preview-area">
-        <div class="hm-export-preview-loading" id="hm-export-preview-loading">Generating preview…</div>
+        <div class="hm-export-preview-loading" id="hm-export-preview-loading">Generating preview...</div>
         <img class="hm-export-preview-img" id="hm-export-preview-img" hidden alt="Export preview">
       </main>
     </div>
@@ -11733,8 +11726,13 @@
      card. */
   function _composeExportWithFooter(panelDataUrl, item, cropTopPx, options) {
     options = options || {};
-    var transparentBg = !!options.transparentBg;
     var handle = (options.handle || '').trim();
+    /* pixelRatio that produced panelImg — used to scale the footer
+       font and logo so they read at the same VISUAL size regardless
+       of which resolution the user picked (1x/2x/3x). Without this,
+       the footer is correctly-proportioned only at 2x and feels
+       comically oversized at 1x preview. */
+    var pixelRatio = options.pixelRatio || 2;
     return new Promise(function (resolve, reject) {
       var panelImg = new Image();
       panelImg.onload = function () {
@@ -11746,15 +11744,18 @@
           return (v && v.trim()) || fallback;
         }
         var panelBg = cssVar('--hm-panel', dark ? '#1a181d' : '#ffffff');
-        /* Output pixel dimensions (2x logical because the panel was
-           captured at pixelRatio:2). Canvas is exactly as wide as
-           the panel image — no horizontal panel-bg padding outside
-           the panel itself. The footer text + logo still get their
-           own 12-visual inset from each edge (handled below). */
-        var FOOTER_TEXT_INSET = 24;  /* 12 visual: link sits 12 visual px in from the panel's left edge */
-        var FOOTER_LOGO_INSET = 24;  /* 12 visual: logo sits 12 visual px in from the panel's right edge */
-        var DIVIDER_GAP = 0;      /* divider sits flush against the panel bottom — no panel-bg gap above it */
-        var FOOTER_H = 64;        /* 32 visual: 32-output (16 visual) logo centered → 16-output (8 visual) breathing room above + below */
+        /* All footer sizes are expressed in VISUAL px and then
+           multiplied by pixelRatio so the layout reads identical at
+           every resolution. The captured panel image was rendered
+           at `pixelRatio` (1/2/3) — its naturalWidth/Height are
+           already in output px, so we line up footer dimensions
+           with the same unit. */
+        var FOOTER_TEXT_INSET = 12 * pixelRatio;  /* 12 visual: link sits 12 visual px in from panel left edge */
+        var FOOTER_LOGO_INSET = 12 * pixelRatio;  /* 12 visual: logo sits 12 visual px in from panel right edge */
+        var DIVIDER_GAP = 0;                      /* divider flush against the panel bottom */
+        var FOOTER_H = 32 * pixelRatio;           /* 32 visual: logo (16 visual) centered with 8 visual breathing room above + below */
+        var LOGO_H = 16 * pixelRatio;             /* 16 visual logo height */
+        var FOOTER_FONT_PX = 12 * pixelRatio;     /* 12 visual font, matches panel content text size */
         /* cropTopPx is the output-pixel height of the panel-header slot
            in the captured PNG. The panel-header is visibility:hidden
            in export-mode (no inner shift), so the captured PNG has an
@@ -11770,14 +11771,11 @@
                       + 1                        /* divider line */
                       + FOOTER_H;                /* URL + logo with 8 visual top + bottom panel-bg around them */
         var ctx = canvas.getContext('2d');
-        /* Fill canvas with panel-bg, unless transparent-bg is requested.
-           Transparent leaves the canvas with its native alpha=0 so the
-           PNG export carries an alpha channel — useful for embedding
-           the chart on another background. */
-        if (!transparentBg) {
-          ctx.fillStyle = panelBg;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
+        /* Fill the whole canvas with panel-bg — gives the export a
+           clean card look, with footer text on the same panel-bg
+           that the heatmap / cards sit on. */
+        ctx.fillStyle = panelBg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         /* Draw the panel image, slicing off the top `crop` source pixels
            so the empty navbar band doesn't appear in the export. */
         var panelImgX = 0;
@@ -11794,14 +11792,19 @@
         ctx.fillRect(0, dividerY, canvas.width, 1);
         var midY = dividerY + FOOTER_H / 2;
         var fontColor = dark ? '#c9c1b3' : '#5a5042';
-        /* Footer text: URL on the left, optional ' · @handle' appended
-           if the user supplied a handle in the sidebar. Keeps it on
-           one line — no separate icon needed. */
+        /* Footer text: URL on the left, optional ' | @handle' appended
+           if the user supplied a handle in the sidebar. ASCII pipe
+           (not a middle-dot) keeps the canvas render safe under any
+           charset interpretation — the embed has no <meta charset>
+           because it's a WordPress fragment, so non-ASCII glyphs
+           occasionally render double-encoded ("A-circumflex middle-dot")
+           in the wild. */
         var text = 'stablebread.com/macro';
-        if (handle) text += ' · @' + handle.replace(/^@/, '');
+        if (handle) text += ' | @' + handle.replace(/^@/, '');
+        var footerFont = '600 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
         function drawTextOnly() {
           ctx.fillStyle = fontColor;
-          ctx.font = '600 24px Karla, sans-serif';
+          ctx.font = footerFont;
           ctx.textBaseline = 'middle';
           ctx.textAlign = 'left';
           ctx.fillText(text, FOOTER_TEXT_INSET, midY);
@@ -11812,7 +11815,7 @@
         logoImg.crossOrigin = 'anonymous';
         logoImg.onload = function () {
           try {
-            var logoH = 32;
+            var logoH = LOGO_H;
             var logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
             /* Link sits 12 visual px in from the LEFT edge of the
                canvas; logo sits 12 visual px in from the RIGHT edge.
@@ -11821,7 +11824,7 @@
             var logoY = midY - logoH / 2;
             ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
             ctx.fillStyle = fontColor;
-            ctx.font = '600 24px Karla, sans-serif';
+            ctx.font = footerFont;
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'left';
             ctx.fillText(text, FOOTER_TEXT_INSET, midY);
@@ -11913,28 +11916,24 @@
     document.querySelectorAll('.hm-export-res-btn').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-res') === '2');
     });
-    var t = document.getElementById('hm-export-transparent');
-    if (t) t.checked = false;
     var h = document.getElementById('hm-export-handle');
     if (h) h.value = 'StableBread';
   }
 
   function getExportOptions() {
     var resBtn = document.querySelector('.hm-export-res-btn.active');
-    var transparentEl = document.getElementById('hm-export-transparent');
     var handleEl = document.getElementById('hm-export-handle');
     return {
       resolution: resBtn ? parseInt(resBtn.getAttribute('data-res'), 10) || 2 : 2,
-      transparentBg: !!(transparentEl && transparentEl.checked),
       handle: handleEl ? handleEl.value : ''
     };
   }
 
-  /* Re-render the preview using the current sidebar options. The
-     preview always uses pixelRatio=1 (fast) — the user only gets
-     the chosen resolution when they actually click Export PNG.
-     Debounced via _exportPreviewTimer so rapid input events
-     coalesce. */
+  /* Re-render the preview using the current sidebar options. We
+     render at the user's chosen resolution (not a forced 1x) so the
+     preview matches what the download will produce — same crispness,
+     same footer proportions. Debounced via _exportPreviewTimer so
+     rapid input events coalesce into one render. */
   function refreshModalPreview() {
     if (!_exportTargetId) return;
     if (_exportPreviewTimer) clearTimeout(_exportPreviewTimer);
@@ -11945,12 +11944,12 @@
       var img = document.getElementById('hm-export-preview-img');
       var loading = document.getElementById('hm-export-preview-loading');
       if (loading) {
-        loading.textContent = 'Generating preview…';
+        loading.textContent = 'Generating preview...';
         loading.hidden = false;
       }
       if (img) img.hidden = true;
       var seq = ++_exportPreviewSeq;
-      var previewOpts = Object.assign({}, getExportOptions(), { resolution: 1 });
+      var previewOpts = getExportOptions();
       renderPanelToPNG(item, previewOpts).then(function (dataUrl) {
         /* Race guard: only apply if this is still the latest request. */
         if (seq !== _exportPreviewSeq) return;
@@ -11963,7 +11962,7 @@
         if (seq !== _exportPreviewSeq) return;
         console.error('[export] preview render failed:', err);
         if (loading) {
-          loading.textContent = 'Preview failed — try again.';
+          loading.textContent = 'Preview failed - try again.';
           loading.hidden = false;
         }
       });
@@ -12142,7 +12141,10 @@
           }
         });
       }).then(function (panelDataUrl) {
-        return _composeExportWithFooter(panelDataUrl, item, cropTopOutputPx, options);
+        /* Pass pixelRatio so the composer scales footer font + logo
+           in the same unit as the captured panelImg dimensions. */
+        var composerOpts = Object.assign({}, options, { pixelRatio: pixelRatio });
+        return _composeExportWithFooter(panelDataUrl, item, cropTopOutputPx, composerOpts);
       }).then(function (finalDataUrl) {
         /* Tear down the stage now that we have the final image. */
         stage.innerHTML = '';
@@ -12177,9 +12179,6 @@
         refreshModalPreview();
       });
     });
-    /* Transparent background checkbox. */
-    var transparent = document.getElementById('hm-export-transparent');
-    if (transparent) transparent.addEventListener('change', refreshModalPreview);
     /* Footer @handle input — re-render on each keystroke (debounced
        inside refreshModalPreview). */
     var handle = document.getElementById('hm-export-handle');
