@@ -11481,8 +11481,8 @@
            own 16-visual inset from each edge (handled below). */
         var FOOTER_TEXT_INSET = 32;  /* 16 visual: link sits 16 visual px in from the panel's left edge */
         var FOOTER_LOGO_INSET = 32;  /* 16 visual: logo sits 16 visual px in from the panel's right edge */
-        var DIVIDER_GAP = 8;      /* 4 visual: minimal gap between panelImg bottom and divider */
-        var FOOTER_H = 48;        /* 24 visual: 32-output (16 visual) logo centered in 48 → 8 visual breathing room above + below */
+        var DIVIDER_GAP = 0;      /* divider sits flush against the panel bottom — no panel-bg gap above it */
+        var FOOTER_H = 40;        /* 20 visual: 32-output (16 visual) logo centered in 40 → 4-output (2 visual) breathing room above + below */
         var canvas = document.createElement('canvas');
         canvas.width = panelImg.naturalWidth;
         canvas.height = panelImg.naturalHeight   /* the captured image, flush at top */
@@ -11622,8 +11622,52 @@
       '  scrollbar-gutter: auto !important;',
       '  overflow: visible !important;',
       '  max-height: none !important;',
-      '}'
+      '}',
+      /* display:none on the panel-header navbar so its 24px slot
+         is collapsed out of layout BEFORE we measure scrollHeight.
+         (The html-to-image filter we use also strips it from the
+         clone, but only display:none removes the layout space; a
+         filter-only approach left a 24px empty band at the top of
+         every exported image.) */
+      '.hm-export-mode .hm-panel-header { display: none !important; }'
     ].join('\n');
+    /* For the gold inner headers (Factors / Fixed Income / Global
+       Indexes / Country ETFs / Commodity Perf / etc.) the source
+       rules use per-panel selectors like
+         `.hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-factors-header`
+       which beat any generic .hm-export-mode CSS selector on
+       specificity. To force position:static + width:100% (so the
+       gold band stretches across the full scrollWidth content
+       instead of staying pinned at cell-width during the export),
+       we use inline styles with `setProperty(..., 'important')` —
+       inline styles trump every CSS rule regardless of selector
+       specificity. The list of headers we touch is the same set
+       that uses width:100cqw + position:sticky in the live UI. */
+    var STICKY_HEADER_SELECTORS = [
+      '.hm-factors-header',
+      '.hm-fi-header',
+      '.hm-gi-header',
+      '.hm-ce-header',
+      '.hm-cp-header',
+      '.hm-sector-header',
+      '.hm-sf-header',
+      '.hm-treemap-header',
+      '.hm-cal-header',
+      '.hm-econ-header',
+      '.hm-mc-top',
+      '.hm-gave-top',
+      '.hm-gold-header'
+    ].join(', ');
+    var stickyHeaders = item.querySelectorAll(STICKY_HEADER_SELECTORS);
+    var stickyHdrSnapshots = [];
+    stickyHeaders.forEach(function (h) {
+      stickyHdrSnapshots.push({ el: h, cssText: h.style.cssText });
+      h.style.setProperty('position', 'static', 'important');
+      h.style.setProperty('width', '100%', 'important');
+      h.style.setProperty('min-width', '100%', 'important');
+      h.style.setProperty('top', 'auto', 'important');
+      h.style.setProperty('left', 'auto', 'important');
+    });
     /* Apply export-mode CSS for the duration of the capture. No
        temp-resize: capture at the panel's CURRENT size. Earlier
        behavior temporarily resized the cell to default before
@@ -11637,6 +11681,12 @@
     function restoreSize() {
       if (hmAppRoot) hmAppRoot.classList.remove('hm-export-mode');
       if (exportStyle.parentNode) exportStyle.parentNode.removeChild(exportStyle);
+      /* Restore each sticky header's original inline style verbatim
+         so we don't leak our position:static/width:100% overrides
+         into the live UI after the export completes. */
+      stickyHdrSnapshots.forEach(function (snap) {
+        snap.el.style.cssText = snap.cssText;
+      });
     }
     loadHtmlToImage().then(function (lib) {
       var idAttr = item.getAttribute('gs-id') || 'panel';
@@ -11658,12 +11708,11 @@
         cacheBust: true,
         width: captureW,
         height: captureH,
-        filter: function (node) {
-          if (node && node.classList && node.classList.contains('hm-panel-header')) {
-            return false;
-          }
-          return true;
-        },
+        /* No `filter` needed — the .hm-export-mode CSS already
+           sets .hm-panel-header to display:none, which removes
+           it from BOTH the clone AND the layout (the previous
+           filter-only approach left the navbar's 24px slot as
+           empty space at the top of every export). */
         style: {
           /* Square corners + no shadow. The 1px border + scrollbar-
              gutter are killed via the .hm-export-mode CSS rule
