@@ -11462,7 +11462,7 @@
      Layout = padding around the panel image + a footer with URL +
      logo separated by a thin divider. Reads as a self-contained
      card. */
-  function _composeExportWithFooter(panelDataUrl, item) {
+  function _composeExportWithFooter(panelDataUrl, item, cropTopPx) {
     return new Promise(function (resolve, reject) {
       var panelImg = new Image();
       panelImg.onload = function () {
@@ -11478,28 +11478,40 @@
            captured at pixelRatio:2). Canvas is exactly as wide as
            the panel image — no horizontal panel-bg padding outside
            the panel itself. The footer text + logo still get their
-           own 16-visual inset from each edge (handled below). */
+           own 12-visual inset from each edge (handled below). */
         var FOOTER_TEXT_INSET = 24;  /* 12 visual: link sits 12 visual px in from the panel's left edge */
         var FOOTER_LOGO_INSET = 24;  /* 12 visual: logo sits 12 visual px in from the panel's right edge */
         var DIVIDER_GAP = 0;      /* divider sits flush against the panel bottom — no panel-bg gap above it */
         var FOOTER_H = 64;        /* 32 visual: 32-output (16 visual) logo centered → 16-output (8 visual) breathing room above + below */
+        /* cropTopPx is the output-pixel height of the panel-header slot
+           in the captured PNG. The panel-header is visibility:hidden
+           in export-mode (no inner shift), so the captured PNG has an
+           empty band of that height at the top. Slice it off by
+           shifting the drawImage source — y=cropTopPx down from the
+           top of panelImg, drawn at y=0 on the destination canvas. */
+        var crop = Math.max(0, cropTopPx || 0);
+        var panelDrawH = Math.max(0, panelImg.naturalHeight - crop);
         var canvas = document.createElement('canvas');
         canvas.width = panelImg.naturalWidth;
-        canvas.height = panelImg.naturalHeight   /* the captured image, flush at top */
+        canvas.height = panelDrawH               /* the captured image minus the navbar slot */
                       + DIVIDER_GAP              /* small gap above divider */
                       + 1                        /* divider line */
-                      + FOOTER_H;                /* URL + logo with 16 visual top + bottom panel-bg around them */
+                      + FOOTER_H;                /* URL + logo with 8 visual top + bottom panel-bg around them */
         var ctx = canvas.getContext('2d');
         /* Fill entire canvas with panel bg — no outer ring. */
         ctx.fillStyle = panelBg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        /* Draw captured panel image flush at top + flush to both
-           sides (no PAD_SIDES). */
+        /* Draw the panel image, slicing off the top `crop` source pixels
+           so the empty navbar band doesn't appear in the export. */
         var panelImgX = 0;
         var panelImgY = 0;
-        ctx.drawImage(panelImg, panelImgX, panelImgY);
+        ctx.drawImage(
+          panelImg,
+          0, crop, panelImg.naturalWidth, panelDrawH,  /* source: skip top `crop` px */
+          panelImgX, panelImgY, panelImg.naturalWidth, panelDrawH  /* dest: full width, post-crop height */
+        );
         /* Divider line just below the panelImg — full canvas width. */
-        var dividerY = panelImgY + panelImg.naturalHeight + DIVIDER_GAP;
+        var dividerY = panelImgY + panelDrawH + DIVIDER_GAP;
         var dividerColor = dark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)';
         ctx.fillStyle = dividerColor;
         ctx.fillRect(0, dividerY, canvas.width, 1);
@@ -11631,10 +11643,32 @@
       '  overflow: visible !important;',
       '  max-height: none !important;',
       '}',
-      /* display:none on the panel-header navbar so its 24px slot
-         is collapsed out of layout BEFORE we measure scrollHeight.
-         (Same scoping as above — only the target item.) */
-      '.hm-export-mode .hm-panel-header { display: none !important; }'
+      /* visibility:hidden on the panel-header navbar (NOT display:none).
+         display:none collapses the 24px slot, which forces all panel
+         content below it to shift up — producing a visible "up flicker"
+         on the live UI for the brief capture window, then "down flicker"
+         on restore. visibility:hidden keeps the slot in flow (children
+         don't move) but renders the navbar transparent in the capture.
+         The composer below crops the 24px empty band from the top of
+         the captured PNG so the final image still starts at the
+         gold header. */
+      '.hm-export-mode .hm-panel-header { visibility: hidden !important; }',
+      /* Hide scrollbars on every descendant of the target item during
+         the capture. Some inner panels (charts, treemap, internal
+         scroll containers) have overflow:auto on children and the
+         scrollbars get cloned into the export. scrollbar-width:none
+         (Firefox) + ::-webkit-scrollbar { display: none } (Chromium/
+         Safari) hides them without changing overflow semantics, so
+         the content layout stays correct. */
+      '.hm-export-mode, .hm-export-mode * {',
+      '  scrollbar-width: none !important;',
+      '}',
+      '.hm-export-mode ::-webkit-scrollbar,',
+      '.hm-export-mode::-webkit-scrollbar {',
+      '  display: none !important;',
+      '  width: 0 !important;',
+      '  height: 0 !important;',
+      '}'
     ].join('\n');
     /* For the gold inner headers (Factors / Fixed Income / Global
        Indexes / Country ETFs / Commodity Perf / etc.) the source
@@ -11779,16 +11813,24 @@
       content.style.setProperty('width', captureW + 'px', 'important');
       content.style.setProperty('height', captureH + 'px', 'important');
       void content.offsetHeight;
+      /* Measure the panel-header's actual height NOW (with export-mode
+         CSS in effect — visibility:hidden still takes layout space, so
+         the rect is the same as in the live UI). The composer uses
+         this to crop the empty slot from the top of the captured PNG. */
+      var panelHeaderEl = item.querySelector('.hm-panel-header');
+      var panelHeaderH = panelHeaderEl ? panelHeaderEl.getBoundingClientRect().height : 0;
+      /* Convert to output pixels (we capture at pixelRatio:2). */
+      var cropTopOutputPx = Math.round(panelHeaderH * 2);
       return lib.toPng(content, {
         pixelRatio: 2,
         cacheBust: true,
         width: captureW,
         height: captureH,
-        /* No `filter` needed — the .hm-export-mode CSS already
-           sets .hm-panel-header to display:none, which removes
-           it from BOTH the clone AND the layout (the previous
-           filter-only approach left the navbar's 24px slot as
-           empty space at the top of every export). */
+        /* No `filter` for the panel-header — it's visibility:hidden
+           via .hm-export-mode CSS, so it's transparent in the clone
+           but still takes its 24px layout slot (so inner content
+           doesn't shift up during export). The composer crops that
+           empty slot off the top of the final PNG. */
         style: {
           /* Square corners + no shadow. The border / scrollbar-
              gutter / dimensions are set via inline style on the
@@ -11799,7 +11841,7 @@
           borderRadius: '0'
         },
       }).then(function (panelDataUrl) {
-        return _composeExportWithFooter(panelDataUrl, item);
+        return _composeExportWithFooter(panelDataUrl, item, cropTopOutputPx);
       }).then(function (finalDataUrl) {
         var a = document.createElement('a');
         a.href = finalDataUrl;
