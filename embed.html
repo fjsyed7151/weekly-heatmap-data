@@ -11673,23 +11673,55 @@
       h.style.setProperty('top', 'auto', 'important');
       h.style.setProperty('left', 'auto', 'important');
     });
-    /* Apply export-mode CSS for the duration of the capture. No
-       temp-resize: capture at the panel's CURRENT size. The
-       .hm-export-mode class lives on the TARGET item (not on
-       .hm-app) so the export CSS rules only affect this panel —
-       previously the class lived on the dashboard root and every
-       panel-header / max-height in the dashboard collapsed +
-       expanded simultaneously, which produced a visible page-
-       wide screen shift on every download click. */
+    /* Apply export-mode CSS. The .hm-export-mode class lives on
+       the TARGET item, so the export CSS rules only affect this
+       panel — preventing the dashboard-wide collapse/expand that
+       previously caused a page-wide screen shift on download. */
     document.head.appendChild(exportStyle);
-    item.classList.add('hm-export-mode');
-    void item.offsetHeight;
-    /* Belt-and-suspenders: snapshot scroll position before any
-       mutation so we can restore it after capture. The export
-       still expands this single panel to its scrollHeight, which
-       can shift content below it within the same column. */
+    /* Pin scroll position + neutralise layout shift in the column.
+       Without this, expanding the panel to its full scrollHeight
+       (e.g. heatmap 640 → 1685) pushes every panel below it down
+       inside the same column for the duration of the capture. We
+       insert a same-size placeholder where the item was, then yank
+       the item out of flow with position:absolute at its original
+       screen coords — the column keeps its layout, no neighbors
+       shift, and the item can grow freely. */
     var preExportScrollX = window.scrollX;
     var preExportScrollY = window.scrollY;
+    var itemRect = item.getBoundingClientRect();
+    var itemParent = item.parentElement;
+    var origItemCss = item.style.cssText;
+    /* Drop a same-size placeholder into the column slot the item
+       occupies. The item is then pinned to its current viewport
+       position with position:fixed — out of the column's flex
+       flow, free to expand to scrollHeight without pushing
+       neighbors around. flex-shrink:0 + explicit w/h on the
+       placeholder keep it the same size as the original item. */
+    var placeholder = document.createElement('div');
+    placeholder.setAttribute('data-hm-export-placeholder', '1');
+    placeholder.style.cssText =
+      'width: ' + itemRect.width + 'px;' +
+      'height: ' + itemRect.height + 'px;' +
+      'flex-shrink: 0;';
+    if (itemParent) itemParent.insertBefore(placeholder, item);
+    /* position:fixed is viewport-relative regardless of the nearest
+       positioned ancestor (.hm-app isn't positioned, so :absolute
+       would resolve relative to <body> and break alignment).
+       getBoundingClientRect returns viewport-relative coords —
+       use them directly. */
+    item.style.setProperty('position', 'fixed', 'important');
+    item.style.setProperty('top', itemRect.top + 'px', 'important');
+    item.style.setProperty('left', itemRect.left + 'px', 'important');
+    item.style.setProperty('width', itemRect.width + 'px', 'important');
+    item.style.setProperty('margin', '0', 'important');
+    item.style.setProperty('z-index', '1', 'important');
+    item.classList.add('hm-export-mode');
+    void item.offsetHeight;
+    /* Snapshot content's inline cssText BEFORE we apply our inline
+       size/overflow overrides below — restoreSize() uses this to
+       wipe everything we added without disturbing any pre-existing
+       inline styles set by other code paths. */
+    var origContentCss = content.style.cssText;
     function restoreSize() {
       item.classList.remove('hm-export-mode');
       if (exportStyle.parentNode) exportStyle.parentNode.removeChild(exportStyle);
@@ -11699,8 +11731,16 @@
       stickyHdrSnapshots.forEach(function (snap) {
         snap.el.style.cssText = snap.cssText;
       });
-      /* Restore the scroll position in case the brief layout
-         change knocked it off (rare, but cheap insurance). */
+      /* Restore content inline css (we may have set explicit width/
+         height below for the capture). */
+      if (typeof origContentCss === 'string') {
+        content.style.cssText = origContentCss;
+      }
+      /* Pull item back into its column slot + remove the placeholder. */
+      item.style.cssText = origItemCss;
+      if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+      /* Insurance: restore the scroll position in case any mutation
+         leaked a small shift. */
       window.scrollTo(preExportScrollX, preExportScrollY);
     }
     loadHtmlToImage().then(function (lib) {
@@ -11716,8 +11756,29 @@
          capture canvas is sized accordingly. Math.max with client*
          is a safety net for elements where scrollW < clientW
          (rare, but seen with sub-pixel rounding). */
+      /* The .hm-export-mode CSS rule on `item` has already
+         removed the 80vh cap + overflow:auto on `content`, so
+         the values we read here are the true full-content
+         dimensions. */
       var captureW = Math.max(content.scrollWidth, content.clientWidth);
       var captureH = Math.max(content.scrollHeight, content.clientHeight);
+      /* Lock those dimensions via INLINE STYLE on the live element
+         so they survive cloning. The .hm-export-mode CSS rule only
+         matches when the parent .grid-stack-item is in scope, but
+         html-to-image's clone is detached — the clone has no
+         `.grid-stack-item` ancestor, so that CSS rule was inert on
+         the clone, leaving the heatmap stuck at its 80vh-capped
+         height and clipping the bottom rows. Inline styles travel
+         with the element when cloned and beat every CSS rule by
+         specificity. */
+      content.style.setProperty('max-height', 'none', 'important');
+      content.style.setProperty('max-width', 'none', 'important');
+      content.style.setProperty('overflow', 'visible', 'important');
+      content.style.setProperty('border', 'none', 'important');
+      content.style.setProperty('scrollbar-gutter', 'auto', 'important');
+      content.style.setProperty('width', captureW + 'px', 'important');
+      content.style.setProperty('height', captureH + 'px', 'important');
+      void content.offsetHeight;
       return lib.toPng(content, {
         pixelRatio: 2,
         cacheBust: true,
@@ -11729,23 +11790,13 @@
            filter-only approach left the navbar's 24px slot as
            empty space at the top of every export). */
         style: {
-          /* Square corners + no shadow. The 1px border + scrollbar-
-             gutter are killed via the .hm-export-mode CSS rule
-             above (which mutates the live element BEFORE html-to-
-             image measures it — relying on the inline `style` here
-             alone left a 1-4px panel-bg sliver on the right). */
+          /* Square corners + no shadow. The border / scrollbar-
+             gutter / dimensions are set via inline style on the
+             live element above, so the clone picks them up
+             automatically — these here are just belt-and-
+             suspenders for the cloned root. */
           boxShadow: 'none',
-          borderRadius: '0',
-          /* Lock the cloned root to the full-content dimensions
-             we just computed. Without this, the clone reverts to
-             its CSS-driven size and content gets clipped again. */
-          width: captureW + 'px',
-          height: captureH + 'px',
-          maxWidth: 'none',
-          maxHeight: 'none',
-          /* Let the inner content flow naturally at the full
-             scrollWidth/scrollHeight — no scroll clipping. */
-          overflow: 'visible'
+          borderRadius: '0'
         },
       }).then(function (panelDataUrl) {
         return _composeExportWithFooter(panelDataUrl, item);
