@@ -4901,6 +4901,211 @@
     outline: 1px solid var(--hm-gold);
     outline-offset: -3px;
   }
+
+  /* ===== Export Chart modal ===== */
+  .hm-app .hm-export-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(15, 17, 21, 0.92);
+    display: flex;
+    flex-direction: column;
+    color: var(--hm-dark);
+    font-family: 'Karla', sans-serif;
+  }
+  .hm-app .hm-export-modal[hidden] { display: none; }
+  .hm-app .hm-export-modal-topbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 20px;
+    color: var(--hm-white);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .hm-app .hm-export-modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--hm-white);
+  }
+  .hm-app .hm-export-modal-close {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--hm-r);
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .hm-app .hm-export-modal-close:hover {
+    border-color: var(--hm-gold);
+    color: var(--hm-gold);
+    background: rgba(218, 165, 32, 0.08);
+  }
+  .hm-app .hm-export-modal-close svg { width: 14px; height: 14px; }
+  .hm-app .hm-export-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+  }
+  .hm-app .hm-export-sidebar {
+    flex: 0 0 320px;
+    background: var(--hm-panel);
+    border-right: 1px solid var(--hm-border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+  .hm-app .hm-export-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hm-app .hm-export-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hm-brown, #513C0C);
+  }
+  .hm-app .hm-export-section-hint {
+    font-size: 11px;
+    color: var(--hm-muted, #6b6050);
+    line-height: 1.4;
+  }
+  .hm-app .hm-export-resolution {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .hm-app .hm-export-res-btn {
+    flex: 1 1 0;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    color: var(--hm-dark);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 120ms, color 120ms, background 120ms;
+  }
+  .hm-app .hm-export-res-btn:hover {
+    border-color: var(--hm-gold);
+    color: var(--hm-gold);
+  }
+  .hm-app .hm-export-res-btn.active {
+    background: var(--hm-gold);
+    border-color: var(--hm-gold);
+    color: var(--hm-white);
+  }
+  .hm-app .hm-export-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--hm-dark);
+    cursor: pointer;
+    user-select: none;
+  }
+  .hm-app .hm-export-checkbox input { accent-color: var(--hm-gold); width: 14px; height: 14px; }
+  .hm-app .hm-export-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    background: var(--hm-bg);
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    color: var(--hm-dark);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    transition: border-color 120ms;
+  }
+  .hm-app .hm-export-input:focus {
+    outline: none;
+    border-color: var(--hm-gold);
+  }
+  .hm-app .hm-export-spacer { flex: 1 1 auto; }
+  .hm-app .hm-export-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hm-app .hm-export-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: var(--hm-r);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 120ms, color 120ms, background 120ms, opacity 120ms;
+  }
+  .hm-app .hm-export-btn svg { width: 14px; height: 14px; }
+  .hm-app .hm-export-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .hm-app .hm-export-btn-primary {
+    background: var(--hm-gold);
+    border: 1px solid var(--hm-gold);
+    color: var(--hm-white);
+  }
+  .hm-app .hm-export-btn-primary:hover:not(:disabled) {
+    background: #c5921c;
+    border-color: #c5921c;
+  }
+  .hm-app .hm-export-btn-secondary {
+    background: transparent;
+    border: 1px solid var(--hm-border);
+    color: var(--hm-dark);
+  }
+  .hm-app .hm-export-btn-secondary:hover:not(:disabled) {
+    border-color: var(--hm-gold);
+    color: var(--hm-gold);
+  }
+  .hm-app .hm-export-preview-area {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.1);
+    overflow: auto;
+  }
+  .hm-app .hm-export-preview-loading {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .hm-app .hm-export-preview-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    background: transparent;
+  }
+  /* Offscreen render stage — positioned far to the right of the
+     viewport so the clone renders normally (CSS vars / classes
+     inherit from .hm-app) but the user never sees it. */
+  .hm-app .hm-export-stage {
+    position: fixed;
+    top: 0;
+    left: 100vw;
+    pointer-events: none;
+    visibility: visible;  /* keep visible so html-to-image can capture */
+    z-index: -1;
+  }
 </style>
 
 <div class="hm-app" id="hm-app">
@@ -5148,6 +5353,70 @@
     </div>
     </div>
 
+  </div>
+
+  <!-- Export Chart modal: full-screen overlay opened on download click.
+       Sidebar (left) holds minimal options + Export PNG button; preview
+       area (right) shows the rendered PNG. The actual render runs on a
+       clone of the panel placed in `#hm-export-stage`, so the live
+       dashboard never shifts. Hidden by default; aria-hidden flips with
+       the open/close state for AT. -->
+  <div class="hm-export-modal" id="hm-export-modal" hidden aria-hidden="true" role="dialog" aria-labelledby="hm-export-modal-title">
+    <div class="hm-export-modal-topbar">
+      <span class="hm-export-modal-title" id="hm-export-modal-title">Export Chart</span>
+      <button class="hm-export-modal-close" id="hm-export-modal-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="6" y1="6" x2="18" y2="18"/>
+          <line x1="18" y1="6" x2="6" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="hm-export-modal-body">
+      <aside class="hm-export-sidebar">
+        <div class="hm-export-section">
+          <div class="hm-export-section-label">Resolution</div>
+          <div class="hm-export-resolution">
+            <button class="hm-export-res-btn" data-res="1" type="button">1x</button>
+            <button class="hm-export-res-btn active" data-res="2" type="button">2x</button>
+            <button class="hm-export-res-btn" data-res="3" type="button">3x</button>
+          </div>
+          <div class="hm-export-section-hint">Pixel density. Higher = sharper, larger file.</div>
+        </div>
+        <div class="hm-export-section">
+          <div class="hm-export-section-label">Background</div>
+          <label class="hm-export-checkbox">
+            <input type="checkbox" id="hm-export-transparent">
+            <span>Transparent background</span>
+          </label>
+        </div>
+        <div class="hm-export-section">
+          <div class="hm-export-section-label">Footer handle</div>
+          <input type="text" class="hm-export-input" id="hm-export-handle" value="StableBread" maxlength="30" autocomplete="off">
+          <div class="hm-export-section-hint">@username shown in the footer next to the logo.</div>
+        </div>
+        <div class="hm-export-spacer"></div>
+        <div class="hm-export-actions">
+          <button class="hm-export-btn hm-export-btn-secondary" id="hm-export-reset" type="button">Reset</button>
+          <button class="hm-export-btn hm-export-btn-primary" id="hm-export-download" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>Export PNG</span>
+          </button>
+        </div>
+      </aside>
+      <main class="hm-export-preview-area">
+        <div class="hm-export-preview-loading" id="hm-export-preview-loading">Generating preview…</div>
+        <img class="hm-export-preview-img" id="hm-export-preview-img" hidden alt="Export preview">
+      </main>
+    </div>
+    <!-- Offscreen render stage: the cloned panel + its fake .grid-stack-item
+         wrapper live here during capture so html-to-image can reach them
+         while CSS variables / classes inherit from .hm-app. Positioned far
+         offscreen so the user never sees the intermediate render. -->
+    <div class="hm-export-stage" id="hm-export-stage" aria-hidden="true"></div>
   </div>
 </div>
 
@@ -11308,7 +11577,7 @@
       if (action === 'stack') {
         toggleStackOrientation(id);
       } else if (action === 'export') {
-        exportPanelImage(item, btn);
+        openExportModal(item);
       } else if (action === 'info') {
         toggleInfoPopup(item, id, btn);
       } else if (action === 'move-up') {
@@ -11462,7 +11731,10 @@
      Layout = padding around the panel image + a footer with URL +
      logo separated by a thin divider. Reads as a self-contained
      card. */
-  function _composeExportWithFooter(panelDataUrl, item, cropTopPx) {
+  function _composeExportWithFooter(panelDataUrl, item, cropTopPx, options) {
+    options = options || {};
+    var transparentBg = !!options.transparentBg;
+    var handle = (options.handle || '').trim();
     return new Promise(function (resolve, reject) {
       var panelImg = new Image();
       panelImg.onload = function () {
@@ -11498,9 +11770,14 @@
                       + 1                        /* divider line */
                       + FOOTER_H;                /* URL + logo with 8 visual top + bottom panel-bg around them */
         var ctx = canvas.getContext('2d');
-        /* Fill entire canvas with panel bg — no outer ring. */
-        ctx.fillStyle = panelBg;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        /* Fill canvas with panel-bg, unless transparent-bg is requested.
+           Transparent leaves the canvas with its native alpha=0 so the
+           PNG export carries an alpha channel — useful for embedding
+           the chart on another background. */
+        if (!transparentBg) {
+          ctx.fillStyle = panelBg;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
         /* Draw the panel image, slicing off the top `crop` source pixels
            so the empty navbar band doesn't appear in the export. */
         var panelImgX = 0;
@@ -11517,7 +11794,11 @@
         ctx.fillRect(0, dividerY, canvas.width, 1);
         var midY = dividerY + FOOTER_H / 2;
         var fontColor = dark ? '#c9c1b3' : '#5a5042';
+        /* Footer text: URL on the left, optional ' · @handle' appended
+           if the user supplied a handle in the sidebar. Keeps it on
+           one line — no separate icon needed. */
         var text = 'stablebread.com/macro';
+        if (handle) text += ' · @' + handle.replace(/^@/, '');
         function drawTextOnly() {
           ctx.fillStyle = fontColor;
           ctx.font = '600 24px Karla, sans-serif';
@@ -11533,8 +11814,8 @@
           try {
             var logoH = 32;
             var logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
-            /* Link sits 16 visual px in from the LEFT edge of the
-               canvas; logo sits 16 visual px in from the RIGHT edge.
+            /* Link sits 12 visual px in from the LEFT edge of the
+               canvas; logo sits 12 visual px in from the RIGHT edge.
                Both insets are independent of panel width. */
             var logoX = canvas.width - logoW - FOOTER_LOGO_INSET;
             var logoY = midY - logoH / 2;
@@ -11557,309 +11838,367 @@
     });
   }
 
-  /* Capture a single panel as a PNG and trigger a browser download.
-     Steps:
-       1. Capture the LIVE .grid-stack-item-content via html-to-image.
-          - filter: skip the .hm-panel-header navbar (no app-chrome
-            buttons in the export)
-          - style: override box-shadow + border-radius so the export
-            has clean square corners and no gold outline border
-       2. Composite onto a canvas with a footer strip (URL left,
-          logo right, divider above)
-       3. Trigger download
-     The panel is captured at its CURRENT size — no temp-resize, no
-     visible flash. Trade-off: exports vary in size if the user has
-     manually resized panels. Capturing the LIVE element (not a
-     clone) preserves all CSS scoping. */
-  function exportPanelImage(item, btn) {
-    if (!item) return;
-    var content = item.querySelector('.grid-stack-item-content');
-    if (!content) return;
-    if (btn) btn.classList.add('hm-loading');
-    /* Inject temporary CSS that forces extra right padding on every
-       row-like element + matches .hm-panel-wrap bg to panel bg. The
-       captured panels' built-in CSS gives rows 12px right padding,
-       but html-to-image renders them looking flush; forcing 16px
-       via !important guarantees visible breathing room. The wrap-bg
-       override prevents a dashboard-bg strip from showing wherever
-       the inner card doesn't fully cover the wrap (e.g. where the
-       filtered-out navbar used to occupy 24px). */
-    var exportStyle = document.createElement('style');
-    exportStyle.id = 'hm-export-style';
-    exportStyle.textContent = [
-      '.hm-export-mode .hm-factors-row,',
-      '.hm-export-mode .hm-fi-row,',
-      '.hm-export-mode .hm-gi-row,',
-      '.hm-export-mode .hm-ce-row,',
-      '.hm-export-mode .hm-cp-row,',
-      '.hm-export-mode .hm-cal-row {',
-      '  padding-right: 16px !important;',
-      '}',
-      '.hm-export-mode .hm-factors-header,',
-      '.hm-export-mode .hm-cal-header,',
-      '.hm-export-mode .hm-econ-header,',
-      '.hm-export-mode .hm-sector-header,',
-      '.hm-export-mode .hm-mc-top,',
-      '.hm-export-mode .hm-gave-top,',
-      '.hm-export-mode .hm-sf-header,',
-      '.hm-export-mode .hm-treemap-header,',
-      '.hm-export-mode .hm-gold-header {',
-      '  padding-right: 16px !important;',
-      '}',
-      '.hm-export-mode .hm-factors-col-header,',
-      '.hm-export-mode .hm-fi-col-header,',
-      '.hm-export-mode .hm-gi-col-header,',
-      '.hm-export-mode .hm-ce-col-header,',
-      '.hm-export-mode .hm-cp-col-header {',
-      '  padding-right: 16px !important;',
-      '}',
-      '.hm-export-mode .hm-panel-wrap {',
-      '  background: var(--hm-panel) !important;',
-      '}',
-      /* Apply outline/scroll removals to the LIVE element BEFORE
-         html-to-image measures it. If we relied on the inline
-         style: {} option alone, the library would compute the
-         bounding box from the ORIGINAL element (which still has
-         the 1px border + scrollbar-gutter), then clone + apply
-         the inline styles to the clone. The clone renders
-         narrower than the captured rect, leaving a 1-4px panel-bg
-         sliver on the right edge. Mutating the live element here
-         makes its layout match what we want to capture. Also drop
-         max-height so capped panels (heatmap) export their full
-         table, and override overflow so scrollable content isn't
-         clipped — html-to-image will then capture scrollWidth/
-         scrollHeight, not just the visible area.
+  /* ===== Export Chart modal — clone-based pipeline =====
+     User clicks the download icon on a panel. We open a full-screen
+     modal with a preview + minimal options (resolution, transparent
+     bg, footer @handle). The render runs on a *clone* of the panel
+     placed in an offscreen stage inside .hm-app — CSS variables
+     and class-driven rules still inherit, but the LIVE dashboard
+     never has to expand or shift. This replaces the prior approach
+     that mutated the live cell in place (placeholder + position:
+     fixed) and produced visible page-shifts on every click.
 
-         IMPORTANT: .hm-export-mode is on the TARGET item (a
-         .grid-stack-item), not on .hm-app — so the selector is
-         a direct-child match `.hm-export-mode > .grid-stack-item-content`,
-         not a descendant of an outer wrapper. This scoping
-         prevents the export styles from clobbering EVERY panel
-         in the dashboard simultaneously, which is what caused
-         the page-wide screen-shift on every download click. */
-      '.hm-export-mode.grid-stack-item > .grid-stack-item-content {',
-      '  border: none !important;',
-      '  scrollbar-gutter: auto !important;',
-      '  overflow: visible !important;',
-      '  max-height: none !important;',
-      '}',
-      /* visibility:hidden on the panel-header navbar (NOT display:none).
-         display:none collapses the 24px slot, which forces all panel
-         content below it to shift up — producing a visible "up flicker"
-         on the live UI for the brief capture window, then "down flicker"
-         on restore. visibility:hidden keeps the slot in flow (children
-         don't move) but renders the navbar transparent in the capture.
-         The composer below crops the 24px empty band from the top of
-         the captured PNG so the final image still starts at the
-         gold header. */
-      '.hm-export-mode .hm-panel-header { visibility: hidden !important; }',
-      /* Hide scrollbars on every descendant of the target item during
-         the capture. Some inner panels (charts, treemap, internal
-         scroll containers) have overflow:auto on children and the
-         scrollbars get cloned into the export. scrollbar-width:none
-         (Firefox) + ::-webkit-scrollbar { display: none } (Chromium/
-         Safari) hides them without changing overflow semantics, so
-         the content layout stays correct. */
-      '.hm-export-mode, .hm-export-mode * {',
-      '  scrollbar-width: none !important;',
-      '}',
-      '.hm-export-mode ::-webkit-scrollbar,',
-      '.hm-export-mode::-webkit-scrollbar {',
-      '  display: none !important;',
-      '  width: 0 !important;',
-      '  height: 0 !important;',
-      '}'
-    ].join('\n');
-    /* For the gold inner headers (Factors / Fixed Income / Global
-       Indexes / Country ETFs / Commodity Perf / etc.) the source
-       rules use per-panel selectors like
-         `.hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-factors-header`
-       which beat any generic .hm-export-mode CSS selector on
-       specificity. To force position:static + width:100% (so the
-       gold band stretches across the full scrollWidth content
-       instead of staying pinned at cell-width during the export),
-       we use inline styles with `setProperty(..., 'important')` —
-       inline styles trump every CSS rule regardless of selector
-       specificity. The list of headers we touch is the same set
-       that uses width:100cqw + position:sticky in the live UI. */
-    var STICKY_HEADER_SELECTORS = [
-      '.hm-factors-header',
-      '.hm-fi-header',
-      '.hm-gi-header',
-      '.hm-ce-header',
-      '.hm-cp-header',
-      '.hm-sector-header',
-      '.hm-sf-header',
-      '.hm-treemap-header',
-      '.hm-cal-header',
-      '.hm-econ-header',
-      '.hm-mc-top',
-      '.hm-gave-top',
-      '.hm-gold-header'
-    ].join(', ');
-    var stickyHeaders = item.querySelectorAll(STICKY_HEADER_SELECTORS);
-    var stickyHdrSnapshots = [];
-    stickyHeaders.forEach(function (h) {
-      stickyHdrSnapshots.push({ el: h, cssText: h.style.cssText });
-      h.style.setProperty('position', 'static', 'important');
-      h.style.setProperty('width', '100%', 'important');
-      h.style.setProperty('min-width', '100%', 'important');
-      h.style.setProperty('top', 'auto', 'important');
-      h.style.setProperty('left', 'auto', 'important');
-    });
-    /* Apply export-mode CSS. The .hm-export-mode class lives on
-       the TARGET item, so the export CSS rules only affect this
-       panel — preventing the dashboard-wide collapse/expand that
-       previously caused a page-wide screen shift on download. */
-    document.head.appendChild(exportStyle);
-    /* Pin scroll position + neutralise layout shift in the column.
-       Without this, expanding the panel to its full scrollHeight
-       (e.g. heatmap 640 → 1685) pushes every panel below it down
-       inside the same column for the duration of the capture. We
-       insert a same-size placeholder where the item was, then yank
-       the item out of flow with position:absolute at its original
-       screen coords — the column keeps its layout, no neighbors
-       shift, and the item can grow freely. */
-    var preExportScrollX = window.scrollX;
-    var preExportScrollY = window.scrollY;
-    var itemRect = item.getBoundingClientRect();
-    var itemParent = item.parentElement;
-    var origItemCss = item.style.cssText;
-    /* Drop a same-size placeholder into the column slot the item
-       occupies. The item is then pinned to its current viewport
-       position with position:fixed — out of the column's flex
-       flow, free to expand to scrollHeight without pushing
-       neighbors around. flex-shrink:0 + explicit w/h on the
-       placeholder keep it the same size as the original item. */
-    var placeholder = document.createElement('div');
-    placeholder.setAttribute('data-hm-export-placeholder', '1');
-    placeholder.style.cssText =
-      'width: ' + itemRect.width + 'px;' +
-      'height: ' + itemRect.height + 'px;' +
-      'flex-shrink: 0;';
-    if (itemParent) itemParent.insertBefore(placeholder, item);
-    /* position:fixed is viewport-relative regardless of the nearest
-       positioned ancestor (.hm-app isn't positioned, so :absolute
-       would resolve relative to <body> and break alignment).
-       getBoundingClientRect returns viewport-relative coords —
-       use them directly. */
-    item.style.setProperty('position', 'fixed', 'important');
-    item.style.setProperty('top', itemRect.top + 'px', 'important');
-    item.style.setProperty('left', itemRect.left + 'px', 'important');
-    item.style.setProperty('width', itemRect.width + 'px', 'important');
-    item.style.setProperty('margin', '0', 'important');
-    item.style.setProperty('z-index', '1', 'important');
-    item.classList.add('hm-export-mode');
-    void item.offsetHeight;
-    /* Snapshot content's inline cssText BEFORE we apply our inline
-       size/overflow overrides below — restoreSize() uses this to
-       wipe everything we added without disturbing any pre-existing
-       inline styles set by other code paths. */
-    var origContentCss = content.style.cssText;
-    function restoreSize() {
-      item.classList.remove('hm-export-mode');
-      if (exportStyle.parentNode) exportStyle.parentNode.removeChild(exportStyle);
-      /* Restore each sticky header's original inline style verbatim
-         so we don't leak our position:static/width:100% overrides
-         into the live UI after the export completes. */
-      stickyHdrSnapshots.forEach(function (snap) {
-        snap.el.style.cssText = snap.cssText;
-      });
-      /* Restore content inline css (we may have set explicit width/
-         height below for the capture). */
-      if (typeof origContentCss === 'string') {
-        content.style.cssText = origContentCss;
-      }
-      /* Pull item back into its column slot + remove the placeholder. */
-      item.style.cssText = origItemCss;
-      if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-      /* Insurance: restore the scroll position in case any mutation
-         leaked a small shift. */
-      window.scrollTo(preExportScrollX, preExportScrollY);
+     Pipeline:
+       1. openExportModal(item)
+            → cloneForExport(panel)  (canvas snapshot + style strip)
+            → render preview at 1x  (refreshModalPreview)
+       2. User adjusts resolution / handle / transparent bg
+            → preview re-renders (debounced)
+       3. User clicks Export PNG
+            → render at chosen resolution + trigger download
+       4. Close button / Escape / backdrop click
+            → tear down clone + hide modal */
+
+  /* The element currently being exported. Set by openExportModal,
+     cleared by closeExportModal. The sidebar event handlers read
+     this when they need to re-render the preview. */
+  var _exportTargetId = null;
+  /* Debounce token for preview re-renders triggered by sidebar
+     input changes — multiple fast keystrokes on the handle field
+     coalesce into a single render. */
+  var _exportPreviewTimer = null;
+  /* Latest render request token. Each call to refreshModalPreview
+     stamps a token; when the captured PNG resolves we only apply
+     it to the preview if the token still matches. Prevents an
+     earlier slow render from clobbering a newer fast one. */
+  var _exportPreviewSeq = 0;
+
+  function openExportModal(item) {
+    var modal = document.getElementById('hm-export-modal');
+    if (!modal || !item) return;
+    var id = item.getAttribute('gs-id');
+    if (!id) return;
+    _exportTargetId = id;
+    modal.dataset.itemId = id;
+    /* Reset sidebar to defaults each open so leftover state from a
+       previous session doesn't surprise the user. */
+    applyExportDefaults();
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    /* Lock body scroll so the dashboard underneath doesn't move
+       when the user scrolls the modal preview. */
+    document.body.style.overflow = 'hidden';
+    refreshModalPreview();
+  }
+
+  function closeExportModal() {
+    var modal = document.getElementById('hm-export-modal');
+    if (!modal) return;
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    /* Clear the offscreen stage so cloned panels don't accumulate. */
+    var stage = document.getElementById('hm-export-stage');
+    if (stage) stage.innerHTML = '';
+    _exportTargetId = null;
+    /* Cancel any pending debounced preview render. */
+    if (_exportPreviewTimer) {
+      clearTimeout(_exportPreviewTimer);
+      _exportPreviewTimer = null;
     }
-    loadHtmlToImage().then(function (lib) {
-      var idAttr = item.getAttribute('gs-id') || 'panel';
-      var dateStr = (new Date()).toISOString().slice(0, 10);
-      var fileName = 'stablebread-' + _slug(idAttr) + '-' + dateStr + '.png';
-      /* Capture the FULL content, not just the visible area. The
-         live cell has overflow:auto, so wide tables / long heatmaps
-         clip horizontally + vertically. The export-mode CSS above
-         has already set overflow:visible + max-height:none on the
-         cell, so by now scrollWidth/scrollHeight reflect the full
-         inner content size. Pass those to html-to-image so the
-         capture canvas is sized accordingly. Math.max with client*
-         is a safety net for elements where scrollW < clientW
-         (rare, but seen with sub-pixel rounding). */
-      /* The .hm-export-mode CSS rule on `item` has already
-         removed the 80vh cap + overflow:auto on `content`, so
-         the values we read here are the true full-content
-         dimensions. */
-      var captureW = Math.max(content.scrollWidth, content.clientWidth);
-      var captureH = Math.max(content.scrollHeight, content.clientHeight);
-      /* Lock those dimensions via INLINE STYLE on the live element
-         so they survive cloning. The .hm-export-mode CSS rule only
-         matches when the parent .grid-stack-item is in scope, but
-         html-to-image's clone is detached — the clone has no
-         `.grid-stack-item` ancestor, so that CSS rule was inert on
-         the clone, leaving the heatmap stuck at its 80vh-capped
-         height and clipping the bottom rows. Inline styles travel
-         with the element when cloned and beat every CSS rule by
-         specificity. */
-      content.style.setProperty('max-height', 'none', 'important');
-      content.style.setProperty('max-width', 'none', 'important');
-      content.style.setProperty('overflow', 'visible', 'important');
-      content.style.setProperty('border', 'none', 'important');
-      content.style.setProperty('scrollbar-gutter', 'auto', 'important');
-      content.style.setProperty('width', captureW + 'px', 'important');
-      content.style.setProperty('height', captureH + 'px', 'important');
-      void content.offsetHeight;
-      /* Measure the panel-header's actual height NOW (with export-mode
-         CSS in effect — visibility:hidden still takes layout space, so
-         the rect is the same as in the live UI). The composer uses
-         this to crop the empty slot from the top of the captured PNG. */
-      var panelHeaderEl = item.querySelector('.hm-panel-header');
-      var panelHeaderH = panelHeaderEl ? panelHeaderEl.getBoundingClientRect().height : 0;
-      /* Convert to output pixels (we capture at pixelRatio:2). */
-      var cropTopOutputPx = Math.round(panelHeaderH * 2);
-      return lib.toPng(content, {
-        pixelRatio: 2,
-        cacheBust: true,
-        width: captureW,
-        height: captureH,
-        /* No `filter` for the panel-header — it's visibility:hidden
-           via .hm-export-mode CSS, so it's transparent in the clone
-           but still takes its 24px layout slot (so inner content
-           doesn't shift up during export). The composer crops that
-           empty slot off the top of the final PNG. */
-        style: {
-          /* Square corners + no shadow. The border / scrollbar-
-             gutter / dimensions are set via inline style on the
-             live element above, so the clone picks them up
-             automatically — these here are just belt-and-
-             suspenders for the cloned root. */
-          boxShadow: 'none',
-          borderRadius: '0'
-        },
-      }).then(function (panelDataUrl) {
-        return _composeExportWithFooter(panelDataUrl, item, cropTopOutputPx);
-      }).then(function (finalDataUrl) {
-        var a = document.createElement('a');
-        a.href = finalDataUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }).catch(function (err) {
-        console.error('[heatmap] export failed:', err);
-      }).then(function () {
-        restoreSize();
-        if (btn) btn.classList.remove('hm-loading');
-      });
-    }).catch(function (err) {
-      console.error('[heatmap] export library load failed:', err);
-      restoreSize();
-      if (btn) btn.classList.remove('hm-loading');
+  }
+
+  function applyExportDefaults() {
+    /* Resolution defaults to 2x — most users want retina-quality. */
+    document.querySelectorAll('.hm-export-res-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-res') === '2');
     });
+    var t = document.getElementById('hm-export-transparent');
+    if (t) t.checked = false;
+    var h = document.getElementById('hm-export-handle');
+    if (h) h.value = 'StableBread';
+  }
+
+  function getExportOptions() {
+    var resBtn = document.querySelector('.hm-export-res-btn.active');
+    var transparentEl = document.getElementById('hm-export-transparent');
+    var handleEl = document.getElementById('hm-export-handle');
+    return {
+      resolution: resBtn ? parseInt(resBtn.getAttribute('data-res'), 10) || 2 : 2,
+      transparentBg: !!(transparentEl && transparentEl.checked),
+      handle: handleEl ? handleEl.value : ''
+    };
+  }
+
+  /* Re-render the preview using the current sidebar options. The
+     preview always uses pixelRatio=1 (fast) — the user only gets
+     the chosen resolution when they actually click Export PNG.
+     Debounced via _exportPreviewTimer so rapid input events
+     coalesce. */
+  function refreshModalPreview() {
+    if (!_exportTargetId) return;
+    if (_exportPreviewTimer) clearTimeout(_exportPreviewTimer);
+    _exportPreviewTimer = setTimeout(function () {
+      _exportPreviewTimer = null;
+      var item = document.querySelector('.grid-stack-item[gs-id="' + _exportTargetId + '"]');
+      if (!item) return;
+      var img = document.getElementById('hm-export-preview-img');
+      var loading = document.getElementById('hm-export-preview-loading');
+      if (loading) {
+        loading.textContent = 'Generating preview…';
+        loading.hidden = false;
+      }
+      if (img) img.hidden = true;
+      var seq = ++_exportPreviewSeq;
+      var previewOpts = Object.assign({}, getExportOptions(), { resolution: 1 });
+      renderPanelToPNG(item, previewOpts).then(function (dataUrl) {
+        /* Race guard: only apply if this is still the latest request. */
+        if (seq !== _exportPreviewSeq) return;
+        if (img) {
+          img.src = dataUrl;
+          img.hidden = false;
+        }
+        if (loading) loading.hidden = true;
+      }).catch(function (err) {
+        if (seq !== _exportPreviewSeq) return;
+        console.error('[export] preview render failed:', err);
+        if (loading) {
+          loading.textContent = 'Preview failed — try again.';
+          loading.hidden = false;
+        }
+      });
+    }, 80);
+  }
+
+  /* Trigger the actual PNG download at the user's chosen resolution. */
+  function downloadExportPNG() {
+    if (!_exportTargetId) return;
+    var item = document.querySelector('.grid-stack-item[gs-id="' + _exportTargetId + '"]');
+    if (!item) return;
+    var btn = document.getElementById('hm-export-download');
+    if (btn) btn.disabled = true;
+    var opts = getExportOptions();
+    renderPanelToPNG(item, opts).then(function (dataUrl) {
+      var dateStr = (new Date()).toISOString().slice(0, 10);
+      var fileName = 'stablebread-' + _slug(_exportTargetId) + '-' + dateStr + '.png';
+      var a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }).catch(function (err) {
+      console.error('[export] download failed:', err);
+    }).then(function () {
+      if (btn) btn.disabled = false;
+    });
+  }
+
+  /* Core renderer. Resolves to a PNG data URL of the panel + footer.
+
+     Approach: clone the panel content into an offscreen stage inside
+     .hm-app, snapshot canvas elements (Chart.js / ECharts) so chart
+     pixels survive the clone, hide the panel-header chrome via
+     visibility:hidden so it doesn't appear but the layout slot stays
+     (cropped off by the composer), then run html-to-image on the
+     clone. The LIVE dashboard is never touched. */
+  function renderPanelToPNG(item, options) {
+    options = options || {};
+    var pixelRatio = options.resolution || 2;
+    return new Promise(function (resolve, reject) {
+      var origContent = item.querySelector('.grid-stack-item-content');
+      if (!origContent) return reject(new Error('panel has no content'));
+      var stage = document.getElementById('hm-export-stage');
+      if (!stage) return reject(new Error('no export stage'));
+
+      /* 1) Deep-clone the panel content. cloneNode doesn't carry
+            canvas pixel data, so we patch that up after. */
+      var clone = origContent.cloneNode(true);
+
+      /* 2) Replace every <canvas> in the clone with an <img> whose
+            src is the original canvas's toDataURL. This preserves
+            chart visuals (Chart.js renders to canvas). Tainted
+            canvases (cross-origin sources) throw — we skip those. */
+      try {
+        var origCanvases = origContent.querySelectorAll('canvas');
+        var cloneCanvases = clone.querySelectorAll('canvas');
+        for (var i = 0; i < origCanvases.length && i < cloneCanvases.length; i++) {
+          var oc = origCanvases[i];
+          var cc = cloneCanvases[i];
+          try {
+            var dataUrl = oc.toDataURL('image/png');
+            var imgEl = document.createElement('img');
+            imgEl.src = dataUrl;
+            imgEl.width = oc.width;
+            imgEl.height = oc.height;
+            /* Preserve the canvas's own inline styles so positioning /
+               sizing in the clone matches the live render. */
+            if (cc.style && cc.style.cssText) imgEl.style.cssText = cc.style.cssText;
+            if (cc.className) imgEl.className = typeof cc.className === 'string' ? cc.className : cc.getAttribute('class');
+            if (cc.parentNode) cc.parentNode.replaceChild(imgEl, cc);
+          } catch (e) { /* canvas tainted — skip, will appear blank */ }
+        }
+      } catch (e) { /* querySelectorAll failed somehow */ }
+
+      /* 3) Wrap the clone in a fake .grid-stack-item with the same
+            gs-id + class string so per-panel CSS rules (e.g.
+            `.hm-app .grid-stack-item[gs-id="hm-factors"] .hm-panel-wrap`)
+            still match. The wrap is NOT inside a .hm-col, so rules
+            that require `.hm-col >` (like max-height:80vh on the
+            heatmap, or position:sticky on inner ranking headers)
+            naturally don't match the clone — the clone renders at
+            its full natural size with no scroll caps. */
+      var fakeItem = document.createElement('div');
+      var origItemClass = item.className || 'grid-stack-item';
+      fakeItem.className = origItemClass.replace(/\bhm-active-drag\b/g, '').trim();
+      fakeItem.setAttribute('gs-id', item.getAttribute('gs-id') || '');
+      /* Lock fakeItem to the original cell's width so container
+         queries (`.grid-stack-item-content { container-type: inline-size }`
+         on some panels) resolve to a sensible size — otherwise the
+         clone would render at shrink-to-fit and look wrong. */
+      var origRect = origContent.getBoundingClientRect();
+      fakeItem.style.width = Math.max(1, Math.round(origRect.width)) + 'px';
+      fakeItem.appendChild(clone);
+
+      /* 4) Strip border / scroll caps on the cloned content via
+            inline style — these override any inherited CSS that
+            would still match the clone, and they also survive when
+            html-to-image clones again internally. */
+      clone.style.setProperty('border', 'none', 'important');
+      clone.style.setProperty('max-height', 'none', 'important');
+      clone.style.setProperty('max-width', 'none', 'important');
+      clone.style.setProperty('overflow', 'visible', 'important');
+      clone.style.setProperty('scrollbar-gutter', 'auto', 'important');
+      clone.style.setProperty('border-radius', '0', 'important');
+
+      /* 5) visibility:hidden the panel-header — keeps its layout
+            slot (so inner content doesn't shift up) but makes the
+            chrome icons invisible in the capture. The composer
+            crops that empty slot off the top of the final PNG. */
+      var clonePanelHeader = clone.querySelector('.hm-panel-header');
+      if (clonePanelHeader) {
+        clonePanelHeader.style.setProperty('visibility', 'hidden', 'important');
+      }
+
+      /* 6) Force every sticky inner header (gold bars on ranking
+            panels) to static + full-width so they stretch across
+            scrollable content rather than staying pinned at cell
+            width. Inline styles beat any CSS selector. */
+      var STICKY_HEADER_SELECTORS = [
+        '.hm-factors-header',
+        '.hm-fi-header',
+        '.hm-gi-header',
+        '.hm-ce-header',
+        '.hm-cp-header',
+        '.hm-sector-header',
+        '.hm-sf-header',
+        '.hm-treemap-header',
+        '.hm-cal-header',
+        '.hm-econ-header',
+        '.hm-mc-top',
+        '.hm-gave-top',
+        '.hm-gold-header'
+      ].join(', ');
+      clone.querySelectorAll(STICKY_HEADER_SELECTORS).forEach(function (h) {
+        h.style.setProperty('position', 'static', 'important');
+        h.style.setProperty('width', '100%', 'important');
+        h.style.setProperty('min-width', '100%', 'important');
+        h.style.setProperty('top', 'auto', 'important');
+        h.style.setProperty('left', 'auto', 'important');
+      });
+
+      /* 7) Mount in the stage. The stage is `position: fixed; left:
+            100vw` so the clone is far offscreen but still in the
+            render tree (html-to-image needs that). */
+      stage.innerHTML = '';
+      stage.appendChild(fakeItem);
+      /* Force one layout pass so scrollWidth/scrollHeight reflect
+         the clone's natural full size. */
+      void fakeItem.offsetHeight;
+
+      var captureW = Math.max(clone.scrollWidth, clone.clientWidth);
+      var captureH = Math.max(clone.scrollHeight, clone.clientHeight);
+      /* Lock width/height inline so the clone we pass to html-to-image
+         has stable dimensions. */
+      clone.style.setProperty('width', captureW + 'px', 'important');
+      clone.style.setProperty('height', captureH + 'px', 'important');
+
+      /* 8) Measure the panel-header height so the composer can crop
+            it off the top of the resulting PNG. */
+      var navbarRect = clonePanelHeader ? clonePanelHeader.getBoundingClientRect() : null;
+      var navbarH = navbarRect ? navbarRect.height : 0;
+      var cropTopOutputPx = Math.round(navbarH * pixelRatio);
+
+      /* 9) Run html-to-image on the clone. */
+      loadHtmlToImage().then(function (lib) {
+        return lib.toPng(clone, {
+          pixelRatio: pixelRatio,
+          cacheBust: true,
+          width: captureW,
+          height: captureH,
+          style: {
+            boxShadow: 'none',
+            borderRadius: '0'
+          }
+        });
+      }).then(function (panelDataUrl) {
+        return _composeExportWithFooter(panelDataUrl, item, cropTopOutputPx, options);
+      }).then(function (finalDataUrl) {
+        /* Tear down the stage now that we have the final image. */
+        stage.innerHTML = '';
+        resolve(finalDataUrl);
+      }).catch(function (err) {
+        stage.innerHTML = '';
+        reject(err);
+      });
+    });
+  }
+
+  /* Wire up the modal's sidebar controls + close affordances. Runs
+     once at page load — the modal HTML is always in the DOM, just
+     hidden until openExportModal is called. */
+  (function () {
+    var modal = document.getElementById('hm-export-modal');
+    if (!modal) return;
+    var closeBtn = document.getElementById('hm-export-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeExportModal);
+    /* Escape closes the modal. Scoped to keydown on document so the
+       handler fires even if focus isn't inside the modal. */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !modal.hidden) closeExportModal();
+    });
+    /* Resolution radio-style buttons. */
+    document.querySelectorAll('.hm-export-res-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.hm-export-res-btn').forEach(function (x) {
+          x.classList.remove('active');
+        });
+        b.classList.add('active');
+        refreshModalPreview();
+      });
+    });
+    /* Transparent background checkbox. */
+    var transparent = document.getElementById('hm-export-transparent');
+    if (transparent) transparent.addEventListener('change', refreshModalPreview);
+    /* Footer @handle input — re-render on each keystroke (debounced
+       inside refreshModalPreview). */
+    var handle = document.getElementById('hm-export-handle');
+    if (handle) handle.addEventListener('input', refreshModalPreview);
+    /* Reset button: re-apply defaults + re-render. */
+    var resetBtn = document.getElementById('hm-export-reset');
+    if (resetBtn) resetBtn.addEventListener('click', function () {
+      applyExportDefaults();
+      refreshModalPreview();
+    });
+    /* Export PNG button. */
+    var dlBtn = document.getElementById('hm-export-download');
+    if (dlBtn) dlBtn.addEventListener('click', downloadExportPNG);
+  })();
+
+  /* Legacy in-place exporter kept as a thin shim — routes to the
+     modal flow. Old WP cache might still call into this name. */
+  function exportPanelImage(item /* , btn */) {
+    openExportModal(item);
   }
 
   /* ---- Stack-orientation toggle (per-panel horizontal/vertical layout) ---- */
