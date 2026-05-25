@@ -365,24 +365,10 @@
   .hm-app .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-wrap,
+  .hm-app .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-wrap,
   .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-wrap {
     width: max-content;
     min-width: 100%;
-  }
-  /* Currency Matrix is intentionally NOT in the max-content list
-     above. Its design (see further down in this file) is "inner
-     scroll": `#hm-currency-matrix .hm-factors-scroll { overflow-x:
-     auto }` so the N×N data table can scroll horizontally WITHIN
-     the panel, while the outer wrap + gold header stay at cell
-     width. Putting it in the max-content rule made the WHOLE wrap
-     bigger than the cell — at narrow columns the cell-level scroll
-     kicked in instead of the intended inner scroll, and at wider
-     columns the gold header overflowed past the cell. Letting
-     panel-wrap default to auto / cell-width restores the inner-
-     scroll intent. */
-  .hm-app .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-wrap {
-    width: 100%;
-    min-width: 0;
   }
   .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-panel-header,
@@ -12167,6 +12153,21 @@
       if (clonePanelHeader) {
         clonePanelHeader.style.setProperty('display', 'none', 'important');
       }
+
+      /* Force overflow:visible INLINE on every internal scroll
+         container in the clone. The .hm-export-stage scope on the
+         CSS rule that hides scrollbars doesn't reach into html-to-
+         image's foreignObject clone, so panels that have inner
+         scrollables (Currency Matrix's `.hm-factors-scroll`, the
+         heatmap's `.hm-scroll`, etc.) were rendering with visible
+         scrollbars in the captured PNG. Inline overflow:visible
+         eliminates the scrollbar at the source — content extends
+         naturally instead of being clipped behind a scrollbar UI. */
+      clone.querySelectorAll('.hm-scroll, .hm-factors-scroll').forEach(function (s) {
+        s.style.setProperty('overflow', 'visible', 'important');
+        s.style.setProperty('overflow-x', 'visible', 'important');
+        s.style.setProperty('overflow-y', 'visible', 'important');
+      });
 
       /* 6) Force every sticky inner header (gold bars on ranking
             panels) to static + full-width so they stretch across
