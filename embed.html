@@ -2848,7 +2848,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 6px 12px;
+    padding: 6px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -3510,7 +3510,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 8px 12px;
+    padding: 8px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -5106,15 +5106,73 @@
     visibility: visible;  /* keep visible so html-to-image can capture */
     z-index: -1;
   }
-  /* NOTE on `.hm-export-stage` CSS:
-     Previously this file had a bunch of `.hm-app .hm-export-stage <descendant>`
-     rules to square bottom corners and force nowrap on cloned panel
-     content during export. They didn't actually work — html-to-image
-     clones the target element into a foreignObject SVG whose tree has
-     NO .hm-export-stage ancestor, so descendant selectors miss. All
-     of that logic now lives as INLINE style assignments inside
-     renderPanelToPNG (see "INLINE EXPORT STYLE OVERRIDES" block).
-     The CSS here is only the stage's own positioning. */
+  /* Square the bottom corners on every outermost panel-content
+     wrapper + the heatmap's last-row corner cells. The captured PNG
+     is rectangular, so any rounding on a wrapper / scroll container
+     / corner cell shows as panel-bg cut-outs just above the footer
+     divider. The selector list here mirrors `OUTER_FILL_SELECTORS`
+     in the JS (used for fillHeight-card detection) — these are the
+     same elements that act as "the bottom of the panel". Targeted —
+     NOT `*` — because hitting every descendant also flattens the
+     period-selector pills and other rounded buttons inside content. */
+  .hm-app .hm-export-stage .hm-panel-wrap,
+  .hm-app .hm-export-stage .hm-scroll,
+  .hm-app .hm-export-stage .hm-factors-card,
+  .hm-app .hm-export-stage .hm-cal-section,
+  .hm-app .hm-export-stage .hm-econ-section,
+  .hm-app .hm-export-stage .hm-commod-section,
+  .hm-app .hm-export-stage .hm-fx-section,
+  .hm-app .hm-export-stage .hm-mc,
+  .hm-app .hm-export-stage .hm-stylefactor,
+  .hm-app .hm-export-stage .hm-stylefactor-panel,
+  .hm-app .hm-export-stage .hm-gave,
+  .hm-app .hm-export-stage .hm-gave-wrap,
+  .hm-app .hm-export-stage .hm-indexes,
+  .hm-app .hm-export-stage .hm-indexes-section,
+  .hm-app .hm-export-stage .hm-sector-section,
+  .hm-app .hm-export-stage .hm-chart-section,
+  .hm-app .hm-export-stage .hm-treemap-wrap,
+  .hm-app .hm-export-stage .hm-table tbody tr:last-child td:first-child,
+  .hm-app .hm-export-stage .hm-table tbody tr:last-child td:last-child {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+  /* Size vs Value: 3x3 grid of rounded `.hm-style-cell` boxes. Bottom
+     corners of the cells in the LAST ROW (`:nth-last-child(-n+3)`) sit
+     at the bottom edge of the captured panel image and show as cut-
+     outs above the footer. Square just those — top + middle rows keep
+     their full rounding. */
+  .hm-app .hm-export-stage .hm-style-grid > .hm-style-cell:nth-last-child(-n+3) {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+  /* Keep gold inner headers + their inner toolbars on ONE LINE in the
+     export. The period-selector group + the Abs/vs-SPY toggle wrap
+     to a second line when the live panel is narrow. The canonical
+     width gives them the room, this rule guarantees it even if a
+     few px short. */
+  .hm-app .hm-export-stage .hm-factors-header,
+  .hm-app .hm-export-stage .hm-fi-header,
+  .hm-app .hm-export-stage .hm-gi-header,
+  .hm-app .hm-export-stage .hm-ce-header,
+  .hm-app .hm-export-stage .hm-cp-header,
+  .hm-app .hm-export-stage .hm-sector-header,
+  .hm-app .hm-export-stage .hm-sf-header,
+  .hm-app .hm-export-stage .hm-treemap-header,
+  .hm-app .hm-export-stage .hm-cal-header,
+  .hm-app .hm-export-stage .hm-econ-header,
+  .hm-app .hm-export-stage .hm-mc-top,
+  .hm-app .hm-export-stage .hm-gave-top,
+  .hm-app .hm-export-stage .hm-gold-header,
+  .hm-app .hm-export-stage .hm-factors-periods,
+  .hm-app .hm-export-stage .hm-indexes-periods,
+  .hm-app .hm-export-stage .hm-sector-period-btns,
+  .hm-app .hm-export-stage .hm-sf-period-btns,
+  .hm-app .hm-export-stage .hm-treemap-period-btns,
+  .hm-app .hm-export-stage .hm-treemap-toggle {
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+  }
 </style>
 
 <div class="hm-app" id="hm-app">
@@ -12007,10 +12065,20 @@
             src is the original canvas's toDataURL. This preserves
             chart visuals (Chart.js renders to canvas). Tainted
             canvases (cross-origin sources) throw — we skip those. */
-      /* Pulled up so the canvas-replacement loop below can reference
-         it. (Also used later for pinnedW + the heatmap captureH
-         buffer.) */
+      /* Pulled up so the canvas-replacement loop below can branch on
+         it. (panelId is also referenced later when picking pinnedW +
+         the heatmap captureH buffer.) */
       var panelId = item.getAttribute('gs-id') || '';
+      /* Sector chart is the one panel whose canvas is the primary
+         content + supposed to fill the panel width. After the canvas
+         → img replacement, force the resulting img to width:100% so
+         the chart visually fills the canonical 1100-wide export
+         instead of sitting at its live capture size with empty
+         space on the right. Aspect ratio is preserved via height:auto.
+         Note this stretches the chart pixels — long-term fix is to
+         re-render Chart.js into a new canvas at canonical width, but
+         this gets us 80% of the way for now. */
+      var stretchChartImg = (panelId === 'hm-sector-chart');
       try {
         var origCanvases = origContent.querySelectorAll('canvas');
         var cloneCanvases = clone.querySelectorAll('canvas');
@@ -12027,6 +12095,13 @@
                sizing in the clone matches the live render. */
             if (cc.style && cc.style.cssText) imgEl.style.cssText = cc.style.cssText;
             if (cc.className) imgEl.className = typeof cc.className === 'string' ? cc.className : cc.getAttribute('class');
+            if (stretchChartImg) {
+              imgEl.style.setProperty('width', '100%', 'important');
+              imgEl.style.setProperty('height', 'auto', 'important');
+              imgEl.style.setProperty('max-width', 'none', 'important');
+              imgEl.removeAttribute('width');
+              imgEl.removeAttribute('height');
+            }
             if (cc.parentNode) cc.parentNode.replaceChild(imgEl, cc);
           } catch (e) { /* canvas tainted — skip, will appear blank */ }
         }
@@ -12059,20 +12134,13 @@
          Default to max-content for anything not in the map. */
       var EXPORT_PINNED_WIDTHS = {
         'hm-indexes':       800,   /* 4-card grid, 200px each — @container threshold is 720 so >720 gives 4 cols */
+        'hm-sector-chart': 1100,
         'hm-stylefactor':   700,   /* 3x3 style grid at its natural cell size */
         'hm-calendar':      800,
         'hm-economy':       800,
         'hm-macrocompass':  900,
         'hm-gave-wrap':    1000,
         'hm-theme-treemap':1200
-        /* hm-sector-chart deliberately NOT pinned. The chart canvas was
-           rendered by Chart.js at the live cell width — pinning forces
-           empty space on the right, stretching distorts the chart.
-           max-content means the export matches the live capture size,
-           same look as the panel on the dashboard. The trade-off is
-           the user's column width affects the chart export — to do
-           better we'd have to re-render Chart.js into a fresh canvas
-           at canonical width inside the clone, which is a follow-up. */
       };
       var pinnedW = EXPORT_PINNED_WIDTHS[panelId];
       if (pinnedW) {
@@ -12170,83 +12238,6 @@
         h.style.setProperty('left', 'auto', 'important');
       });
 
-      /* ===== INLINE EXPORT STYLE OVERRIDES =====
-         Everything below this comment used to live as CSS rules
-         scoped to `.hm-export-stage` — but those NEVER applied in
-         the actual capture, because html-to-image clones the target
-         into a foreignObject SVG whose tree has no `.hm-export-stage`
-         ancestor (so descendant selectors miss). Inline styles
-         travel into the foreignObject with the element. This block
-         is the one that actually fixes the corner-cut + period-
-         wrap symptoms the user kept reporting. */
-
-      /* (a) Square the bottom corners on every outermost panel-content
-         wrapper. The captured PNG is rectangular, so any rounding
-         on the bottom wrapper / card / scroll container shows as
-         panel-bg cut-outs above the footer divider. Targeted list,
-         NOT `*` — otherwise we'd flatten period-button pills + every
-         other rounded element inside the content. */
-      var CORNER_SQUARE_SELECTORS = [
-        '.hm-panel-wrap',
-        '.hm-scroll',
-        '.hm-factors-card',
-        '.hm-cal-section',
-        '.hm-econ-section',
-        '.hm-commod-section',
-        '.hm-fx-section',
-        '.hm-mc',
-        '.hm-stylefactor',
-        '.hm-stylefactor-panel',
-        '.hm-gave',
-        '.hm-gave-wrap',
-        '.hm-indexes',
-        '.hm-indexes-section',
-        '.hm-sector-section',
-        '.hm-chart-section',
-        '.hm-treemap-wrap'
-      ].join(',');
-      clone.querySelectorAll(CORNER_SQUARE_SELECTORS).forEach(function (el) {
-        el.style.setProperty('border-bottom-left-radius', '0', 'important');
-        el.style.setProperty('border-bottom-right-radius', '0', 'important');
-      });
-
-      /* (b) Heatmap last-row corner cells (`tr:last-child td:first-child`
-         + `td:last-child` have explicit border-bottom-{left,right}-radius
-         in CSS). Same target as the live UI's "round the bottom of
-         the table" styling but with the radius zeroed. */
-      clone.querySelectorAll('.hm-table tbody tr:last-child td:first-child, .hm-table tbody tr:last-child td:last-child').forEach(function (el) {
-        el.style.setProperty('border-bottom-left-radius', '0', 'important');
-        el.style.setProperty('border-bottom-right-radius', '0', 'important');
-      });
-
-      /* (c) Size vs Value: 3x3 grid of rounded `.hm-style-cell` boxes.
-         Bottom corners of the last-row cells (`:nth-last-child(-n+3)`)
-         sit at the bottom edge of the captured panel image. Square
-         just those — top + middle rows keep their full rounding. */
-      clone.querySelectorAll('.hm-style-grid > .hm-style-cell:nth-last-child(-n+3)').forEach(function (el) {
-        el.style.setProperty('border-bottom-left-radius', '0', 'important');
-        el.style.setProperty('border-bottom-right-radius', '0', 'important');
-      });
-
-      /* (d) Force gold inner headers + their inner toolbars to one line.
-         The period-selector group + Abs/vs-SPY toggle wrap to a
-         second line when the live panel is narrow — this guarantees
-         single-line in the export regardless. */
-      var NOWRAP_SELECTORS = [
-        '.hm-factors-header', '.hm-fi-header', '.hm-gi-header',
-        '.hm-ce-header', '.hm-cp-header', '.hm-sector-header',
-        '.hm-sf-header', '.hm-treemap-header', '.hm-cal-header',
-        '.hm-econ-header', '.hm-mc-top', '.hm-gave-top',
-        '.hm-gold-header', '.hm-factors-periods',
-        '.hm-indexes-periods', '.hm-sector-period-btns',
-        '.hm-sf-period-btns', '.hm-treemap-period-btns',
-        '.hm-treemap-toggle'
-      ].join(',');
-      clone.querySelectorAll(NOWRAP_SELECTORS).forEach(function (el) {
-        el.style.setProperty('flex-wrap', 'nowrap', 'important');
-        el.style.setProperty('white-space', 'nowrap', 'important');
-      });
-
       /* 7) Mount in the stage and measure. Use getBoundingClientRect
             for FRACTIONAL precision (scrollHeight/clientHeight floor
             to integers), then Math.ceil so the canvas is never short
@@ -12271,13 +12262,15 @@
          expands via max() with rectW so we never clip. */
       var floorW = pinnedW || 600;
       var captureW = Math.max(floorW, Math.ceil(rectW));
-      /* Tiny universal buffer (+4 logical px) on captureH to absorb the
-         subpixel rounding that's been clipping last-row hairlines on
-         heatmap / commodity / currency / etc. This is small enough
-         (~2 visual px) that it doesn't show as a visible gap above
-         the footer divider, but enough to keep `getBoundingClientRect`
-         underreports from cutting the last row's bottom border off. */
-      var captureH = Math.ceil(rectH) + 4;
+      var captureH = Math.ceil(rectH);
+      /* Heatmap-only buffer for accumulated subpixel rounding across
+         ~59 table rows. Back to +20 — earlier +8 wasn't enough and
+         the last "Gold vs LT Govt corr" row was getting clipped
+         again. The +20 shows as < 10 visual px of bg above the
+         footer divider on the heatmap only — invisible enough. */
+      if (panelId === 'hm-heatmap-wrap') {
+        captureH += 20;
+      }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
 
