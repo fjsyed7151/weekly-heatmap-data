@@ -11479,10 +11479,10 @@
            the panel image — no horizontal panel-bg padding outside
            the panel itself. The footer text + logo still get their
            own 16-visual inset from each edge (handled below). */
-        var FOOTER_TEXT_INSET = 32;  /* 16 visual: link sits 16 visual px in from the panel's left edge */
-        var FOOTER_LOGO_INSET = 32;  /* 16 visual: logo sits 16 visual px in from the panel's right edge */
-        var DIVIDER_GAP = 0;      /* divider sits flush against the panel bottom — no panel-bg gap above it */
-        var FOOTER_H = 40;        /* 20 visual: 32-output (16 visual) logo centered in 40 → 4-output (2 visual) breathing room above + below */
+        var FOOTER_TEXT_INSET = 24;  /* 12 visual: link sits 12 visual px in from the panel's left edge */
+        var FOOTER_LOGO_INSET = 24;  /* 12 visual: logo sits 12 visual px in from the panel's right edge */
+        var DIVIDER_GAP = 32;     /* 16 visual: panel-bg gap between the panel image bottom and the divider line */
+        var FOOTER_H = 64;        /* 32 visual: 32-output (16 visual) logo centered → 16-output (8 visual) breathing room above + below */
         var canvas = document.createElement('canvas');
         canvas.width = panelImg.naturalWidth;
         canvas.height = panelImg.naturalHeight   /* the captured image, flush at top */
