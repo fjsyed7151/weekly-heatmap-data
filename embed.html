@@ -8569,32 +8569,12 @@
     toolbar.appendChild(combinedBtn);
     toolbar.appendChild(separatedBtn);
 
-    toolbar.appendChild(Object.assign(document.createElement('div'), { className: 'hm-sector-sep' }));
-
-    /* Download */
-    var dlBtn = document.createElement('button');
-    dlBtn.type = 'button'; dlBtn.className = 'hm-btn'; dlBtn.title = 'Download';
-    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-    dlBtn.addEventListener('click', function () {
-      if (!window.html2canvas) return;
-      var body = section.querySelector('.hm-sector-body');
-      if (!body) return;
-      var app = document.querySelector('.hm-app');
-      app.classList.add('hm-sector-exporting');
-      var panelBg = getTheme() === 'dark' ? '#171a21' : '#ffffff';
-      html2canvas(body, { backgroundColor: panelBg, scale: 2, logging: false, useCORS: true }).then(function (canvas) {
-        app.classList.remove('hm-sector-exporting');
-        canvas.toBlob(function (blob) {
-          if (!blob) return;
-          var url = URL.createObjectURL(blob);
-          var a = document.createElement('a');
-          a.href = url; a.download = 'sector-performance.png';
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-        }, 'image/png', 1.0);
-      }).catch(function () { app.classList.remove('hm-sector-exporting'); });
-    });
-    toolbar.appendChild(dlBtn);
+    /* The per-panel Download button + its trailing separator used
+       to live here. Both were dropped — the panel-header chrome at
+       the top of every panel already exposes an "Export panel as
+       image" affordance that routes through the (newer, clone-based)
+       Export Chart modal, so the inline copy was redundant + a
+       second code path to maintain. */
     hdr.appendChild(toolbar);
     section.appendChild(hdr);
 
