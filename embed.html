@@ -12088,9 +12088,11 @@
 
       /* 7) Mount in the stage and measure. Use getBoundingClientRect
             for FRACTIONAL precision (scrollHeight/clientHeight floor
-            to integers), then Math.ceil + a 16 logical-px buffer so
-            the bottom row's hairline is never clipped by html-to-
-            image's internal rounding. */
+            to integers), then Math.ceil so the canvas can never be
+            a fraction short of the content. No extra buffer — Math.ceil
+            already rounds UP, so worst case we have <1px of bg below
+            the last row (invisible). Adding a buffer here showed up
+            as a visible empty strip above the footer on every panel. */
       stage.innerHTML = '';
       stage.appendChild(fakeItem);
       void fakeItem.offsetHeight;
@@ -12099,7 +12101,7 @@
       var rectW = Math.max(cloneRect.width, clone.scrollWidth);
       var rectH = Math.max(cloneRect.height, clone.scrollHeight);
       var captureW = Math.ceil(rectW);
-      var captureH = Math.ceil(rectH) + 16;  /* +16 px safety margin */
+      var captureH = Math.ceil(rectH);
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
 
