@@ -12106,26 +12106,20 @@
         h.style.setProperty('left', 'auto', 'important');
       });
 
-      /* 7) Mount in the stage. The stage is `position: fixed; left:
-            100vw` so the clone is far offscreen but still in the
-            render tree (html-to-image needs that). */
+      /* 7) Mount in the stage and measure. Use getBoundingClientRect
+            for FRACTIONAL precision (scrollHeight/clientHeight floor
+            to integers), then Math.ceil + a 16 logical-px buffer so
+            the bottom row's hairline is never clipped by html-to-
+            image's internal rounding. */
       stage.innerHTML = '';
       stage.appendChild(fakeItem);
-      /* Force one layout pass so scrollWidth/scrollHeight reflect
-         the clone's natural full size. */
       void fakeItem.offsetHeight;
 
-      var captureW = Math.max(clone.scrollWidth, clone.clientWidth);
-      var captureH = Math.max(clone.scrollHeight, clone.clientHeight);
-      /* Small safety buffer so a sub-pixel rounding mismatch between
-         scrollHeight (an integer) and the actual rendered content
-         (which can be 1685.39px in CSS pixels) doesn't clip the
-         last row's bottom border. 8 logical px is invisible at any
-         resolution but eliminates the edge case where the last
-         metric row's bottom hairline got cropped off. */
-      captureH += 8;
-      /* Lock width/height inline so the clone we pass to html-to-image
-         has stable dimensions. */
+      var cloneRect = clone.getBoundingClientRect();
+      var rectW = Math.max(cloneRect.width, clone.scrollWidth);
+      var rectH = Math.max(cloneRect.height, clone.scrollHeight);
+      var captureW = Math.ceil(rectW);
+      var captureH = Math.ceil(rectH) + 16;  /* +16 px safety margin */
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
 
@@ -12135,7 +12129,9 @@
       var navbarH = navbarRect ? navbarRect.height : 0;
       var cropTopOutputPx = Math.round(navbarH * pixelRatio);
 
-      /* 9) Run html-to-image on the clone. */
+      /* 9) Run html-to-image on the clone with the explicit ceil'd
+            dimensions so the canvas can never be a fraction short
+            of the content. */
       loadHtmlToImage().then(function (lib) {
         return lib.toPng(clone, {
           pixelRatio: pixelRatio,
