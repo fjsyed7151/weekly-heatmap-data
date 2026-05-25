@@ -5106,6 +5106,19 @@
     visibility: visible;  /* keep visible so html-to-image can capture */
     z-index: -1;
   }
+  /* Square the bottom corners on every descendant of the export stage.
+     Multiple inner elements have rounded bottoms in the live UI — the
+     .hm-scroll wrapper, .hm-fi-card / .hm-factors-card etc., and the
+     heatmap's last-row corner cells (`tr:last-child td:first-child`).
+     In the captured PNG those rounded corners show as visible cut-outs
+     just above the footer divider. The export canvas is rectangular,
+     so the rounding has no purpose there — flatten the bottom on every
+     element inside the stage. Top corners are left alone (preserve the
+     gold-header pill rounding at the top of each panel). */
+  .hm-app .hm-export-stage * {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
 </style>
 
 <div class="hm-app" id="hm-app">
