@@ -12133,7 +12133,7 @@
              export is column-independent.
          Default to max-content for anything not in the map. */
       var EXPORT_PINNED_WIDTHS = {
-        'hm-indexes':       800,   /* 4-card grid, 200px each — @container threshold is 720 so >720 gives 4 cols */
+        'hm-indexes':       600,   /* 2x2 grid — @container query at 720 means widths under 720 give the 2-col layout (smaller / more compact). User prefers this over the 4-in-a-row that 800 triggered. */
         'hm-sector-chart': 1100,
         'hm-stylefactor':   700,   /* 3x3 style grid at its natural cell size */
         'hm-calendar':      800,
