@@ -5106,27 +5106,41 @@
     visibility: visible;  /* keep visible so html-to-image can capture */
     z-index: -1;
   }
-  /* Square the bottom corners on the STRUCTURAL containers at the
-     panel bottom + the heatmap's last-row corner cells. The captured
-     PNG is rectangular, so any rounding on the outermost wrapper /
-     scroll-container / corner-cell shows as panel-bg cut-outs just
-     above the footer divider. Targeted selectors — NOT `*` —
-     because hitting every descendant flattens the period-selector
-     pills and other rounded buttons inside the panel content. */
+  /* Square the bottom corners on every outermost panel-content
+     wrapper + the heatmap's last-row corner cells. The captured PNG
+     is rectangular, so any rounding on a wrapper / scroll container
+     / corner cell shows as panel-bg cut-outs just above the footer
+     divider. The selector list here mirrors `OUTER_FILL_SELECTORS`
+     in the JS (used for fillHeight-card detection) — these are the
+     same elements that act as "the bottom of the panel". Targeted —
+     NOT `*` — because hitting every descendant also flattens the
+     period-selector pills and other rounded buttons inside content. */
   .hm-app .hm-export-stage .hm-panel-wrap,
   .hm-app .hm-export-stage .hm-scroll,
+  .hm-app .hm-export-stage .hm-factors-card,
+  .hm-app .hm-export-stage .hm-cal-section,
+  .hm-app .hm-export-stage .hm-econ-section,
+  .hm-app .hm-export-stage .hm-commod-section,
+  .hm-app .hm-export-stage .hm-fx-section,
+  .hm-app .hm-export-stage .hm-mc,
+  .hm-app .hm-export-stage .hm-stylefactor,
+  .hm-app .hm-export-stage .hm-gave,
+  .hm-app .hm-export-stage .hm-gave-wrap,
+  .hm-app .hm-export-stage .hm-indexes,
+  .hm-app .hm-export-stage .hm-indexes-section,
+  .hm-app .hm-export-stage .hm-sector-section,
+  .hm-app .hm-export-stage .hm-chart-section,
+  .hm-app .hm-export-stage .hm-treemap-wrap,
   .hm-app .hm-export-stage .hm-table tbody tr:last-child td:first-child,
   .hm-app .hm-export-stage .hm-table tbody tr:last-child td:last-child {
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
   }
-  /* Keep gold inner headers on ONE LINE in the export.
-     The period-selector group + the Abs/vs-SPY toggle on the Factors
-     panel (and similar toolbars on Fixed Income / Global Indexes /
-     etc.) wrap to a second line when the live panel is narrow. The
-     export should always show them on a single row — canonical width
-     gives them the room, this rule guarantees it even if a few px
-     short. */
+  /* Keep gold inner headers + their inner toolbars on ONE LINE in the
+     export. The period-selector group + the Abs/vs-SPY toggle wrap
+     to a second line when the live panel is narrow. The canonical
+     width gives them the room, this rule guarantees it even if a
+     few px short. */
   .hm-app .hm-export-stage .hm-factors-header,
   .hm-app .hm-export-stage .hm-fi-header,
   .hm-app .hm-export-stage .hm-gi-header,
@@ -5141,6 +5155,10 @@
   .hm-app .hm-export-stage .hm-gave-top,
   .hm-app .hm-export-stage .hm-gold-header,
   .hm-app .hm-export-stage .hm-factors-periods,
+  .hm-app .hm-export-stage .hm-indexes-periods,
+  .hm-app .hm-export-stage .hm-sector-period-btns,
+  .hm-app .hm-export-stage .hm-sf-period-btns,
+  .hm-app .hm-export-stage .hm-treemap-period-btns,
   .hm-app .hm-export-stage .hm-treemap-toggle {
     flex-wrap: nowrap !important;
     white-space: nowrap !important;
@@ -12070,20 +12088,42 @@
       var origItemClass = item.className || 'grid-stack-item';
       fakeItem.className = origItemClass.replace(/\bhm-active-drag\b/g, '').trim();
       fakeItem.setAttribute('gs-id', item.getAttribute('gs-id') || '');
-      /* Render at a CANONICAL width — not the user's current cell
-         width. Without this, every export inherits whatever the
-         user happens to have the column sized to: a wide column
-         stretches charts + spaces out cards, a narrow column
-         wraps the toolbar / compresses cards. Always rendering at
-         the same width gives a consistent, predictable export.
-         Container queries (`container-type: inline-size`) inside
-         the clone resolve to this width too. Panels with
-         intrinsically wider content (the heatmap is ~1602 wide)
-         still extend via the captureW = max(EXPORT_W, scrollWidth)
-         computation below — so we never *clip* content, we just
-         never make it artificially narrow. */
-      var EXPORT_PANEL_WIDTH = 1200;
-      fakeItem.style.width = EXPORT_PANEL_WIDTH + 'px';
+      /* Per-panel CANONICAL export widths. Each panel has its own
+         "designed" content width — ranking tables fit ~1200, currency
+         matrix wants ~900, calendar/economy are narrow at ~850, the
+         style box is ~700, etc. One blanket 1200 stretched the
+         narrow ones and pinched the wide ones. The heatmap key is
+         null — let max-content size it (it's intrinsically wide and
+         data-driven). */
+      var EXPORT_PANEL_WIDTHS = {
+        'hm-heatmap-wrap':    null,   /* null = max-content (intrinsically wide table) */
+        'hm-factors':         1200,
+        'hm-fixed-income':    1200,
+        'hm-global-indexes':  1200,
+        'hm-country-etfs':    1200,
+        'hm-commodity-perf':  1200,
+        'hm-currency-matrix': 900,
+        'hm-indexes':         1000,
+        'hm-sector-chart':    1100,
+        'hm-stylefactor':     700,
+        'hm-theme-treemap':   1200,
+        'hm-calendar':        850,
+        'hm-economy':         850,
+        'hm-macrocompass':    900,
+        'hm-gave-wrap':       950
+      };
+      var DEFAULT_EXPORT_W = 1000;
+      var panelId = item.getAttribute('gs-id') || '';
+      var canonW = EXPORT_PANEL_WIDTHS.hasOwnProperty(panelId)
+        ? EXPORT_PANEL_WIDTHS[panelId]
+        : DEFAULT_EXPORT_W;
+      if (canonW === null) {
+        /* Heatmap path — let the inner table dictate width via its
+           own `width: max-content` rule on .hm-panel-wrap. */
+        fakeItem.style.width = 'max-content';
+      } else {
+        fakeItem.style.width = canonW + 'px';
+      }
       fakeItem.appendChild(clone);
 
       /* 4) Strip border / scroll caps on the cloned content via
@@ -12110,6 +12150,14 @@
             panels) to static + full-width so they stretch across
             scrollable content rather than staying pinned at cell
             width. Inline styles beat any CSS selector. */
+      /* .hm-gold-header is deliberately NOT in this list — that band
+         lives inside .hm-gave-wrap / .hm-mc which use negative
+         margins to escape the parent card's 16px padding. Forcing
+         width:100% via inline style breaks that layout and the band
+         ends up narrower than the panel content (user-reported on
+         the Macro Regime + Growth × Policy panels). The other headers
+         here use width:100cqw + position:sticky in the live UI, which
+         do need overriding for the export. */
       var STICKY_HEADER_SELECTORS = [
         '.hm-factors-header',
         '.hm-fi-header',
@@ -12122,8 +12170,7 @@
         '.hm-cal-header',
         '.hm-econ-header',
         '.hm-mc-top',
-        '.hm-gave-top',
-        '.hm-gold-header'
+        '.hm-gave-top'
       ].join(', ');
       clone.querySelectorAll(STICKY_HEADER_SELECTORS).forEach(function (h) {
         h.style.setProperty('position', 'static', 'important');
@@ -12152,16 +12199,21 @@
       var cloneRect = clone.getBoundingClientRect();
       var rectW = Math.max(cloneRect.width, clone.scrollWidth);
       var rectH = Math.max(cloneRect.height, clone.scrollHeight);
-      /* Floor of captureW is EXPORT_PANEL_WIDTH — never narrower than
-         the canonical width, even if the clone's content would shrink-
-         to-fit below it. Wider-than-canonical content (heatmap data
-         columns, ranking-panel rows that overflow horizontally) still
-         expands captureW via the max() so we never clip. */
-      var captureW = Math.max(EXPORT_PANEL_WIDTH, Math.ceil(rectW));
+      /* Floor captureW at the panel's canonical width (when one is set)
+         so the canvas never comes back narrower than the design width
+         even if shrink-to-fit would have collapsed it further. Wider-
+         than-canonical content (heatmap natural width, ranking rows
+         overflowing horizontally) still extends via max() with rectW.
+         For null-canonical panels (heatmap) the canvas width = exact
+         content width via Math.ceil(rectW). */
+      var floorW = (canonW === null) ? 0 : canonW;
+      var captureW = Math.max(floorW, Math.ceil(rectW));
       var captureH = Math.ceil(rectH);
-      var itemId = item.getAttribute('gs-id') || '';
-      if (itemId === 'hm-heatmap-wrap') {
-        captureH += 16;
+      /* Heatmap-only buffer for accumulated subpixel rounding across
+         ~59 table rows. Trim from +16 to +8 — the larger margin was
+         showing as a visible gap above the footer divider. */
+      if (panelId === 'hm-heatmap-wrap') {
+        captureH += 8;
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
