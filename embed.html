@@ -12088,11 +12088,16 @@
 
       /* 7) Mount in the stage and measure. Use getBoundingClientRect
             for FRACTIONAL precision (scrollHeight/clientHeight floor
-            to integers), then Math.ceil so the canvas can never be
-            a fraction short of the content. No extra buffer — Math.ceil
-            already rounds UP, so worst case we have <1px of bg below
-            the last row (invisible). Adding a buffer here showed up
-            as a visible empty strip above the footer on every panel. */
+            to integers), then Math.ceil so the canvas is never short
+            of the content. For most panels Math.ceil alone is enough,
+            but the metrics heatmap accumulates subpixel rounding
+            across its ~59 table rows (each row has its own fractional
+            border / padding / cell-height contribution) — getBounding-
+            ClientRect on the wrapper underreports the table's true
+            visual extent by ~8-12 px in some cases. Add a 16-logical-
+            px buffer ONLY for that panel so the last "Gold vs LT
+            Govt corr" row's bottom border never gets clipped, while
+            keeping the other panels' footers flush against content. */
       stage.innerHTML = '';
       stage.appendChild(fakeItem);
       void fakeItem.offsetHeight;
@@ -12102,6 +12107,10 @@
       var rectH = Math.max(cloneRect.height, clone.scrollHeight);
       var captureW = Math.ceil(rectW);
       var captureH = Math.ceil(rectH);
+      var itemId = item.getAttribute('gs-id') || '';
+      if (itemId === 'hm-heatmap-wrap') {
+        captureH += 16;
+      }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
 
