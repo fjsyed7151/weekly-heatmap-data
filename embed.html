@@ -12204,6 +12204,23 @@
         s.style.setProperty('overflow-y', 'visible', 'important');
       });
 
+      /* Size vs Value + Upcoming Releases (Calendar) have an inner
+         body element (`.hm-sf-body` / `.hm-cal-body`) with
+         `border-bottom-{left,right}-radius: 5px` in CSS. That radius
+         sits at the visual bottom of the exported PNG and shows as
+         rounded cut-outs above the footer divider. Earlier .hm-export-
+         stage CSS rules tried to square these via the wrapper classes
+         (.hm-cal-section / .hm-stylefactor-panel) but the actual
+         rounded element is the *-body inside, AND the CSS rules
+         didn't apply in html-to-image's foreignObject anyway. Set
+         the radius inline on the specific elements that hold the
+         radius — these inline styles travel into the foreignObject
+         and override the CSS source. */
+      clone.querySelectorAll('.hm-sf-body, .hm-cal-body').forEach(function (b) {
+        b.style.setProperty('border-bottom-left-radius', '0', 'important');
+        b.style.setProperty('border-bottom-right-radius', '0', 'important');
+      });
+
       /* 6) Force every sticky inner header (gold bars on ranking
             panels) to static + full-width so they stretch across
             scrollable content rather than staying pinned at cell
