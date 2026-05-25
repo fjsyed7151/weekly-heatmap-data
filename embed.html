@@ -10584,7 +10584,7 @@
     'ICLN': { title: 'Clean Energy (ICLN)',         body: 'iShares Global Clean Energy ETF. Solar, wind, and renewable-utility companies globally. Highly sensitive to rates, policy, and subsidy regimes.' },
     'URA':  { title: 'Nuclear / Uranium (URA)',     body: 'Global X Uranium ETF. Uranium miners and nuclear-fuel-cycle companies. Leveraged to spot uranium prices and nuclear-power capacity additions.' },
     'LIT':  { title: 'Lithium / Batteries (LIT)',   body: 'Global X Lithium & Battery Tech ETF. Lithium miners and battery producers powering EVs and grid storage. Tied to battery-chemistry cost curves and EV adoption.' },
-    'HDRO': { title: 'Hydrogen (HDRO)',             body: 'Defiance Next Gen H2 ETF. Pure-play hydrogen producers, fuel-cell manufacturers, and hydrogen-infrastructure names. Long-duration energy-transition bet.' },
+    'TAN':  { title: 'Solar (TAN)',                 body: 'Invesco Solar ETF. Tracks the MAC Global Solar Energy Index — solar-cell manufacturers, solar-utility operators, residential rooftop installers, and inverter / module makers. Cyclical clean-energy bet; rate-sensitive (most names finance projects on debt).' },
     'GDX':  { title: 'Gold Miners (GDX)',           body: 'VanEck Gold Miners ETF. Senior gold mining equities globally. Higher beta to gold price than bullion itself, with operational leverage to cost inflation.' },
     'REMX': { title: 'Rare Earth / Minerals (REMX)',body: 'VanEck Rare Earth/Strategic Metals ETF. Producers of rare earths and strategic metals critical for EVs, semiconductors, and defense. Concentrated in China exposure.' },
     'DRIV': { title: 'EVs / Future Mobility (DRIV)',body: 'Global X Autonomous & Electric Vehicles ETF. EV manufacturers, battery makers, and autonomous-driving tech across the value chain.' },
@@ -10749,10 +10749,10 @@
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-treemap-period-btns';
     /* Full 9-period set on the Thematic Treemap. Some thematic ETFs
-       are young (HDRO 2021, KRBN 2020, IBIT 2024) so 5Y/10Y will show
+       are young (KRBN 2020, IBIT 2024) so 5Y/10Y will show
        "—" for those tiles — handled gracefully by the null path in
-       updateTreemapColors. Older themes (SOXX, GDX, XBI, etc.) get
-       real long-window values that are useful for context. */
+       updateTreemapColors. Older themes (TAN 2008, SOXX, GDX, XBI,
+       etc.) get real long-window values that are useful for context. */
     STANDARD_PERIODS.forEach(function (p) {
       var btn = document.createElement('button');
       btn.type = 'button';
