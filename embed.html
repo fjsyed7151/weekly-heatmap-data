@@ -5120,6 +5120,31 @@
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
   }
+  /* Keep gold inner headers on ONE LINE in the export.
+     The period-selector group + the Abs/vs-SPY toggle on the Factors
+     panel (and similar toolbars on Fixed Income / Global Indexes /
+     etc.) wrap to a second line when the live panel is narrow. The
+     export should always show them on a single row — canonical width
+     gives them the room, this rule guarantees it even if a few px
+     short. */
+  .hm-app .hm-export-stage .hm-factors-header,
+  .hm-app .hm-export-stage .hm-fi-header,
+  .hm-app .hm-export-stage .hm-gi-header,
+  .hm-app .hm-export-stage .hm-ce-header,
+  .hm-app .hm-export-stage .hm-cp-header,
+  .hm-app .hm-export-stage .hm-sector-header,
+  .hm-app .hm-export-stage .hm-sf-header,
+  .hm-app .hm-export-stage .hm-treemap-header,
+  .hm-app .hm-export-stage .hm-cal-header,
+  .hm-app .hm-export-stage .hm-econ-header,
+  .hm-app .hm-export-stage .hm-mc-top,
+  .hm-app .hm-export-stage .hm-gave-top,
+  .hm-app .hm-export-stage .hm-gold-header,
+  .hm-app .hm-export-stage .hm-factors-periods,
+  .hm-app .hm-export-stage .hm-treemap-toggle {
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+  }
 </style>
 
 <div class="hm-app" id="hm-app">
@@ -12045,12 +12070,20 @@
       var origItemClass = item.className || 'grid-stack-item';
       fakeItem.className = origItemClass.replace(/\bhm-active-drag\b/g, '').trim();
       fakeItem.setAttribute('gs-id', item.getAttribute('gs-id') || '');
-      /* Lock fakeItem to the original cell's width so container
-         queries (`.grid-stack-item-content { container-type: inline-size }`
-         on some panels) resolve to a sensible size — otherwise the
-         clone would render at shrink-to-fit and look wrong. */
-      var origRect = origContent.getBoundingClientRect();
-      fakeItem.style.width = Math.max(1, Math.round(origRect.width)) + 'px';
+      /* Render at a CANONICAL width — not the user's current cell
+         width. Without this, every export inherits whatever the
+         user happens to have the column sized to: a wide column
+         stretches charts + spaces out cards, a narrow column
+         wraps the toolbar / compresses cards. Always rendering at
+         the same width gives a consistent, predictable export.
+         Container queries (`container-type: inline-size`) inside
+         the clone resolve to this width too. Panels with
+         intrinsically wider content (the heatmap is ~1602 wide)
+         still extend via the captureW = max(EXPORT_W, scrollWidth)
+         computation below — so we never *clip* content, we just
+         never make it artificially narrow. */
+      var EXPORT_PANEL_WIDTH = 1200;
+      fakeItem.style.width = EXPORT_PANEL_WIDTH + 'px';
       fakeItem.appendChild(clone);
 
       /* 4) Strip border / scroll caps on the cloned content via
@@ -12119,7 +12152,12 @@
       var cloneRect = clone.getBoundingClientRect();
       var rectW = Math.max(cloneRect.width, clone.scrollWidth);
       var rectH = Math.max(cloneRect.height, clone.scrollHeight);
-      var captureW = Math.ceil(rectW);
+      /* Floor of captureW is EXPORT_PANEL_WIDTH — never narrower than
+         the canonical width, even if the clone's content would shrink-
+         to-fit below it. Wider-than-canonical content (heatmap data
+         columns, ranking-panel rows that overflow horizontally) still
+         expands captureW via the max() so we never clip. */
+      var captureW = Math.max(EXPORT_PANEL_WIDTH, Math.ceil(rectW));
       var captureH = Math.ceil(rectH);
       var itemId = item.getAttribute('gs-id') || '';
       if (itemId === 'hm-heatmap-wrap') {
@@ -12176,6 +12214,19 @@
        handler fires even if focus isn't inside the modal. */
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !modal.hidden) closeExportModal();
+    });
+    /* Backdrop click also closes. Anywhere outside the sidebar AND
+       outside the actual preview image — so the dark area around the
+       preview, the topbar gap next to the title, etc. all dismiss.
+       Clicks inside the sidebar (option controls) and on the preview
+       image are NOT close triggers — users want to interact with
+       those. */
+    modal.addEventListener('click', function (e) {
+      if (e.target.closest('.hm-export-sidebar')) return;
+      if (e.target.id === 'hm-export-preview-img') return;
+      /* Don't double-fire when the close button itself is clicked. */
+      if (e.target.closest('#hm-export-modal-close')) return;
+      closeExportModal();
     });
     /* Resolution radio-style buttons. */
     document.querySelectorAll('.hm-export-res-btn').forEach(function (b) {
