@@ -11481,7 +11481,7 @@
            own 16-visual inset from each edge (handled below). */
         var FOOTER_TEXT_INSET = 24;  /* 12 visual: link sits 12 visual px in from the panel's left edge */
         var FOOTER_LOGO_INSET = 24;  /* 12 visual: logo sits 12 visual px in from the panel's right edge */
-        var DIVIDER_GAP = 32;     /* 16 visual: panel-bg gap between the panel image bottom and the divider line */
+        var DIVIDER_GAP = 0;      /* divider sits flush against the panel bottom — no panel-bg gap above it */
         var FOOTER_H = 64;        /* 32 visual: 32-output (16 visual) logo centered → 16-output (8 visual) breathing room above + below */
         var canvas = document.createElement('canvas');
         canvas.width = panelImg.naturalWidth;
@@ -11616,8 +11616,16 @@
          max-height so capped panels (heatmap) export their full
          table, and override overflow so scrollable content isn't
          clipped — html-to-image will then capture scrollWidth/
-         scrollHeight, not just the visible area. */
-      '.hm-export-mode .grid-stack-item > .grid-stack-item-content {',
+         scrollHeight, not just the visible area.
+
+         IMPORTANT: .hm-export-mode is on the TARGET item (a
+         .grid-stack-item), not on .hm-app — so the selector is
+         a direct-child match `.hm-export-mode > .grid-stack-item-content`,
+         not a descendant of an outer wrapper. This scoping
+         prevents the export styles from clobbering EVERY panel
+         in the dashboard simultaneously, which is what caused
+         the page-wide screen-shift on every download click. */
+      '.hm-export-mode.grid-stack-item > .grid-stack-item-content {',
       '  border: none !important;',
       '  scrollbar-gutter: auto !important;',
       '  overflow: visible !important;',
@@ -11625,10 +11633,7 @@
       '}',
       /* display:none on the panel-header navbar so its 24px slot
          is collapsed out of layout BEFORE we measure scrollHeight.
-         (The html-to-image filter we use also strips it from the
-         clone, but only display:none removes the layout space; a
-         filter-only approach left a 24px empty band at the top of
-         every exported image.) */
+         (Same scoping as above — only the target item.) */
       '.hm-export-mode .hm-panel-header { display: none !important; }'
     ].join('\n');
     /* For the gold inner headers (Factors / Fixed Income / Global
@@ -11669,17 +11674,24 @@
       h.style.setProperty('left', 'auto', 'important');
     });
     /* Apply export-mode CSS for the duration of the capture. No
-       temp-resize: capture at the panel's CURRENT size. Earlier
-       behavior temporarily resized the cell to default before
-       capture, which produced a brief visible flash; dropping the
-       resize means panels export at whatever size the user has
-       them, but the UX is smooth (no flash, no neighbor reflow). */
+       temp-resize: capture at the panel's CURRENT size. The
+       .hm-export-mode class lives on the TARGET item (not on
+       .hm-app) so the export CSS rules only affect this panel —
+       previously the class lived on the dashboard root and every
+       panel-header / max-height in the dashboard collapsed +
+       expanded simultaneously, which produced a visible page-
+       wide screen shift on every download click. */
     document.head.appendChild(exportStyle);
-    var hmAppRoot = document.querySelector('.hm-app');
-    if (hmAppRoot) hmAppRoot.classList.add('hm-export-mode');
+    item.classList.add('hm-export-mode');
     void item.offsetHeight;
+    /* Belt-and-suspenders: snapshot scroll position before any
+       mutation so we can restore it after capture. The export
+       still expands this single panel to its scrollHeight, which
+       can shift content below it within the same column. */
+    var preExportScrollX = window.scrollX;
+    var preExportScrollY = window.scrollY;
     function restoreSize() {
-      if (hmAppRoot) hmAppRoot.classList.remove('hm-export-mode');
+      item.classList.remove('hm-export-mode');
       if (exportStyle.parentNode) exportStyle.parentNode.removeChild(exportStyle);
       /* Restore each sticky header's original inline style verbatim
          so we don't leak our position:static/width:100% overrides
@@ -11687,6 +11699,9 @@
       stickyHdrSnapshots.forEach(function (snap) {
         snap.el.style.cssText = snap.cssText;
       });
+      /* Restore the scroll position in case the brief layout
+         change knocked it off (rare, but cheap insurance). */
+      window.scrollTo(preExportScrollX, preExportScrollY);
     }
     loadHtmlToImage().then(function (lib) {
       var idAttr = item.getAttribute('gs-id') || 'panel';
