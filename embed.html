@@ -2848,7 +2848,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 6px 12px;
+    padding: 6px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -3510,7 +3510,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 8px 12px;
+    padding: 8px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -12065,6 +12065,20 @@
             src is the original canvas's toDataURL. This preserves
             chart visuals (Chart.js renders to canvas). Tainted
             canvases (cross-origin sources) throw — we skip those. */
+      /* Pulled up so the canvas-replacement loop below can branch on
+         it. (panelId is also referenced later when picking pinnedW +
+         the heatmap captureH buffer.) */
+      var panelId = item.getAttribute('gs-id') || '';
+      /* Sector chart is the one panel whose canvas is the primary
+         content + supposed to fill the panel width. After the canvas
+         → img replacement, force the resulting img to width:100% so
+         the chart visually fills the canonical 1100-wide export
+         instead of sitting at its live capture size with empty
+         space on the right. Aspect ratio is preserved via height:auto.
+         Note this stretches the chart pixels — long-term fix is to
+         re-render Chart.js into a new canvas at canonical width, but
+         this gets us 80% of the way for now. */
+      var stretchChartImg = (panelId === 'hm-sector-chart');
       try {
         var origCanvases = origContent.querySelectorAll('canvas');
         var cloneCanvases = clone.querySelectorAll('canvas');
@@ -12081,6 +12095,13 @@
                sizing in the clone matches the live render. */
             if (cc.style && cc.style.cssText) imgEl.style.cssText = cc.style.cssText;
             if (cc.className) imgEl.className = typeof cc.className === 'string' ? cc.className : cc.getAttribute('class');
+            if (stretchChartImg) {
+              imgEl.style.setProperty('width', '100%', 'important');
+              imgEl.style.setProperty('height', 'auto', 'important');
+              imgEl.style.setProperty('max-width', 'none', 'important');
+              imgEl.removeAttribute('width');
+              imgEl.removeAttribute('height');
+            }
             if (cc.parentNode) cc.parentNode.replaceChild(imgEl, cc);
           } catch (e) { /* canvas tainted — skip, will appear blank */ }
         }
@@ -12098,22 +12119,36 @@
       var origItemClass = item.className || 'grid-stack-item';
       fakeItem.className = origItemClass.replace(/\bhm-active-drag\b/g, '').trim();
       fakeItem.setAttribute('gs-id', item.getAttribute('gs-id') || '');
-      /* Render at the panel's NATURAL content width. Setting
-         fakeItem.style.width to `max-content` lets each panel size
-         itself to its actual data — no forced canonical width that
-         leaves empty space when content is narrower (Currency
-         Matrix at 900 with data ~700) or pinches when wider.
-         min-width 600 is just a floor for the rare panel that
-         shrinks to almost nothing without inner content.
-
-         The previous per-panel-canonical-width map produced too-
-         wide exports for Currency Matrix / Index Snapshot / Size
-         vs Value (data didn't fill the canonical box, leaving
-         visible empty bands). max-content fixes all of those in
-         one stroke. */
-      var panelId = item.getAttribute('gs-id') || '';
-      fakeItem.style.width = 'max-content';
-      fakeItem.style.minWidth = '600px';
+      /* Sizing strategy by panel:
+           - max-content for panels whose content has an INTRINSIC
+             natural width (heatmap data table, ranking-panel cards
+             with min-width:660, currency matrix with cell min-widths).
+             These size to their actual data with no empty bands.
+           - Specific canonical px for panels whose layout adapts to
+             the container (Index Snapshot's @container queries flip
+             between 1 / 2 / 4 columns; Sector chart canvas stretches
+             to fill; Style Box / Calendar / Economy tables widen with
+             container). At max-content these collapse or get squashed
+             unpredictably, so pin them to a designed-for width so the
+             export is column-independent.
+         Default to max-content for anything not in the map. */
+      var EXPORT_PINNED_WIDTHS = {
+        'hm-indexes':       800,   /* 4-card grid, 200px each — @container threshold is 720 so >720 gives 4 cols */
+        'hm-sector-chart': 1100,
+        'hm-stylefactor':   700,   /* 3x3 style grid at its natural cell size */
+        'hm-calendar':      800,
+        'hm-economy':       800,
+        'hm-macrocompass':  900,
+        'hm-gave-wrap':    1000,
+        'hm-theme-treemap':1200
+      };
+      var pinnedW = EXPORT_PINNED_WIDTHS[panelId];
+      if (pinnedW) {
+        fakeItem.style.width = pinnedW + 'px';
+      } else {
+        fakeItem.style.width = 'max-content';
+        fakeItem.style.minWidth = '600px';
+      }
       fakeItem.appendChild(clone);
 
       /* 4) Strip border / scroll caps on the cloned content via
@@ -12222,10 +12257,11 @@
       var cloneRect = clone.getBoundingClientRect();
       var rectW = Math.max(cloneRect.width, clone.scrollWidth);
       var rectH = Math.max(cloneRect.height, clone.scrollHeight);
-      /* captureW = the clone's natural content width (max-content),
-         floored at 600 to match fakeItem.minWidth. captureH = ceil of
-         the natural content height. */
-      var captureW = Math.max(600, Math.ceil(rectW));
+      /* captureW floor = pinned width if set, else 600 (matches
+         fakeItem.minWidth). Wider intrinsic content (heatmap) still
+         expands via max() with rectW so we never clip. */
+      var floorW = pinnedW || 600;
+      var captureW = Math.max(floorW, Math.ceil(rectW));
       var captureH = Math.ceil(rectH);
       /* Heatmap-only buffer for accumulated subpixel rounding across
          ~59 table rows. Back to +20 — earlier +8 wasn't enough and
