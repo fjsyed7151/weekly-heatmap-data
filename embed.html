@@ -5124,6 +5124,7 @@
   .hm-app .hm-export-stage .hm-fx-section,
   .hm-app .hm-export-stage .hm-mc,
   .hm-app .hm-export-stage .hm-stylefactor,
+  .hm-app .hm-export-stage .hm-stylefactor-panel,
   .hm-app .hm-export-stage .hm-gave,
   .hm-app .hm-export-stage .hm-gave-wrap,
   .hm-app .hm-export-stage .hm-indexes,
@@ -5133,6 +5134,15 @@
   .hm-app .hm-export-stage .hm-treemap-wrap,
   .hm-app .hm-export-stage .hm-table tbody tr:last-child td:first-child,
   .hm-app .hm-export-stage .hm-table tbody tr:last-child td:last-child {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+  /* Size vs Value: 3x3 grid of rounded `.hm-style-cell` boxes. Bottom
+     corners of the cells in the LAST ROW (`:nth-last-child(-n+3)`) sit
+     at the bottom edge of the captured panel image and show as cut-
+     outs above the footer. Square just those — top + middle rows keep
+     their full rounding. */
+  .hm-app .hm-export-stage .hm-style-grid > .hm-style-cell:nth-last-child(-n+3) {
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
   }
@@ -12088,66 +12098,23 @@
       var origItemClass = item.className || 'grid-stack-item';
       fakeItem.className = origItemClass.replace(/\bhm-active-drag\b/g, '').trim();
       fakeItem.setAttribute('gs-id', item.getAttribute('gs-id') || '');
-      /* Per-panel CANONICAL export widths. Each panel has its own
-         "designed" content width — ranking tables fit ~1200, currency
-         matrix wants ~900, calendar/economy are narrow at ~850, the
-         style box is ~700, etc. One blanket 1200 stretched the
-         narrow ones and pinched the wide ones. The heatmap key is
-         null — let max-content size it (it's intrinsically wide and
-         data-driven). */
-      var EXPORT_PANEL_WIDTHS = {
-        'hm-heatmap-wrap':    null,   /* null = max-content (intrinsically wide table) */
-        'hm-factors':         1200,
-        'hm-fixed-income':    1200,
-        'hm-global-indexes':  1200,
-        'hm-country-etfs':    1200,
-        'hm-commodity-perf':  1200,
-        'hm-currency-matrix': 900,
-        'hm-indexes':         1000,
-        'hm-sector-chart':    1100,
-        'hm-stylefactor':     700,
-        'hm-theme-treemap':   1200,
-        'hm-calendar':        850,
-        'hm-economy':         850,
-        'hm-macrocompass':    900,
-        'hm-gave-wrap':       950
-      };
-      var DEFAULT_EXPORT_W = 1000;
+      /* Render at the panel's NATURAL content width. Setting
+         fakeItem.style.width to `max-content` lets each panel size
+         itself to its actual data — no forced canonical width that
+         leaves empty space when content is narrower (Currency
+         Matrix at 900 with data ~700) or pinches when wider.
+         min-width 600 is just a floor for the rare panel that
+         shrinks to almost nothing without inner content.
+
+         The previous per-panel-canonical-width map produced too-
+         wide exports for Currency Matrix / Index Snapshot / Size
+         vs Value (data didn't fill the canonical box, leaving
+         visible empty bands). max-content fixes all of those in
+         one stroke. */
       var panelId = item.getAttribute('gs-id') || '';
-      var canonW = EXPORT_PANEL_WIDTHS.hasOwnProperty(panelId)
-        ? EXPORT_PANEL_WIDTHS[panelId]
-        : DEFAULT_EXPORT_W;
-      if (canonW === null) {
-        /* Heatmap path — let the inner table dictate width via its
-           own `width: max-content` rule on .hm-panel-wrap. */
-        fakeItem.style.width = 'max-content';
-      } else {
-        fakeItem.style.width = canonW + 'px';
-      }
+      fakeItem.style.width = 'max-content';
+      fakeItem.style.minWidth = '600px';
       fakeItem.appendChild(clone);
-
-      /* When a specific canonical width is requested, lock the
-         clone (.grid-stack-item-content) AND every nested
-         .hm-panel-wrap / .hm-factors-card to that width so inner
-         content can't expand past it via `width: max-content` in
-         CSS. Without this, Currency Matrix (which has
-         `.hm-panel-wrap { width: max-content }` per-panel rule)
-         renders at its natural ~1602 max-content even when fakeItem
-         is set to 900 — the clone's `max-width: none` (applied
-         further down) lets the content overflow fakeItem. We need
-         BOTH the clone box AND the panel-wrap box constrained.
-
-         Heatmap (canonW===null) is the one panel we DON'T do this
-         for — its table content needs the unconstrained max-content
-         path to render at its full intrinsic width. */
-      if (canonW !== null) {
-        var cloneWraps = clone.querySelectorAll('.hm-panel-wrap, .hm-factors-card');
-        cloneWraps.forEach(function (w) {
-          w.style.setProperty('width', '100%', 'important');
-          w.style.setProperty('max-width', '100%', 'important');
-          w.style.setProperty('min-width', '0', 'important');
-        });
-      }
 
       /* 4) Strip border / scroll caps on the cloned content via
             inline style — these override any inherited CSS that
@@ -12155,20 +12122,10 @@
             html-to-image clones again internally. */
       clone.style.setProperty('border', 'none', 'important');
       clone.style.setProperty('max-height', 'none', 'important');
+      clone.style.setProperty('max-width', 'none', 'important');
       clone.style.setProperty('overflow', 'visible', 'important');
       clone.style.setProperty('scrollbar-gutter', 'auto', 'important');
       clone.style.setProperty('border-radius', '0', 'important');
-      /* `max-width` is tied to the canonical-width path. For panels
-         with a specific width, lock the clone to that width so inner
-         content can't expand past it. For the heatmap (canonW===null)
-         we still need max-width:none so the table can render at its
-         full intrinsic max-content width. */
-      if (canonW === null) {
-        clone.style.setProperty('max-width', 'none', 'important');
-      } else {
-        clone.style.setProperty('width', '100%', 'important');
-        clone.style.setProperty('max-width', '100%', 'important');
-      }
 
       /* 5) visibility:hidden the panel-header — keeps its layout
             slot (so inner content doesn't shift up) but makes the
@@ -12232,21 +12189,18 @@
       var cloneRect = clone.getBoundingClientRect();
       var rectW = Math.max(cloneRect.width, clone.scrollWidth);
       var rectH = Math.max(cloneRect.height, clone.scrollHeight);
-      /* Floor captureW at the panel's canonical width (when one is set)
-         so the canvas never comes back narrower than the design width
-         even if shrink-to-fit would have collapsed it further. Wider-
-         than-canonical content (heatmap natural width, ranking rows
-         overflowing horizontally) still extends via max() with rectW.
-         For null-canonical panels (heatmap) the canvas width = exact
-         content width via Math.ceil(rectW). */
-      var floorW = (canonW === null) ? 0 : canonW;
-      var captureW = Math.max(floorW, Math.ceil(rectW));
+      /* captureW = the clone's natural content width (max-content),
+         floored at 600 to match fakeItem.minWidth. captureH = ceil of
+         the natural content height. */
+      var captureW = Math.max(600, Math.ceil(rectW));
       var captureH = Math.ceil(rectH);
       /* Heatmap-only buffer for accumulated subpixel rounding across
-         ~59 table rows. Trim from +16 to +8 — the larger margin was
-         showing as a visible gap above the footer divider. */
+         ~59 table rows. Back to +20 — earlier +8 wasn't enough and
+         the last "Gold vs LT Govt corr" row was getting clipped
+         again. The +20 shows as < 10 visual px of bg above the
+         footer divider on the heatmap only — invisible enough. */
       if (panelId === 'hm-heatmap-wrap') {
-        captureH += 8;
+        captureH += 20;
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
