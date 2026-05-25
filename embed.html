@@ -12117,6 +12117,13 @@
 
       var captureW = Math.max(clone.scrollWidth, clone.clientWidth);
       var captureH = Math.max(clone.scrollHeight, clone.clientHeight);
+      /* Small safety buffer so a sub-pixel rounding mismatch between
+         scrollHeight (an integer) and the actual rendered content
+         (which can be 1685.39px in CSS pixels) doesn't clip the
+         last row's bottom border. 8 logical px is invisible at any
+         resolution but eliminates the edge case where the last
+         metric row's bottom hairline got cropped off. */
+      captureH += 8;
       /* Lock width/height inline so the clone we pass to html-to-image
          has stable dimensions. */
       clone.style.setProperty('width', captureW + 'px', 'important');
