@@ -12345,6 +12345,23 @@
         s.style.setProperty('overflow-x', 'visible', 'important');
         s.style.setProperty('overflow-y', 'visible', 'important');
       });
+      /* .hm-commod-wrap and .hm-fx-wrap are flex items inside
+         .hm-commod-section / .hm-fx-section (display:flex column).
+         They have `flex: 1 1 auto; min-height: 0` so the LIVE wrap
+         can shrink to the cell's height (and use its own scrollbar).
+         In the export we need them to expand to the table's natural
+         height instead — otherwise overflow:visible alone makes the
+         table extend BELOW the flex item's box but the flex parent
+         doesn't grow to include it, so clone.scrollHeight under-
+         reports and the last row gets clipped at the captured panel
+         bottom. Force flex:none + height:auto + min-height:auto so
+         the wrap grows to its content. */
+      clone.querySelectorAll('.hm-commod-wrap, .hm-fx-wrap').forEach(function (s) {
+        s.style.setProperty('flex', 'none', 'important');
+        s.style.setProperty('height', 'auto', 'important');
+        s.style.setProperty('min-height', 'auto', 'important');
+        s.style.setProperty('max-height', 'none', 'important');
+      });
 
       /* Size vs Value + Upcoming Releases (Calendar) + Economic
          Indicators all carry the panel's bottom rounding on an
