@@ -12096,8 +12096,20 @@
             if (cc.style && cc.style.cssText) imgEl.style.cssText = cc.style.cssText;
             if (cc.className) imgEl.className = typeof cc.className === 'string' ? cc.className : cc.getAttribute('class');
             if (stretchChartImg) {
+              /* Stretch the sector chart img to FILL its wrap exactly:
+                 width:100% × height:100% of the .hm-sector-canvas-wrap
+                 (320px tall). Previously this used height:auto, but
+                 when the live panel was in a column narrower than the
+                 1100px pinned export width, the captured canvas's
+                 aspect ratio gave an img-height TALLER than 320px →
+                 the img overflowed the wrap and visually overlapped
+                 the sector table below it (user-reported overlap bug).
+                 height:100% clamps to the wrap's fixed 320px, so the
+                 img can never spill into the table. The captured chart
+                 pixels get stretched horizontally relative to live,
+                 but no overlap. */
               imgEl.style.setProperty('width', '100%', 'important');
-              imgEl.style.setProperty('height', 'auto', 'important');
+              imgEl.style.setProperty('height', '100%', 'important');
               imgEl.style.setProperty('max-width', 'none', 'important');
               imgEl.removeAttribute('width');
               imgEl.removeAttribute('height');
