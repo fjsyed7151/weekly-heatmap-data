@@ -4585,6 +4585,10 @@
     flex-direction: column;
     gap: 8px;
     min-width: 0;
+    /* Top breathing room so first panel sits 8px below the topbar
+       (combined with the topbar's 4px margin-bottom + this 4px =
+       8px gap, matching the 8px gap between stacked panels). */
+    padding-top: 4px;
     /* Breathing room below the last panel so it doesn't sit flush
        against the bottom of the page when scrolled to the end. */
     padding-bottom: 32px;
