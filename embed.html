@@ -4739,15 +4739,14 @@
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content {
     overflow: auto;
   }
-  /* Cap heatmap height \u2014 internal scroll container handles long tables.
-     scrollbar-gutter: stable reserves space for the vertical scrollbar
-     even when it's not visible, so the sticky panel-header (width:
-     100cqw) doesn't extend over the scrollbar area. Also push the
-     panel-header's right padding wider so the close (\u00d7) button sits
-     clear of the scrollbar gutter. */
+  /* Heatmap panel: NO vertical scroll. The per-section filter in
+     the panel-header chrome is the trim tool \u2014 users hide sections
+     they don't care about rather than scrolling through them. The
+     panel sizeToContent's to natural table height; the page is the
+     only vertical scroll context. Horizontal scroll is still allowed
+     for wide date columns (overflow: auto on the parent rule). */
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content {
-    scrollbar-gutter: stable;
-    max-height: 80vh;
+    max-height: none;
   }
 
   /* Stacked mode (narrow viewport): single column, dividers hidden,
