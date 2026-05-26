@@ -447,22 +447,38 @@
     z-index: 5;
     box-sizing: border-box;
   }
-  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar {
+  /* Unified scrollbar styling — applies to EVERY scrollable element
+     inside the dashboard so the chrome looks consistent across
+     panels (currency / commodity tables, sector chart, ranking
+     panels, heatmap, etc.). Previously the old `.grid-stack >
+     .grid-stack-item > .grid-stack-item-content` selector only
+     matched the legacy gridstack-direct-child path; in the column
+     layout panels sit at `.hm-col > .grid-stack-item > ...`, so
+     most scroll containers ended up with the browser default. */
+  .hm-app,
+  .hm-app * {
+    /* scrollbar-color inherits; scrollbar-width does NOT — so it
+       has to be set on every potentially-scrolling element, hence
+       the universal selector. */
+    scrollbar-width: thin;
+    scrollbar-color: #F2DFB3 var(--hm-bg-alt);
+  }
+  .hm-app *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-thumb {
+  .hm-app *::-webkit-scrollbar-thumb {
     background: #F2DFB3;
     border-radius: 4px;
   }
-  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-thumb:hover {
+  .hm-app *::-webkit-scrollbar-thumb:hover {
     background: #e8ce8e;
   }
-  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-track {
+  .hm-app *::-webkit-scrollbar-track {
     background: var(--hm-bg-alt);
     border-radius: 4px;
   }
-  .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content::-webkit-scrollbar-corner {
+  .hm-app *::-webkit-scrollbar-corner {
     background: var(--hm-bg-alt);
   }
 
