@@ -9,7 +9,7 @@
 <!-- Gridstack removed: the dashboard is now a static sectioned layout.
      Panels keep their .grid-stack-item / .grid-stack-item-content class
      names purely as structural markers so the existing per-panel CSS
-     keeps matching — no JS library is loaded. -->
+     keeps matching \u2014 no JS library is loaded. -->
 <!-- iframe-resizer CHILD: auto-reports this document's height to a parent iframe.
      MIT license. No-op when loaded standalone (not in an iframe). -->
 <script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4.3.9/js/iframeResizer.contentWindow.min.js"></script>
@@ -75,7 +75,7 @@
     font-size: 14px;
     line-height: 1.55;
     color: var(--hm-dark);
-    /* Solid bg only — measurable grid lives on .grid-stack so it aligns
+    /* Solid bg only \u2014 measurable grid lives on .grid-stack so it aligns
        exactly with the 12-column geometry and the cell row height. */
     background-color: var(--hm-bg);
     background-image: none;
@@ -104,13 +104,13 @@
   .hm-app .hm-main {
     min-width: 0;
     padding: 0;
-    /* NOTE: do NOT set overflow: hidden here — it creates a scroll container
+    /* NOTE: do NOT set overflow: hidden here \u2014 it creates a scroll container
        that prevents .hm-pinned-bar's position:sticky from sticking to the
        viewport as the user scrolls the page. */
   }
   .hm-app .hm-main > * { max-width: 100%; }
 
-  /* Pinned-to-top bar — sticks below the topbar as the page scrolls.
+  /* Pinned-to-top bar \u2014 sticks below the topbar as the page scrolls.
      Pinned panels are laid out in a horizontal flex row so they keep
      something close to their original width; they wrap on narrow viewports. */
   /* Sticky wrapper that holds bar + resizer as one visual unit.
@@ -186,7 +186,7 @@
     cursor: ns-resize !important;
   }
   /* Override Gridstack's absolute positioning when an item lives in the
-     pinned bar — let it flow naturally. Width AND height are set inline
+     pinned bar \u2014 let it flow naturally. Width AND height are set inline
      at pin time from the user's last grid size so a pinned panel keeps
      the dimensions the user chose (no reset to default). The pinned-bar
      itself caps overall height at 50vh and scrolls if the stack
@@ -197,7 +197,7 @@
     top: auto !important;
     transform: none !important;
     flex: 0 0 auto;
-    /* No overflow:hidden — would clip the outer gold box-shadow on
+    /* No overflow:hidden \u2014 would clip the outer gold box-shadow on
        grid-stack-item-content. The inner content already scrolls via
        its own overflow:auto, so we don't need a clipping ancestor. */
     overflow: visible;
@@ -252,10 +252,10 @@
        grid on top. The base layer is an SVG fractal-noise filter
        (anisotropic frequency = directional weave, like linen threads)
        in the same wheat-brown the old dots used. The top layer is gold
-       lines at the 24-column × 40px-row gs-w/gs-h boundaries — pale
+       lines at the 24-column \u00d7 40px-row gs-w/gs-h boundaries \u2014 pale
        enough to read as "ruled paper" rather than fight with the texture.
-       To pick a default size: count gold lines across × down, e.g. 12
-       cols across × 4 rows down → gs-w="12" gs-h="4" in the HTML. */
+       To pick a default size: count gold lines across \u00d7 down, e.g. 12
+       cols across \u00d7 4 rows down \u2192 gs-w="12" gs-h="4" in the HTML. */
     background-color: transparent;
     background-image:
       linear-gradient(to right, rgba(218, 165, 32, 0.09) 1px, transparent 1px),
@@ -288,13 +288,13 @@
   /* Panel cell outline. The selector covers BOTH legacy
      .grid-stack direct-child grids AND the new column layout
      where panels sit at .hm-col > .grid-stack-item (one level
-     deeper). Color: var(--hm-border) — the standard subtle
+     deeper). Color: var(--hm-border) \u2014 the standard subtle
      theme border (#d9d9d9 light / #232731 dark), matching the
      rest of the dashboard's neutral chrome.
 
      Real 1px border (not outset box-shadow) so that when a
      column is pinned (.hm-col-sticky has overflow-x: hidden),
-     the cell's left and right edges don't get clipped — an
+     the cell's left and right edges don't get clipped \u2014 an
      outset box-shadow renders OUTSIDE the cell box, which the
      parent's overflow:hidden then trims away. Border is INSIDE
      the box, so it's always visible regardless of parent
@@ -309,13 +309,13 @@
     padding: 0;
     box-sizing: border-box;
   }
-  /* Panel wrap stays at cell width by default — Chart.js responsive
+  /* Panel wrap stays at cell width by default \u2014 Chart.js responsive
      canvases (sector / macro regime / index sparklines) feed back
      into a width-grow loop if the wrap is allowed to be max-content
-     (chart measures parent → grows wrap → chart re-measures → ...).
+     (chart measures parent \u2192 grows wrap \u2192 chart re-measures \u2192 ...).
      For ranking-style panels (no Chart.js inside), we override to
      max-content below so the sticky-left navbar can actually pin
-     itself horizontally — sticky positioning needs the containing
+     itself horizontally \u2014 sticky positioning needs the containing
      block to be wider than the sticky element to have any effect. */
   .hm-app .hm-panel-wrap {
     box-sizing: border-box;
@@ -328,7 +328,7 @@
      explicit cell-width via container queries. The card already
      uses width:max-content; min-width:100%, so wrap:max-content
      just means wrap follows the card's width (no behavioral change
-     for the wide content itself — cell-level horizontal scroll is
+     for the wide content itself \u2014 cell-level horizontal scroll is
      preserved). 100cqw on the navbar = 100% of the nearest container
      (the .grid-stack-item-content cell), so navbar stays cell-width
      even though its parent wrap is wider. With navbar narrower than
@@ -338,11 +338,11 @@
      mode only via :not(.hm-stack-vertical). The whole point of
      wrap=max-content + navbar=100cqw + gold-header-sticky-left is
      to handle the case where the card extends past cell width
-     (which only happens in horizontal mode for these panels — body
+     (which only happens in horizontal mode for these panels \u2014 body
      has min-width:660). In vertical mode the card is naturally
      cell-width with no horizontal overflow at any level, so applying
      these rules there caused subtle layout issues (max-content wrap
-     measuring widest natural row name → wrap > cell → cell-level
+     measuring widest natural row name \u2192 wrap > cell \u2192 cell-level
      horizontal scrollbar painting as a tiny gap below the panel). */
   .hm-app .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) > .grid-stack-item-content,
   .hm-app .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) > .grid-stack-item-content,
@@ -355,7 +355,7 @@
   /* For panels with horizontally-scrolling content, set the
      panel-wrap to width:max-content so the wrap is wider than
      the panel-header. The sticky-left:0 + width:100cqw navbar
-     needs ROOM TO SLIDE within its containing block — if wrap
+     needs ROOM TO SLIDE within its containing block \u2014 if wrap
      and navbar are the same width, sticky has nothing to do.
      Indexes is NOT in this list anymore: its grid uses @container
      queries to fit cell width, so panel-wrap should stay at cell
@@ -380,7 +380,7 @@
        1) Sub-pixel gap: width: 100cqw can resolve to a fractional
           pixel (e.g. 941.66px on a 942px content area), leaving
           a ~0.3px strip on the right where the table peeks
-          through. calc(100cqw + 2px) covers that fully — the
+          through. calc(100cqw + 2px) covers that fully \u2014 the
           extra 2px overlaps the start of the scrollbar gutter,
           which the scrollbar itself then paints on top of, so
           the user never sees a gap.
@@ -390,7 +390,7 @@
           the top corners makes the navbar bg fully cover the
           strip. (The cell's own rounded corner still clips
           content beyond the cell, so the outer panel outline
-          stays rounded — only the navbar's bg edge is square.) */
+          stays rounded \u2014 only the navbar's bg edge is square.) */
   .hm-app .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
   .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header {
     width: calc(100cqw + 2px);
@@ -409,7 +409,7 @@
      (column-header row) sticky JUST BELOW the panel navbar so it
      stays visible when the user scrolls vertically inside the
      cell. Base .hm-table thead th already has position:sticky;
-     top:0 — but top:0 means it stacks AT the cell's top edge,
+     top:0 \u2014 but top:0 means it stacks AT the cell's top edge,
      where the panel navbar (also sticky top:0, z-index:6) covers
      it. Top:24px puts the thead just below the 24px navbar so
      both stay visible on scroll, no overlap. Scoped to the
@@ -421,8 +421,8 @@
   /* Same trick for the GOLD header band (.hm-factors-header) on
      ranking panels: pin it to viewport-left + cell-width so the
      period pills inside can wrap onto a second row when narrow. The
-     gold header is normally as wide as the card it lives inside —
-     and the card is max-content (wide) — so flex-wrap on the header
+     gold header is normally as wide as the card it lives inside \u2014
+     and the card is max-content (wide) \u2014 so flex-wrap on the header
      never triggers without this override. We need overflow:clip on
      the card (instead of overflow:hidden) so sticky positioning
      bubbles up to the cell-level scroll container; overflow:hidden
@@ -467,7 +467,7 @@
     background: var(--hm-bg-alt);
   }
 
-  /* Window-style panel header — thin (24px), title-less. Whole bar is the
+  /* Window-style panel header \u2014 thin (24px), title-less. Whole bar is the
      drag handle (cursor: grab). Right side holds pin / reset / close. The
      panel's own card already shows its title; we don't repeat it here. */
   .hm-app .hm-panel-header {
@@ -481,7 +481,7 @@
     /* border-box so width:100cqw (set per-panel for ranking panels)
        includes the 12px horizontal padding. Without this, the navbar
        computes to cell-width + 12px, overflows the cell by 12px, and
-       triggers a horizontal scrollbar at the cell level — which then
+       triggers a horizontal scrollbar at the cell level \u2014 which then
        takes ~10px of vertical space and appears as "padding below"
        the panel content (especially noticeable after toggling to
        vertical-stack mode where there's no other horizontal overflow
@@ -493,7 +493,7 @@
     /* Top corners rounded to match the cell's outer radius; bottom
        corners square so the navbar sits flush against the gold header. */
     border-radius: var(--hm-r) var(--hm-r) 0 0;
-    /* Drag/drop was removed when we left gridstack — cursor stays
+    /* Drag/drop was removed when we left gridstack \u2014 cursor stays
        default (no grab/grabbing). */
     cursor: default;
     user-select: none;
@@ -504,7 +504,7 @@
        the user has scrolled (vertical OR horizontal). For horizontal
        stickiness to actually work, the navbar's containing block
        (.hm-panel-wrap) must be wider than the navbar so it has room
-       to "move" within the wrap as the user scrolls — otherwise
+       to "move" within the wrap as the user scrolls \u2014 otherwise
        sticky-left has no effect (navbar can only be at one position
        inside its narrow containing block). See the per-panel
        max-content wrap rules + 100cqw navbar width below for ranking
@@ -517,7 +517,7 @@
   .hm-app.dark .hm-panel-header {
     background: var(--hm-bg-alt, #232027);
   }
-  /* .hm-panel-header:active grabbing-cursor rule removed — no drag. */
+  /* .hm-panel-header:active grabbing-cursor rule removed \u2014 no drag. */
   .hm-app .hm-panel-btn {
     flex: 0 0 auto;
     display: inline-flex;
@@ -573,7 +573,7 @@
   .hm-app .hm-panel-move-right,
   .hm-app .hm-panel-move-up,
   .hm-app .hm-panel-move-down {
-    /* No special styling — inherits .hm-panel-btn. */
+    /* No special styling \u2014 inherits .hm-panel-btn. */
   }
   .hm-app .hm-panel-move-left[hidden],
   .hm-app .hm-panel-move-right[hidden],
@@ -590,7 +590,7 @@
     /* JS sets grid-template-columns dynamically based on _colWidths
        and collapsed flags. Initial value is 3 equal columns. */
     grid-template-columns: 1fr 8px 1fr 8px 1fr;
-    /* align-items: stretch (default) — grid cells take row-height
+    /* align-items: stretch (default) \u2014 grid cells take row-height
        (= max column content height). This is required for
        position: sticky to have room to operate inside its cell.
        Each column inside its cell uses align-self: start so the
@@ -610,7 +610,7 @@
        overflow:hidden + min-width:0 lets it actually shrink to 0 (CSS
        Grid items default to min-width:auto, which would refuse to go
        below their content's min size). visibility:hidden suppresses
-       paint on the column's children — keeps gridstack's internal
+       paint on the column's children \u2014 keeps gridstack's internal
        state intact (display:none would zero out child measurements
        and break gridstack). */
     overflow: hidden !important;
@@ -631,7 +631,7 @@
      positioning AND any container-query width. These conflict with
      the column-level sticky and were causing the panel-header to
      vanish in sticky mode. Force it back to normal flow + full
-     parent width. Same for the panel-wrap — its width: max-content
+     parent width. Same for the panel-wrap \u2014 its width: max-content
      was also misbehaving in sticky context. */
   .hm-app .hm-col-sticky .hm-panel-header {
     position: static !important;
@@ -650,7 +650,7 @@
      responsive grids fall back to viewport-relative widths. That's
      why cards/columns inside those panels rendered far too wide and
      overflowed when a column was pinned. We KEEP container-type:
-     inline-size on those panels — it's how their internal layouts
+     inline-size on those panels \u2014 it's how their internal layouts
      stay cell-relative.) */
   .hm-app .hm-col-header {
     display: flex;
@@ -700,7 +700,7 @@
     transform: rotate(-90deg);
   }
   .hm-app .hm-col-body {
-    /* Gridstack target. No border or padding — each panel inside
+    /* Gridstack target. No border or padding \u2014 each panel inside
        carries its own gold outline (the .grid-stack-item-content
        box-shadow), so an outer border would just double-wrap. Use
        background-color (not the background shorthand) so the grid
@@ -714,7 +714,7 @@
   .hm-app .hm-col-body.grid-stack {
     position: relative;
   }
-  /* Column dividers — always-visible vertical resize handles between
+  /* Column dividers \u2014 always-visible vertical resize handles between
      columns. The grid-template-columns track is 8px wide; the visible
      line is a 1px gold tint centered inside, thickening to 3px on
      hover for affordance. align-self:stretch overrides the parent's
@@ -764,7 +764,7 @@
   /* Narrow viewport: stack columns vertically. Dividers + their
      associated grid tracks collapse to zero. The 3 columns become a
      single vertical stack of all panels. The column headers (sticky
-     toggles, collapse toggles) hide too — the spatial / sticky
+     toggles, collapse toggles) hide too \u2014 the spatial / sticky
      concepts don't apply when stacked. */
   body.hm-cols-stacked .hm-app .hm-cols {
     grid-template-columns: 1fr !important;
@@ -785,7 +785,7 @@
   /* Panel cards take their natural content height. Grid items auto-fit
      to match via Gridstack's sizeToContent option, so the grid cell and
      the card border are always exactly the size of the rendered content
-     — no empty unbordered space below the card. */
+     \u2014 no empty unbordered space below the card. */
 
   /* Gave four-quadrants panel: natural-height stack of quadrant + three
      mini charts. sizeToContent on the grid measures the full stack. */
@@ -816,7 +816,7 @@
   /* Snap-instantly flag for scripted reset: gridstack's animate:true
      transitions width/height/left/top over 300ms. resetItemSize on
      stack-toggle panels needs to measure scrollHeight RIGHT AFTER
-     the width change — but during the transition window the layout
+     the width change \u2014 but during the transition window the layout
      reflects an intermediate width, producing stale (too-tall)
      measurements that leave a gap below content. Adding this class
      for the duration of the reset makes the width snap instantly so
@@ -829,7 +829,7 @@
   }
   /* While ANY drag is in flight, kill transitions on every grid item.
      Otherwise non-dragged neighbors animate (300ms default) into new
-     positions as they reflow around the drag — reads as lag when the
+     positions as they reflow around the drag \u2014 reads as lag when the
      user drops into a gap and sees neighbors slowly slide. The body
      class is toggled by dragstart/dragstop. */
   body.hm-grid-dragging .hm-app .grid-stack > .grid-stack-item,
@@ -838,7 +838,7 @@
     animation: none !important;
   }
   /* Hint to the browser so the dragged item gets its own composite
-     layer — paints don't have to rerasterize every cursor move. */
+     layer \u2014 paints don't have to rerasterize every cursor move. */
   .hm-app .grid-stack-item.hm-active-drag {
     will-change: transform, left, top;
   }
@@ -848,7 +848,7 @@
   .hm-app .grid-stack > .grid-stack-placeholder {
     pointer-events: none;
   }
-  /* Resize handles — invisible hit zones only. Cursor changes do the
+  /* Resize handles \u2014 invisible hit zones only. Cursor changes do the
      signalling (n/s/e/w/ne/nw/se/sw-resize). No gold bars/triangles. */
   .hm-app .grid-stack-item > .ui-resizable-handle {
     display: none;
@@ -874,7 +874,7 @@
   .hm-app .grid-stack-item-content {
     z-index: 1;
   }
-  /* No north handle — top edge is drag-only via the header. */
+  /* No north handle \u2014 top edge is drag-only via the header. */
 
   @media (max-width: 1100px) {
     .hm-app .hm-main {
@@ -886,7 +886,7 @@
   @media (max-width: 600px) {
     .hm-app .hm-inner { padding: 16px 12px 48px; }
   }
-  /* Sector tables always stay side by side — main scrolls, vs SPY stays pinned */
+  /* Sector tables always stay side by side \u2014 main scrolls, vs SPY stays pinned */
   /* Responsive: sector chart toolbar wraps */
   @media (max-width: 700px) {
     .hm-app .hm-sector-header {
@@ -909,7 +909,7 @@
     .hm-app .hm-sf-header { flex-wrap: wrap; gap: 6px; }
   }
 
-  /* Top bar — sticky. Stays visible while the user scrolls so sidebar toggles,
+  /* Top bar \u2014 sticky. Stays visible while the user scrolls so sidebar toggles,
      info, and theme controls are always reachable. Sits below the WP admin
      bar if one is present (--hm-header-offset measured in JS, 0 when logged out).
      z-index is ABOVE the cloned metric-table sticky header (999) so the info
@@ -928,7 +928,7 @@
     background: var(--hm-bg);
   }
   /* Back-to-stablebread.com button on the very left of the topbar.
-     Same visual chrome as .hm-btn (32×32 outlined square) so it
+     Same visual chrome as .hm-btn (32\u00d732 outlined square) so it
      reads as part of the same control row, but it's an <a> element
      for proper navigation semantics + ctrl-click / open-in-new-tab. */
   .hm-app .hm-topbar-back {
@@ -950,7 +950,7 @@
     color: var(--hm-gold);
   }
   .hm-app .hm-topbar-back svg { width: 18px; height: 18px; display: block; }
-  /* Logo wrapper — also a link to stablebread.com (standard web
+  /* Logo wrapper \u2014 also a link to stablebread.com (standard web
      convention for clickable logos). Auto-scales the image to the
      topbar's natural button height (32px) to keep alignment with
      the rest of the controls. */
@@ -1054,7 +1054,7 @@
   .hm-app .hm-cb:focus-visible { outline: 2px solid var(--hm-gold); outline-offset: 2px; }
   .hm-app .hm-cb:disabled { opacity: 0.35; cursor: not-allowed; }
 
-  /* Chart section — fills its grid panel cell so the visible card border
+  /* Chart section \u2014 fills its grid panel cell so the visible card border
      tracks resize, just like the other panels. Square top corners so the
      gold header band sits flush at the top edge. */
   .hm-app .hm-chart-section {
@@ -1065,7 +1065,7 @@
     overflow: hidden;
   }
   /* Gold header band escapes the .hm-chart-section's 16px padding via
-     negative margins so it spans the full card width — same pattern used
+     negative margins so it spans the full card width \u2014 same pattern used
      by .hm-gave-wrap and .hm-mc. */
   .hm-app .hm-chart-section > .hm-gold-header {
     margin: -16px -16px 14px -16px;
@@ -1151,7 +1151,7 @@
   .hm-exporting {
     border-radius: 0 !important;
     border: none !important;
-    padding: 12px !important;  /* uniform on all sides — same gap below legend as right of chart */
+    padding: 12px !important;  /* uniform on all sides \u2014 same gap below legend as right of chart */
   }
   .hm-exporting .hm-legend-group   { display: none !important; }
   .hm-exporting .hm-settings-wrap  { display: none !important; }
@@ -1316,7 +1316,7 @@
   }
 
   /* Heat map outer wrapper. overflow:visible because the parent grid
-     panel cell handles BOTH axes' overflow now — keeping overflow:auto
+     panel cell handles BOTH axes' overflow now \u2014 keeping overflow:auto
      here would create a separate sticky containing block and trap the
      thead inside this element (where it has nowhere to stick to).
      width: max-content extends the card border with a wide table so
@@ -1360,7 +1360,7 @@
 
   /* Thead = the gold "metric header" row. position: sticky pins the row
      to the top of the cell's scroll container while user scrolls the
-     table inside its grid panel — same behavior the old JS-cloned
+     table inside its grid panel \u2014 same behavior the old JS-cloned
      sticky header gave, now CSS-native. */
   .hm-app .hm-table thead th {
     font-weight: 700;
@@ -1369,7 +1369,7 @@
        same height as .hm-factors-header (8px vertical padding, normal
        line-height). The line-height: 1 in the shared rule keeps data cells
        tight but makes the thead look squashed compared to other panels'
-       gold bars — this rule restores parity. */
+       gold bars \u2014 this rule restores parity. */
     padding: 8px 12px;
     line-height: 1.2;
     text-transform: uppercase;
@@ -1489,7 +1489,7 @@
     margin-top: 2px;
     font-variant-numeric: tabular-nums;
     /* Flex row: anchor (Fed target / recession trigger / etc.) on
-       left, "5y monthly · as of [date]" on right. Wraps cleanly if
+       left, "5y monthly \u00b7 as of [date]" on right. Wraps cleanly if
        the popup is narrow. */
     display: flex;
     justify-content: space-between;
@@ -1572,12 +1572,12 @@
     }
     /* Entire row is clickable to toggle plotting. Pointer cursor + the
        existing per-cell gold outline on cell hover are enough visual
-       affordance — no row-wide background tint (looked noisy against
+       affordance \u2014 no row-wide background tint (looked noisy against
        the heat-map cell colors). */
     .hm-app .hm-table tr.hm-data-row { cursor: pointer; }
   }
 
-  /* Commodities table — matches metrics table styling */
+  /* Commodities table \u2014 matches metrics table styling */
   .hm-app .hm-commod-section,
   .hm-app .hm-fx-section {
     margin-top: 0;
@@ -1599,7 +1599,7 @@
      only when needed; the table's min-width triggers overflow. */
   .hm-app .hm-commod-wrap {
     border: 0;
-    /* Top corners square — table thead is a gold band that should read as
+    /* Top corners square \u2014 table thead is a gold band that should read as
        a flat title bar like the calendar / ranking-table headers. */
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     overflow-x: auto;
@@ -1613,7 +1613,7 @@
     border-spacing: 0;
     font-variant-numeric: tabular-nums;
   }
-  /* Width hints — caps the 52W and 13W Trend columns so auto-layout
+  /* Width hints \u2014 caps the 52W and 13W Trend columns so auto-layout
      doesn't hand them a chunk of spare horizontal space. Other columns
      stay content-sized; spare goes to col 1 (name) which has the widest
      natural content. Bar/sparkline inside fill the cell normally. */
@@ -1655,7 +1655,7 @@
   .hm-app .hm-commod-tbl tbody tr:nth-child(even) td { background: var(--hm-bg-alt); }
   .hm-app .hm-commod-tbl tbody tr:last-child td { border-bottom: none; }
   /* Round the last row's first and last cells to match the wrap's 5px
-     bottom corner radius (same fix as the FX table — square cells were
+     bottom corner radius (same fix as the FX table \u2014 square cells were
      clipping past the rounded wrap on the bottom row). */
   .hm-app .hm-commod-tbl tbody tr:last-child td:first-child {
     border-bottom-left-radius: 5px;
@@ -1672,7 +1672,7 @@
       background: var(--hm-bg-warm) !important;
     }
   }
-  /* Category rows — match metrics table section rows */
+  /* Category rows \u2014 match metrics table section rows */
   .hm-app .hm-commod-tbl tr.hm-commod-cat td {
     background: var(--hm-bg-warm) !important;
     color: var(--hm-gold);
@@ -1700,7 +1700,7 @@
     vertical-align: middle;
   }
   .hm-app .hm-commod-spark svg { display: block; width: 100%; height: 100%; }
-  /* 52-week range bar — flex row: [52w-low price] | [horizontal slider] |
+  /* 52-week range bar \u2014 flex row: [52w-low price] | [horizontal slider] |
      [52w-high price]. Track is a horizontal line, marker is a gold
      vertical line at the current price's position. Low/high price labels
      anchor the ends visually so no separate tick marks are needed. */
@@ -1777,10 +1777,10 @@
   .hm-app .hm-panel-info-popup .hm-color-good { color: var(--hm-green); font-weight: 700; }
   .hm-app .hm-panel-info-popup .hm-color-bad { color: var(--hm-red); font-weight: 700; }
 
-  /* Currencies table — shares all styling with commodities */
+  /* Currencies table \u2014 shares all styling with commodities */
   .hm-app .hm-fx-wrap {
     border: 0;
-    /* Top corners square — same rationale as commodities wrap above. */
+    /* Top corners square \u2014 same rationale as commodities wrap above. */
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     overflow-x: auto;
     overflow-y: hidden;
@@ -1827,7 +1827,7 @@
   .hm-app .hm-fx-tbl tbody tr:nth-child(even) td { background: var(--hm-bg-alt); }
   .hm-app .hm-fx-tbl tbody tr:last-child td { border-bottom: none; }
   /* Round the last row's first and last cells to match the wrap's 5px
-     bottom-left/bottom-right radius — without this the square cell
+     bottom-left/bottom-right radius \u2014 without this the square cell
      corners poke past the rounded wrap, clipping the visual edge (most
      visible on the bottom NOK row in the FX table). */
   .hm-app .hm-fx-tbl tbody tr:last-child td:first-child {
@@ -1866,7 +1866,7 @@
 
 
   /* Outer wrap that groups the Gave quadrant + companion charts into one card.
-     They're two renderers but a single conceptual unit — the quadrant shows
+     They're two renderers but a single conceptual unit \u2014 the quadrant shows
      current regime, the charts show the two ratios + their MAs over time. */
   .hm-app .hm-gave-wrap {
     background: var(--hm-panel);
@@ -1878,7 +1878,7 @@
     /* overflow:hidden so the gold-header inserted at the top (with neg
        margins to escape the padding) follows the card's border-radius. */
     overflow: hidden;
-    /* No margin-bottom — Gridstack handles inter-panel spacing. The 16px
+    /* No margin-bottom \u2014 Gridstack handles inter-panel spacing. The 16px
        was adding to scrollHeight beyond fitToContent's measurement. */
     margin-bottom: 0;
   }
@@ -1949,7 +1949,7 @@
     color: var(--hm-muted);
     padding: 4px 2px;
   }
-  /* Continuous 2×2 plane: four tinted backgrounds meet at the grid center
+  /* Continuous 2\u00d72 plane: four tinted backgrounds meet at the grid center
      with zero gap, so the whole thing reads as one chart. Quadrant names
      live as small chips in the four outer corners (away from the center
      where the position marker sits), and a single gold dot marks the
@@ -1979,12 +1979,12 @@
     color: var(--hm-muted);
     padding: 2px 4px 0;
   }
-  /* Quadrant tints — the four grid tracks just carry color, no text. */
+  /* Quadrant tints \u2014 the four grid tracks just carry color, no text. */
   .hm-app .hm-gave-tint.infl_bust { background: rgba(212,42,32,0.08); }
   .hm-app .hm-gave-tint.infl_boom { background: rgba(230,191,102,0.14); }
   .hm-app .hm-gave-tint.defl_bust { background: rgba(110,120,150,0.10); }
   .hm-app .hm-gave-tint.defl_boom { background: rgba(26,122,66,0.10); }
-  /* Midlines through the plane center — subtle, so the eye can read
+  /* Midlines through the plane center \u2014 subtle, so the eye can read
      position relative to the "neutral" 0 axis. */
   .hm-app .hm-gave-midline-h,
   .hm-app .hm-gave-midline-v {
@@ -2030,8 +2030,8 @@
     border-color: var(--hm-gold);
     color: var(--hm-white);
   }
-  /* Subtle Q1/Q2/Q3/Q4 prefix inside each Gave chip — same visual rules as
-     the Growth × Policy panel for cross-panel consistency. */
+  /* Subtle Q1/Q2/Q3/Q4 prefix inside each Gave chip \u2014 same visual rules as
+     the Growth \u00d7 Policy panel for cross-panel consistency. */
   .hm-app .hm-gave-qname > .hm-gave-qnum {
     font-weight: 800;
     opacity: 0.55;
@@ -2040,7 +2040,7 @@
   }
   .hm-app .hm-gave-qname.active > .hm-gave-qnum { opacity: 1; }
   /* Position marker: a single gold dot with a pulsing outer ring so the
-     eye catches it immediately. Padded to the 15–85% range of the plane
+     eye catches it immediately. Padded to the 15\u201385% range of the plane
      so it stays clear of the corner chips. */
   .hm-app .hm-gave-marker,
   .hm-app .hm-mc-marker {
@@ -2053,12 +2053,12 @@
     border: 3px solid var(--hm-panel);
     box-shadow: 0 0 0 1.5px var(--hm-gold), 0 2px 6px rgba(0,0,0,0.3);
     transform: translate(-50%, -50%);
-    /* pointer-events:auto so :hover fires on the marker — needed for
+    /* pointer-events:auto so :hover fires on the marker \u2014 needed for
        the "NOW" label tooltip. The marker is tiny but it's the only
        thing positioned at the user's macro coordinates; hovering it
        intentionally is fine. */
     pointer-events: auto;
-    /* Help cursor to signal the dot is informational/hoverable —
+    /* Help cursor to signal the dot is informational/hoverable \u2014
        matches the cursor pattern used on other tip-able elements
        (.hm-metric-tip, info chips, etc.). */
     cursor: help;
@@ -2081,7 +2081,7 @@
      Hidden by default; shown only when the user hovers the marker
      (so the live UI stays uncluttered). In exports the marker gets
      the .hm-marker-static class which force-shows the label AND
-     kills the ::after pulse ring — exports show a clean static
+     kills the ::after pulse ring \u2014 exports show a clean static
      marker + label with no animation artifact. */
   .hm-app .hm-marker-now {
     position: absolute;
@@ -2112,7 +2112,7 @@
   .hm-app .hm-marker-static::after { display: none !important; }
   .hm-app .hm-marker-static > .hm-marker-now { opacity: 1 !important; }
   /* Active quadrant's LONG/SHORT trade list rendered below the plane.
-     Top divider line matches the visual separation used on the Growth ×
+     Top divider line matches the visual separation used on the Growth \u00d7
      Policy panel for cross-panel consistency. */
   .hm-app .hm-gave-active-trades {
     margin-top: 10px;
@@ -2139,7 +2139,7 @@
   .hm-app .hm-gave-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
   .hm-app .hm-gave-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
 
-  /* Gave companion charts — three ratio lines with 7y MA overlay, rendered
+  /* Gave companion charts \u2014 three ratio lines with 7y MA overlay, rendered
      inside the same card as the quadrant so they read as one unit. The
      wrap is the container-query root so the chart grid reacts to the
      panel's own width (not the viewport), which is what we actually want
@@ -2153,8 +2153,8 @@
     gap: 16px;
   }
   /* Stack to single column when the panel is narrower than ~5 grid cols.
-     430px is the rough boundary between gs-w=4 (≈ 380px panel content)
-     and gs-w=5 (≈ 460px), so 5-wide stays as a row of three thumbnails
+     430px is the rough boundary between gs-w=4 (\u2248 380px panel content)
+     and gs-w=5 (\u2248 460px), so 5-wide stays as a row of three thumbnails
      and 4-wide cleanly stacks. */
   @container (max-width: 430px) {
     .hm-app .hm-gave-charts { grid-template-columns: 1fr; }
@@ -2223,22 +2223,22 @@
     .hm-app .hm-gave-cell-hint { display: none; }
   }
 
-  /* Macro Regime · Growth × Policy quadrants — Alf @ MacroAlf 2024 QAAM.
+  /* Macro Regime \u00b7 Growth \u00d7 Policy quadrants \u2014 Alf @ MacroAlf 2024 QAAM.
      Axes: X = growth (z-score of ISM Services + INDPRO YoY).
-            Y = policy stance (0.5% R* − [EFFR − core PCE]; +ve = easing).
-            3rd dim = inflation regime (core PCE vs 2.5%) → plane tint.
+            Y = policy stance (0.5% R* \u2212 [EFFR \u2212 core PCE]; +ve = easing).
+            3rd dim = inflation regime (core PCE vs 2.5%) \u2192 plane tint.
      Each cell shows quadrant name + LONG/SHORT trade lists; inner cells
      surface transitional-regime trades on hover. */
   .hm-app .hm-mc {
     background: var(--hm-panel);
     border: 0;
-    /* Top corners square — gold header reads as a flat title bar. */
+    /* Top corners square \u2014 gold header reads as a flat title bar. */
     border-radius: 0 0 var(--hm-r) var(--hm-r);
     padding: 16px;
     /* overflow:hidden so the gold-header inserted at the top follows the
        card's border-radius rather than poking past it. */
     overflow: hidden;
-    /* No margin-bottom — Gridstack handles spacing. The 16px was adding
+    /* No margin-bottom \u2014 Gridstack handles spacing. The 16px was adding
        to content scrollHeight beyond fitToContent's measurement, causing
        a residual vertical scrollbar at default size. */
     margin-bottom: 0;
@@ -2290,7 +2290,7 @@
     color: var(--hm-muted);
     padding: 4px 2px;
   }
-  /* Continuous 2x2 plane for Growth × Policy — same pattern as Gave. */
+  /* Continuous 2x2 plane for Growth \u00d7 Policy \u2014 same pattern as Gave. */
   .hm-app .hm-mc-plane {
     grid-column: 2;
     grid-row: 2;
@@ -2317,10 +2317,10 @@
     padding: 2px 4px 0;
   }
   /* Quadrant tints:
-       Soft Landing    (NW, decel + easing)  → muted blue   (defensive bonds/quality)
-       Risk On         (NE, accel + easing)  → green        (broad risk-on)
-       Recession Risk  (SW, decel + tight)   → muted red    (defensive cash/vol)
-       Late Cycle      (SE, accel + tight)   → amber        (cyclical real-economy) */
+       Soft Landing    (NW, decel + easing)  \u2192 muted blue   (defensive bonds/quality)
+       Risk On         (NE, accel + easing)  \u2192 green        (broad risk-on)
+       Recession Risk  (SW, decel + tight)   \u2192 muted red    (defensive cash/vol)
+       Late Cycle      (SE, accel + tight)   \u2192 amber        (cyclical real-economy) */
   .hm-app .hm-mc-tint.soft_landing    { background: rgba(110,120,150,0.28); }
   .hm-app .hm-mc-tint.risk_on         { background: rgba(26,122,66,0.28); }
   .hm-app .hm-mc-tint.recession_risk  { background: rgba(212,42,32,0.22); }
@@ -2330,7 +2330,7 @@
      weekly history row (~24 weeks). Cells use the SAME RGBA tints
      as the plane quadrants so the ribbon reads as the same color
      family. Hairline border keeps each cell visible at 14px. Shows
-     persistence + recent transitions of the macro regime — the
+     persistence + recent transitions of the macro regime \u2014 the
      "evolution" lens the static plane lacks. Padding/border matches
      .hm-mc-active-trades for visual consistency. */
   .hm-app .hm-mc-regime-ribbon {
@@ -2435,7 +2435,7 @@
   }
   .hm-app .hm-mc-qname.active > .hm-mc-qnum { opacity: 1; }
   /* Active quadrant's LONG/SHORT trade list rendered below the plane, full
-     width. Only the current regime's trades are shown — cleaner than packing
+     width. Only the current regime's trades are shown \u2014 cleaner than packing
      all four into the quadrants. Top divider matches the visual separation
      used in the Gave panel's active-hint block. */
   .hm-app .hm-mc-active-trades {
@@ -2463,7 +2463,7 @@
   .hm-app .hm-mc-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
   .hm-app .hm-mc-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
 
-  /* Inflation overlay on the plane itself — subtle full-plane wash that
+  /* Inflation overlay on the plane itself \u2014 subtle full-plane wash that
      lets the user feel the inflation regime without overwhelming the
      quadrant tints. Layered via a pseudo-element so it doesn't fight with
      hm-mc-tint's z-index. */
@@ -2481,20 +2481,20 @@
   .hm-app.dark .hm-mc.infl-high .hm-mc-plane::before { background: rgba(232,116,38,0.10); mix-blend-mode: screen; }
   .hm-app.dark .hm-mc.infl-low  .hm-mc-plane::before { background: rgba(46,103,178,0.09); mix-blend-mode: screen; }
 
-  /* Top index cards — unified panel with vertical dividers between cells.
+  /* Top index cards \u2014 unified panel with vertical dividers between cells.
      Previous design had 4 standalone cards with their own borders/radii; the
      dividers approach reads as a single "Index Snapshot" panel partitioned
      into 4 cells, instead of 4 separate pills competing for attention. */
   .hm-app .hm-indexes {
     display: grid;
-    /* max(140px, 25cqw) per column — each card is 25% of cell width
+    /* max(140px, 25cqw) per column \u2014 each card is 25% of cell width
        (so 4 cards fill the row), with a 140px floor so they don't
-       shrink past readability. No upper cap — cards keep growing
+       shrink past readability. No upper cap \u2014 cards keep growing
        linearly with the cell width on wider panels. cqw resolves
        against the .grid-stack-item-content cell (which has a
        definite gridstack-set width), not against the surrounding
        max-content wrap from the navbar-fix, so percentages stay
-       consistent regardless of wrap sizing. At cell widths < 4×140
+       consistent regardless of wrap sizing. At cell widths < 4\u00d7140
        = 560px the cards stay at 140 and the cell scrolls
        horizontally; the navbar-fix CSS keeps the navbar pinned
        during that scroll. */
@@ -2507,7 +2507,7 @@
     overflow: hidden;  /* clip child content to the rounded bottom corners */
   }
   /* Responsive cell-width breakpoints (@container queries, not
-     @media — they trigger on the cell's width, not the viewport).
+     @media \u2014 they trigger on the cell's width, not the viewport).
      Thresholds picked from the card's min-content: each card needs
      ~170px (label + change line "+520.44 (+7.57%)" with white-
      space:nowrap + 32px padding). 4-col needs ~680px; 2-col needs
@@ -2532,7 +2532,7 @@
     min-width: 0;
   }
   .hm-app .hm-idx-card:last-child { border-right: none; }
-  /* In 2-col mode (≤720cqw cell width): right-borders become
+  /* In 2-col mode (\u2264720cqw cell width): right-borders become
      vertical dividers between the 2 cells per row, plus a
      horizontal divider between rows. */
   @container (max-width: 720px) {
@@ -2540,7 +2540,7 @@
     .hm-app .hm-idx-card:nth-child(2n) { border-right: none; }
     .hm-app .hm-idx-card:nth-child(-n+2) { border-bottom: 1px solid var(--hm-border); }
   }
-  /* In 1-col stack (≤480cqw): each card is full-width, dividers
+  /* In 1-col stack (\u2264480cqw): each card is full-width, dividers
      become horizontal between stacked rows. */
   @container (max-width: 480px) {
     .hm-app .hm-idx-card,
@@ -2600,7 +2600,7 @@
   /* Sector performance chart + table */
   .hm-app .hm-sector-section {
     margin-bottom: 0; /* Gridstack handles spacing */
-    /* No width: max-content here — sector chart canvas (Chart.js
+    /* No width: max-content here \u2014 sector chart canvas (Chart.js
        responsive) feeds back into a horizontal grow loop with
        max-content parents. Section stays at cell width. */
     box-sizing: border-box;
@@ -2618,7 +2618,7 @@
     gap: 8px;
     /* Wrap title + toolbar onto a second row when the panel cell
        isn't wide enough. Used to be gated behind a 700px viewport
-       media query, but viewport width != panel width — a panel cell
+       media query, but viewport width != panel width \u2014 a panel cell
        can be narrow inside a wide viewport. Unconditional wrap fixes
        that without affecting wide layouts (no-op when content fits). */
     flex-wrap: wrap;
@@ -2876,10 +2876,10 @@
   }
 
   /* Economy indicator cards (monthly data) */
-  /* Economic calendar — compact density matching the commodity / currency
+  /* Economic calendar \u2014 compact density matching the commodity / currency
      sidebar tables (6/12 header, 4/12 rows, 10-11px fonts). */
-  /* Shared gold header band — used by the Index Snapshot, Macro Regime,
-     and Growth × Policy panels (and reusable by any future panel that
+  /* Shared gold header band \u2014 used by the Index Snapshot, Macro Regime,
+     and Growth \u00d7 Policy panels (and reusable by any future panel that
      needs a title bar). Matches the existing .hm-cal-header / .hm-econ-header
      styling so the dashboard reads as one cohesive product. Right side of
      the header optionally carries a "Current: X" subtitle (in lighter
@@ -2918,7 +2918,7 @@
   .hm-app .hm-mc > .hm-gold-header {
     margin: -16px -16px 14px -16px;
   }
-  /* Indexes wrapper — gives the gold header something to attach to without
+  /* Indexes wrapper \u2014 gives the gold header something to attach to without
      touching the underlying 4-card grid layout. */
   .hm-app .hm-indexes-section {
     display: flex;
@@ -2926,7 +2926,7 @@
   }
   /* margin-bottom: 0 so the gold header sits flush against the cards
      (no breathing-room band between band and content). Square top corners
-     so the gold band reads as a flat title bar — matches the calendar /
+     so the gold band reads as a flat title bar \u2014 matches the calendar /
      ranking-table headers that don't round. */
   .hm-app .hm-indexes-section > .hm-gold-header {
     margin-bottom: 0;
@@ -2936,7 +2936,7 @@
      the factors panel pills (10px Karla, white outline, fill on active)
      so the dashboard reads as one cohesive control language. */
   /* Period buttons wrap to multiple rows when the gold-header
-     can't fit them all on one line — otherwise 9 buttons (1W /
+     can't fit them all on one line \u2014 otherwise 9 buttons (1W /
      1M / 3M / 6M / YTD / 1Y / 3Y / 5Y / 10Y) force the gold
      header to a min-content of ~500px, which then pushes the
      whole indexes panel wider than its cell at narrow column
@@ -3054,7 +3054,7 @@
   /* Calendar row layout: 4-col grid so dot + name + datetime + prev all
      align across rows regardless of variable string lengths.
        col 1 = impact dot (fixed 12px)
-       col 2 = event name (flex 1fr — takes remaining width)
+       col 2 = event name (flex 1fr \u2014 takes remaining width)
        col 3 = date/time stack (date on top, time below)
        col 4 = previous-value stack (label on top, value below, right-aligned)
   */
@@ -3076,7 +3076,7 @@
   }
   .hm-app a.hm-cal-row:hover .hm-cal-name { color: var(--hm-gold); }
   .hm-app .hm-cal-row:last-child { border-bottom: none; }
-  /* Impact dot — color is set inline per row from the `impact` field.
+  /* Impact dot \u2014 color is set inline per row from the `impact` field.
      8px circle inside a 12px column for vertical alignment. */
   .hm-app .hm-cal-dot {
     width: 8px;
@@ -3146,7 +3146,7 @@
   /* Header info button is provided by the shared panel-header system
      (see toggleInfoPopup + window.PANEL_INFO_HTML). The calendar panel
      opts in by registering its info HTML and tagging the grid item with
-     `.hm-has-info` inside renderCalendar — no per-panel CSS here. */
+     `.hm-has-info` inside renderCalendar \u2014 no per-panel CSS here. */
 
   .hm-app .hm-econ-section { margin-bottom: 24px; }
   .hm-app .hm-econ-header {
@@ -3205,7 +3205,7 @@
     letter-spacing: 0.4px;
     padding: 8px 12px;
     border-top: 1px solid var(--hm-border);
-    /* 2px under the subhead band — emphasizes section break vs. the 1px
+    /* 2px under the subhead band \u2014 emphasizes section break vs. the 1px
        between rows of cards within the section. */
     border-bottom: 2px solid var(--hm-border);
   }
@@ -3238,7 +3238,7 @@
   }
   /* Strip border-right on the last column of each grid so it doesn't
      stack with the panel's outer border. The `:not(.hm-econ-grid-3)`
-     guard on the 2n rule is critical — JS adds BOTH classes
+     guard on the 2n rule is critical \u2014 JS adds BOTH classes
      (.hm-econ-grid AND .hm-econ-grid-3) on 3-col grids, so without the
      guard the 2n rule would strip the right border from the middle
      card too (Empire State, Buffett), making the third card look like
@@ -3248,17 +3248,17 @@
   .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-child(3n) { border-right: none; }
   /* Strip border-bottom on the LAST ROW of each grid (every grid in the
      panel) so the next subhead band's border-top doesn't stack with the
-     card's border-bottom into a 2px line — and so the very last grid in
+     card's border-bottom into a 2px line \u2014 and so the very last grid in
      the panel doesn't double up with the panel's own bottom border. The
      :nth-last-child(-n+N) trick matches the last N children, which is
      the last row when N == column count. Same `:not` guard reasoning. */
   .hm-app .hm-econ-grid-1 > .hm-econ-card:last-child { border-bottom: none; }
   .hm-app .hm-econ-grid:not(.hm-econ-grid-3) > .hm-econ-card:nth-last-child(-n+2) { border-bottom: none; }
   .hm-app .hm-econ-grid-3 > .hm-econ-card:nth-last-child(-n+3) { border-bottom: none; }
-  /* Container-query overrides (3-col → 2-col → 1-col). The default rules
+  /* Container-query overrides (3-col \u2192 2-col \u2192 1-col). The default rules
      above use :nth-last-child specificity (0,2,1), so to fully reset
      them in narrower breakpoints we either need higher specificity or
-     !important. Going with !important for clarity — these rules are an
+     !important. Going with !important for clarity \u2014 these rules are an
      intentional responsive override, not a cascade conflict. */
   @container (max-width: 360px) {
     /* 3-col grid drops to 2-col here (matches grid-template-columns
@@ -3267,7 +3267,7 @@
        last-col right + last-row bottom for the 2-col shape.
 
        Parity-aware row stripping: with 3 cards in a 2-col grid, layout
-       is [1][2] / [3]_  — only card 3 is in the last row. A blanket
+       is [1][2] / [3]_  \u2014 only card 3 is in the last row. A blanket
        :nth-last-child(-n+2) would strip card 2's border-bottom too,
        removing the row-1/row-2 divider on the right half of the grid
        and making card 3 look like it's missing a top border. So we
@@ -3350,7 +3350,7 @@
   .hm-app .hm-econ-arrow.up { color: var(--hm-green); }
   .hm-app .hm-econ-arrow.down { color: var(--hm-red); }
 
-  /* Style Box — now renders alone (full-width). Factors panel is separate
+  /* Style Box \u2014 now renders alone (full-width). Factors panel is separate
      below with its own 3-column Koyfin-style layout. */
   .hm-app .hm-stylefactor {
     display: block;
@@ -3440,7 +3440,7 @@
     font-weight: 700;
     line-height: 1.3;
   }
-  /* Factors panel — Koyfin-style 3-column performance ranking vs SPY.
+  /* Factors panel \u2014 Koyfin-style 3-column performance ranking vs SPY.
      Each group is a column; rows sort by current-period excess return
      (best at top). Row tint uses the shared perfCellPaint palette. */
   .hm-app .hm-factors-card {
@@ -3448,7 +3448,7 @@
     border: 0;
     border-radius: var(--hm-r);
     overflow: hidden;
-    /* width: max-content + min-width: 100% — when the inner table is
+    /* width: max-content + min-width: 100% \u2014 when the inner table is
        wider than the panel cell, the card extends with the table so its
        gold title bar follows. Otherwise (table narrower than cell) the
        card fills the cell width via min-width. */
@@ -3459,7 +3459,7 @@
   /* Square the top corners on Factors / Currency Performance / Global Equity
      Index cards so the gold #daa520 title bar reads as a flat band flush
      with the panel edge (not clipped to a rounded shape).
-     Has to apply to EVERY layer that wraps the gold band — otherwise an
+     Has to apply to EVERY layer that wraps the gold band \u2014 otherwise an
      outer parent's rounded corners (grid-stack-item-content, the sticky
      window-style hm-panel-header, the card itself) clip the gold band
      into a rounded shape. */
@@ -3476,7 +3476,7 @@
      past most panel widths, and the user wants the period pills to
      wrap on narrow panels (the unconditional flex-wrap on
      .hm-factors-header only kicks in if the header's container is
-     panel-width — but max-content cards make the container as wide
+     panel-width \u2014 but max-content cards make the container as wide
      as the table). Pinning JUST the currency matrix card to cell
      width + giving its scroll wrapper its own horizontal overflow
      enables the wrap. The other ranking panels (Factors / FI / GI
@@ -3486,19 +3486,19 @@
     min-width: 0;
   }
   .hm-app #hm-currency-matrix .hm-factors-scroll {
-    /* The N×N table is naturally wider than most panel widths; let the
+    /* The N\u00d7N table is naturally wider than most panel widths; let the
        scroll wrapper handle horizontal overflow so the gold header
        (and its period pills) stay panel-width and can wrap. The
        table's natural height fits its rows, so no vertical scrollbar
        triggers inside the wrapper. */
     overflow-x: auto;
   }
-  /* Window-style header bar squares its top corners — the parent
+  /* Window-style header bar squares its top corners \u2014 the parent
      grid-stack-item-content keeps its 5px outer radius and clips the
      header to a rounded silhouette. The gold band below the header
      stays flush since it sits at y=24px (past the rounded clip).
      NOTE: the grid-stack-item-content top corners are intentionally
-     NOT squared here — outer 5px radius is the visible panel chrome. */
+     NOT squared here \u2014 outer 5px radius is the visible panel chrome. */
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-factors"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-global-indexes"] .hm-panel-header,
@@ -3525,7 +3525,7 @@
   /* Horizontal scroll wrapper around the 3-column body. When the main column
      is narrower than the body's min-width, the user can scroll sideways
      instead of the rightmost column being clipped. */
-  /* Horizontal overflow handled by the outer panel cell — no inner scroll
+  /* Horizontal overflow handled by the outer panel cell \u2014 no inner scroll
      wrapper here. Wide tables extend the card visually; the cell scrollbar
      stays pinned at the bottom edge of the visible panel. */
   .hm-app .hm-factors-scroll {
@@ -3536,7 +3536,7 @@
      border + 1px card border into a visible 2px line. Pull the last row
      up by 1px so its own border-bottom OVERLAPS the card's border-bottom
      (collapsing into a single visible line) instead of stacking with it.
-     Shorter columns aren't affected — their last row's border still
+     Shorter columns aren't affected \u2014 their last row's border still
      shows mid-panel as a normal divider since they don't reach the
      panel's bottom edge. */
   .hm-app #hm-fixed-income .hm-fi-row:last-child,
@@ -3556,7 +3556,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-radius: 0;  /* square top corners — sits flush below panel header */
+    border-radius: 0;  /* square top corners \u2014 sits flush below panel header */
     /* Wrap title + period pills onto a second row when the panel is
        narrower than the combined natural width. No-op when content
        fits on one line; lets users shrink any of the ranking panels
@@ -3583,7 +3583,7 @@
     /* Multi-word labels like "vs SPY" should never wrap. Without
        this, html-to-image's measurement during export sometimes
        has marginally tighter inline space than the live render and
-       breaks "vs SPY" → "vs" / "SPY" stacked. nowrap fixes it
+       breaks "vs SPY" \u2192 "vs" / "SPY" stacked. nowrap fixes it
        universally (live + export). */
     white-space: nowrap;
   }
@@ -3595,7 +3595,7 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(220px, 1fr));
     gap: 0;
-    min-width: 660px;  /* 3 cols × 220px floor, triggers horizontal scroll */
+    min-width: 660px;  /* 3 cols \u00d7 220px floor, triggers horizontal scroll */
   }
   .hm-app .hm-factors-col {
     border-right: 1px solid var(--hm-border);
@@ -3603,7 +3603,7 @@
     flex-direction: column;
   }
   .hm-app .hm-factors-col:last-child { border-right: none; }
-  /* Vertical-stack mode — set on the .grid-stack-item via JS when the
+  /* Vertical-stack mode \u2014 set on the .grid-stack-item via JS when the
      header stack-toggle is active. Collapses the multi-column grid
      into a single vertical column, swaps the column dividers from a
      vertical border-right to a horizontal border-bottom, and drops
@@ -3642,7 +3642,7 @@
      (wrap=max-content, navbar=100cqw, gold-header sticky+100cqw,
      card overflow:clip, container-type) is scoped to
      :not(.hm-stack-vertical), so vertical mode falls back to the
-     base CSS layout — clean, no horizontal-overflow plumbing
+     base CSS layout \u2014 clean, no horizontal-overflow plumbing
      interfering with the natural cell-width fit. */
   .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-card {
     width: 100%;
@@ -3675,7 +3675,7 @@
     justify-content: space-between;
     gap: 8px;
     padding: 6px 12px;
-    /* No row-bottom border — it shows as a 1px line of --hm-border
+    /* No row-bottom border \u2014 it shows as a 1px line of --hm-border
        between adjacent heat-painted backgrounds, reading as a stray
        gap inside the panel. Heat-paint already separates rows. */
     font-variant-numeric: tabular-nums;
@@ -3699,7 +3699,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  /* Ticker pill — muted brown inline with name, same pattern as other tables.
+  /* Ticker pill \u2014 muted brown inline with name, same pattern as other tables.
      Uses --hm-brown which flips to a lighter tan in dark mode so it stays
      readable against the pastel-tinted row backgrounds in either theme. */
   .hm-app .hm-factors-row .hm-ticker {
@@ -3715,14 +3715,14 @@
     white-space: nowrap;
   }
 
-  /* Fixed Income rankings panel — reuses the factors card chrome (header,
+  /* Fixed Income rankings panel \u2014 reuses the factors card chrome (header,
      period pills, scroll wrapper) but has 5 columns and shows raw period
      returns (no vs-benchmark). */
   .hm-app .hm-fi-body {
     display: grid;
     grid-template-columns: repeat(5, minmax(180px, 1fr));
     gap: 0;
-    min-width: 900px;  /* 5 cols × 180px floor triggers horizontal scroll */
+    min-width: 900px;  /* 5 cols \u00d7 180px floor triggers horizontal scroll */
   }
   .hm-app .hm-fi-col {
     border-right: 1px solid var(--hm-border);
@@ -3754,7 +3754,7 @@
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
-  /* Keep border-bottom on last row — heat-painted cells need a visible
+  /* Keep border-bottom on last row \u2014 heat-painted cells need a visible
      edge under them, otherwise the bottom row reads as "running off"
      the panel without a clean bottom divider. */
   @media (hover: hover) {
@@ -3787,7 +3787,7 @@
     white-space: nowrap;
   }
   /* Yield + duration cluster shown between name and return cells.
-     Compact "5.4% / 8.4y" — yield in brown (income), separator faint,
+     Compact "5.4% / 8.4y" \u2014 yield in brown (income), separator faint,
      duration in muted (rate-risk hint). Cursor:help signals there's a
      tooltip with the freshness date. */
   .hm-app .hm-fi-yd {
@@ -3811,7 +3811,7 @@
     color: var(--hm-muted);
   }
 
-  /* Global Indexes rankings — reuses the factors card chrome (header + period
+  /* Global Indexes rankings \u2014 reuses the factors card chrome (header + period
      pills + horizontal scroll wrap); 4-column body (Americas / Europe /
      Mid-East+Africa / Asia+Pacific). */
   .hm-app .hm-gi-body {
@@ -3850,7 +3850,7 @@
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
-  /* (border-bottom on last row preserved — see hm-fi-row note above.) */
+  /* (border-bottom on last row preserved \u2014 see hm-fi-row note above.) */
   @media (hover: hover) {
     .hm-app .hm-gi-row:hover {
       outline: 2px solid var(--hm-gold);
@@ -3881,7 +3881,7 @@
     white-space: nowrap;
   }
 
-  /* Country ETFs rankings — 4-column regional panel (Americas / Europe /
+  /* Country ETFs rankings \u2014 4-column regional panel (Americas / Europe /
      Asia-Pacific / Mideast-Africa). Same chrome as factors/FI/GI. */
   .hm-app .hm-ce-body {
     display: grid;
@@ -3919,7 +3919,7 @@
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
-  /* (border-bottom on last row preserved — see hm-fi-row note above.) */
+  /* (border-bottom on last row preserved \u2014 see hm-fi-row note above.) */
   @media (hover: hover) {
     .hm-app .hm-ce-row:hover {
       outline: 2px solid var(--hm-gold);
@@ -3950,7 +3950,7 @@
     white-space: nowrap;
   }
 
-  /* Commodity performance rankings — 4-column panel (Energy / Metals /
+  /* Commodity performance rankings \u2014 4-column panel (Energy / Metals /
      Agricultural / Indices). Same chrome as the other ranking panels. */
   .hm-app .hm-cp-body {
     display: grid;
@@ -3988,7 +3988,7 @@
     font-variant-numeric: tabular-nums;
     transition: outline 80ms;
   }
-  /* (border-bottom on last row preserved — see hm-fi-row note above.) */
+  /* (border-bottom on last row preserved \u2014 see hm-fi-row note above.) */
   @media (hover: hover) {
     .hm-app .hm-cp-row:hover {
       outline: 2px solid var(--hm-gold);
@@ -4013,7 +4013,7 @@
     margin-left: 6px;
     opacity: 0.75;
   }
-  /* Pricing-basis tag — small uppercase pill next to the ticker so the
+  /* Pricing-basis tag \u2014 small uppercase pill next to the ticker so the
      user can tell at a glance whether the row's return reflects spot
      futures, an ETF holding rolled futures, or a basket of producer
      equities. (Steel SLX is producer equities, not spot steel.) */
@@ -4038,7 +4038,7 @@
     white-space: nowrap;
   }
 
-  /* Majors Compare — 5 countries × 5 macro indicators. Simple tabular layout,
+  /* Majors Compare \u2014 5 countries \u00d7 5 macro indicators. Simple tabular layout,
      reuses the factors card chrome. Horizontal scroll on narrow widths. */
   .hm-app .hm-majors-table {
     width: 100%;
@@ -4083,7 +4083,7 @@
   .hm-app .hm-majors-val.stale { color: var(--hm-muted); }
   .hm-app .hm-majors-val.missing { color: var(--hm-muted); opacity: 0.5; }
 
-  /* Currency matrix — N×N pairwise performance grid. Row = base, col = quote;
+  /* Currency matrix \u2014 N\u00d7N pairwise performance grid. Row = base, col = quote;
      cell shows base's % return vs quote over selected period. Diagonal cells
      are muted gray (identity). Reuses the factors card chrome. */
   .hm-app .hm-cm-table {
@@ -4152,7 +4152,7 @@
   }
 
   /* Thematic treemap */
-  /* margin-top/bottom removed — Gridstack handles spacing in the grid. */
+  /* margin-top/bottom removed \u2014 Gridstack handles spacing in the grid. */
   .hm-app .hm-treemap-section { margin-top: 0; margin-bottom: 0; }
   .hm-app .hm-treemap-header {
     font-size: 12px;
@@ -4259,7 +4259,7 @@
     font-weight: 700;
     margin-top: 3px;
   }
-  /* Sparkline at the bottom of each tile — single-tone (currentColor) at
+  /* Sparkline at the bottom of each tile \u2014 single-tone (currentColor) at
      50% opacity so it never competes with the return number. Fixed 13W
      weekly path regardless of selected period; gives "shape of trend"
      context without trying to match the period button. */
@@ -4271,7 +4271,7 @@
     opacity: 0.5;
   }
   .hm-app .hm-treemap-spark svg { display: block; width: 100%; height: 100%; }
-  /* Mode toggle (Abs / vs SPY) — paired buttons with active-state styling
+  /* Mode toggle (Abs / vs SPY) \u2014 paired buttons with active-state styling
      matching the period buttons. Visually grouped as one control so the
      user reads them as a single binary toggle, not as four buttons.
      Spacing is symmetric around the divider: parent flex gap (4px) +
@@ -4345,7 +4345,7 @@
   }
   .hm-app .hm-perf-table td.hm-perf-name { font-weight: 600; background: var(--hm-panel); }
 
-  /* Customize popover — mirrors info popover layout.
+  /* Customize popover \u2014 mirrors info popover layout.
      Lets users hide/show individual blocks. Selections persist per-user. */
   .hm-app .hm-customize-wrap {
     position: relative;
@@ -4558,13 +4558,13 @@
      3-COLUMN LAYOUT (no gridstack). Page is a CSS Grid with three
      resizable columns (left | divider | center | divider | right).
      Inside each column, panels are block-flowed at natural content
-     height — no absolute positioning, no fixed cell sizes. Side
+     height \u2014 no absolute positioning, no fixed cell sizes. Side
      columns can be made sticky via the topbar buttons. Below 1100px,
      all columns stack vertically (single column).
      =================================================================== */
   .hm-app .hm-cols {
     display: grid;
-    /* Default minmax(0, 1fr) split — bare `1fr` lets the track grow
+    /* Default minmax(0, 1fr) split \u2014 bare `1fr` lets the track grow
        to fit min-content (e.g. the currency-matrix's max-content
        width) which blows the column out to ~1789px and breaks
        layout when sticky kicks in. minmax(0, 1fr) caps each track
@@ -4617,7 +4617,7 @@
   body.hm-col-resizing { cursor: col-resize; }
   body.hm-col-resizing * { cursor: col-resize !important; }
 
-  /* Divider hidden when its adjacent column is collapsed —
+  /* Divider hidden when its adjacent column is collapsed \u2014
      applyColWidths sets the track width to 0 AND adds this class
      so the visible 2px hairline (the ::after handle) doesn't paint
      a stray vertical line where a 0-wide column meets the next. */
@@ -4642,7 +4642,7 @@
      Its own contents scroll inside the column (max-height + overflow
      so a tall column doesn't get cut off below the fold). The
      scrollbar is hidden visually (scrollbar-width: none + webkit
-     pseudo) so it doesn't take width — a visible scrollbar would
+     pseudo) so it doesn't take width \u2014 a visible scrollbar would
      reduce the panel cell width by ~17px and trigger chart resize
      events / container-query reflows that visually "change" the
      panel's layout (Chart.js axis re-tick, ranking panels with
@@ -4675,7 +4675,7 @@
      their containing block to the panel itself, not the sticky
      column. With static, they'd bubble up to the column when it
      becomes positioned (sticky) and ALL panels' labels would stack
-     at the column's top — the overlap-from-hell bug.
+     at the column's top \u2014 the overlap-from-hell bug.
 
      flex-shrink: 0 so panels keep natural content height. Without
      it, when the column gets max-height (sticky pin) + display:flex,
@@ -4707,13 +4707,13 @@
   }
   /* Panels with internal scroll (heatmap table, ranking navbars)
      manage their own overflow. NOTE: hm-indexes deliberately uses
-     overflow: visible — the index card grid wraps to multiple
+     overflow: visible \u2014 the index card grid wraps to multiple
      rows when narrow (via @media query) instead of overflowing
      horizontally, so it doesn't need a scroll container. Keeping
      it overflow: visible matters because if its cell were a
      scroll container, sticky descendants (panel-header on the
      topmost panel) would stick relative to the cell, not the
-     page — which positions them WRONG. */
+     page \u2014 which positions them WRONG. */
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"] > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-fixed-income"] > .grid-stack-item-content,
@@ -4723,11 +4723,11 @@
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-currency-matrix"] > .grid-stack-item-content {
     overflow: auto;
   }
-  /* Cap heatmap height — internal scroll container handles long tables.
+  /* Cap heatmap height \u2014 internal scroll container handles long tables.
      scrollbar-gutter: stable reserves space for the vertical scrollbar
      even when it's not visible, so the sticky panel-header (width:
      100cqw) doesn't extend over the scrollbar area. Also push the
-     panel-header's right padding wider so the close (×) button sits
+     panel-header's right padding wider so the close (\u00d7) button sits
      clear of the scrollbar gutter. */
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-heatmap-wrap"] > .grid-stack-item-content {
     scrollbar-gutter: stable;
@@ -4777,7 +4777,7 @@
      horizontally scroll inside the cell. For THOSE panels, the
      panel-header (action icons) and the gold filter band need to
      stay pinned at the cell's visible top-left as the user scrolls
-     horizontally — otherwise they slide off the left edge along
+     horizontally \u2014 otherwise they slide off the left edge along
      with the table, leaving a visual gap on the right.
 
        - Panel-header: sticky top:0 left:0, width: 100cqw (so it
@@ -4829,7 +4829,7 @@
 
   /* Add 16px breathing room between the topbar and the first
      panel of each column so the navbar isn't flush against the
-     topbar's bottom edge — gives a comfortable gap at scroll=0. */
+     topbar's bottom edge \u2014 gives a comfortable gap at scroll=0. */
   .hm-app .hm-col > .grid-stack-item:first-child {
     margin-top: 16px;
   }
@@ -4844,7 +4844,7 @@
      changes. The panel-wrap should grow to fill the new cell width
      so the gold header band (#daa520) and any internal navbar
      stretch with it. min-width:100% on every panel-wrap inside a
-     column ensures this — panels that have width:max-content
+     column ensures this \u2014 panels that have width:max-content
      already get this; this rule covers the rest with the same
      guarantee so behavior is uniform. */
   .hm-app .hm-col > .grid-stack-item > .grid-stack-item-content > .hm-panel-wrap {
@@ -5137,7 +5137,7 @@
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
     background: transparent;
   }
-  /* Offscreen render stage — positioned far to the right of the
+  /* Offscreen render stage \u2014 positioned far to the right of the
      viewport so the clone renders normally (CSS vars / classes
      inherit from .hm-app) but the user never sees it. */
   .hm-app .hm-export-stage {
@@ -5153,9 +5153,9 @@
      is rectangular, so any rounding on a wrapper / scroll container
      / corner cell shows as panel-bg cut-outs just above the footer
      divider. The selector list here mirrors `OUTER_FILL_SELECTORS`
-     in the JS (used for fillHeight-card detection) — these are the
-     same elements that act as "the bottom of the panel". Targeted —
-     NOT `*` — because hitting every descendant also flattens the
+     in the JS (used for fillHeight-card detection) \u2014 these are the
+     same elements that act as "the bottom of the panel". Targeted \u2014
+     NOT `*` \u2014 because hitting every descendant also flattens the
      period-selector pills and other rounded buttons inside content. */
   .hm-app .hm-export-stage .hm-panel-wrap,
   .hm-app .hm-export-stage .hm-scroll,
@@ -5183,7 +5183,7 @@
      cells' bottom corners. The .hm-sf-body's bottom-radius squaring
      in renderPanelToPNG (done inline so it survives the foreignObject
      capture) is what actually makes the panel sit flush with the
-     footer divider — the cells inside don't need to lose rounding
+     footer divider \u2014 the cells inside don't need to lose rounding
      too, and squaring them visibly removes the design rounding the
      user expects. Rounding is now preserved inline on every
      .hm-style-cell in renderPanelToPNG step 5.) */
@@ -5237,20 +5237,20 @@
         </svg>
       </button>
       <span class="hm-topbar-sep"></span>
-      <!-- Logo — links to stablebread.com home. -->
+      <!-- Logo \u2014 links to stablebread.com home. -->
       <a class="hm-topbar-logo" href="https://stablebread.com" aria-label="StableBread home">
         <img src="https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png" alt="StableBread" />
       </a>
       <!-- Spacer pushes the right-side button cluster to the far right. -->
       <span class="hm-topbar-spacer"></span>
-      <!-- Universal time-period selector. Click → popup with period
+      <!-- Universal time-period selector. Click \u2192 popup with period
            options. Selecting one syncs every panel that has its own
            period control to that period. Per-panel selections still
            work locally; this is a quick bulk-change. -->
       <div class="hm-universal-period-wrap">
         <button class="hm-btn hm-universal-period-btn" id="hm-universal-period-toggle" type="button" aria-label="Set universal time period" title="Set time period for all components">
           <!-- Static clock/time icon. Stays the same regardless of the
-               currently-selected universal period — the popup itself
+               currently-selected universal period \u2014 the popup itself
                (and the gold outline marker on each panel's period
                button) reflects the active choice. -->
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -5379,16 +5379,16 @@
 
     <div class="hm-layout-wrap" id="hm-layout-wrap">
     <div class="hm-layout" id="hm-layout">
-      <!-- MAIN CONTENT — sectioned layout. Each section is a labeled
+      <!-- MAIN CONTENT \u2014 sectioned layout. Each section is a labeled
            band that scrolls vertically; section labels stick to the
            top of the viewport while their section is on screen. Inside
            each section, panels flow as tiles: full-width or two-up
            depending on data-span. At narrow viewports (<900px) all
            tiles drop to single column. No drag, resize, collapse, or
-           move features — the layout is fixed by design. -->
+           move features \u2014 the layout is fixed by design. -->
       <div class="hm-main">
         <!-- 3-column layout. Each column is a vertical stack of panels
-             (block flow — no gridstack). Dividers between columns are
+             (block flow \u2014 no gridstack). Dividers between columns are
              draggable to resize. Side columns can be made sticky via
              topbar buttons. Below 1100px, columns stack vertically. -->
         <div class="hm-cols grid-stack" id="hm-cols">
@@ -5455,7 +5455,7 @@
              #hm-grid doesn't error. -->
         <div class="grid-stack" id="hm-grid" hidden></div>
 
-        <!-- Metric tooltip overlay — outside the grid since it's a popover. -->
+        <!-- Metric tooltip overlay \u2014 outside the grid since it's a popover. -->
         <div id="hm-mtip"></div>
       </div>
     </div>
@@ -5557,7 +5557,7 @@
   var stickyScroll = null;
 
   /* Widget lives on a standalone page. Only site chrome we still care about
-     is the WordPress admin bar (shown only when logged in as admin) — we
+     is the WordPress admin bar (shown only when logged in as admin) \u2014 we
      read #wpadminbar's own height so we handle mobile/desktop/none uniformly.
      We also measure our own topbar so sidebars + cloned metrics header stick
      flush to its bottom. */
@@ -5580,7 +5580,7 @@
   window.addEventListener('resize', syncStickyOffsets);
   window.addEventListener('scroll', syncStickyOffsets, { passive: true });
 
-  /* Sidebar columns flattened into the grid — column resize/toggle code
+  /* Sidebar columns flattened into the grid \u2014 column resize/toggle code
      and column-state localStorage are no longer needed. Sticky-header
      resync still runs on layout changes via afterLayoutChange below. */
   function afterLayoutChange() {
@@ -5663,7 +5663,7 @@
     if (format === 'ratio3') return 'ratio';
     return 'number';
   }
-  /* axisTickFormatter removed — replaced by makeTickFmt() which reuses fmt() directly. */
+  /* axisTickFormatter removed \u2014 replaced by makeTickFmt() which reuses fmt() directly. */
 
   /* ---------- Cell color ---------- */
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -5771,7 +5771,7 @@
         /* Click-anywhere-on-row to toggle plotting (matches sector table UX).
            Skip if the user clicked the checkbox itself (browser fires native
            change event for that) or any element with its own click handler
-           (e.g. the tooltip span — leave it non-destructive). */
+           (e.g. the tooltip span \u2014 leave it non-destructive). */
         tr.addEventListener("click", function (e) {
           if (e.target.tagName === "INPUT") return;
           if (cb.disabled) return;
@@ -5809,7 +5809,7 @@
           tr.appendChild(td);
         }
 
-        /* Percentile cell — thick borders left and right */
+        /* Percentile cell \u2014 thick borders left and right */
         var pctTd = document.createElement("td");
         pctTd.className = "hm-stat hm-pct-cell";
         var pctVal = row.pct_5y;
@@ -5891,9 +5891,9 @@
   }
 
   /* Tracks whether the user has manually repositioned the chart
-     panel (via the ←/↑/↓/→ buttons). When true, we don't auto-move
+     panel (via the \u2190/\u2191/\u2193/\u2192 buttons). When true, we don't auto-move
      it to "above the heatmap" on metric select. Reset to false
-     whenever ALL metrics get cleared — so the next selection
+     whenever ALL metrics get cleared \u2014 so the next selection
      after a clear-all gets the auto-position behavior again. */
   window._chartPanelManuallyMoved = false;
 
@@ -5902,10 +5902,10 @@
        otherwise hide it so the empty "0/6 metrics selected" toolbar
        isn't taking space.
        AUTO-POSITION: when the panel transitions from hidden to
-       visible (0 → 1+ metrics selected), move it to sit directly
+       visible (0 \u2192 1+ metrics selected), move it to sit directly
        ABOVE the heatmap panel in whatever column the heatmap lives
-       in — unless the user has manually moved it since the last
-       clear. On the clear (1+ → 0), reset the manually-moved flag
+       in \u2014 unless the user has manually moved it since the last
+       clear. On the clear (1+ \u2192 0), reset the manually-moved flag
        so the next first-select re-auto-positions. */
     var item = document.querySelector('.grid-stack-item[gs-id="hm-chart-section"]');
     if (!item) return;
@@ -5917,7 +5917,7 @@
 
     if (hasSelection && !wasVisible && !window._chartPanelManuallyMoved) {
       /* Just transitioned to visible AND user hasn't manually moved
-         — position chart panel immediately before the heatmap. */
+         \u2014 position chart panel immediately before the heatmap. */
       var heatmap = document.querySelector('.grid-stack-item[gs-id="hm-heatmap-wrap"]');
       if (heatmap && heatmap.parentNode) {
         heatmap.parentNode.insertBefore(item, heatmap);
@@ -5926,7 +5926,7 @@
       }
     }
     if (!hasSelection) {
-      /* All metrics cleared — reset the manual-move flag so the
+      /* All metrics cleared \u2014 reset the manual-move flag so the
          next select re-auto-positions above the heatmap. */
       window._chartPanelManuallyMoved = false;
     }
@@ -6143,7 +6143,7 @@
     var canvas = document.createElement('canvas');
     wrap.appendChild(canvas);
 
-    /* Per-unit download button removed — redundant with the
+    /* Per-unit download button removed \u2014 redundant with the
        download icon in the panel-header chrome. */
     unit.appendChild(wrap);
 
@@ -6222,7 +6222,7 @@
     /* Re-fit the chart-section grid panel to its new content height
        (canvases just appeared / were removed). Without this the panel
        stays at whatever h it was auto-sized to when canvases were
-       hidden — which is the empty-toolbar height — and the user can't
+       hidden \u2014 which is the empty-toolbar height \u2014 and the user can't
        resize it taller because maxH is locked there. */
     refitChartSection();
   }
@@ -6254,7 +6254,7 @@
      stretching the quadrant card pushes the mini charts past the cell. */
   var SKIP_FILL_IDS = { 'hm-gave-wrap': 1 };
   function applyCardFillHeights() {
-    /* No-op under cellHeight: 1 — fitToContent now gives exact cell
+    /* No-op under cellHeight: 1 \u2014 fitToContent now gives exact cell
        heights, so the card naturally matches without min-height stretch. */
     return;
   }
@@ -6262,7 +6262,7 @@
   /* Measure each panel's "header band" (window-style panel-header + the
      panel's own gold title row) and return that as a per-cell minH.
      Prevents the user from dragging a panel shorter than its visible
-     chrome — there's no point and the result looks broken. */
+     chrome \u2014 there's no point and the result looks broken. */
   function computePanelMinH(item) {
     /* Cell h is the OUTER pixel height. To make sure the user always
        sees the entire window-header + the panel's gold title row, we
@@ -6272,7 +6272,7 @@
          - measured gold-header height
          - 4px small breathing room
        Without the 12px inset the user could shrink the cell into the
-       gold band — that was the cut-off bug. */
+       gold band \u2014 that was the cut-off bug. */
     var INSET = 12;
     var BUFFER = 4;
     var DEFAULT_MIN = 70;
@@ -6294,13 +6294,13 @@
 /* Re-run resizeToContent + maxH lock for the metrics chart panel.
      Called after the canvases inside it change so the cell tracks the
      new content size. Clears maxH first because Gridstack's
-     resizeToContent clamps the proposed h to maxH — without clearing
+     resizeToContent clamps the proposed h to maxH \u2014 without clearing
      it, the panel can never grow past whatever it was at when the
      last fit ran (e.g. 3 rows when canvases were empty). */
   function refitChartSection() {
     /* Wait for Chart.js to paint, then measure + resize. setTimeout
        beats rAF here because Chart.js layout completes async and rAF
-       fires before that's settled — chart canvas would still be 0px. */
+       fires before that's settled \u2014 chart canvas would still be 0px. */
     setTimeout(function () {
       if (!window.gridInstance) return;
       var item = document.querySelector('.grid-stack-item[gs-id="hm-chart-section"]');
@@ -6313,7 +6313,7 @@
       var natural = wrap.scrollHeight;
       if (!natural) return;
       /* Tiny buffer (4px) so content's bottom doesn't land flush
-         against the cell's clipping border — just enough to suppress
+         against the cell's clipping border \u2014 just enough to suppress
          the borderline-fit v-scrollbar without leaving a visible
          empty stripe below the chart. */
       var rows = Math.max(1, Math.ceil((natural + 4) / cellH));
@@ -6323,7 +6323,7 @@
          canvas content. Three-step because passing combined keys to
          update can clamp h against the OLD maxH before the new maxH
          applies. Also (re)apply minH/minW each refit so chart panel
-         has the same drag-floor as other panels — without this,
+         has the same drag-floor as other panels \u2014 without this,
          after metrics are added/removed the panel could drift back
          to gridstack's default minH:1 / minW:1 (no min). */
       var chartMinH = (typeof computePanelMinH === 'function')
@@ -6601,7 +6601,7 @@
 
     function markUniversal() {
       /* Toggle .active on the popup options (popup is the only place
-         the current universal period appears as text — the topbar
+         the current universal period appears as text \u2014 the topbar
          button is a static clock icon). Then mark each matching
          panel period button with .hm-universal-active. */
       opts.forEach(function (o) {
@@ -6622,7 +6622,7 @@
 
          Snapshot first so we don't lose track when a click triggers
          a panel re-render (which detaches the old buttons mid-loop).
-         Idempotent — only clicks buttons that aren't already active,
+         Idempotent \u2014 only clicks buttons that aren't already active,
          so this is safe to call multiple times. */
       var btns = Array.prototype.slice.call(document.querySelectorAll(PANEL_SELECTORS));
       btns.forEach(function (btn) {
@@ -6679,7 +6679,7 @@
       }
     });
 
-    /* Initial popup state (without click-firing on panels — they
+    /* Initial popup state (without click-firing on panels \u2014 they
        haven't rendered yet). applyUniversalPeriod() below in the
        data-fetch chain will do the actual sync. */
     opts.forEach(function (o) {
@@ -6735,7 +6735,7 @@
 
     // Macro
     /* hm-gave-wrap is the actual grid panel containing the quadrant
-       and the companion charts together — they are not exposed as
+       and the companion charts together \u2014 they are not exposed as
        separate hide/show options. */
     { id: 'hm-gave-wrap',       label: 'Macro Regime',             group: 'Macro' },
     { id: 'hm-macrocompass',    label: 'Growth \u00d7 Policy',     group: 'Macro' },
@@ -6758,7 +6758,7 @@
     TOGGLEABLE_BLOCKS.forEach(function (b) {
       /* Main-column panels live inside a .grid-stack-item inside one of
          the 3 column gridstacks. Use gridForPanel() to find the right
-         instance — removing/re-adding to the wrong grid would error. */
+         instance \u2014 removing/re-adding to the wrong grid would error. */
       var gridItem = document.querySelector('.grid-stack-item[gs-id="' + b.id + '"]');
       var el = gridItem || document.getElementById(b.id);
       if (!el) return;
@@ -6775,7 +6775,7 @@
           gridItem.style.removeProperty('display');
         }
       } else {
-        /* Pre-gridstack init (or sidebar item) — plain display toggle. */
+        /* Pre-gridstack init (or sidebar item) \u2014 plain display toggle. */
         if (shouldHide) el.style.display = 'none';
         else el.style.removeProperty('display');
       }
@@ -6866,7 +6866,7 @@
         /* Also clear the saved column layout (widths, sticky, panel
            order) so panels go back to their default home columns and
            sizes. Reload because the panels are already in the DOM in
-           whatever order the user moved them — easiest way to apply
+           whatever order the user moved them \u2014 easiest way to apply
            a fresh default state is a fresh page. */
         try { localStorage.removeItem('hm-cols-layout-v3'); } catch (e) {}
         try { localStorage.removeItem('hm-cols-layout-v2'); } catch (e) {}
@@ -6966,7 +6966,7 @@
       var econId = el.getAttribute('data-econ-id');
       var econ = econId ? findEcon(econId) : null;
 
-      /* Minimum 6 months for a useful chart — avoids 2-point straight-line
+      /* Minimum 6 months for a useful chart \u2014 avoids 2-point straight-line
          charts for series we just started tracking (e.g. ISM Services). */
       var showChart = econ && econ.history && econ.history.length >= 6;
 
@@ -7051,7 +7051,7 @@
   var indexChartInstances = [];
 
   /* ---------- Macro Regime: Gave's Four Quadrants ---------- */
-  /* Layout grid: 2 rows × 2 cols indexed TOP-LEFT=0, TOP-RIGHT=1,
+  /* Layout grid: 2 rows \u00d7 2 cols indexed TOP-LEFT=0, TOP-RIGHT=1,
                                           BOT-LEFT=2, BOT-RIGHT=3 */
   /* GAVE_CELLS \u2014 corner regimes with explicit LONG/SHORT trade tilts per
      Charles Gave's "General Theory of Portfolio Construction" (2024). The
@@ -7086,42 +7086,42 @@
 
     /* Register the panel info popup with full methodology + cheatsheet.
        Keeps the regime card compact while making the deeper context one
-       click away. Same pattern as the Growth × Policy panel. */
+       click away. Same pattern as the Growth \u00d7 Policy panel. */
     window.PANEL_INFO_HTML['hm-gave-wrap'] = function () {
       return (
-        '<p><b>Charles Gave\'s Four Quadrants</b> — a regime classifier from his ' +
+        '<p><b>Charles Gave\'s Four Quadrants</b> \u2014 a regime classifier from his ' +
           '<i>General Theory of Portfolio Construction</i> (2024). Originally framed as ' +
           'economic activity vs prices, Gave later renamed the axes to reflect what his ' +
           'ratios actually measure: <b>energy efficiency</b> and <b>currency quality</b>.</p>' +
-        '<p><b>X axis · Energy efficiency</b><br>' +
+        '<p><b>X axis \u00b7 Energy efficiency</b><br>' +
           'Ratio: <code>S&amp;P 500 / WTI</code>. The S&amp;P 500 proxies private-sector ' +
           'output; WTI proxies the energy cost to produce it. Above its 7y MA = ' +
-          'businesses extracting more value per unit of energy → boom (right). Below = bust.</p>' +
-        '<p><b>Y axis · Currency quality</b><br>' +
+          'businesses extracting more value per unit of energy \u2192 boom (right). Below = bust.</p>' +
+        '<p><b>Y axis \u00b7 Currency quality</b><br>' +
           'Ratio: <code>Gold / IEF</code> (the 7-10y Treasury ETF as a free proxy for ' +
           'long-bond total return). When gold outperforms bonds (above 7y MA), currency ' +
-          'is debasing → inflationary regime (top). When bonds outperform gold (below ' +
-          '7y MA), bonds are a proper store of value → deflationary regime (bottom).</p>' +
-        '<p><b>Marker placement</b>: <code>(ratio − MA) / 7y std</code>, clamped to ±2σ ' +
-          '→ ±1. Reflects how unusual the deviation is vs the recent regime. ' +
+          'is debasing \u2192 inflationary regime (top). When bonds outperform gold (below ' +
+          '7y MA), bonds are a proper store of value \u2192 deflationary regime (bottom).</p>' +
+        '<p><b>Marker placement</b>: <code>(ratio \u2212 MA) / 7y std</code>, clamped to \u00b12\u03c3 ' +
+          '\u2192 \u00b11. Reflects how unusual the deviation is vs the recent regime. ' +
           'Classification uses the raw above/below MA test only.</p>' +
         '<p><b>Quadrants</b><br>' +
-          'Q1 · NE · <b>Inflationary Boom</b> · long real assets (gold, commodities, ' +
+          'Q1 \u00b7 NE \u00b7 <b>Inflationary Boom</b> \u00b7 long real assets (gold, commodities, ' +
           'real estate, value, EM); short long bonds<br>' +
-          'Q2 · NW · <b>Inflationary Bust</b> · stagflation; long cash + energy; short ' +
+          'Q2 \u00b7 NW \u00b7 <b>Inflationary Bust</b> \u00b7 stagflation; long cash + energy; short ' +
           'financials and duration<br>' +
-          'Q3 · SW · <b>Deflationary Bust</b> · flight to safety; long long-dated ' +
+          'Q3 \u00b7 SW \u00b7 <b>Deflationary Bust</b> \u00b7 flight to safety; long long-dated ' +
           'government bonds<br>' +
-          'Q4 · SE · <b>Deflationary Boom</b> · "natural state of capitalism"; long ' +
+          'Q4 \u00b7 SE \u00b7 <b>Deflationary Boom</b> \u00b7 "natural state of capitalism"; long ' +
           'innovative growth + bonds + real estate. <i>All true US bull markets occur ' +
           'here.</i></p>' +
         '<p><b>Three companion charts</b><br>' +
-          '<b>S&amp;P 500 / WTI</b> — primary X-axis driver<br>' +
-          '<b>Gold / IEF</b> — primary Y-axis driver<br>' +
-          '<b>S&amp;P 500 / Gold</b> — money illusion. Stocks rising vs gold = real ' +
+          '<b>S&amp;P 500 / WTI</b> \u2014 primary X-axis driver<br>' +
+          '<b>Gold / IEF</b> \u2014 primary Y-axis driver<br>' +
+          '<b>S&amp;P 500 / Gold</b> \u2014 money illusion. Stocks rising vs gold = real ' +
           'gains; flat or falling vs gold = monetary debasement masquerading as upside. ' +
           'This ratio crossing below its 7y MA often <i>leads</i> S&amp;P/WTI doing the ' +
-          'same by a few months — early warning of a regime shift.</p>' +
+          'same by a few months \u2014 early warning of a regime shift.</p>' +
         '<p><b>Free-data caveat</b>: Gave\'s original work uses Bloomberg UST 7-10y ' +
           'total return back to 1973. We use the IEF ETF (since 2002), which captures ' +
           'both price and coupon. Slightly shorter history but identical signal.</p>'
@@ -7162,7 +7162,7 @@
     var plane = document.createElement('div');
     plane.className = 'hm-gave-plane';
 
-    /* Four tinted backgrounds in a gapless 2x2 — plus midlines showing 0 on each axis. */
+    /* Four tinted backgrounds in a gapless 2x2 \u2014 plus midlines showing 0 on each axis. */
     var sortedTints = GAVE_CELLS.slice().sort(function (a, b) {
       return (a.row - b.row) || (a.col - b.col);
     });
@@ -7180,7 +7180,7 @@
     plane.appendChild(midV);
 
     /* Corner chips with subtle Q1-Q4 prefix (math convention: Q1=NE,
-       Q2=NW, Q3=SW, Q4=SE — counter-clockwise from top-right). Active
+       Q2=NW, Q3=SW, Q4=SE \u2014 counter-clockwise from top-right). Active
        chip gets a gold fill; hover reveals the one-sentence summary. */
     var Q_NUM_BY_POS_GAVE = { tl: 'Q2', tr: 'Q1', bl: 'Q3', br: 'Q4' };
     GAVE_CELLS.forEach(function (c) {
@@ -7189,22 +7189,22 @@
       var chip = document.createElement('span');
       chip.className = 'hm-gave-qname hm-metric-tip ' + cornerClass + (c.key === g.quadrant ? ' active' : '');
       chip.innerHTML = '<span class="hm-gave-qnum">' + qNum + '</span>' + c.name;
-      chip.setAttribute('data-tip-title', qNum + ' · ' + c.name);
+      chip.setAttribute('data-tip-title', qNum + ' \u00b7 ' + c.name);
       chip.setAttribute('data-tip', c.hint);
       plane.appendChild(chip);
     });
 
-    /* Single position marker at (dev_x, dev_y). dev_x / dev_y ∈ [-1, +1]
+    /* Single position marker at (dev_x, dev_y). dev_x / dev_y \u2208 [-1, +1]
        where +1 = energy efficient (right) / bad currency (top). Mapped into
-       the inner 15–85% of the plane so the marker never sits on a corner
+       the inner 15\u201385% of the plane so the marker never sits on a corner
        chip. */
-    var leftPct = 50 + g.dev_x * 35;  /* -1 → 15%, +1 → 85% */
-    var topPct  = 50 - g.dev_y * 35;  /* invert: +1 → 15% (up), -1 → 85% (down) */
+    var leftPct = 50 + g.dev_x * 35;  /* -1 \u2192 15%, +1 \u2192 85% */
+    var topPct  = 50 - g.dev_y * 35;  /* invert: +1 \u2192 15% (up), -1 \u2192 85% (down) */
     var marker = document.createElement('div');
     marker.className = 'hm-gave-marker';
     marker.style.left = leftPct + '%';
     marker.style.top  = topPct  + '%';
-    /* "NOW" hover-tooltip — hidden by CSS until the marker is hovered.
+    /* "NOW" hover-tooltip \u2014 hidden by CSS until the marker is hovered.
        Exports force-show via the .hm-marker-static class set in
        renderPanelToPNG. */
     marker.innerHTML = '<span class="hm-marker-now">Now</span>';
@@ -7219,8 +7219,8 @@
 
     card.appendChild(frame);
 
-    /* Active quadrant's LONG/SHORT trade list rendered below the plane —
-       same structure as the Growth × Policy panel. Methodology lives in
+    /* Active quadrant's LONG/SHORT trade list rendered below the plane \u2014
+       same structure as the Growth \u00d7 Policy panel. Methodology lives in
        the panel info popup (registered above). */
     var activeCell = null;
     for (var i = 0; i < GAVE_CELLS.length; i++) {
@@ -7261,7 +7261,7 @@
     var gridColor = th === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
     var textColor = th === 'dark' ? '#8a90a0' : '#8a7e5e';
 
-    /* Pre-compute recession annotations once — same x-axis across all 3 charts. */
+    /* Pre-compute recession annotations once \u2014 same x-axis across all 3 charts. */
     var recessions = data.recession_periods || [];
     var gaveAnnotations = buildRecessionAnnotations(gc.dates, recessions, th);
 
@@ -7406,16 +7406,16 @@
     container.appendChild(grid);
   }
 
-  /* ---------- Growth × Policy quadrants ----------
+  /* ---------- Growth \u00d7 Policy quadrants ----------
      Backend convention (build_macrocompass):
-       dev_x > 0  →  growth at/above neutral   →  RIGHT half
-       dev_y > 0  →  net easing                →  TOP half
+       dev_x > 0  \u2192  growth at/above neutral   \u2192  RIGHT half
+       dev_y > 0  \u2192  net easing                \u2192  TOP half
      Marker code uses `topPct = 50 - dev_y * 35` so positive dev_y goes UP.
      Quadrant placement:
-       Soft Landing    (decel + easing)  →  top-left     (row 0, col 0)
-       Risk On         (accel + easing)  →  top-right    (row 0, col 1)
-       Recession Risk  (decel + tight)   →  bottom-left  (row 1, col 0)
-       Late Cycle      (accel + tight)   →  bottom-right (row 1, col 1) */
+       Soft Landing    (decel + easing)  \u2192  top-left     (row 0, col 0)
+       Risk On         (accel + easing)  \u2192  top-right    (row 0, col 1)
+       Recession Risk  (decel + tight)   \u2192  bottom-left  (row 1, col 0)
+       Late Cycle      (accel + tight)   \u2192  bottom-right (row 1, col 1) */
   var MC_CELLS = [
     { key: 'soft_landing',   row: 0, col: 0, name: 'Soft Landing',
       longs:  ['Long-duration Treasuries', 'Quality growth (large-cap tech)', 'IG credit'],
@@ -7443,32 +7443,32 @@
        and the user can pull up details on demand via the [i] button. */
     window.PANEL_INFO_HTML['hm-macrocompass'] = function () {
       return (
-        '<p><b>Growth × Policy regime classifier</b> with inflation as a third dimension. ' +
+        '<p><b>Growth \u00d7 Policy regime classifier</b> with inflation as a third dimension. ' +
           'Tells you which macro setup we\'re in and the trade tilts that historically ' +
           'work in that setup.</p>' +
-        '<p><b>X axis · Growth</b><br>' +
+        '<p><b>X axis \u00b7 Growth</b><br>' +
           'A composite of two real-economy indicators, each anchored at its expansion/' +
           'contraction threshold and divided by its rough historical standard deviation:<br>' +
-          '&nbsp;&nbsp;<code>growth = 0.5 · (ISM Services − 50) / 3.5 + 0.5 · (INDPRO YoY − 2) / 5.5</code><br>' +
-          'Sign tells the regime (above/below neutral); ±1 ≈ one std above/below trend.</p>' +
-        '<p><b>Y axis · Policy stance</b><br>' +
-          'Real Fed Funds vs the long-run neutral rate (R* ≈ 0.5%, NY Fed HLW estimate):<br>' +
-          '&nbsp;&nbsp;<code>stance = (0.5 − [EFFR − core PCE YoY]) / 2.0</code><br>' +
+          '&nbsp;&nbsp;<code>growth = 0.5 \u00b7 (ISM Services \u2212 50) / 3.5 + 0.5 \u00b7 (INDPRO YoY \u2212 2) / 5.5</code><br>' +
+          'Sign tells the regime (above/below neutral); \u00b11 \u2248 one std above/below trend.</p>' +
+        '<p><b>Y axis \u00b7 Policy stance</b><br>' +
+          'Real Fed Funds vs the long-run neutral rate (R* \u2248 0.5%, NY Fed HLW estimate):<br>' +
+          '&nbsp;&nbsp;<code>stance = (0.5 \u2212 [EFFR \u2212 core PCE YoY]) / 2.0</code><br>' +
           'Positive = net easing (Fed below neutral); negative = net tightening. ' +
-          '±1 ≈ 200 bps from neutral. Sign convention chosen so easing goes UP on the ' +
+          '\u00b11 \u2248 200 bps from neutral. Sign convention chosen so easing goes UP on the ' +
           'plane.</p>' +
         '<p><b>Inflation tint</b>: core PCE YoY vs 2.5% threshold. Above = high (subtle ' +
           'orange overlay); below = low (subtle blue overlay). Same growth/policy ' +
           'quadrant gives different trade conviction under high vs low CPI.</p>' +
-        '<p><b>Marker placement</b>: <code>x = clamp(growth, −1, +1)</code>, ' +
-          '<code>y = clamp(stance, −1, +1)</code>. Both axes use fixed (not rolling) ' +
+        '<p><b>Marker placement</b>: <code>x = clamp(growth, \u22121, +1)</code>, ' +
+          '<code>y = clamp(stance, \u22121, +1)</code>. Both axes use fixed (not rolling) ' +
           'normalization so a reading of growth = +1 always plots at the same spot on ' +
           'the chart, regardless of which decade you\'re in.</p>' +
         '<p><b>Quadrants</b><br>' +
-          'NW · <b>Soft Landing</b> (decel + easing) · long Treasuries + quality growth<br>' +
-          'NE · <b>Risk On</b> (accel + easing) · long broad equities + credit + EM<br>' +
-          'SW · <b>Recession Risk</b> (decel + tight) · long dollar + cash + vol<br>' +
-          'SE · <b>Late Cycle</b> (accel + tight) · long commodities + value + EM</p>' +
+          'NW \u00b7 <b>Soft Landing</b> (decel + easing) \u00b7 long Treasuries + quality growth<br>' +
+          'NE \u00b7 <b>Risk On</b> (accel + easing) \u00b7 long broad equities + credit + EM<br>' +
+          'SW \u00b7 <b>Recession Risk</b> (decel + tight) \u00b7 long dollar + cash + vol<br>' +
+          'SE \u00b7 <b>Late Cycle</b> (accel + tight) \u00b7 long commodities + value + EM</p>' +
         '<p><b>Regime ribbon</b>: row of colored squares under the active-trades panel ' +
           'showing the last ~24 weekly quadrant assignments. Lets you see at a glance how ' +
           'persistent the current regime is and any recent transitions. The current week ' +
@@ -7504,7 +7504,7 @@
     var axisY = document.createElement('div');
     axisY.className = 'hm-mc-axis-y';
     /* CSS rotates the axis so the SECOND span is visually at the top.
-       Easing UP, tightening DOWN — dev_y > 0 = easing.
+       Easing UP, tightening DOWN \u2014 dev_y > 0 = easing.
        Same chevron-style arrows as the X-axis (< / >) for visual
        consistency; rotation lands them at the outer edges. */
     axisY.innerHTML = '<span>&lt; Net tightening</span><span>Net easing &gt;</span>';
@@ -7530,9 +7530,9 @@
     midV.className = 'hm-mc-midline-v';
     plane.appendChild(midV);
 
-    /* Corner chips — quadrant names in the outer corners of the plane.
+    /* Corner chips \u2014 quadrant names in the outer corners of the plane.
        Each chip is prefixed with its math-style quadrant number (Q1=NE,
-       Q2=NW, Q3=SW, Q4=SE — counter-clockwise from top-right) so users
+       Q2=NW, Q3=SW, Q4=SE \u2014 counter-clockwise from top-right) so users
        not familiar with the layout still get an anchor. Hover reveals
        the LONG/SHORT trade lists for every regime. */
     var Q_NUM_BY_POS = { tl: 'Q2', tr: 'Q1', bl: 'Q3', br: 'Q4' };
@@ -7545,7 +7545,7 @@
       var tipBody =
         '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + c.longs.join(', ')  + '</div>' +
         '<div class="hm-mc-trade-line" style="margin-top:4px"><span class="hm-mc-trade-tag short">SHORT</span>' + c.shorts.join(', ') + '</div>';
-      chip.setAttribute('data-tip-title', qNum + ' · ' + c.name);
+      chip.setAttribute('data-tip-title', qNum + ' \u00b7 ' + c.name);
       chip.setAttribute('data-tip', tipBody);
       plane.appendChild(chip);
     });
@@ -7559,7 +7559,7 @@
     marker.className = 'hm-mc-marker';
     marker.style.left = leftPct + '%';
     marker.style.top  = topPct  + '%';
-    /* "NOW" hover-tooltip — see hm-gave-marker for the matching
+    /* "NOW" hover-tooltip \u2014 see hm-gave-marker for the matching
        Gave panel implementation. */
     marker.innerHTML = '<span class="hm-marker-now">Now</span>';
     plane.appendChild(marker);
@@ -7587,9 +7587,9 @@
       card.appendChild(trades);
     }
 
-    /* Regime ribbon — last ~24 weekly quadrant assignments rendered as a
+    /* Regime ribbon \u2014 last ~24 weekly quadrant assignments rendered as a
        row of colored squares. Lets the user see at a glance how
-       persistent the current regime is and any recent transitions —
+       persistent the current regime is and any recent transitions \u2014
        the "evolution" lens the static plane doesn't show. */
     if (m.history && m.history.length) {
       var quadName = {
@@ -7610,7 +7610,7 @@
         var cell = document.createElement('span');
         var isLast = idx === m.history.length - 1;
         cell.className = 'hm-mc-regime-cell ' + h.quadrant + (isLast ? ' is-current' : '');
-        cell.title = h.date + ' · ' + (quadName[h.quadrant] || h.quadrant);
+        cell.title = h.date + ' \u00b7 ' + (quadName[h.quadrant] || h.quadrant);
         cells.appendChild(cell);
       });
       ribbon.appendChild(cells);
@@ -7618,14 +7618,14 @@
     }
 
     /* Methodology lives in the panel info popup (see PANEL_INFO_HTML above)
-       — keeps the card compact while still being one click away. */
+       \u2014 keeps the card compact while still being one click away. */
 
     container.appendChild(card);
   }
 
   /* Module-level state: which time window the sparklines display.
      'm3' (13 weeks) matches what build_indexes used to ship as a fixed
-     window — this keeps initial load visually identical. */
+     window \u2014 this keeps initial load visually identical. */
   var idxPeriod = 'm3';
 
   /* External-tooltip handler for the index sparklines. Renders the
@@ -7681,7 +7681,7 @@
 
     /* Gold header: title on the left, time-period pills on the right.
        Pills control all 4 sparkline windows together (global state via
-       idxPeriod) — clicking one re-renders the whole panel, which is
+       idxPeriod) \u2014 clicking one re-renders the whole panel, which is
        cheap with only 4 charts. */
     var hdr = document.createElement('div');
     hdr.className = 'hm-gold-header';
@@ -7692,7 +7692,7 @@
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-indexes-periods';
     /* Full 9-period set on Index Snapshot. 1W's sparkline window is
-       2 weekly closes (see _sparkWeeksFor) so the line draws fine —
+       2 weekly closes (see _sparkWeeksFor) so the line draws fine \u2014
        short, but visible. */
     var idxPeriodOpts = STANDARD_PERIODS;
     idxPeriodOpts.forEach(function (p) {
@@ -7726,7 +7726,7 @@
       var periodChangePct = idx.change_pct;
 
       if (idx.sparkline && idx.sparkline.length >= 2) {
-        /* For short periods (≤6M) prefer daily granularity if shipped —
+        /* For short periods (\u22646M) prefer daily granularity if shipped \u2014
            a 1W view from 5 daily points reads as a curve, not the
            slanted line you get from 2 weekly closes. Falls back to the
            weekly sparkline for longer periods or when daily isn't
@@ -7772,7 +7772,7 @@
       card.appendChild(sparkWrap);
       grid.appendChild(card);
 
-      /* Interactive Chart.js sparkline — uses slicedSpark/slicedDates
+      /* Interactive Chart.js sparkline \u2014 uses slicedSpark/slicedDates
          already computed above for the period-specific change calc. */
       if (slicedSpark && slicedSpark.length >= 2) {
         var labels = slicedDates.map(function (d) {
@@ -7782,9 +7782,9 @@
 
         /* Y-axis floor: prevent over-scaling so a flat market doesn't
            visually look as dramatic as a big mover. We hardcode a
-           minimum visual range = 3% of the latest close — anything
+           minimum visual range = 3% of the latest close \u2014 anything
            tighter than that gets centered in a 3% band. Otherwise we
-           pad ±10% of the actual range for a bit of breathing room. */
+           pad \u00b110% of the actual range for a bit of breathing room. */
         var sMin = Math.min.apply(null, slicedSpark);
         var sMax = Math.max.apply(null, slicedSpark);
         var sRange = sMax - sMin;
@@ -7828,7 +7828,7 @@
               legend: { display: false },
               datalabels: { display: false },
               tooltip: {
-                /* DOM-rendered (external) — see _externalIdxTooltip
+                /* DOM-rendered (external) \u2014 see _externalIdxTooltip
                    above. enabled:false disables the in-canvas one. */
                 enabled: false,
                 external: _externalIdxTooltip,
@@ -7882,13 +7882,13 @@
     );
   }
 
-  /* 52-week range bar — full HTML for the cell. Returns:
+  /* 52-week range bar \u2014 full HTML for the cell. Returns:
      <span class="hm-w52-lo">low</span>
      <span class="hm-w52-track"><svg>...</svg></span>
      <span class="hm-w52-hi">high</span>
 
      The SVG inside .hm-w52-track is just track + gold marker. End ticks
-     removed — the low/high price labels anchor the ends visually. Marker
+     removed \u2014 the low/high price labels anchor the ends visually. Marker
      color is fixed gold (#daa520) regardless of position; the position
      itself is the data, color isn't carrying meaning. */
   function _build52wRangeBar(low, high, last, decimals, theme) {
@@ -7926,13 +7926,13 @@
 
   /* Format YTD or % Chg with sign, return [html, cls]. Dash for null/anomaly. */
   function _fmtPct(v) {
-    if (v === null || v === undefined) return ['<span class="hm-anom">—</span>', ''];
+    if (v === null || v === undefined) return ['<span class="hm-anom">\u2014</span>', ''];
     var sign = v >= 0 ? '+' : '';
     var cls = v >= 0 ? 'up' : 'down';
     return [sign + v.toFixed(2) + '%', cls];
   }
 
-  /* "X/USD" pairs are USD-quote — when the rate goes up, USD WEAKENS. So for
+  /* "X/USD" pairs are USD-quote \u2014 when the rate goes up, USD WEAKENS. So for
      the heat-color score we flip the sign so green always = USD strong,
      red always = USD weak. USDJPY-style pairs (USD-base) keep the original
      score (rate up = USD strong). */
@@ -7950,19 +7950,19 @@
     section.className = 'hm-commod-section';
 
     /* Register info content for the panel-header info button. Replaces the
-       old visible caption row — clutter-free table, info available on
+       old visible caption row \u2014 clutter-free table, info available on
        click. Function-valued so as_of stays current if data refreshes. */
-    var asOf = data.as_of || '—';
+    var asOf = data.as_of || '\u2014';
     window.PANEL_INFO_HTML['hm-commodities'] = function () {
       return (
-        '<p><b>Daily close</b> · ' + asOf + '</p>' +
+        '<p><b>Daily close</b> \u00b7 ' + asOf + '</p>' +
         '<p><b>Front-month continuous</b>: prices are Yahoo\'s =F tickers, ' +
           'which auto-roll between contracts. Specific contract month is not exposed.</p>' +
         '<p><b>52W Range</b>: horizontal slider with the 52-week low on the left ' +
           'and high on the right. Gold marker shows where the current price sits ' +
           'between them.</p>' +
         '<p><b>Anomalies</b>: rows with impossible daily moves (>50% or scale ' +
-          'shift >5x) show — to suppress contract-rollover artifacts.</p>'
+          'shift >5x) show \u2014 to suppress contract-rollover artifacts.</p>'
       );
     };
     /* Tag the gridstack item so the info button becomes visible. */
@@ -8003,8 +8003,8 @@
         /* Change cells: show dash for anomalies. */
         var chgHtml, chgPctHtml, chgCls;
         if (c.anomaly || c.change === null || c.change === undefined) {
-          chgHtml = '<span class="hm-anom">—</span>';
-          chgPctHtml = '<span class="hm-anom">—</span>';
+          chgHtml = '<span class="hm-anom">\u2014</span>';
+          chgPctHtml = '<span class="hm-anom">\u2014</span>';
           chgCls = '';
         } else {
           var sign = c.change >= 0 ? '+' : '';
@@ -8044,13 +8044,13 @@
     var section = document.createElement('div');
     section.className = 'hm-fx-section';
 
-    var asOf = data.as_of || '—';
+    var asOf = data.as_of || '\u2014';
     window.PANEL_INFO_HTML['hm-currencies'] = function () {
       return (
-        '<p><b>Daily close</b> · ' + asOf + '</p>' +
-        '<p><b>Pair convention</b>: USD-base pairs (USD/X) read "X per dollar" — ' +
+        '<p><b>Daily close</b> \u00b7 ' + asOf + '</p>' +
+        '<p><b>Pair convention</b>: USD-base pairs (USD/X) read "X per dollar" \u2014 ' +
           'rate up = USD strong. Inverse pairs (X/USD like EUR/USD) read the ' +
-          'opposite — rate up = USD weak.</p>' +
+          'opposite \u2014 rate up = USD weak.</p>' +
         '<p><b>52W Range</b>: horizontal slider with the 52-week low on the left ' +
           'and high on the right. Gold marker shows where the current rate sits ' +
           'between them.</p>'
@@ -8094,8 +8094,8 @@
         /* Change cells: dash on anomaly. */
         var chgHtml, chgPctHtml, chgCls;
         if (c.anomaly || c.change === null || c.change === undefined) {
-          chgHtml = '<span class="hm-anom">—</span>';
-          chgPctHtml = '<span class="hm-anom">—</span>';
+          chgHtml = '<span class="hm-anom">\u2014</span>';
+          chgPctHtml = '<span class="hm-anom">\u2014</span>';
           chgCls = '';
         } else {
           var sign = c.change >= 0 ? '+' : '';
@@ -8134,7 +8134,7 @@
 
     var hdr = document.createElement('div');
     hdr.className = 'hm-cal-header';
-    /* Subtitle = actual event count + window end date (e.g. "12 events · thru Jun 15").
+    /* Subtitle = actual event count + window end date (e.g. "12 events \u00b7 thru Jun 15").
        Beats hardcoded "Next 8 Weeks" which can lie if server returns fewer. */
     var calCount = data.calendar.length;
     var lastDate = new Date(data.calendar[calCount - 1].date + 'T00:00:00');
@@ -8344,8 +8344,8 @@
       }
       var grid = document.createElement('div');
       grid.className = 'hm-econ-grid';
-      /* 3 items → 3-column row (avoids the awkward single full-width card at
-         the bottom). 1 item → 1-column full row. Everything else stays on the
+      /* 3 items \u2192 3-column row (avoids the awkward single full-width card at
+         the bottom). 1 item \u2192 1-column full row. Everything else stays on the
          2-column grid the CSS defaults to. */
       var n = g.items.length;
       if (n === 3) grid.classList.add('hm-econ-grid-3');
@@ -8369,7 +8369,7 @@
   var sectorRangeStart = 52 - 13;  /* index into dates array (0=oldest) */
   var sectorRangeEnd = 51;         /* always last point initially */
   /* Active period label ('1W' / '1M' / '3M' / '6M' / 'YTD' / '1Y' /
-     '3Y' / '5Y' / '10Y'). Used by the x-axis label formatter — YTD
+     '3Y' / '5Y' / '10Y'). Used by the x-axis label formatter \u2014 YTD
      and longer span across years, so we append /YY so users can
      tell which year a 05/23 tick belongs to. */
   var sectorPeriod = '3M';
@@ -8549,7 +8549,7 @@
     _sc = sc;
     var theme = getTheme();
     /* Initial state: 3M view in DAILY mode (matches the active button
-       at first render). 66 daily closes = 13 weeks of return spans —
+       at first render). 66 daily closes = 13 weeks of return spans \u2014
        matches compute_returns.m3 = pct_at(13). */
     sectorIsDaily = !!(sc.dates_daily && sc.dates_daily.length >= 66);
     var initActive = _scActive(sc);
@@ -8568,7 +8568,7 @@
 
     /* SPY returns for the vs-SPY column. Computed on the fly from sc.spy
        (the weekly-close array) so we don't need to round-trip them via
-       data.spy_returns. Same 8-period set as STANDARD_PERIODS — for any
+       data.spy_returns. Same 8-period set as STANDARD_PERIODS \u2014 for any
        period whose lookback exceeds available history (e.g. 10Y when
        SPY data only goes back ~7Y), the cell shows "--". */
     var spyRet = (function () {
@@ -8619,7 +8619,7 @@
        periods use daily granularity so the line renders smoothly;
        1Y+ stay weekly. The weeks/days values are calibrated so the
        chart's end-value matches the table's compute_returns.<period>
-       — slice of N+1 closes spans N closes of return (off-by-one fix).
+       \u2014 slice of N+1 closes spans N closes of return (off-by-one fix).
        YTD recomputes its slice from the year-start position at click
        time and picks daily vs weekly based on how far into the year. */
     var periods = [
@@ -8699,7 +8699,7 @@
     toolbar.appendChild(separatedBtn);
 
     /* The per-panel Download button + its trailing separator used
-       to live here. Both were dropped — the panel-header chrome at
+       to live here. Both were dropped \u2014 the panel-header chrome at
        the top of every panel already exposes an "Export panel as
        image" affordance that routes through the (newer, clone-based)
        Export Chart modal, so the inline copy was redundant + a
@@ -8721,7 +8721,7 @@
     exportLeg.id = 'hm-sector-legend';
     body.appendChild(exportLeg);
 
-    /* SPY returns — prefer the backend's data.spy_returns when available
+    /* SPY returns \u2014 prefer the backend's data.spy_returns when available
        since it ships all 9 standard periods (w1..y10) computed from the
        full SPY history. The local spyRet (computed from sc.spy) is fine
        for short windows but the y10 reading was off by one: sc.spy ships
@@ -8894,7 +8894,7 @@
     if (val === null || val === undefined) return { bg: '', fg: '' };
     var p = PALETTE[theme];
     var end = val >= 0 ? p.green : p.red;
-    /* Normalize: ±10% = full saturation, ±0% = neutral */
+    /* Normalize: \u00b110% = full saturation, \u00b10% = neutral */
     var k = Math.min(Math.abs(val) / 10, 1);
     var rgb = [0, 1, 2].map(function (i) { return Math.round(lerp(p.neutral[i], end[i], k)); });
     var lum = luminance(rgb[0], rgb[1], rgb[2]);
@@ -8940,8 +8940,8 @@
 
   /* ---------- Style Box ---------- */
   var sbPeriod = 'm1';  /* style box period */
-  /* Mode toggle — 'abs' = each cell's own period return; 'rel' = excess
-     return vs SPY for the same period (cell return − SPY return). */
+  /* Mode toggle \u2014 'abs' = each cell's own period return; 'rel' = excess
+     return vs SPY for the same period (cell return \u2212 SPY return). */
   var sbMode = 'abs';
 
   /* ──────────────────────────────────────────────────────────────────
@@ -8991,7 +8991,7 @@
     var sbBtns = document.createElement('div');
     sbBtns.className = 'hm-sf-period-btns';
 
-    /* Full 9-period set on Style Box — user keeps 5Y and 10Y for
+    /* Full 9-period set on Style Box \u2014 user keeps 5Y and 10Y for
        longer-horizon style baselines, even though style leadership
        rotates faster than that. */
     var periodOpts = SF_PERIODS;
@@ -9016,7 +9016,7 @@
       sbBtns.appendChild(btn);
     });
 
-    /* Abs / vs SPY toggle — same chrome as the period pills with a
+    /* Abs / vs SPY toggle \u2014 same chrome as the period pills with a
        vertical divider, mirroring the thematic treemap pattern. */
     var sbModeWrap = document.createElement('span');
     sbModeWrap.className = 'hm-treemap-toggle';
@@ -9123,7 +9123,7 @@
         cell._val = v;
       });
 
-      /* Build a paint function scaled to this period's value spread —
+      /* Build a paint function scaled to this period's value spread \u2014
          max-abs + gamma 2, so the strongest cell pops and weaker ones
          fade noticeably (even when all 9 are positive). */
       var paint = buildHeatPaint(
@@ -9194,9 +9194,9 @@
     IJK:  "iShares S&P Mid-Cap 400 Growth. Mid-caps on the growth side of the S&P 400 cut.",
     IWM:  "iShares Russell 2000. The broad small-cap benchmark. Risk-on / reflation proxy.",
     IWO:  "iShares Russell 2000 Growth. Small-caps with higher P/B and growth expectations. " +
-          "Highest-beta US equity factor — leads in early-cycle recoveries.",
+          "Highest-beta US equity factor \u2014 leads in early-cycle recoveries.",
     IVW:  "iShares S&P 500 Growth. Large-caps scoring high on sales growth, EPS growth, momentum. " +
-          "Mega-cap growth concentration — overlaps heavily with MAGS.",
+          "Mega-cap growth concentration \u2014 overlaps heavily with MAGS.",
   };
 
   function renderFactors(data) {
@@ -9234,7 +9234,7 @@
       btnWrap.appendChild(btn);
     });
 
-    /* Mode toggle (Abs / vs SPY) — same chrome as period buttons, separated
+    /* Mode toggle (Abs / vs SPY) \u2014 same chrome as period buttons, separated
        by a vertical rule so it reads as a distinct binary control. Reuses
        .hm-treemap-toggle for the divider styling. */
     var modeWrap = document.createElement('span');
@@ -9442,9 +9442,9 @@
   /* Compute Vailati-style FI regime label (QE / Traditional Risk-On /
      Traditional Risk-Off / Fear of the Fed) from the heatmap rows.
      Duration axis: 10y nominal yield trend over the available window
-       (≈3 months at weekly cadence). Yields rising → short duration.
+       (\u22483 months at weekly cadence). Yields rising \u2192 short duration.
      Credit axis: HY OAS trend over the same window.
-       OAS tightening (↓) → long credit; widening (↑) → short credit.
+       OAS tightening (\u2193) \u2192 long credit; widening (\u2191) \u2192 short credit.
      Returns null if either input row is missing. */
   function renderFixedIncome(data) {
     var container = document.getElementById('hm-fixed-income');
@@ -9511,7 +9511,7 @@
     body.className = 'hm-fi-body';
 
     var allRows = [];
-    /* Reference data freshness banner — yield + duration are static config
+    /* Reference data freshness banner \u2014 yield + duration are static config
        refreshed manually each quarter, so flag the freshness in the
        panel info-popup. */
     var refAsOfLabel = fi.ref_as_of ? ('Yield/duration as of ' + fi.ref_as_of) : '';
@@ -9580,7 +9580,7 @@
 
     /* Opt this panel into the header stack-toggle button + restore the
        user's saved orientation from localStorage. Same pattern as the
-       Factors panel — see renderFactors for full notes. */
+       Factors panel \u2014 see renderFactors for full notes. */
     var fiStackItem = container.closest('.grid-stack-item');
     if (fiStackItem) {
       fiStackItem.classList.add('hm-has-stack');
@@ -9637,7 +9637,7 @@
 
   /* ---------- Global Equity Indexes rankings (Koyfin-style 4-col) ---------- */
   var giPeriod = 'y1';
-  /* Currency toggle — index returns are shipped in LOCAL currency.
+  /* Currency toggle \u2014 index returns are shipped in LOCAL currency.
      'local' (default) shows the raw return; 'usd' applies the
      LOCAL-vs-USD FX return for the period so US investors see what
      they'd actually have earned. Critical for EM indexes whose moves
@@ -9671,7 +9671,7 @@
     SPTSX:   "S&P/TSX Composite. Canadian large + mid-cap benchmark. Heavy energy + financials weighting.",
     IBOV:    "Ibovespa. Brazilian equity benchmark (~80 largest names on B3). Commodity + Brazilian-consumer proxy.",
     MEXBOL:  "S&P/BMV IPC. Mexican equity benchmark (~35 largest names on BMV). Financials + consumer-staples heavy.",
-    SMI:     "Swiss Market Index. 20 largest Swiss blue-chips. Defensive tilt (Nestlé, Novartis, Roche dominate weights).",
+    SMI:     "Swiss Market Index. 20 largest Swiss blue-chips. Defensive tilt (Nestl\u00e9, Novartis, Roche dominate weights).",
     CAC:     "CAC 40. 40 largest French equities. Heavy luxury + energy + banks.",
     FTSEMIB: "FTSE MIB. 40 largest Italian equities. Banks-heavy, cyclical benchmark.",
     DAX:     "DAX 40. 40 largest German listed companies. Export/manufacturing cyclical proxy.",
@@ -9703,7 +9703,7 @@
           'Americas, Europe (incl. Turkey), Asia / Pacific.</p>' +
         '<p><b>Local / USD toggle</b>: index returns are shipped in local currency. ' +
           'Flip to USD to apply the local-vs-USD FX move and see what a US investor ' +
-          'would actually have earned. Critical for FX-distorted EM moves — Turkey ' +
+          'would actually have earned. Critical for FX-distorted EM moves \u2014 Turkey ' +
           'BIST in lira looks dramatically different in USD terms.</p>' +
         '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation calibrated per ' +
           'period to the strongest visible mover.</p>' +
@@ -9741,7 +9741,7 @@
       btnWrap.appendChild(btn);
     });
 
-    /* Local / USD currency toggle — same chrome as period pills, separated
+    /* Local / USD currency toggle \u2014 same chrome as period pills, separated
        by a divider. Default = local since that's how indexes natively
        trade. Flip to USD to see what a US investor would actually earn
        after FX (catches Turkey-style FX-distorted returns). */
@@ -9823,7 +9823,7 @@
 
     /* Opt this panel into the header stack-toggle button + restore the
        user's saved orientation from localStorage. Same pattern as the
-       Factors panel — see renderFactors for full notes. */
+       Factors panel \u2014 see renderFactors for full notes. */
     var giStackItem = container.closest('.grid-stack-item');
     if (giStackItem) {
       giStackItem.classList.add('hm-has-stack');
@@ -9888,7 +9888,7 @@
 
   /* ---------- Country-ETF rankings (Koyfin-style 4-col regional) ---------- */
   var cePeriod = 'y1';
-  /* Currency toggle — country ETFs trade in USD so their returns are
+  /* Currency toggle \u2014 country ETFs trade in USD so their returns are
      already FX-adjusted. 'usd' (default) shows the native ETF return.
      'local' backs out the local-vs-USD FX move to show the underlying
      local-currency return. Useful for comparing the actual local-market
@@ -9898,7 +9898,7 @@
   /* Tooltip copy for each country ETF. Issuer-ticker-scope style so the
      reader knows what they're looking at (iShares MSCI vs Vanguard vs Global X). */
   var COUNTRY_ETF_TIPS = {
-    SPY:  "SPDR S&P 500. US large-cap benchmark — stands in for 'United States' in regional comparisons.",
+    SPY:  "SPDR S&P 500. US large-cap benchmark \u2014 stands in for 'United States' in regional comparisons.",
     EWC:  "iShares MSCI Canada. ~90 Canadian large + mid-caps. Heavy energy + financials weighting.",
     GXG:  "Global X MSCI Colombia. Colombian equity exposure. Small cap of tracked markets; high FX sensitivity.",
     EWW:  "iShares MSCI Mexico. Mexican large + mid-caps. Consumer staples, banks, telecom heavy.",
@@ -9907,7 +9907,7 @@
     ARGT: "Global X MSCI Argentina. Argentine equities + ADRs. Small basket, highly volatile on policy + FX swings.",
     EPU:  "iShares MSCI Peru. Peruvian equities, mining-heavy (copper, silver, gold). Small fund, thin liquidity.",
     EFNL: "iShares MSCI Finland. Finnish large + mid-caps. Nokia, Kone, industrials.",
-    EWL:  "iShares MSCI Switzerland. Swiss large-caps. Defensive tilt (Nestlé, Novartis, Roche dominate).",
+    EWL:  "iShares MSCI Switzerland. Swiss large-caps. Defensive tilt (Nestl\u00e9, Novartis, Roche dominate).",
     EWK:  "iShares MSCI Belgium. Belgian equities, concentrated in a few names (AB InBev, KBC).",
     ENOR: "iShares MSCI Norway. Norwegian equities, Equinor and seafood/aquaculture concentrated.",
     GREK: "Global X MSCI Greece. Greek equities, banks-heavy. High beta to EU periphery sentiment.",
@@ -9929,7 +9929,7 @@
     EWH:  "iShares MSCI Hong Kong. Hong Kong-listed equities. Real estate + banks heavy (not mainland China exposure).",
     ENZL: "iShares MSCI New Zealand. New Zealand equities. Utilities + healthcare + agribusiness.",
     VNM:  "VanEck Vietnam ETF. Vietnamese equities. Banks + real estate + consumer.",
-    GXC:  "SPDR S&P China. Broad China equity exposure — both mainland and HK-listed.",
+    GXC:  "SPDR S&P China. Broad China equity exposure \u2014 both mainland and HK-listed.",
     EWT:  "iShares MSCI Taiwan. Taiwanese equities. TSMC dominates weight; tech-heavy.",
     EIDO: "iShares MSCI Indonesia. Indonesian equities. Banks + commodities + consumer.",
     EWY:  "iShares MSCI South Korea. South Korean equities. Samsung dominates; tech + autos.",
@@ -9954,7 +9954,7 @@
           'Global X / VanEck alternatives where iShares isn\'t available.</p>' +
         '<p><b>USD / Local toggle</b>: ETFs trade in USD so their returns are FX-' +
           'adjusted by construction. Flip to Local to back out the local-vs-USD FX ' +
-          'move and see the underlying local-market return — useful for separating ' +
+          'move and see the underlying local-market return \u2014 useful for separating ' +
           'currency moves from actual equity-market performance.</p>' +
         '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation calibrated per ' +
           'period to the strongest visible mover.</p>' +
@@ -10073,7 +10073,7 @@
 
     /* Opt this panel into the header stack-toggle button + restore the
        user's saved orientation from localStorage. Same pattern as the
-       Factors panel — see renderFactors for full notes. */
+       Factors panel \u2014 see renderFactors for full notes. */
     var ceStackItem = container.closest('.grid-stack-item');
     if (ceStackItem) {
       ceStackItem.classList.add('hm-has-stack');
@@ -10146,10 +10146,10 @@
     BZ:   "Brent Crude front-month ICE futures. Global benchmark crude; pricing reference for two-thirds of world oil.",
     CL:   "WTI Crude front-month NYMEX futures. North American benchmark crude; sensitive to US inventories + pipeline flows.",
     NG:   "Natural Gas Henry Hub front-month NYMEX futures. US gas benchmark; highly seasonal (winter heating, summer power).",
-    COAL: "Range Global Coal ETF. Equity basket of global coal mining companies (proxy for the commodity — no clean thermal-coal futures on Yahoo). Launched 2022, so 3Y/5Y/10Y may show dashes.",
+    COAL: "Range Global Coal ETF. Equity basket of global coal mining companies (proxy for the commodity \u2014 no clean thermal-coal futures on Yahoo). Launched 2022, so 3Y/5Y/10Y may show dashes.",
     GOLD: "Gold front-month COMEX futures. Safe-haven metal; real-yield- and dollar-sensitive.",
     SI:   "Silver front-month COMEX futures. Industrial + monetary metal; higher beta to gold moves.",
-    HG:   "Copper front-month COMEX futures. 'Dr. Copper' — cyclical bellwether for global industrial demand.",
+    HG:   "Copper front-month COMEX futures. 'Dr. Copper' \u2014 cyclical bellwether for global industrial demand.",
     ALI:  "Aluminum LME futures. Construction + packaging + transportation metal.",
     SLX:  "VanEck Steel ETF. Steel producers + iron-ore miners proxy (no clean steel futures on Yahoo).",
     GF:   "Feeder Cattle front-month CME futures. Young cattle being fattened for slaughter; feed-cost sensitive.",
@@ -10176,9 +10176,9 @@
           'Indices (broad-basket ETFs).</p>' +
         '<p><b>Pricing basis pill</b> next to each ticker tells you what is actually ' +
           'driving the row\'s return:<br>' +
-          '<b>FRONT-MONTH</b> — front-month futures contract<br>' +
-          '<b>FUTURES ETF</b> — ETF holding rolled futures (USO, GSG, DBC, BDRY)<br>' +
-          '<b>EQUITIES</b> — basket of producer/miner equities, used as a proxy where ' +
+          '<b>FRONT-MONTH</b> \u2014 front-month futures contract<br>' +
+          '<b>FUTURES ETF</b> \u2014 ETF holding rolled futures (USO, GSG, DBC, BDRY)<br>' +
+          '<b>EQUITIES</b> \u2014 basket of producer/miner equities, used as a proxy where ' +
           'no clean futures contract exists (Steel SLX, Coal COAL).</p>' +
         '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation calibrated per ' +
           'period to the strongest visible mover.</p>' +
@@ -10250,7 +10250,7 @@
         var basisLabel = f.basis ? (BASIS_LABEL[f.basis] || f.basis) : '';
         var basisTip = f.basis === 'futures'     ? 'Front-month futures contract.' :
                        f.basis === 'futures_etf' ? 'ETF holding rolled futures contracts.' :
-                       f.basis === 'equities'    ? 'Equity basket of producers/miners — proxy for the underlying commodity.' :
+                       f.basis === 'equities'    ? 'Equity basket of producers/miners \u2014 proxy for the underlying commodity.' :
                        f.basis === 'spot'        ? 'Physical spot price.' : '';
         var tip = COMMODITY_PERF_TIPS[f.ticker];
         var tipBody = (basisTip ? basisTip + ' ' : '') + (tip || '');
@@ -10287,7 +10287,7 @@
 
     /* Opt this panel into the header stack-toggle button + restore the
        user's saved orientation from localStorage. Same pattern as the
-       Factors panel — see renderFactors for full notes. */
+       Factors panel \u2014 see renderFactors for full notes. */
     var cpStackItem = container.closest('.grid-stack-item');
     if (cpStackItem) {
       cpStackItem.classList.add('hm-has-stack');
@@ -10343,7 +10343,7 @@
 
   /* Tooltip copy for each column header. */
   var MAJORS_COL_TIPS = {
-    gdp_yoy:  "Real GDP year-over-year growth. Quarterly data, lags ~1 quarter. US = GDPC1; others = OECD/FRED real-GDP series (China uses nominal — real isn't on free FRED).",
+    gdp_yoy:  "Real GDP year-over-year growth. Quarterly data, lags ~1 quarter. US = GDPC1; others = OECD/FRED real-GDP series (China uses nominal \u2014 real isn't on free FRED).",
     cpi_yoy:  "Headline Consumer Price Index, year-over-year inflation. Monthly for most; Japan series is OECD-sourced and can run 3-6 months behind.",
     policy:   "Central bank policy rate. US = Fed Funds (DFF), Euro Zone = ECB Deposit Facility, UK/Japan/China = 3M interbank rate as proxy where the policy-rate series isn't free on FRED.",
     yield10y: "10-year government bond yield. US daily (DGS10); others monthly (OECD long-term rate indicator).",
@@ -10444,7 +10444,7 @@
             span.classList.add('stale');
           }
           td.classList.add('hm-metric-tip');
-          td.setAttribute('data-tip-title', r.name + ' — ' + c.label);
+          td.setAttribute('data-tip-title', r.name + ' \u2014 ' + c.label);
           td.setAttribute('data-tip', (asOf ? 'As of ' + asOf + '. ' : '') + (MAJORS_COL_TIPS[c.key] || ''));
         }
         td.appendChild(span);
@@ -10459,7 +10459,7 @@
     container.appendChild(card);
   }
 
-  /* ---------- Currency Performance Matrix (N×N cross-returns) ---------- */
+  /* ---------- Currency Performance Matrix (N\u00d7N cross-returns) ---------- */
   var cmPeriod = 'y1';
   /* Sorted mode reorders rows + columns strongest -> weakest (by mean
      row cross-return for the active period). Off keeps the static
@@ -10503,7 +10503,7 @@
       btnWrap.appendChild(btn);
     });
 
-    /* Sort toggle (Static / Sorted) — same chrome as period pills with
+    /* Sort toggle (Static / Sorted) \u2014 same chrome as period pills with
        a vertical divider, matching the treemap toggle pattern. */
     var sortWrap = document.createElement('span');
     sortWrap.className = 'hm-treemap-toggle';
@@ -10540,13 +10540,13 @@
         '<p><b>How to read</b>: each cell is <i>row currency vs. column currency</i> over the selected period.</p>' +
         '<p>Example: cell <b>EUR / JPY = +12.3%</b> means EUR strengthened 12.3% against JPY. Green = row beat column, red = row lagged column.</p>' +
         '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation scales with the largest visible cell so the strongest mover always pops; smaller moves stay light.</p>' +
-        '<p><b>Sort toggle</b>: when on, rows + columns reorder strongest-to-weakest for the active period — green pools in the top-right, red in the bottom-left.</p>'
+        '<p><b>Sort toggle</b>: when on, rows + columns reorder strongest-to-weakest for the active period \u2014 green pools in the top-right, red in the bottom-left.</p>'
       );
     };
     var cmItem = document.querySelector('.grid-stack-item[gs-id="hm-currency-matrix"]');
     if (cmItem) cmItem.classList.add('hm-has-info');
 
-    /* Horizontal scroll for narrow containers — table has N+1 columns at
+    /* Horizontal scroll for narrow containers \u2014 table has N+1 columns at
        ~72px each, so ~790px wide for 10 currencies. */
     var scroll = document.createElement('div');
     scroll.className = 'hm-factors-scroll';
@@ -10713,7 +10713,7 @@
     'ICLN': { title: 'Clean Energy (ICLN)',         body: 'iShares Global Clean Energy ETF. Solar, wind, and renewable-utility companies globally. Highly sensitive to rates, policy, and subsidy regimes.' },
     'URA':  { title: 'Nuclear / Uranium (URA)',     body: 'Global X Uranium ETF. Uranium miners and nuclear-fuel-cycle companies. Leveraged to spot uranium prices and nuclear-power capacity additions.' },
     'LIT':  { title: 'Lithium / Batteries (LIT)',   body: 'Global X Lithium & Battery Tech ETF. Lithium miners and battery producers powering EVs and grid storage. Tied to battery-chemistry cost curves and EV adoption.' },
-    'TAN':  { title: 'Solar (TAN)',                 body: 'Invesco Solar ETF. Tracks the MAC Global Solar Energy Index — solar-cell manufacturers, solar-utility operators, residential rooftop installers, and inverter / module makers. Cyclical clean-energy bet; rate-sensitive (most names finance projects on debt).' },
+    'TAN':  { title: 'Solar (TAN)',                 body: 'Invesco Solar ETF. Tracks the MAC Global Solar Energy Index \u2014 solar-cell manufacturers, solar-utility operators, residential rooftop installers, and inverter / module makers. Cyclical clean-energy bet; rate-sensitive (most names finance projects on debt).' },
     'GDX':  { title: 'Gold Miners (GDX)',           body: 'VanEck Gold Miners ETF. Senior gold mining equities globally. Higher beta to gold price than bullion itself, with operational leverage to cost inflation.' },
     'REMX': { title: 'Rare Earth / Minerals (REMX)',body: 'VanEck Rare Earth/Strategic Metals ETF. Producers of rare earths and strategic metals critical for EVs, semiconductors, and defense. Concentrated in China exposure.' },
     'DRIV': { title: 'EVs / Future Mobility (DRIV)',body: 'Global X Autonomous & Electric Vehicles ETF. EV manufacturers, battery makers, and autonomous-driving tech across the value chain.' },
@@ -10727,13 +10727,13 @@
     'MOO':  { title: 'Agriculture (MOO)',           body: 'VanEck Agribusiness ETF. Fertilizer, seed, machinery, and livestock-processing companies. Sensitive to crop prices, weather, and global food demand.' },
     'NLR':  { title: 'Nuclear Utilities (NLR)',     body: 'VanEck Uranium+Nuclear ETF. Nuclear utilities, reactor builders, and fuel-cycle service providers. Demand-side complement to URA\'s uranium-mining supply exposure.' },
     'KRBN': { title: 'Carbon Credits (KRBN)',       body: 'KraneShares Global Carbon ETF. Tracks the most-traded carbon-credit futures (EU ETS, California, RGGI, UK). Pure-play climate-finance exposure with no equity overlap. Lower liquidity than broad ETFs.' },
-    'FINX': { title: 'Fintech (FINX)',              body: 'Global X FinTech ETF. Payment processors, digital banks, exchange operators, and crypto-trading platforms (Block, PayPal, Coinbase, MELI, Adyen). Distinct from broad financials — rate-sensitive growth.' },
+    'FINX': { title: 'Fintech (FINX)',              body: 'Global X FinTech ETF. Payment processors, digital banks, exchange operators, and crypto-trading platforms (Block, PayPal, Coinbase, MELI, Adyen). Distinct from broad financials \u2014 rate-sensitive growth.' },
     'HERO': { title: 'Gaming & Esports (HERO)',     body: 'Global X Video Games & Esports ETF. Game publishers, esports operators, streaming platforms (Roblox, Take-Two, EA, Tencent, NetEase, Nintendo). Consumer-discretionary thematic with low overlap to mega-cap tech.' },
-    'JETS': { title: 'Travel & Airlines (JETS)',    body: 'US Global Jets ETF. US and global airlines plus aerospace/MRO suppliers. Cyclical recovery proxy — sensitive to oil prices, business travel, and consumer leisure spend.' },
+    'JETS': { title: 'Travel & Airlines (JETS)',    body: 'US Global Jets ETF. US and global airlines plus aerospace/MRO suppliers. Cyclical recovery proxy \u2014 sensitive to oil prices, business travel, and consumer leisure spend.' },
     'KWEB': { title: 'China Internet (KWEB)',       body: 'KraneShares CSI China Internet ETF. Chinese internet leaders (Alibaba, Tencent, Pinduoduo, JD, Meituan, Baidu). High beta, regulatory-sensitive proxy for China-tech sentiment and EM capital flows.' },
   };
 
-  /* Toggle state — 'abs' shows absolute return, 'rel' shows return minus
+  /* Toggle state \u2014 'abs' shows absolute return, 'rel' shows return minus
      SPY's return for the same period. Persisted across re-renders. */
   var treemapMode = 'abs';
 
@@ -10741,7 +10741,7 @@
      backend (52 weekly closes per theme); slice maps the active period
      button to that array so the path matches the return numbers above
      it. For periods longer than 1Y the slice just takes the full 52
-     weeks available — beyond 1Y the visual is "the last year of action"
+     weeks available \u2014 beyond 1Y the visual is "the last year of action"
      rather than the literal period; acceptable trade-off vs shipping
      5-10x more spark data. */
   function _sparkWeeksFor(period) {
@@ -10757,7 +10757,7 @@
     if (period === 'y5')  return 260;
     if (period === 'y10') return 520;
     if (period === 'ytd') {
-      /* Weeks elapsed in the current year — anchored to the most recent
+      /* Weeks elapsed in the current year \u2014 anchored to the most recent
          Friday close, so this is the YTD path. Clamp to [4, 52]. */
       var now = new Date();
       var jan1 = new Date(now.getFullYear(), 0, 1);
@@ -10777,8 +10777,8 @@
        the viewBox stretch
      - linecap+linejoin=round smooths sharp angles between segments */
   function _buildTreemapSpark(t, period) {
-    /* Choose data source by period: daily for ≤3M zooms (5 daily points
-       per week vs 1 weekly close → much smoother short-period lines),
+    /* Choose data source by period: daily for \u22643M zooms (5 daily points
+       per week vs 1 weekly close \u2192 much smoother short-period lines),
        weekly otherwise. Backwards-compatible: if t is an array (legacy
        call shape), treat it as the weekly sparkline. */
     var weekly, daily;
@@ -10830,7 +10830,7 @@
 
     /* Backend ships m1..y10 for themes; 1W is computed in the frontend
        from the weekly sparkline (last close vs one week prior). Same
-       fix as the sector table — without this, the 1W period button
+       fix as the sector table \u2014 without this, the 1W period button
        renders every theme as "--". */
     data.themes.forEach(function (t) {
       if (t.w1 == null && t.sparkline && t.sparkline.length >= 2) {
@@ -10845,7 +10845,7 @@
 
     /* Resolve a theme's value for the current (period, mode). In 'rel'
        mode subtract SPY's same-period return; if either is null, the
-       displayed value is null too (will render as `—` with tooltip). */
+       displayed value is null too (will render as `\u2014` with tooltip). */
     function valueFor(t) {
       var raw = t[treemapPeriod];
       if (treemapMode === 'rel') {
@@ -10869,7 +10869,7 @@
     section.className = 'hm-treemap-section';
 
     /* Header with period + mode toggle. No mode-note subtitle next to the
-       title — the active-state of the toggle button is the source of
+       title \u2014 the active-state of the toggle button is the source of
        truth for which mode is on. */
     var hdr = document.createElement('div');
     hdr.className = 'hm-treemap-header';
@@ -10879,7 +10879,7 @@
     btnWrap.className = 'hm-treemap-period-btns';
     /* Full 9-period set on the Thematic Treemap. Some thematic ETFs
        are young (KRBN 2020, IBIT 2024) so 5Y/10Y will show
-       "—" for those tiles — handled gracefully by the null path in
+       "\u2014" for those tiles \u2014 handled gracefully by the null path in
        updateTreemapColors. Older themes (TAN 2008, SOXX, GDX, XBI,
        etc.) get real long-window values that are useful for context. */
     STANDARD_PERIODS.forEach(function (p) {
@@ -10896,7 +10896,7 @@
       btnWrap.appendChild(btn);
     });
 
-    /* Mode toggle (Abs / vs SPY) — same button styling as period for
+    /* Mode toggle (Abs / vs SPY) \u2014 same button styling as period for
        visual consistency, separated by a vertical rule so the user
        reads it as a distinct control. */
     var modeWrap = document.createElement('span');
@@ -10998,7 +10998,7 @@
         var sparkEl = block.querySelector('[data-key="spark"]');
         if (sparkEl) sparkEl.innerHTML = _buildTreemapSpark(t, treemapPeriod);
         if (val == null) {
-          retEl.textContent = '—';
+          retEl.textContent = '\u2014';
           block.style.background = 'var(--hm-bg-alt)';
           block.style.color = 'var(--hm-muted)';
           /* Native tooltip explains the null: usually = fund's history
@@ -11105,9 +11105,9 @@
      Three columns (left | center | right) with draggable dividers
      between. Side columns can be made sticky via topbar buttons.
      Panels in each column are plain block elements at natural
-     content height — no gridstack, no absolute positioning, no
+     content height \u2014 no gridstack, no absolute positioning, no
      fixed cell sizes. */
-  /* v3: bumped after fixing the wide-track sticky bug — saved
+  /* v3: bumped after fixing the wide-track sticky bug \u2014 saved
      widths from v2 could be > viewport because grid tracks weren't
      constrained, so clearing those out ensures a clean default
      layout for everyone. */
@@ -11131,8 +11131,8 @@
       max: Math.max(lim.min, Math.round(lim.maxFrac * containerW)),
     };
   }
-  var COL_DIVIDER_W = 8;     /* px — divider track width */
-  var STACK_NARROW_W = 1100; /* px — below this, columns stack vertically */
+  var COL_DIVIDER_W = 8;     /* px \u2014 divider track width */
+  var STACK_NARROW_W = 1100; /* px \u2014 below this, columns stack vertically */
 
   /* Default home column for each panel. Restore-button paths use this. */
   var DEFAULT_PANEL_COLUMN = {
@@ -11168,7 +11168,7 @@
     'hm-economy':        'Economic Indicators',
     'hm-indexes':        'Index Snapshot',
     'hm-gave-wrap':      'Macro Regime',
-    'hm-macrocompass':   'Growth × Policy',
+    'hm-macrocompass':   'Growth \u00d7 Policy',
     'hm-stylefactor':    'Size vs Value',
     'hm-factors':        'Factors Performance',
     'hm-fixed-income':   'Fixed Income Performance',
@@ -11210,7 +11210,7 @@
     return {
       widths:    [null, null, null],
       sticky:    [false, false],   /* [left, right] */
-      collapsed: [false, false],   /* [left, right] — center can't collapse */
+      collapsed: [false, false],   /* [left, right] \u2014 center can't collapse */
       panels:    panels,
     };
   }
@@ -11225,7 +11225,7 @@
   function refreshUnpinAllVisibility() {}
 
   /* Move a panel one slot up within its current column. Plain DOM
-     swap — without gridstack there's no internal node.y to track.
+     swap \u2014 without gridstack there's no internal node.y to track.
      When the user moves the chart-section panel, set the manual-
      move flag so updateChartSectionVisibility stops auto-moving it
      above the heatmap on each select. */
@@ -11254,7 +11254,7 @@
   /* Move a panel into the adjacent column, appending to its bottom. */
   /* Move a panel into the adjacent column. Instead of always
      appending to the bottom, position it at roughly the same
-     vertical height as where it started — find the first panel in
+     vertical height as where it started \u2014 find the first panel in
      the destination column whose top is BELOW the moved panel's
      current top, and insert before that one. So if you move a
      panel that's halfway down the left column to the right column,
@@ -11295,8 +11295,8 @@
   }
 
   /* Hide/show move buttons based on current panel position so users
-     only see valid moves. ←: hidden in leftmost column. →: hidden in
-     rightmost. ↑: hidden when first in column. ↓: hidden when last. */
+     only see valid moves. \u2190: hidden in leftmost column. \u2192: hidden in
+     rightmost. \u2191: hidden when first in column. \u2193: hidden when last. */
   function refreshMoveButtons(item) {
     if (!item) return;
     var col = item.closest('.hm-col');
@@ -11381,7 +11381,7 @@
 
   /* Update the CSS grid-template-columns based on _colWidths,
      collapsed flags, and saved pixel widths. Rules:
-       - Collapsed column → 0px track. Adjacent divider also 0px
+       - Collapsed column \u2192 0px track. Adjacent divider also 0px
          and gets a "hidden" class so CSS skips its handle.
        - When any side is collapsed, center stretches via
          minmax(0, 1fr) regardless of its saved pixel width.
@@ -11392,8 +11392,8 @@
          being restored after collapse/expand round-trip), scale
          down the fixed widths PROPORTIONALLY so the layout fits.
          Without this, the right column would visually overflow
-         past the page edge — exactly the bug the user hit.
-     minmax(0, 1fr) is critical for the flex columns — bare `1fr`
+         past the page edge \u2014 exactly the bug the user hit.
+     minmax(0, 1fr) is critical for the flex columns \u2014 bare `1fr`
      would let tracks grow to fit min-content of wide panels
      (currency matrix, rankings). */
   function applyColWidths() {
@@ -11430,7 +11430,7 @@
     /* Total width demanded: sum of fixed widths + minimums for each
        flex column (because flex columns will be at least their min
        in the final layout). If this exceeds avail, scale down the
-       fixed columns proportionally — but never below their per-col
+       fixed columns proportionally \u2014 but never below their per-col
        min. */
     var fixedSum = intents.reduce(function (s, it, i) {
       return s + (it.kind === 'fixed' ? it.px : 0);
@@ -11456,7 +11456,7 @@
       /* All columns are fixed-px AND their sum is LESS than the
          container width. Without intervention this leaves an empty
          band on the right (most-reported "huge gap on the right"
-         symptom — happens whenever a user drag-resizes all three
+         symptom \u2014 happens whenever a user drag-resizes all three
          columns and the saved widths don't add up to the current
          viewport, e.g. moved to a wider monitor). Scale the fixed
          widths UP proportionally so they fill the viewport. */
@@ -11515,9 +11515,9 @@
      (track shrinks to 0, adjacent divider hides, center column
      stretches to fill freed space). After a layout-changing toggle
      we dispatch a window resize event so anything that watches
-     viewport changes — Chart.js's `responsive: true` ResizeObserver,
+     viewport changes \u2014 Chart.js's `responsive: true` ResizeObserver,
      panel-internal responsive code, the column-width clamp on
-     resize itself — gets a chance to re-measure to the new cell
+     resize itself \u2014 gets a chance to re-measure to the new cell
      widths. Without this, charts that were rendered at the OLD
      width keep their old internal canvas size after the cell grows
      and look squished against an empty stretched gold-header. */
@@ -11640,12 +11640,12 @@
   /* Sectioned-layout init: inject the per-panel window-style header
      into every panel slot, wire button click delegation, repaint
      Chart.js on window resize, and update the section-label sticky
-     offset. No drag, no resize, no gridstack — the layout is fixed
+     offset. No drag, no resize, no gridstack \u2014 the layout is fixed
      in HTML. Function name kept (initGridStack) so the safeRender
      pipeline at the bottom of the script doesn't need to change. */
   function initGridStack() {
     /* 1. Inject panel header bar into every panel slot. Header
-       chrome: info, ←, ↑, ↓, →, [stack], download, close. Move
+       chrome: info, \u2190, \u2191, \u2193, \u2192, [stack], download, close. Move
        buttons auto-hide at column/position edges via
        refreshAllMoveButtons. */
     document.querySelectorAll("#hm-cols .grid-stack-item").forEach(function (item) {
@@ -11856,7 +11856,7 @@
   function _composeExportWithFooter(panelDataUrl, item, cropTopPx, options) {
     options = options || {};
     var handle = (options.handle || '').trim();
-    /* pixelRatio that produced panelImg — used to scale the footer
+    /* pixelRatio that produced panelImg \u2014 used to scale the footer
        font and logo so they read at the same VISUAL size regardless
        of which resolution the user picked (1x/2x/3x). Without this,
        the footer is correctly-proportioned only at 2x and feels
@@ -11876,7 +11876,7 @@
         /* All footer sizes are expressed in VISUAL px and then
            multiplied by pixelRatio so the layout reads identical at
            every resolution. The captured panel image was rendered
-           at `pixelRatio` (1/2/3) — its naturalWidth/Height are
+           at `pixelRatio` (1/2/3) \u2014 its naturalWidth/Height are
            already in output px, so we line up footer dimensions
            with the same unit. */
         var FOOTER_TEXT_INSET = 12 * pixelRatio;  /* 12 visual: link sits 12 visual px in from panel left edge */
@@ -11889,7 +11889,7 @@
            in the captured PNG. The panel-header is visibility:hidden
            in export-mode (no inner shift), so the captured PNG has an
            empty band of that height at the top. Slice it off by
-           shifting the drawImage source — y=cropTopPx down from the
+           shifting the drawImage source \u2014 y=cropTopPx down from the
            top of panelImg, drawn at y=0 on the destination canvas. */
         var crop = Math.max(0, cropTopPx || 0);
         var panelDrawH = Math.max(0, panelImg.naturalHeight - crop);
@@ -11900,7 +11900,7 @@
                       + 1                        /* divider line */
                       + FOOTER_H;                /* URL + logo with 8 visual top + bottom panel-bg around them */
         var ctx = canvas.getContext('2d');
-        /* Fill the whole canvas with panel-bg — gives the export a
+        /* Fill the whole canvas with panel-bg \u2014 gives the export a
            clean card look, with footer text on the same panel-bg
            that the heatmap / cards sit on. */
         ctx.fillStyle = panelBg;
@@ -11914,7 +11914,7 @@
           0, crop, panelImg.naturalWidth, panelDrawH,  /* source: skip top `crop` px */
           panelImgX, panelImgY, panelImg.naturalWidth, panelDrawH  /* dest: full width, post-crop height */
         );
-        /* Divider line just below the panelImg — full canvas width. */
+        /* Divider line just below the panelImg \u2014 full canvas width. */
         var dividerY = panelImgY + panelDrawH + DIVIDER_GAP;
         var dividerColor = dark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)';
         ctx.fillStyle = dividerColor;
@@ -11924,7 +11924,7 @@
         /* Footer text: URL on the left, optional ' | @handle' appended
            if the user supplied a handle in the sidebar. ASCII pipe
            (not a middle-dot) keeps the canvas render safe under any
-           charset interpretation — the embed has no <meta charset>
+           charset interpretation \u2014 the embed has no <meta charset>
            because it's a WordPress fragment, so non-ASCII glyphs
            occasionally render double-encoded ("A-circumflex middle-dot")
            in the wild. */
@@ -11970,11 +11970,11 @@
     });
   }
 
-  /* ===== Export Chart modal — clone-based pipeline =====
+  /* ===== Export Chart modal \u2014 clone-based pipeline =====
      User clicks the download icon on a panel. We open a full-screen
      modal with a preview + minimal options (resolution, transparent
      bg, footer @handle). The render runs on a *clone* of the panel
-     placed in an offscreen stage inside .hm-app — CSS variables
+     placed in an offscreen stage inside .hm-app \u2014 CSS variables
      and class-driven rules still inherit, but the LIVE dashboard
      never has to expand or shift. This replaces the prior approach
      that mutated the live cell in place (placeholder + position:
@@ -11982,21 +11982,21 @@
 
      Pipeline:
        1. openExportModal(item)
-            → cloneForExport(panel)  (canvas snapshot + style strip)
-            → render preview at 1x  (refreshModalPreview)
+            \u2192 cloneForExport(panel)  (canvas snapshot + style strip)
+            \u2192 render preview at 1x  (refreshModalPreview)
        2. User adjusts resolution / handle / transparent bg
-            → preview re-renders (debounced)
+            \u2192 preview re-renders (debounced)
        3. User clicks Export PNG
-            → render at chosen resolution + trigger download
+            \u2192 render at chosen resolution + trigger download
        4. Close button / Escape / backdrop click
-            → tear down clone + hide modal */
+            \u2192 tear down clone + hide modal */
 
   /* The element currently being exported. Set by openExportModal,
      cleared by closeExportModal. The sidebar event handlers read
      this when they need to re-render the preview. */
   var _exportTargetId = null;
   /* Debounce token for preview re-renders triggered by sidebar
-     input changes — multiple fast keystrokes on the handle field
+     input changes \u2014 multiple fast keystrokes on the handle field
      coalesce into a single render. */
   var _exportPreviewTimer = null;
   /* Latest render request token. Each call to refreshModalPreview
@@ -12041,7 +12041,7 @@
   }
 
   function applyExportDefaults() {
-    /* Resolution defaults to 2x — most users want retina-quality. */
+    /* Resolution defaults to 2x \u2014 most users want retina-quality. */
     document.querySelectorAll('.hm-export-res-btn').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-res') === '2');
     });
@@ -12060,7 +12060,7 @@
 
   /* Re-render the preview using the current sidebar options. We
      render at the user's chosen resolution (not a forced 1x) so the
-     preview matches what the download will produce — same crispness,
+     preview matches what the download will produce \u2014 same crispness,
      same footer proportions. Debounced via _exportPreviewTimer so
      rapid input events coalesce into one render. */
   function refreshModalPreview() {
@@ -12146,18 +12146,18 @@
       /* 2) Replace every <canvas> in the clone with an <img> whose
             src is the original canvas's toDataURL. This preserves
             chart visuals (Chart.js renders to canvas). Tainted
-            canvases (cross-origin sources) throw — we skip those. */
+            canvases (cross-origin sources) throw \u2014 we skip those. */
       /* Pulled up so the canvas-replacement loop below can branch on
          it. (panelId is also referenced later when picking pinnedW +
          the heatmap captureH buffer.) */
       var panelId = item.getAttribute('gs-id') || '';
       /* Sector chart is the one panel whose canvas is the primary
          content + supposed to fill the panel width. After the canvas
-         → img replacement, force the resulting img to width:100% so
+         \u2192 img replacement, force the resulting img to width:100% so
          the chart visually fills the canonical 1100-wide export
          instead of sitting at its live capture size with empty
          space on the right. Aspect ratio is preserved via height:auto.
-         Note this stretches the chart pixels — long-term fix is to
+         Note this stretches the chart pixels \u2014 long-term fix is to
          re-render Chart.js into a new canvas at canonical width, but
          this gets us 80% of the way for now. */
       var stretchChartImg = (panelId === 'hm-sector-chart');
@@ -12179,11 +12179,11 @@
             if (cc.className) imgEl.className = typeof cc.className === 'string' ? cc.className : cc.getAttribute('class');
             if (stretchChartImg) {
               /* Stretch the sector chart img to FILL its wrap exactly:
-                 width:100% × height:100% of the .hm-sector-canvas-wrap
+                 width:100% \u00d7 height:100% of the .hm-sector-canvas-wrap
                  (320px tall). Previously this used height:auto, but
                  when the live panel was in a column narrower than the
                  1100px pinned export width, the captured canvas's
-                 aspect ratio gave an img-height TALLER than 320px →
+                 aspect ratio gave an img-height TALLER than 320px \u2192
                  the img overflowed the wrap and visually overlapped
                  the sector table below it (user-reported overlap bug).
                  height:100% clamps to the wrap's fixed 320px, so the
@@ -12197,7 +12197,7 @@
               imgEl.removeAttribute('height');
             }
             if (cc.parentNode) cc.parentNode.replaceChild(imgEl, cc);
-          } catch (e) { /* canvas tainted — skip, will appear blank */ }
+          } catch (e) { /* canvas tainted \u2014 skip, will appear blank */ }
         }
       } catch (e) { /* querySelectorAll failed somehow */ }
 
@@ -12206,7 +12206,7 @@
               the export. Chart.js sets the canvas's inline width to
               its live-render display size (e.g. 200px when the panel
               sits in a 4-col live layout). That inline width survives
-              into the canvas→img replacement, so the img ends up
+              into the canvas\u2192img replacement, so the img ends up
               smaller than the export wrap (~268px in the 2-col grid
               that 600px triggers). Without intervention the img sits
               flush-left and ALL the empty space falls on the right.
@@ -12224,7 +12224,7 @@
             still match. The wrap is NOT inside a .hm-col, so rules
             that require `.hm-col >` (like max-height:80vh on the
             heatmap, or position:sticky on inner ranking headers)
-            naturally don't match the clone — the clone renders at
+            naturally don't match the clone \u2014 the clone renders at
             its full natural size with no scroll caps. */
       var fakeItem = document.createElement('div');
       var origItemClass = item.className || 'grid-stack-item';
@@ -12244,7 +12244,7 @@
              export is column-independent.
          Default to max-content for anything not in the map. */
       var EXPORT_PINNED_WIDTHS = {
-        'hm-indexes':       600,   /* 2x2 grid — @container query at 720 means widths under 720 give the 2-col layout (smaller / more compact). User prefers this over the 4-in-a-row that 800 triggered. */
+        'hm-indexes':       600,   /* 2x2 grid \u2014 @container query at 720 means widths under 720 give the 2-col layout (smaller / more compact). User prefers this over the 4-in-a-row that 800 triggered. */
         'hm-sector-chart': 1100,
         'hm-stylefactor':   700,   /* 3x3 style grid at its natural cell size */
         'hm-calendar':      400,
@@ -12273,7 +12273,7 @@
       fakeItem.appendChild(clone);
 
       /* 4) Strip border / scroll caps on the cloned content via
-            inline style — these override any inherited CSS that
+            inline style \u2014 these override any inherited CSS that
             would still match the clone, and they also survive when
             html-to-image clones again internally. */
       clone.style.setProperty('border', 'none', 'important');
@@ -12286,15 +12286,15 @@
       /* 5) display:none the panel-header in the clone. Since the
             clone lives in the offscreen stage and never touches the
             live UI, there's no "shift up / shift down" flicker to
-            avoid here — so we can fully remove the navbar from
+            avoid here \u2014 so we can fully remove the navbar from
             layout instead of just hiding it with visibility.
 
             This matters specifically for the Currency Matrix: its
             panel-header has `width: 100cqw` (cell-width-sized via
             container query) from the live UI's per-panel CSS. In
             the live state that's ~495px (the cell width). In the
-            offscreen clone — with no explicit container width and
-            max-content sizing chain above — the @container query
+            offscreen clone \u2014 with no explicit container width and
+            max-content sizing chain above \u2014 the @container query
             resolves badly and the navbar balloons to ~1602 px,
             dragging .hm-panel-wrap with it (since wrap is
             `max-content` over the navbar + body). User saw this
@@ -12304,7 +12304,7 @@
             display:none drops the navbar from layout, so wrap's
             max-content tracks the body alone (~696 for currency
             matrix). cropTopPx resolves to 0 since rect.height of a
-            display:none element is 0 — composer no-ops the crop. */
+            display:none element is 0 \u2014 composer no-ops the crop. */
       var clonePanelHeader = clone.querySelector('.hm-panel-header');
       if (clonePanelHeader) {
         clonePanelHeader.style.setProperty('display', 'none', 'important');
@@ -12317,7 +12317,7 @@
          scrollables (Currency Matrix's `.hm-factors-scroll`, the
          heatmap's `.hm-scroll`, etc.) were rendering with visible
          scrollbars in the captured PNG. Inline overflow:visible
-         eliminates the scrollbar at the source — content extends
+         eliminates the scrollbar at the source \u2014 content extends
          naturally instead of being clipped behind a scrollbar UI. */
       clone.querySelectorAll('.hm-scroll, .hm-factors-scroll').forEach(function (s) {
         s.style.setProperty('overflow', 'visible', 'important');
@@ -12342,19 +12342,19 @@
       /* Size vs Value 3x3 cells: explicitly preserve their 5px
          border-radius inline. The CSS rule `.hm-app .hm-style-cell
          { border-radius: var(--hm-r) }` should give 5px rounding,
-         but the cells appeared visibly square in the export — most
+         but the cells appeared visibly square in the export \u2014 most
          likely because html-to-image's foreignObject capture wasn't
          resolving the var(--hm-r) custom property on nested
          descendants the same way as on the live UI. Inline 5px
          with !important guarantees the rounding lands. Applies to
-         ALL 9 cells including the bottom row — the panel's flush-
+         ALL 9 cells including the bottom row \u2014 the panel's flush-
          bottom is already handled by .hm-sf-body squaring above,
          so the cells themselves don't need to lose their rounding. */
       clone.querySelectorAll('.hm-style-cell').forEach(function (cell) {
         cell.style.setProperty('border-radius', '5px', 'important');
       });
 
-      /* Macro Regime markers (Gave 4 Quadrants + Growth × Policy):
+      /* Macro Regime markers (Gave 4 Quadrants + Growth \u00d7 Policy):
          freeze into "static" state for the export. The default
          marker has a pulsing ::after ring (which captures as a
          frozen artifact at whatever phase the animation happened
@@ -12369,12 +12369,12 @@
             panels) to static + full-width so they stretch across
             scrollable content rather than staying pinned at cell
             width. Inline styles beat any CSS selector. */
-      /* .hm-gold-header is deliberately NOT in this list — that band
+      /* .hm-gold-header is deliberately NOT in this list \u2014 that band
          lives inside .hm-gave-wrap / .hm-mc which use negative
          margins to escape the parent card's 16px padding. Forcing
          width:100% via inline style breaks that layout and the band
          ends up narrower than the panel content (user-reported on
-         the Macro Regime + Growth × Policy panels). The other headers
+         the Macro Regime + Growth \u00d7 Policy panels). The other headers
          here use width:100cqw + position:sticky in the live UI, which
          do need overriding for the export. */
       var STICKY_HEADER_SELECTORS = [
@@ -12405,7 +12405,7 @@
             of the content. For most panels Math.ceil alone is enough,
             but the metrics heatmap accumulates subpixel rounding
             across its ~59 table rows (each row has its own fractional
-            border / padding / cell-height contribution) — getBounding-
+            border / padding / cell-height contribution) \u2014 getBounding-
             ClientRect on the wrapper underreports the table's true
             visual extent by ~8-12 px in some cases. Add a 16-logical-
             px buffer ONLY for that panel so the last "Gold vs LT
@@ -12425,10 +12425,10 @@
       var captureW = Math.max(floorW, Math.ceil(rectW));
       var captureH = Math.ceil(rectH);
       /* Heatmap-only buffer for accumulated subpixel rounding across
-         ~59 table rows. Back to +20 — earlier +8 wasn't enough and
+         ~59 table rows. Back to +20 \u2014 earlier +8 wasn't enough and
          the last "Gold vs LT Govt corr" row was getting clipped
          again. The +20 shows as < 10 visual px of bg above the
-         footer divider on the heatmap only — invisible enough. */
+         footer divider on the heatmap only \u2014 invisible enough. */
       if (panelId === 'hm-heatmap-wrap') {
         captureH += 20;
       }
@@ -12440,7 +12440,7 @@
               Chart.js's live-render display width baked into its
               inline cssText (e.g. width: 200px when the live panel
               sat in a 4-col layout). That inline width sticks even
-              after the centering fix above — the spark stays at its
+              after the centering fix above \u2014 the spark stays at its
               small captured size, just centered in the 2-col-grid
               wrap (~268px content area). User wants the spark to
               actually FILL the card, not just be centered small.
@@ -12448,7 +12448,7 @@
               Now that the clone is mounted + force-sized, each
               .hm-idx-spark wrap is at its final 2-col-grid pixel
               width. Set each img to EXACT measured pixel dimensions
-              inline with !important — these travel into the foreign-
+              inline with !important \u2014 these travel into the foreign-
               Object capture and override the Chart.js cssText. The
               centering above is now redundant (img fills wrap) but
               kept as a safety net. */
@@ -12473,7 +12473,7 @@
               whenever the live capture aspect ratio doesn't match
               the export wrap's aspect (e.g. live panel in a 660-wide
               column captured at 660:320 = 2.06, displayed at 1068:320
-              = 3.34 in the export — the captured pixels get stretched
+              = 3.34 in the export \u2014 the captured pixels get stretched
               horizontally). User-reported: "blurry... forced stretch".
 
               The proper fix is to RE-RENDER Chart.js at the target
@@ -12487,7 +12487,7 @@
               no stretching is needed.
 
               Falls back silently if Chart isn't loaded or the chart
-              instance can't be found — the existing stretched img
+              instance can't be found \u2014 the existing stretched img
               stays in place (better blurry than empty). */
       if ((panelId === 'hm-sector-chart' || panelId === 'hm-gave-wrap') && typeof Chart !== 'undefined' && typeof Chart.getChart === 'function') {
         (function () {
@@ -12505,10 +12505,10 @@
             if (!liveChart) continue;
 
             /* Target dimensions from the cloned img's parent wrap
-               (which is already laid out at the export size — step
+               (which is already laid out at the export size \u2014 step
                7 mounted + force-sized to 1100px panel width, so
-               .hm-sector-canvas-wrap is ~1068×320, .hm-sector-mini-
-               wrap is its grid cell size × 240). Subtract wrap
+               .hm-sector-canvas-wrap is ~1068\u00d7320, .hm-sector-mini-
+               wrap is its grid cell size \u00d7 240). Subtract wrap
                padding so the new canvas matches the chart drawing
                area exactly (not the wrap + its padding). */
             var wrapEl = ci.parentNode;
@@ -12537,7 +12537,7 @@
             var newChart = null;
             try {
               /* Reuse the live chart's type/data/options. Same data
-                 reference is safe — Chart.js doesn't mutate the data
+                 reference is safe \u2014 Chart.js doesn't mutate the data
                  array. Same options reference reuses any function
                  callbacks the live chart had. */
               newChart = new Chart(tempCanvas, {
@@ -12558,7 +12558,7 @@
               ci.style.setProperty('height', targetH + 'px', 'important');
               ci.style.setProperty('max-width', 'none', 'important');
             } catch (e) {
-              /* Re-render failed — leave the existing stretched
+              /* Re-render failed \u2014 leave the existing stretched
                  img in place. */
             } finally {
               try { if (newChart) newChart.destroy(); } catch (e) {}
@@ -12605,7 +12605,7 @@
   }
 
   /* Wire up the modal's sidebar controls + close affordances. Runs
-     once at page load — the modal HTML is always in the DOM, just
+     once at page load \u2014 the modal HTML is always in the DOM, just
      hidden until openExportModal is called. */
   (function () {
     var modal = document.getElementById('hm-export-modal');
@@ -12618,10 +12618,10 @@
       if (e.key === 'Escape' && !modal.hidden) closeExportModal();
     });
     /* Backdrop click also closes. Anywhere outside the sidebar AND
-       outside the actual preview image — so the dark area around the
+       outside the actual preview image \u2014 so the dark area around the
        preview, the topbar gap next to the title, etc. all dismiss.
        Clicks inside the sidebar (option controls) and on the preview
-       image are NOT close triggers — users want to interact with
+       image are NOT close triggers \u2014 users want to interact with
        those. */
     modal.addEventListener('click', function (e) {
       if (e.target.closest('.hm-export-sidebar')) return;
@@ -12640,7 +12640,7 @@
         refreshModalPreview();
       });
     });
-    /* Footer @handle input — re-render on each keystroke (debounced
+    /* Footer @handle input \u2014 re-render on each keystroke (debounced
        inside refreshModalPreview). */
     var handle = document.getElementById('hm-export-handle');
     if (handle) handle.addEventListener('input', refreshModalPreview);
@@ -12655,7 +12655,7 @@
     if (dlBtn) dlBtn.addEventListener('click', downloadExportPNG);
   })();
 
-  /* Legacy in-place exporter kept as a thin shim — routes to the
+  /* Legacy in-place exporter kept as a thin shim \u2014 routes to the
      modal flow. Old WP cache might still call into this name. */
   function exportPanelImage(item /* , btn */) {
     openExportModal(item);
@@ -12668,7 +12668,7 @@
      (LAYOUT_KEY) doesn't wipe the orientation preference. */
   var STACK_KEY = 'hm-stack-orientations-v1';
   /* Stack-toggle no longer changes panel widths in the 3-column
-     refactor — column width sets panel width, period. The vertical
+     refactor \u2014 column width sets panel width, period. The vertical
      stack class flip changes only the panel's internal layout (cols
      -> single column). Kept this sentinel for any older code that
      reads STACK_VERTICAL_W. */
@@ -12768,7 +12768,7 @@
       });
       /* Apply the saved universal time period now that every panel
          has rendered its period buttons. Run on the next frame AND
-         schedule a few retries at increasing delays — some panels
+         schedule a few retries at increasing delays \u2014 some panels
          re-render their period buttons asynchronously (e.g. via
          ResizeObserver / Gridstack init), so a single early call
          can miss them. applyUniversal is idempotent so extra runs
