@@ -5279,9 +5279,33 @@
   .hm-app .hm-panel-filter-opt:hover {
     background: rgba(218, 165, 32, 0.10);
   }
+  /* Checkbox visual matches the customize-view rows in the topbar:
+     14px square with gold check-mark on :checked. */
   .hm-app .hm-panel-filter-opt input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--hm-border);
+    border-radius: 3px;
     cursor: pointer;
-    accent-color: var(--hm-gold);
+    background: var(--hm-panel);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .hm-app .hm-panel-filter-opt input[type="checkbox"]:checked {
+    border-color: var(--hm-gold);
+  }
+  .hm-app .hm-panel-filter-opt input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: -1px;
+    width: 5px;
+    height: 9px;
+    border: solid var(--hm-gold);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
   }
   /* Hide rows whose category is toggled off. Applied via JS-set
      class on the table. Both the category subheader (.hm-commod-cat)
@@ -12653,9 +12677,17 @@
       if (panelId === 'hm-heatmap-wrap') {
         captureH += 20;
       } else if (panelId === 'hm-commodities') {
-        /* Commodity table: ~30 rows + sparklines + bar sliders;
-           +10 absorbed subpixel rounding cleanly (user-tested). */
-        captureH += 10;
+        /* Commodity table: subpixel rounding compounds per row.
+           At full count (~30 visible rows) +10 was the tested sweet
+           spot. When the user hides categories, fewer rows render so
+           the buffer must shrink proportionally — otherwise a gap
+           appears above the footer. Linear scale: ~10px @ 30 rows
+           → ~1.3px per visible row, floored at +1 so subpixel rounding
+           never clips. */
+        var visRows = clone.querySelectorAll(
+          '.hm-commod-tbl tbody tr:not(.hm-commod-cat):not([data-cat-hidden="true"])'
+        ).length || 30;
+        captureH += Math.max(1, Math.ceil(visRows / 3));
       } else if (panelId === 'hm-currencies') {
         /* FX table: fewer rows than commodities so less buffer
            needed. +6 lands at the user-tested sweet spot — clears
