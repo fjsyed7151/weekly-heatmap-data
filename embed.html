@@ -12462,14 +12462,20 @@
       var floorW = pinnedW || 600;
       var captureW = Math.max(floorW, Math.ceil(rectW));
       var captureH = Math.ceil(rectH);
-      /* Heatmap-only buffer for accumulated subpixel rounding across
-         ~59 table rows. (The currency + commodity tables previously
-         got this buffer too, but the real cause of THEIR last-row
-         clipping was overflow-y:hidden on .hm-commod-wrap /
-         .hm-fx-wrap \u2014 now overridden to overflow:visible inline
-         above, so no buffer needed.) */
+      /* Buffer for panels whose last row can land at a subpixel
+         boundary that html-to-image rounds off.
+           - hm-heatmap-wrap: +20 (worst case \u2014 ~59 rows compound
+             the subpixel error).
+           - hm-currencies / hm-commodities: +10 (after the
+             flex:none + overflow:visible fixes the clone math
+             reports clip=0, but the captured PNG still occasionally
+             trims the last sparkline pixel-row on real exports \u2014
+             10px is enough breathing room without a visible bg gap).
+       */
       if (panelId === 'hm-heatmap-wrap') {
         captureH += 20;
+      } else if (panelId === 'hm-currencies' || panelId === 'hm-commodities') {
+        captureH += 10;
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
