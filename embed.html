@@ -8204,6 +8204,16 @@
       cb.checked = !hidden[g.name];
       cb.setAttribute('data-cat', g.name);
       cb.addEventListener('change', function () {
+        /* Guard: at least one category must remain visible. If this
+           change would uncheck the last one, snap it back to checked
+           and bail. */
+        if (!cb.checked) {
+          var stillOn = popup.querySelectorAll('input[type="checkbox"]:checked').length;
+          if (stillOn === 0) {
+            cb.checked = true;
+            return;
+          }
+        }
         var map = loadHidden();
         if (cb.checked) { delete map[g.name]; }
         else { map[g.name] = true; }
