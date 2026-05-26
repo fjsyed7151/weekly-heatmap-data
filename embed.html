@@ -12445,12 +12445,19 @@
       var floorW = pinnedW || 600;
       var captureW = Math.max(floorW, Math.ceil(rectW));
       var captureH = Math.ceil(rectH);
-      /* Heatmap-only buffer for accumulated subpixel rounding across
-         ~59 table rows. Back to +20 \u2014 earlier +8 wasn't enough and
-         the last "Gold vs LT Govt corr" row was getting clipped
-         again. The +20 shows as < 10 visual px of bg above the
-         footer divider on the heatmap only \u2014 invisible enough. */
-      if (panelId === 'hm-heatmap-wrap') {
+      /* Buffer for panels with many table rows whose last row gets
+         clipped due to accumulated subpixel rounding (each row's
+         border / padding / cell-height fractions add up across N
+         rows and getBoundingClientRect on the wrapper underreports
+         the true visual extent). Applied to:
+           - hm-heatmap-wrap (~59 metric rows)
+           - hm-currencies (~30+ FX rows incl. category headers)
+           - hm-commodities (~40+ commodity rows incl. categories)
+         +20 logical px shows as < 10 visual px of bg above the
+         footer divider \u2014 invisible enough. */
+      if (panelId === 'hm-heatmap-wrap' ||
+          panelId === 'hm-currencies' ||
+          panelId === 'hm-commodities') {
         captureH += 20;
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
