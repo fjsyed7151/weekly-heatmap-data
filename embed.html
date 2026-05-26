@@ -4585,10 +4585,6 @@
     flex-direction: column;
     gap: 8px;
     min-width: 0;
-    /* Top breathing room so first panel sits 8px below the topbar
-       (combined with the topbar's 4px margin-bottom + this 4px =
-       8px gap, matching the 8px gap between stacked panels). */
-    padding-top: 4px;
     /* Breathing room below the last panel so it doesn't sit flush
        against the bottom of the page when scrolled to the end. */
     padding-bottom: 32px;
@@ -4830,12 +4826,10 @@
     container-type: inline-size;
   }
 
-  /* Add 16px breathing room between the topbar and the first
-     panel of each column so the navbar isn't flush against the
-     topbar's bottom edge \u2014 gives a comfortable gap at scroll=0. */
-  .hm-app .hm-col > .grid-stack-item:first-child {
-    margin-top: 16px;
-  }
+  /* (Removed: the 16px margin-top on the first .grid-stack-item per
+     column that used to "give breathing room between the topbar and
+     the first panel." User wants the first panel flush against the
+     topbar (modulo the topbar's own 4px margin-bottom) \u2014 no gap.) */
 
   /* Heatmap thead sticks inside the cell's scroll container, just
      below the 24px panel-header at the top of the wrap. */
