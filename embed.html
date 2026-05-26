@@ -5309,10 +5309,11 @@
   }
   /* Hide rows / cards whose category is toggled off. Applied via
      JS-set data-cat-hidden attribute.
-       - hm-commod-tbl + hm-fx-tbl: tr[data-cat] (subheader + data rows)
+       - hm-commod-tbl + hm-fx-tbl + hm-table: tr[data-cat] (subheader + data rows)
        - hm-econ-body: any descendant with data-cat (subhead div + grid div) */
   .hm-app .hm-commod-tbl tr[data-cat][data-cat-hidden="true"],
   .hm-app .hm-fx-tbl tr[data-cat][data-cat-hidden="true"],
+  .hm-app #hm-table tr[data-cat][data-cat-hidden="true"],
   .hm-app .hm-econ-body [data-cat][data-cat-hidden="true"] {
     display: none !important;
   }
@@ -5833,12 +5834,19 @@
     var sectionMap = {};
     data.sections.forEach(function (s) { sectionMap[s.name] = s.rows; });
 
+    /* Build groups for the per-section filter — list each rendered
+       section (i.e. ones that have data) in the SECTION_ORDER order. */
+    var metricsGroups = [];
+
     SECTION_ORDER.forEach(function (section) {
       var rows = sectionMap[section];
       if (!rows || rows.length === 0) return;
 
+      metricsGroups.push({ name: section });
+
       var sh = document.createElement("tr");
       sh.className = "hm-section";
+      sh.setAttribute("data-cat", section);
       var shBlank = document.createElement("td");
       shBlank.className = "hm-section-blank";
       sh.appendChild(shBlank);
@@ -5855,6 +5863,7 @@
         var metricId = makeId(row.name);
         var tr = document.createElement("tr");
         tr.classList.add("hm-data-row");
+        tr.setAttribute("data-cat", section);
 
         var cbTd = document.createElement("td");
         cbTd.className = "hm-check-col";
@@ -5932,6 +5941,19 @@
     updateCheckboxAvailability();
     /* Rebuild sticky clone since thead DOM was regenerated. */
     if (stickyWrapper) buildStickyHeader();
+
+    /* Cache groups for the filter installer (runs AFTER initGridStack
+       has built the panel-header chrome). */
+    window._hmMetricsGroups = metricsGroups;
+    var metricsItem = document.querySelector('.grid-stack-item[gs-id="hm-heatmap-wrap"]');
+    if (typeof _installCategoryFilter === 'function') {
+      _installCategoryFilter({
+        panelItem: metricsItem,
+        groups: metricsGroups,
+        storageKey: 'hm-metrics-cats-v1',
+        tableSelector: '#hm-table',
+      });
+    }
   }
 
   function makeId(name) {
@@ -12730,7 +12752,15 @@
              10px is enough breathing room without a visible bg gap).
        */
       if (panelId === 'hm-heatmap-wrap') {
-        captureH += 20;
+        /* Metrics heatmap: subpixel rounding compounds badly across
+           ~59 rows at full count. +20 was the tested sweet spot at
+           full count. When the user hides sections, the buffer must
+           shrink proportionally — same ~0.34 px/row coefficient as
+           the other tables, floored at +2. */
+        var visRows = clone.querySelectorAll(
+          '#hm-table tbody tr:not(.hm-section):not([data-cat-hidden="true"])'
+        ).length || 59;
+        captureH += Math.max(2, Math.ceil(visRows / 3));
       } else if (panelId === 'hm-commodities') {
         /* Commodity table: subpixel rounding compounds per row.
            At full count (~30 visible rows) +10 was the tested sweet
@@ -13109,6 +13139,18 @@
             groups: groups,
             storageKey: 'hm-econ-cats-v1',
             tableSelector: '#hm-economy .hm-econ-body',
+          });
+        }
+      });
+      safeRender('metricsFilter', function () {
+        var metricsItem = document.querySelector('.grid-stack-item[gs-id="hm-heatmap-wrap"]');
+        var groups = window._hmMetricsGroups;
+        if (metricsItem && groups && typeof _installCategoryFilter === 'function') {
+          _installCategoryFilter({
+            panelItem: metricsItem,
+            groups: groups,
+            storageKey: 'hm-metrics-cats-v1',
+            tableSelector: '#hm-table',
           });
         }
       });
