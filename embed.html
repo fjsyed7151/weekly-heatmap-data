@@ -12409,7 +12409,7 @@
               Falls back silently if Chart isn't loaded or the chart
               instance can't be found — the existing stretched img
               stays in place (better blurry than empty). */
-      if (panelId === 'hm-sector-chart' && typeof Chart !== 'undefined' && typeof Chart.getChart === 'function') {
+      if ((panelId === 'hm-sector-chart' || panelId === 'hm-gave-wrap') && typeof Chart !== 'undefined' && typeof Chart.getChart === 'function') {
         (function () {
           var origCanvases = origContent.querySelectorAll('canvas');
           /* The canvases were replaced with imgs at step 2 in the
