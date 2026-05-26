@@ -4585,10 +4585,6 @@
     flex-direction: column;
     gap: 8px;
     min-width: 0;
-    /* Top breathing room so first panel sits 8px below the topbar
-       (combined with the topbar's 4px margin-bottom + this 4px =
-       8px gap, matching the 8px gap between stacked panels). */
-    padding-top: 4px;
     /* Breathing room below the last panel so it doesn't sit flush
        against the bottom of the page when scrolled to the end. */
     padding-bottom: 32px;
@@ -4764,10 +4760,32 @@
   /* Panel-headers + factors-headers: STATIC by default in the
      new column layout. They flow at the top of each panel and
      scroll with the page. */
+  /* Pop the panel-header (action icons row) OUT of normal flow and
+     float it at the top-right corner of each panel. Eliminates the
+     24px "empty band" above the gold header — the gold band now
+     sits at the very top of each panel, flush with the topbar. The
+     info / move / × / export / stack buttons stay accessible as
+     a small icon cluster overlaying the gold band's right side. */
   .hm-app .hm-col > .grid-stack-item .hm-panel-header {
-    position: static !important;
-    top: auto !important;
-    z-index: auto !important;
+    position: absolute !important;
+    top: 4px !important;
+    right: 4px !important;
+    left: auto !important;
+    bottom: auto !important;
+    height: auto !important;
+    width: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+    z-index: 10 !important;
+  }
+  /* Button color on the floating header: white for legibility against
+     the gold band underneath (the regular muted-gray color is hard
+     to read on gold). The :hover gold-tint kept its existing rule —
+     it'll still tint to a deeper gold-on-gold, which is acceptable
+     because the affordance comes from the hover bg-shade and icon
+     opacity flip anyway. */
+  .hm-app .hm-col > .grid-stack-item .hm-panel-header .hm-panel-btn {
+    color: var(--hm-white) !important;
   }
   .hm-app .hm-col > .grid-stack-item .hm-factors-header {
     position: static !important;
@@ -4775,48 +4793,18 @@
     left: auto !important;
   }
 
-  /* EXCEPTION: panels whose CELL has overflow:auto (the heatmap +
-     ranking panels + currency matrix) have wide content that can
-     horizontally scroll inside the cell. For THOSE panels, the
-     panel-header (action icons) and the gold filter band need to
-     stay pinned at the cell's visible top-left as the user scrolls
-     horizontally \u2014 otherwise they slide off the left edge along
-     with the table, leaving a visual gap on the right.
-
-       - Panel-header: sticky top:0 left:0, width: 100cqw (so it
-         spans the full visible cell width regardless of how wide
-         the underlying wrap is).
-       - Factors-header (.hm-factors-header on rankings): sticky
-         top:24 (just below the 24px panel-header above it),
-         left:0, width: 100cqw.
-
-     container-type: inline-size is already set on these cells via
-     the per-panel rules above, so 100cqw resolves to cell width. */
-  .hm-app .hm-col > .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-panel-header,
-  .hm-app .hm-col > .grid-stack-item[gs-id="hm-currency-matrix"] .hm-panel-header,
-  .hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-panel-header,
-  .hm-app .hm-col > .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-panel-header,
-  .hm-app .hm-col > .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-panel-header,
-  .hm-app .hm-col > .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-panel-header,
-  .hm-app .hm-col > .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-panel-header {
-    position: sticky !important;
-    top: 0 !important;
-    left: 0 !important;
-    z-index: 6 !important;
-    /* +2px to absorb sub-pixel rounding of 100cqw (e.g.
-       941.66px on a 942px content area) so the navbar bg fully
-       covers the right edge; the 2px extra overlaps the start
-       of the scrollbar gutter which the scrollbar paints on
-       top of, so it's not visible. */
-    width: calc(100cqw + 2px) !important;
-  }
+  /* (Removed: panel-header sticky-full-width override for
+     ranking + heatmap panels. With the panel-header now floating
+     at top-right of every panel (general rule above), there's no
+     24px band to keep sticky. The factors-header sticky-top below
+     was bumped from 24 \u2192 0 to match.) */
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-factors"]:not(.hm-stack-vertical) .hm-factors-header,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-fixed-income"]:not(.hm-stack-vertical) .hm-factors-header,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-global-indexes"]:not(.hm-stack-vertical) .hm-factors-header,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-country-etfs"]:not(.hm-stack-vertical) .hm-factors-header,
   .hm-app .hm-col > .grid-stack-item[gs-id="hm-commodity-perf"]:not(.hm-stack-vertical) .hm-factors-header {
     position: sticky !important;
-    top: 24px !important;
+    top: 0 !important;
     left: 0 !important;
     width: calc(100cqw + 2px) !important;
     z-index: 5 !important;
