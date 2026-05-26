@@ -12480,9 +12480,9 @@
         captureH += 10;
       } else if (panelId === 'hm-currencies') {
         /* FX table: fewer rows than commodities so less buffer
-           needed. +4 lands at the user-tested sweet spot — clears
+           needed. +6 lands at the user-tested sweet spot — clears
            subpixel clipping without a visible gap. */
-        captureH += 4;
+        captureH += 6;
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
