@@ -12185,6 +12185,16 @@
         'hm-theme-treemap':1200
       };
       var pinnedW = EXPORT_PINNED_WIDTHS[panelId];
+      /* Small-panel sharpness bump: panels pinned below 800px at the
+         default 2x pixel ratio output a PNG less than 1600px wide,
+         which looks soft when viewed at any zoom above 100%. Bump to
+         3x so the output is at least 1800px and stays crisp.
+         Respects explicit 1x (user wants small file size) and
+         explicit 3x (user already picked sharper). Only the default
+         2x gets auto-promoted. */
+      if (pinnedW && pinnedW < 800 && pixelRatio === 2) {
+        pixelRatio = 3;
+      }
       if (pinnedW) {
         fakeItem.style.width = pinnedW + 'px';
       } else {
