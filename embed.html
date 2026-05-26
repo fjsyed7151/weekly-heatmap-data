@@ -12479,10 +12479,10 @@
            +10 absorbed subpixel rounding cleanly (user-tested). */
         captureH += 10;
       } else if (panelId === 'hm-currencies') {
-        /* FX table: fewer rows so it doesn't compound as much. +2 is
-           the minimum to absorb html-to-image's canvas-edge subpixel
-           rounding without a visible bg gap above the footer. */
-        captureH += 2;
+        /* FX table: fewer rows than commodities so less buffer
+           needed. +4 lands at the user-tested sweet spot — clears
+           subpixel clipping without a visible gap. */
+        captureH += 4;
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
