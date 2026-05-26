@@ -7615,14 +7615,16 @@
       ribbon.className = 'hm-mc-regime-ribbon';
       var lab = document.createElement('span');
       lab.className = 'hm-mc-regime-ribbon-label';
-      lab.textContent = m.history.length + 'w history';
+      /* Show only the last 13 weeks of history (was 24w). Slice the
+         tail so "now" is the rightmost cell and the label tracks. */
+      var hist = m.history.slice(-13);
+      lab.textContent = hist.length + 'w history';
       ribbon.appendChild(lab);
       var cells = document.createElement('div');
       cells.className = 'hm-mc-regime-ribbon-cells';
-      m.history.forEach(function (h, idx) {
+      hist.forEach(function (h) {
         var cell = document.createElement('span');
-        var isLast = idx === m.history.length - 1;
-        cell.className = 'hm-mc-regime-cell ' + h.quadrant + (isLast ? ' is-current' : '');
+        cell.className = 'hm-mc-regime-cell ' + h.quadrant;
         cell.title = h.date + ' \u00b7 ' + (quadName[h.quadrant] || h.quadrant);
         cells.appendChild(cell);
       });
