@@ -923,8 +923,10 @@
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
-    padding: 8px 0 12px;
-    margin: -8px 0 4px;
+    /* No bottom padding / margin: first row of panels sits flush
+       against the topbar's bottom edge. */
+    padding: 8px 0 0;
+    margin: -8px 0 0;
     background: var(--hm-bg);
   }
   /* Back-to-stablebread.com button on the very left of the topbar.
@@ -4584,7 +4586,7 @@
   .hm-app .hm-col {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     min-width: 0;
     /* Breathing room below the last panel so it doesn't sit flush
        against the bottom of the page when scrolled to the end. */
