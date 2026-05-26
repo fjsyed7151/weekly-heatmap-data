@@ -2058,6 +2058,10 @@
        thing positioned at the user's macro coordinates; hovering it
        intentionally is fine. */
     pointer-events: auto;
+    /* Help cursor to signal the dot is informational/hoverable —
+       matches the cursor pattern used on other tip-able elements
+       (.hm-metric-tip, info chips, etc.). */
+    cursor: help;
   }
   .hm-app .hm-gave-marker::after,
   .hm-app .hm-mc-marker::after {
