@@ -5308,10 +5308,11 @@
     transform: rotate(45deg);
   }
   /* Hide rows whose category is toggled off. Applied via JS-set
-     class on the table. Both the category subheader (.hm-commod-cat)
-     and the data rows share the same `data-cat` attribute so a
-     single selector covers both. */
-  .hm-app .hm-commod-tbl tr[data-cat][data-cat-hidden="true"] {
+     data-cat-hidden attribute. Both the category subheader (.hm-commod-cat
+     / .hm-fx-cat) and the data rows share the same `data-cat` attribute
+     so a single selector covers both. */
+  .hm-app .hm-commod-tbl tr[data-cat][data-cat-hidden="true"],
+  .hm-app .hm-fx-tbl tr[data-cat][data-cat-hidden="true"] {
     display: none !important;
   }
 </style>
@@ -8149,24 +8150,39 @@
     /* Try injecting now — works on re-render (theme toggle) once chrome
        is already built. Initial-load injection happens via the explicit
        install call right after initGridStack in the bootstrap chain. */
-    _installCommodityCategoryFilter(commItem, data.commodities);
+    _installCategoryFilter({
+      panelItem: commItem,
+      groups: data.commodities,
+      storageKey: 'hm-commod-cats-v1',
+      tableSelector: '#hm-commodities .hm-commod-tbl',
+    });
   }
 
   /* Standalone so the panel-header chrome doesn't have to be modified
      by the framework. Idempotent — early-returns if filter already there.
-     If header is missing (renderCommodities ran before initGridStack on
-     initial load), silently no-ops; the bootstrap chain re-calls this
-     after gridstack init. */
-  function _installCommodityCategoryFilter(commItem, groups) {
-    if (!commItem) return;
-    var header = commItem.querySelector('.hm-panel-header');
+     If header is missing (renderer ran before initGridStack on initial
+     load), silently no-ops; the bootstrap chain re-calls this after
+     gridstack init.
+
+     config: { panelItem, groups, storageKey, tableSelector }
+       panelItem     -- .grid-stack-item wrapping the panel
+       groups        -- [{ name: "Agricultural", items: [...] }, ...]
+       storageKey    -- localStorage key holding { CatName: true } hidden map
+       tableSelector -- CSS selector for the table whose tr[data-cat]
+                        rows should be shown/hidden. */
+  function _installCategoryFilter(config) {
+    if (!config || !config.panelItem) return;
+    var panelItem = config.panelItem;
+    var groups = config.groups || [];
+    var CAT_KEY = config.storageKey;
+    var tableSelector = config.tableSelector;
+    var header = panelItem.querySelector('.hm-panel-header');
     if (!header) return;
     /* If we've already injected the filter on a previous render, just
        reapply the saved state and return. */
     var existing = header.querySelector('.hm-panel-filter-wrap');
-    if (existing) { _applyCommodityCategoryHidden(); return; }
+    if (existing) { _applyCategoryHidden(CAT_KEY, tableSelector); return; }
 
-    var CAT_KEY = 'hm-commod-cats-v1';
     function loadHidden() {
       try {
         var raw = localStorage.getItem(CAT_KEY);
@@ -8218,7 +8234,7 @@
         if (cb.checked) { delete map[g.name]; }
         else { map[g.name] = true; }
         saveHidden(map);
-        _applyCommodityCategoryHidden();
+        _applyCategoryHidden(CAT_KEY, tableSelector);
       });
       var span = document.createElement('span');
       span.textContent = g.name;
@@ -8251,15 +8267,15 @@
       header.insertBefore(filterWrap, header.firstChild);
     }
 
-    _applyCommodityCategoryHidden();
+    _applyCategoryHidden(CAT_KEY, tableSelector);
   }
 
-  function _applyCommodityCategoryHidden() {
-    var tbl = document.querySelector('#hm-commodities .hm-commod-tbl');
+  function _applyCategoryHidden(storageKey, tableSelector) {
+    var tbl = document.querySelector(tableSelector);
     if (!tbl) return;
     var hidden = {};
     try {
-      var raw = localStorage.getItem('hm-commod-cats-v1');
+      var raw = localStorage.getItem(storageKey);
       if (raw) hidden = JSON.parse(raw) || {};
     } catch (e) {}
     tbl.querySelectorAll('tr[data-cat]').forEach(function (tr) {
@@ -8313,11 +8329,13 @@
     data.currencies.forEach(function (group) {
       var catTr = document.createElement('tr');
       catTr.className = 'hm-fx-cat';
+      catTr.setAttribute('data-cat', group.name);
       catTr.innerHTML = '<td colspan="7">' + group.name + '</td>';
       tbody.appendChild(catTr);
 
       group.items.forEach(function (c) {
         var tr = document.createElement('tr');
+        tr.setAttribute('data-cat', group.name);
         var dec = c.decimals || 4;
         var isUp = (c.change_pct || 0) >= 0;
         var sparkSvg = _buildSparkSvg(c.sparkline || [], isUp);
@@ -8355,6 +8373,17 @@
     wrap.appendChild(table);
     section.appendChild(wrap);
     container.appendChild(section);
+
+    /* Cache groups so the filter installer (which runs AFTER initGridStack
+       has built the panel-header chrome) can read them. */
+    window._hmCurrenciesGroups = data.currencies;
+    /* Try injecting now — works on re-render once chrome is built. */
+    _installCategoryFilter({
+      panelItem: fxItem,
+      groups: data.currencies,
+      storageKey: 'hm-fx-cats-v1',
+      tableSelector: '#hm-currencies .hm-fx-tbl',
+    });
   }
 
   function renderCalendar(data) {
@@ -12699,10 +12728,15 @@
         ).length || 30;
         captureH += Math.max(1, Math.ceil(visRows / 3));
       } else if (panelId === 'hm-currencies') {
-        /* FX table: fewer rows than commodities so less buffer
-           needed. +6 lands at the user-tested sweet spot — clears
-           subpixel clipping without a visible gap. */
-        captureH += 6;
+        /* FX table: parallel logic to commodity. At full ~18 visible
+           rows +6 was the tested sweet spot. When the user hides
+           groups via the category filter, the buffer must shrink
+           proportionally. Same per-row coefficient as commodity
+           (~0.33), floored at +1. */
+        var visRows = clone.querySelectorAll(
+          '.hm-fx-tbl tbody tr:not(.hm-fx-cat):not([data-cat-hidden="true"])'
+        ).length || 18;
+        captureH += Math.max(1, Math.ceil(visRows / 3));
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
@@ -13024,13 +13058,30 @@
       /* Sticky thead is now CSS-native (position: sticky on .hm-table thead th)
          since the heat map lives inside a grid panel scroll container. */
       safeRender('gridstack', initGridStack);
-      /* Inject the commodity-category filter button now that the
-         panel-header chrome has been built by initGridStack. */
+      /* Inject the category filter buttons (commodity + currency) now
+         that the panel-header chrome has been built by initGridStack. */
       safeRender('commodFilter', function () {
         var commItem = document.querySelector('.grid-stack-item[gs-id="hm-commodities"]');
         var groups = window._hmCommoditiesGroups;
-        if (commItem && groups && typeof _installCommodityCategoryFilter === 'function') {
-          _installCommodityCategoryFilter(commItem, groups);
+        if (commItem && groups && typeof _installCategoryFilter === 'function') {
+          _installCategoryFilter({
+            panelItem: commItem,
+            groups: groups,
+            storageKey: 'hm-commod-cats-v1',
+            tableSelector: '#hm-commodities .hm-commod-tbl',
+          });
+        }
+      });
+      safeRender('fxFilter', function () {
+        var fxItem = document.querySelector('.grid-stack-item[gs-id="hm-currencies"]');
+        var groups = window._hmCurrenciesGroups;
+        if (fxItem && groups && typeof _installCategoryFilter === 'function') {
+          _installCategoryFilter({
+            panelItem: fxItem,
+            groups: groups,
+            storageKey: 'hm-fx-cats-v1',
+            tableSelector: '#hm-currencies .hm-fx-tbl',
+          });
         }
       });
       /* After Gridstack is initialized AND all renderers have populated
