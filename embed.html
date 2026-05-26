@@ -12752,15 +12752,15 @@
              10px is enough breathing room without a visible bg gap).
        */
       if (panelId === 'hm-heatmap-wrap') {
-        /* Metrics heatmap: subpixel rounding compounds badly across
-           ~59 rows at full count. +20 was the tested sweet spot at
-           full count. When the user hides sections, the buffer must
-           shrink proportionally — same ~0.34 px/row coefficient as
-           the other tables, floored at +2. */
+        /* Metrics heatmap: subpixel rounding compounds across many
+           table rows. Buffer scales linearly with visible row count.
+           +12 @ 49 visible rows was the user-tested sweet spot post-
+           filter (flush footer, no clipping). Coefficient ~0.245
+           px/row, floored at +2. */
         var visRows = clone.querySelectorAll(
           '#hm-table tbody tr:not(.hm-section):not([data-cat-hidden="true"])'
-        ).length || 59;
-        captureH += Math.max(2, Math.ceil(visRows / 3));
+        ).length || 49;
+        captureH += Math.max(2, Math.ceil(visRows / 4));
       } else if (panelId === 'hm-commodities') {
         /* Commodity table: subpixel rounding compounds per row.
            At full count (~30 visible rows) +10 was the tested sweet
