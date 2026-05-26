@@ -2053,7 +2053,11 @@
     border: 3px solid var(--hm-panel);
     box-shadow: 0 0 0 1.5px var(--hm-gold), 0 2px 6px rgba(0,0,0,0.3);
     transform: translate(-50%, -50%);
-    pointer-events: none;
+    /* pointer-events:auto so :hover fires on the marker — needed for
+       the "NOW" label tooltip. The marker is tiny but it's the only
+       thing positioned at the user's macro coordinates; hovering it
+       intentionally is fine. */
+    pointer-events: auto;
   }
   .hm-app .hm-gave-marker::after,
   .hm-app .hm-mc-marker::after {
@@ -2069,6 +2073,40 @@
     0%, 100% { transform: scale(1);   opacity: 0.65; }
     50%      { transform: scale(1.4); opacity: 0.1;  }
   }
+  /* "NOW" status label that sits above the macro-regime marker.
+     Hidden by default; shown only when the user hovers the marker
+     (so the live UI stays uncluttered). In exports the marker gets
+     the .hm-marker-static class which force-shows the label AND
+     kills the ::after pulse ring — exports show a clean static
+     marker + label with no animation artifact. */
+  .hm-app .hm-marker-now {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--hm-gold);
+    color: var(--hm-white);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    /* Sit above any nearby quadrant labels. */
+    z-index: 4;
+  }
+  .hm-app .hm-gave-marker:hover > .hm-marker-now,
+  .hm-app .hm-mc-marker:hover > .hm-marker-now {
+    opacity: 1;
+  }
+  /* Static state for image exports: no pulse, NOW label always
+     shown. Applied to cloned markers in renderPanelToPNG. */
+  .hm-app .hm-marker-static::after { display: none !important; }
+  .hm-app .hm-marker-static > .hm-marker-now { opacity: 1 !important; }
   /* Active quadrant's LONG/SHORT trade list rendered below the plane.
      Top divider line matches the visual separation used on the Growth ×
      Policy panel for cross-panel consistency. */
@@ -7162,6 +7200,10 @@
     marker.className = 'hm-gave-marker';
     marker.style.left = leftPct + '%';
     marker.style.top  = topPct  + '%';
+    /* "NOW" hover-tooltip — hidden by CSS until the marker is hovered.
+       Exports force-show via the .hm-marker-static class set in
+       renderPanelToPNG. */
+    marker.innerHTML = '<span class="hm-marker-now">Now</span>';
     plane.appendChild(marker);
 
     frame.appendChild(plane);
@@ -7513,6 +7555,9 @@
     marker.className = 'hm-mc-marker';
     marker.style.left = leftPct + '%';
     marker.style.top  = topPct  + '%';
+    /* "NOW" hover-tooltip — see hm-gave-marker for the matching
+       Gave panel implementation. */
+    marker.innerHTML = '<span class="hm-marker-now">Now</span>';
     plane.appendChild(marker);
 
     frame.appendChild(plane);
@@ -12283,6 +12328,17 @@
          so the cells themselves don't need to lose their rounding. */
       clone.querySelectorAll('.hm-style-cell').forEach(function (cell) {
         cell.style.setProperty('border-radius', '5px', 'important');
+      });
+
+      /* Macro Regime markers (Gave 4 Quadrants + Growth × Policy):
+         freeze into "static" state for the export. The default
+         marker has a pulsing ::after ring (which captures as a
+         frozen artifact at whatever phase the animation happened
+         to be in) and a hidden NOW tooltip. The .hm-marker-static
+         class kills the ring and force-shows the NOW label, so
+         the export gets a clean static marker labeled NOW. */
+      clone.querySelectorAll('.hm-gave-marker, .hm-mc-marker').forEach(function (m) {
+        m.classList.add('hm-marker-static');
       });
 
       /* 6) Force every sticky inner header (gold bars on ranking
