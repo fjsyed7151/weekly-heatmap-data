@@ -12079,17 +12079,6 @@
          re-render Chart.js into a new canvas at canonical width, but
          this gets us 80% of the way for now. */
       var stretchChartImg = (panelId === 'hm-sector-chart');
-      /* Index Snapshot sparkline canvases get captured at their live
-         cell width (small — ~216px when 4-col live layout, ~280px when
-         2-col live layout). In the 600px pinned export they sit at a
-         2x2 grid (~300px per card), so a captured img with its inline
-         width:216px leaves a visible empty band on the right edge of
-         each card. CSS already says `.hm-idx-spark canvas { width: 100% }`
-         but that selector targets canvas — the replacement img isn't
-         a canvas, and Chart.js's inline width/height cssText we copy
-         over wins over the (non-matching) CSS anyway. Stretch the img
-         to 100% so the spark fills the card width in the export. */
-      var stretchSparkImg = (panelId === 'hm-indexes');
       try {
         var origCanvases = origContent.querySelectorAll('canvas');
         var cloneCanvases = clone.querySelectorAll('canvas');
@@ -12106,21 +12095,12 @@
                sizing in the clone matches the live render. */
             if (cc.style && cc.style.cssText) imgEl.style.cssText = cc.style.cssText;
             if (cc.className) imgEl.className = typeof cc.className === 'string' ? cc.className : cc.getAttribute('class');
-            if (stretchChartImg || stretchSparkImg) {
+            if (stretchChartImg) {
               imgEl.style.setProperty('width', '100%', 'important');
+              imgEl.style.setProperty('height', 'auto', 'important');
               imgEl.style.setProperty('max-width', 'none', 'important');
               imgEl.removeAttribute('width');
               imgEl.removeAttribute('height');
-              if (stretchSparkImg) {
-                /* .hm-idx-spark wrap has fixed height:48px — match the
-                   live `.hm-idx-spark canvas { height: 100% }` rule so
-                   the img fills the wrap exactly instead of falling
-                   back to aspect-ratio height (which can overflow
-                   slightly). */
-                imgEl.style.setProperty('height', '100%', 'important');
-              } else {
-                imgEl.style.setProperty('height', 'auto', 'important');
-              }
             }
             if (cc.parentNode) cc.parentNode.replaceChild(imgEl, cc);
           } catch (e) { /* canvas tainted — skip, will appear blank */ }
