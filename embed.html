@@ -12291,37 +12291,6 @@
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
 
-      /* 7.5) Index Snapshot sparkline fix-up.
-              At step 2 each spark canvas was replaced with an <img>
-              whose inline cssText was copied from the canvas. Chart.js
-              sets the canvas's cssText to its LIVE-render display
-              size (e.g. width: 216px), and that inline width wins
-              over the .hm-idx-spark canvas { width:100% !important }
-              CSS rule because that rule only matches canvases — the
-              img doesn't match it.
-
-              Now that the clone is mounted + force-sized, each
-              .hm-idx-spark wrap is at its final 2-col-grid pixel
-              width (~268px content area). Stretch each sparkline img
-              to fill its wrap exactly via inline !important. We use
-              measured pixel values (not "100%") because html-to-
-              image's foreignObject capture honors fixed px dimensions
-              more reliably than percentage resolutions. */
-      if (panelId === 'hm-indexes') {
-        clone.querySelectorAll('.hm-idx-spark img').forEach(function (img) {
-          if (!img.parentNode) return;
-          var wrapRect = img.parentNode.getBoundingClientRect();
-          var w = Math.max(1, Math.round(wrapRect.width));
-          var h = Math.max(1, Math.round(wrapRect.height));
-          img.setAttribute('width', w);
-          img.setAttribute('height', h);
-          img.style.setProperty('display', 'block', 'important');
-          img.style.setProperty('width', w + 'px', 'important');
-          img.style.setProperty('height', h + 'px', 'important');
-          img.style.setProperty('max-width', 'none', 'important');
-        });
-      }
-
       /* 8) Measure the panel-header height so the composer can crop
             it off the top of the resulting PNG. */
       var navbarRect = clonePanelHeader ? clonePanelHeader.getBoundingClientRect() : null;
