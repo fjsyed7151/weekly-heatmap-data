@@ -12340,7 +12340,7 @@
          scrollbars in the captured PNG. Inline overflow:visible
          eliminates the scrollbar at the source \u2014 content extends
          naturally instead of being clipped behind a scrollbar UI. */
-      clone.querySelectorAll('.hm-scroll, .hm-factors-scroll').forEach(function (s) {
+      clone.querySelectorAll('.hm-scroll, .hm-factors-scroll, .hm-commod-wrap, .hm-fx-wrap').forEach(function (s) {
         s.style.setProperty('overflow', 'visible', 'important');
         s.style.setProperty('overflow-x', 'visible', 'important');
         s.style.setProperty('overflow-y', 'visible', 'important');
@@ -12445,19 +12445,13 @@
       var floorW = pinnedW || 600;
       var captureW = Math.max(floorW, Math.ceil(rectW));
       var captureH = Math.ceil(rectH);
-      /* Buffer for panels with many table rows whose last row gets
-         clipped due to accumulated subpixel rounding (each row's
-         border / padding / cell-height fractions add up across N
-         rows and getBoundingClientRect on the wrapper underreports
-         the true visual extent). Applied to:
-           - hm-heatmap-wrap (~59 metric rows)
-           - hm-currencies (~30+ FX rows incl. category headers)
-           - hm-commodities (~40+ commodity rows incl. categories)
-         +20 logical px shows as < 10 visual px of bg above the
-         footer divider \u2014 invisible enough. */
-      if (panelId === 'hm-heatmap-wrap' ||
-          panelId === 'hm-currencies' ||
-          panelId === 'hm-commodities') {
+      /* Heatmap-only buffer for accumulated subpixel rounding across
+         ~59 table rows. (The currency + commodity tables previously
+         got this buffer too, but the real cause of THEIR last-row
+         clipping was overflow-y:hidden on .hm-commod-wrap /
+         .hm-fx-wrap \u2014 now overridden to overflow:visible inline
+         above, so no buffer needed.) */
+      if (panelId === 'hm-heatmap-wrap') {
         captureH += 20;
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
