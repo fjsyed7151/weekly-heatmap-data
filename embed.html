@@ -12474,9 +12474,14 @@
        */
       if (panelId === 'hm-heatmap-wrap') {
         captureH += 20;
-      } else if (panelId === 'hm-currencies' || panelId === 'hm-commodities') {
+      } else if (panelId === 'hm-commodities') {
+        /* Commodity table: ~30 rows, last sparkline pixel-row was
+           getting trimmed without the buffer; +10 hides the gap. */
         captureH += 10;
       }
+      /* Currencies needs no buffer — flex:none + overflow:visible
+         alone gives a tight fit (user reported +10 created a visible
+         gap above the footer on the FX export specifically). */
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
 
