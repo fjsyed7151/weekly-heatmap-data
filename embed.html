@@ -923,9 +923,11 @@
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
-    /* No bottom padding / margin: first row of panels sits flush
-       against the topbar's bottom edge. */
-    padding: 8px 0 0;
+    /* Topbar internal padding (top: 8 / bottom: 12) preserved so the
+       buttons have breathing room inside the sticky bar. Margin-
+       bottom is 0 so the first row of panels sits flush against the
+       topbar's outer bottom edge (no gap above the components). */
+    padding: 8px 0 12px;
     margin: -8px 0 0;
     background: var(--hm-bg);
   }
