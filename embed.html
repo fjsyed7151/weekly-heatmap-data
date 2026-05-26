@@ -5137,15 +5137,14 @@
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
   }
-  /* Size vs Value: 3x3 grid of rounded `.hm-style-cell` boxes. Bottom
-     corners of the cells in the LAST ROW (`:nth-last-child(-n+3)`) sit
-     at the bottom edge of the captured panel image and show as cut-
-     outs above the footer. Square just those — top + middle rows keep
-     their full rounding. */
-  .hm-app .hm-export-stage .hm-style-grid > .hm-style-cell:nth-last-child(-n+3) {
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-  }
+  /* (Removed: the .hm-export-stage rule that squared the LAST ROW
+     cells' bottom corners. The .hm-sf-body's bottom-radius squaring
+     in renderPanelToPNG (done inline so it survives the foreignObject
+     capture) is what actually makes the panel sit flush with the
+     footer divider — the cells inside don't need to lose rounding
+     too, and squaring them visibly removes the design rounding the
+     user expects. Rounding is now preserved inline on every
+     .hm-style-cell in renderPanelToPNG step 5.) */
   /* Keep gold inner headers + their inner toolbars on ONE LINE in the
      export. The period-selector group + the Abs/vs-SPY toggle wrap
      to a second line when the live panel is narrow. The canonical
@@ -12233,21 +12232,33 @@
         s.style.setProperty('overflow-y', 'visible', 'important');
       });
 
-      /* Size vs Value + Upcoming Releases (Calendar) have an inner
-         body element (`.hm-sf-body` / `.hm-cal-body`) with
-         `border-bottom-{left,right}-radius: 5px` in CSS. That radius
-         sits at the visual bottom of the exported PNG and shows as
-         rounded cut-outs above the footer divider. Earlier .hm-export-
-         stage CSS rules tried to square these via the wrapper classes
-         (.hm-cal-section / .hm-stylefactor-panel) but the actual
-         rounded element is the *-body inside, AND the CSS rules
-         didn't apply in html-to-image's foreignObject anyway. Set
-         the radius inline on the specific elements that hold the
-         radius — these inline styles travel into the foreignObject
-         and override the CSS source. */
-      clone.querySelectorAll('.hm-sf-body, .hm-cal-body').forEach(function (b) {
+      /* Size vs Value + Upcoming Releases (Calendar) + Economic
+         Indicators all carry the panel's bottom rounding on an
+         INNER body element (.hm-sf-body / .hm-cal-body / .hm-econ-
+         body), not on the outer panel wrapper. The rounding shows
+         as a panel-bg cut-out above the footer divider in the
+         export. .hm-export-stage CSS rules don't survive html-to-
+         image's foreignObject (the cloned tree loses its .hm-export-
+         stage ancestor), so the squaring HAS to be inline on the
+         specific element that holds the radius. */
+      clone.querySelectorAll('.hm-sf-body, .hm-cal-body, .hm-econ-body').forEach(function (b) {
         b.style.setProperty('border-bottom-left-radius', '0', 'important');
         b.style.setProperty('border-bottom-right-radius', '0', 'important');
+      });
+
+      /* Size vs Value 3x3 cells: explicitly preserve their 5px
+         border-radius inline. The CSS rule `.hm-app .hm-style-cell
+         { border-radius: var(--hm-r) }` should give 5px rounding,
+         but the cells appeared visibly square in the export — most
+         likely because html-to-image's foreignObject capture wasn't
+         resolving the var(--hm-r) custom property on nested
+         descendants the same way as on the live UI. Inline 5px
+         with !important guarantees the rounding lands. Applies to
+         ALL 9 cells including the bottom row — the panel's flush-
+         bottom is already handled by .hm-sf-body squaring above,
+         so the cells themselves don't need to lose their rounding. */
+      clone.querySelectorAll('.hm-style-cell').forEach(function (cell) {
+        cell.style.setProperty('border-radius', '5px', 'important');
       });
 
       /* 6) Force every sticky inner header (gold bars on ranking
@@ -12319,6 +12330,38 @@
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
+
+      /* 7.5) Index Snapshot sparkline stretch.
+              The canvas-replacement at step 2 produced an <img> with
+              Chart.js's live-render display width baked into its
+              inline cssText (e.g. width: 200px when the live panel
+              sat in a 4-col layout). That inline width sticks even
+              after the centering fix above — the spark stays at its
+              small captured size, just centered in the 2-col-grid
+              wrap (~268px content area). User wants the spark to
+              actually FILL the card, not just be centered small.
+
+              Now that the clone is mounted + force-sized, each
+              .hm-idx-spark wrap is at its final 2-col-grid pixel
+              width. Set each img to EXACT measured pixel dimensions
+              inline with !important — these travel into the foreign-
+              Object capture and override the Chart.js cssText. The
+              centering above is now redundant (img fills wrap) but
+              kept as a safety net. */
+      if (panelId === 'hm-indexes') {
+        clone.querySelectorAll('.hm-idx-spark img').forEach(function (img) {
+          if (!img.parentNode) return;
+          var wrapRect = img.parentNode.getBoundingClientRect();
+          var w = Math.max(1, Math.round(wrapRect.width));
+          var h = Math.max(1, Math.round(wrapRect.height));
+          img.setAttribute('width', w);
+          img.setAttribute('height', h);
+          img.style.setProperty('display', 'block', 'important');
+          img.style.setProperty('width', w + 'px', 'important');
+          img.style.setProperty('height', h + 'px', 'important');
+          img.style.setProperty('max-width', 'none', 'important');
+        });
+      }
 
       /* 8) Measure the panel-header height so the composer can crop
             it off the top of the resulting PNG. */
