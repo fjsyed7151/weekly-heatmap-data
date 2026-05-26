@@ -11434,12 +11434,32 @@
     var flexMinSum = intents.reduce(function (s, it, i) {
       return s + (it.kind === 'flex' ? lims[i].min : 0);
     }, 0);
+    var fixedCount = intents.reduce(function (s, it) {
+      return s + (it.kind === 'fixed' ? 1 : 0);
+    }, 0);
+    var flexCount = intents.reduce(function (s, it) {
+      return s + (it.kind === 'flex' ? 1 : 0);
+    }, 0);
     if (fixedSum + flexMinSum > avail && fixedSum > 0) {
       var availForFixed = Math.max(0, avail - flexMinSum);
       var scale = availForFixed / fixedSum;
       intents.forEach(function (it, i) {
         if (it.kind === 'fixed') {
           it.px = Math.max(lims[i].min, Math.floor(it.px * scale));
+        }
+      });
+    } else if (flexCount === 0 && fixedSum > 0 && fixedSum < avail) {
+      /* All columns are fixed-px AND their sum is LESS than the
+         container width. Without intervention this leaves an empty
+         band on the right (most-reported "huge gap on the right"
+         symptom — happens whenever a user drag-resizes all three
+         columns and the saved widths don't add up to the current
+         viewport, e.g. moved to a wider monitor). Scale the fixed
+         widths UP proportionally so they fill the viewport. */
+      var scaleUp = avail / fixedSum;
+      intents.forEach(function (it, i) {
+        if (it.kind === 'fixed') {
+          it.px = Math.floor(it.px * scaleUp);
         }
       });
     }
