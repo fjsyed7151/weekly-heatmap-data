@@ -12107,6 +12107,23 @@
         }
       } catch (e) { /* querySelectorAll failed somehow */ }
 
+      /* 2.5) Index Snapshot only: center the sparkline img inside its
+              .hm-idx-spark wrap so left/right padding is symmetric in
+              the export. Chart.js sets the canvas's inline width to
+              its live-render display size (e.g. 200px when the panel
+              sits in a 4-col live layout). That inline width survives
+              into the canvas→img replacement, so the img ends up
+              smaller than the export wrap (~268px in the 2-col grid
+              that 600px triggers). Without intervention the img sits
+              flush-left and ALL the empty space falls on the right.
+              flex + justify-content: center splits the gap evenly. */
+      if (panelId === 'hm-indexes') {
+        clone.querySelectorAll('.hm-idx-spark').forEach(function (wrap) {
+          wrap.style.setProperty('display', 'flex', 'important');
+          wrap.style.setProperty('justify-content', 'center', 'important');
+        });
+      }
+
       /* 3) Wrap the clone in a fake .grid-stack-item with the same
             gs-id + class string so per-panel CSS rules (e.g.
             `.hm-app .grid-stack-item[gs-id="hm-factors"] .hm-panel-wrap`)
