@@ -12255,7 +12255,7 @@
          image's foreignObject (the cloned tree loses its .hm-export-
          stage ancestor), so the squaring HAS to be inline on the
          specific element that holds the radius. */
-      clone.querySelectorAll('.hm-sf-body, .hm-cal-body, .hm-econ-body').forEach(function (b) {
+      clone.querySelectorAll('.hm-sf-body, .hm-cal-body, .hm-econ-body, .hm-treemap-body').forEach(function (b) {
         b.style.setProperty('border-bottom-left-radius', '0', 'important');
         b.style.setProperty('border-bottom-right-radius', '0', 'important');
       });
