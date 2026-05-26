@@ -12363,6 +12363,107 @@
         });
       }
 
+      /* 7.6) Sector chart re-render at canonical export dimensions.
+              The canvas-replacement at step 2 + stretchChartImg's
+              width:100% height:100% gives a blurry, distorted chart
+              whenever the live capture aspect ratio doesn't match
+              the export wrap's aspect (e.g. live panel in a 660-wide
+              column captured at 660:320 = 2.06, displayed at 1068:320
+              = 3.34 in the export — the captured pixels get stretched
+              horizontally). User-reported: "blurry... forced stretch".
+
+              The proper fix is to RE-RENDER Chart.js at the target
+              export dimensions instead of stretching live pixels.
+              For each canvas in the panel, look up its Chart.js
+              instance via Chart.getChart(originalCanvas), create a
+              temp offscreen wrap+canvas at the target size, spin up
+              a new Chart.js with the same type/data/options, capture
+              toDataURL, swap into the cloned img, destroy the temp
+              chart. The new PNG is natively at the target aspect so
+              no stretching is needed.
+
+              Falls back silently if Chart isn't loaded or the chart
+              instance can't be found — the existing stretched img
+              stays in place (better blurry than empty). */
+      if (panelId === 'hm-sector-chart' && typeof Chart !== 'undefined' && typeof Chart.getChart === 'function') {
+        (function () {
+          var origCanvases = origContent.querySelectorAll('canvas');
+          /* The canvases were replaced with imgs at step 2 in the
+             clone. Order is preserved by querySelectorAll, so the
+             i-th cloned img corresponds to the i-th orig canvas. */
+          var cloneImgs = clone.querySelectorAll('img');
+          var n = Math.min(origCanvases.length, cloneImgs.length);
+          for (var ix = 0; ix < n; ix++) {
+            var oc = origCanvases[ix];
+            var ci = cloneImgs[ix];
+            if (!ci || !ci.parentNode) continue;
+            var liveChart = Chart.getChart(oc);
+            if (!liveChart) continue;
+
+            /* Target dimensions from the cloned img's parent wrap
+               (which is already laid out at the export size — step
+               7 mounted + force-sized to 1100px panel width, so
+               .hm-sector-canvas-wrap is ~1068×320, .hm-sector-mini-
+               wrap is its grid cell size × 240). Subtract wrap
+               padding so the new canvas matches the chart drawing
+               area exactly (not the wrap + its padding). */
+            var wrapEl = ci.parentNode;
+            var wrapRect = wrapEl.getBoundingClientRect();
+            var ws = window.getComputedStyle(wrapEl);
+            var pdL = parseFloat(ws.paddingLeft) || 0;
+            var pdR = parseFloat(ws.paddingRight) || 0;
+            var pdT = parseFloat(ws.paddingTop) || 0;
+            var pdB = parseFloat(ws.paddingBottom) || 0;
+            var targetW = Math.max(50, Math.round(wrapRect.width - pdL - pdR));
+            var targetH = Math.max(50, Math.round(wrapRect.height - pdT - pdB));
+
+            /* Offscreen wrap + canvas. Wrap is a positioned container
+               so Chart.js's responsive sizing has a definite box
+               to measure against. */
+            var tempWrap = document.createElement('div');
+            tempWrap.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:' + targetW + 'px;height:' + targetH + 'px;pointer-events:none;';
+            var tempCanvas = document.createElement('canvas');
+            tempCanvas.style.cssText = 'display:block;width:100%;height:100%;';
+            tempWrap.appendChild(tempCanvas);
+            document.body.appendChild(tempWrap);
+            /* Force layout so the canvas has its dimensions before
+               Chart.js measures the parent box. */
+            void tempCanvas.offsetHeight;
+
+            var newChart = null;
+            try {
+              /* Reuse the live chart's type/data/options. Same data
+                 reference is safe — Chart.js doesn't mutate the data
+                 array. Same options reference reuses any function
+                 callbacks the live chart had. */
+              newChart = new Chart(tempCanvas, {
+                type: liveChart.config.type,
+                data: liveChart.config.data,
+                options: liveChart.config.options
+              });
+              /* With animation:false in sectorChartOpts, Chart.js
+                 renders synchronously inside the constructor. The
+                 canvas should now hold the rendered chart at exact
+                 target dimensions. */
+              var dataUrl = tempCanvas.toDataURL('image/png');
+              ci.src = dataUrl;
+              ci.setAttribute('width', targetW);
+              ci.setAttribute('height', targetH);
+              ci.style.setProperty('display', 'block', 'important');
+              ci.style.setProperty('width', targetW + 'px', 'important');
+              ci.style.setProperty('height', targetH + 'px', 'important');
+              ci.style.setProperty('max-width', 'none', 'important');
+            } catch (e) {
+              /* Re-render failed — leave the existing stretched
+                 img in place. */
+            } finally {
+              try { if (newChart) newChart.destroy(); } catch (e) {}
+              if (tempWrap.parentNode) tempWrap.parentNode.removeChild(tempWrap);
+            }
+          }
+        })();
+      }
+
       /* 8) Measure the panel-header height so the composer can crop
             it off the top of the resulting PNG. */
       var navbarRect = clonePanelHeader ? clonePanelHeader.getBoundingClientRect() : null;
