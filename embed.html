@@ -4136,12 +4136,9 @@
   .hm-app .hm-cm-table th:last-child,
   .hm-app .hm-cm-table td:last-child { border-right: none; }
   .hm-app .hm-cm-table tbody tr:last-child td { border-bottom: none; }
-  /* Removed: the bottom-left rounding on the last row's first cell
-     (NOK row-label). The user wants square corners on that cell so
-     it sits flush with the panel chrome. */
-  .hm-app .hm-cm-table tbody tr:last-child td:last-child {
-    border-bottom-right-radius: 5px;
-  }
+  /* Removed: the bottom-left + bottom-right rounding on the last
+     row's edge cells (NOK row-label + NOK x NOK diag). Both corners
+     stay square so the matrix sits flush with the panel chrome. */
   .hm-app .hm-cm-table thead th {
     background: var(--hm-bg-warm);
     font-weight: 700;
