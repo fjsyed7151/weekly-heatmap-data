@@ -12475,13 +12475,15 @@
       if (panelId === 'hm-heatmap-wrap') {
         captureH += 20;
       } else if (panelId === 'hm-commodities') {
-        /* Commodity table: ~30 rows, last sparkline pixel-row was
-           getting trimmed without the buffer; +10 hides the gap. */
+        /* Commodity table: ~30 rows + sparklines + bar sliders;
+           +10 absorbed subpixel rounding cleanly (user-tested). */
         captureH += 10;
+      } else if (panelId === 'hm-currencies') {
+        /* FX table: fewer rows so it doesn't compound as much. +2 is
+           the minimum to absorb html-to-image's canvas-edge subpixel
+           rounding without a visible bg gap above the footer. */
+        captureH += 2;
       }
-      /* Currencies needs no buffer — flex:none + overflow:visible
-         alone gives a tight fit (user reported +10 created a visible
-         gap above the footer on the FX export specifically). */
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
 
