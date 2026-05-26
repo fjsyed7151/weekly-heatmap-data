@@ -248,18 +248,30 @@
   /* Gridstack POC: minimal chrome so the panels look like they did before,
      with drag handles (top edge) + a visible resize corner. */
   .hm-app .grid-stack {
-    /* Background grid + linen-texture removed at user request \u2014 the
-       faint gold lines / dotted pattern that used to show through
-       transparent panel content (and especially through the top
-       band above the first row of panels) read as a visible "gap"
-       above the components. Plain transparent background lets the
-       host page's solid color show through everywhere. */
+    /* Linen / flour-sack texture backdrop with a faint gold measurement
+       grid on top. The base layer is an SVG fractal-noise filter
+       (anisotropic frequency = directional weave, like linen threads)
+       in the same wheat-brown the old dots used. The top layer is gold
+       lines at the 24-column \u00d7 40px-row gs-w/gs-h boundaries \u2014 pale
+       enough to read as "ruled paper" rather than fight with the texture. */
     background-color: transparent;
-    background-image: none;
+    background-image:
+      linear-gradient(to right, rgba(218, 165, 32, 0.09) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(218, 165, 32, 0.09) 1px, transparent 1px),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='l' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85 0.55' numOctaves='2' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.54  0 0 0 0 0.48  0 0 0 0 0.36  0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E");
+    background-size:
+      calc(100% / 24) 100%,
+      100% 40px,
+      220px 220px;
+    background-position: 0 0, 0 0, 0 0;
+    background-repeat: repeat, repeat, repeat;
     min-height: 100vh;
   }
   .hm-app.dark .grid-stack {
-    background-image: none;
+    background-image:
+      linear-gradient(to right, rgba(218, 165, 32, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(218, 165, 32, 0.07) 1px, transparent 1px),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='l' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85 0.55' numOctaves='2' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.10 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E");
   }
   /* High specificity to win against Gridstack's default rule. The cell
      handles BOTH overflow directions, so the horizontal scrollbar pins
@@ -284,7 +296,12 @@
      size the same. */
   .hm-app .grid-stack > .grid-stack-item > .grid-stack-item-content,
   .hm-app .hm-col > .grid-stack-item > .grid-stack-item-content {
-    background: transparent;
+    /* Solid panel-bg (was transparent) so the .grid-stack
+       background pattern can't show through any panel area — the
+       pattern is reserved for genuinely empty space outside panels.
+       Eliminates the user-reported "pattern visible above first
+       row of components" symptom. */
+    background: var(--hm-panel);
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     overflow: auto;
