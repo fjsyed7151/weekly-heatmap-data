@@ -8319,6 +8319,12 @@
   var sectorCharts = [];
   var sectorRangeStart = 52 - 13;  /* index into dates array (0=oldest) */
   var sectorRangeEnd = 51;         /* always last point initially */
+  /* Active period label ('1W' / '1M' / '3M' / '6M' / 'YTD' / '1Y' /
+     '3Y' / '5Y' / '10Y'). Used by the x-axis label formatter — YTD
+     and longer span across years, so we append /YY so users can
+     tell which year a 05/23 tick belongs to. */
+  var sectorPeriod = '3M';
+  var SECTOR_PERIODS_WITH_YEAR = { 'YTD': 1, '1Y': 1, '3Y': 1, '5Y': 1, '10Y': 1 };
   /* When the active period is short (1W / 1M / 3M / 6M / YTD-if-short),
      use the daily series shipped by build_sector_chart so the chart
      line is smooth. Longer periods stay on weekly granularity. */
@@ -8428,7 +8434,14 @@
     var sc = _scActive(_sc), info = _sectorInfo;
     var theme = getTheme();
     var si = sectorRangeStart, ei = sectorRangeEnd;
-    var labels = sc.dates.slice(si, ei + 1).map(function (d) { var p = d.split('-'); return p[1] + '/' + p[2]; });
+    /* YTD and longer periods can span a year boundary, so include
+       /YY at the end so a "05/23" tick is unambiguous about which
+       year it lands in. Shorter periods (1W/1M/3M/6M) stay MM/DD. */
+    var withYear = !!SECTOR_PERIODS_WITH_YEAR[sectorPeriod];
+    var labels = sc.dates.slice(si, ei + 1).map(function (d) {
+      var p = d.split('-');
+      return withYear ? (p[1] + '/' + p[2] + '/' + p[0].slice(2)) : (p[1] + '/' + p[2]);
+    });
     var chartArea = document.getElementById('hm-sector-chart-area');
     if (!chartArea) return;
     chartArea.innerHTML = '';
@@ -8613,6 +8626,7 @@
         }
         sectorRangeStart = Math.max(0, amax - slice + 1);
         sectorRangeEnd = amax;
+        sectorPeriod = p.label;
         buildSectorCharts();
         periodWrap.querySelectorAll('.hm-sector-period-btn').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
