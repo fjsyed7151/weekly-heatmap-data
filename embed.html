@@ -5228,6 +5228,68 @@
     flex-wrap: nowrap !important;
     white-space: nowrap !important;
   }
+
+  /* Commodity panel — per-category filter button (lives in the
+     panel-header chrome next to the info button) + its popup. Same
+     style language as the universal-period selector in the topbar. */
+  .hm-app .hm-panel-filter-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  .hm-app .hm-panel-filter-popup {
+    position: absolute;
+    /* Open below the icon, right-aligned so it doesn't fly off the
+       right edge of the panel. */
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 20;
+    min-width: 160px;
+    background: var(--hm-panel);
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+    padding: 8px;
+  }
+  .hm-app.dark .hm-panel-filter-popup {
+    background: var(--hm-bg-warm);
+    border-color: var(--hm-border-strong);
+  }
+  .hm-app .hm-panel-filter-popup[hidden] { display: none; }
+  .hm-app .hm-panel-filter-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--hm-brown);
+    margin-bottom: 6px;
+    padding: 0 2px;
+  }
+  .hm-app .hm-panel-filter-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--hm-dark);
+    cursor: pointer;
+    user-select: none;
+  }
+  .hm-app .hm-panel-filter-opt:hover {
+    background: rgba(218, 165, 32, 0.10);
+  }
+  .hm-app .hm-panel-filter-opt input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--hm-gold);
+  }
+  /* Hide rows whose category is toggled off. Applied via JS-set
+     class on the table. Both the category subheader (.hm-commod-cat)
+     and the data rows share the same `data-cat` attribute so a
+     single selector covers both. */
+  .hm-app .hm-commod-tbl tr[data-cat][data-cat-hidden="true"] {
+    display: none !important;
+  }
 </style>
 
 <div class="hm-app" id="hm-app">
@@ -8011,11 +8073,13 @@
     data.commodities.forEach(function (group) {
       var catTr = document.createElement('tr');
       catTr.className = 'hm-commod-cat';
+      catTr.setAttribute('data-cat', group.name);
       catTr.innerHTML = '<td colspan="7">' + group.name + '</td>';
       tbody.appendChild(catTr);
 
       group.items.forEach(function (c) {
         var tr = document.createElement('tr');
+        tr.setAttribute('data-cat', group.name);
         var isUp = (c.change_pct || 0) >= 0;
         var sparkSvg = _buildSparkSvg(c.sparkline || [], isUp);
 
@@ -8054,6 +8118,120 @@
     wrap.appendChild(table);
     section.appendChild(wrap);
     container.appendChild(section);
+
+    /* Cache groups so the filter installer (which runs AFTER initGridStack
+       has built the panel-header chrome) can read them. */
+    window._hmCommoditiesGroups = data.commodities;
+    /* Try injecting now — works on re-render (theme toggle) once chrome
+       is already built. Initial-load injection happens via the explicit
+       install call right after initGridStack in the bootstrap chain. */
+    _installCommodityCategoryFilter(commItem, data.commodities);
+  }
+
+  /* Standalone so the panel-header chrome doesn't have to be modified
+     by the framework. Idempotent — early-returns if filter already there.
+     If header is missing (renderCommodities ran before initGridStack on
+     initial load), silently no-ops; the bootstrap chain re-calls this
+     after gridstack init. */
+  function _installCommodityCategoryFilter(commItem, groups) {
+    if (!commItem) return;
+    var header = commItem.querySelector('.hm-panel-header');
+    if (!header) return;
+    /* If we've already injected the filter on a previous render, just
+       reapply the saved state and return. */
+    var existing = header.querySelector('.hm-panel-filter-wrap');
+    if (existing) { _applyCommodityCategoryHidden(); return; }
+
+    var CAT_KEY = 'hm-commod-cats-v1';
+    function loadHidden() {
+      try {
+        var raw = localStorage.getItem(CAT_KEY);
+        if (!raw) return {};
+        var v = JSON.parse(raw);
+        return v && typeof v === 'object' ? v : {};
+      } catch (e) { return {}; }
+    }
+    function saveHidden(map) {
+      try { localStorage.setItem(CAT_KEY, JSON.stringify(map)); } catch (e) {}
+    }
+
+    var filterWrap = document.createElement('span');
+    filterWrap.className = 'hm-panel-filter-wrap';
+    var btn = document.createElement('button');
+    btn.className = 'hm-panel-btn hm-panel-filter';
+    btn.type = 'button';
+    btn.title = 'Show / hide categories';
+    btn.setAttribute('aria-label', 'Show / hide categories');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
+    var popup = document.createElement('div');
+    popup.className = 'hm-panel-filter-popup';
+    popup.hidden = true;
+    var title = document.createElement('div');
+    title.className = 'hm-panel-filter-title';
+    title.textContent = 'Categories';
+    popup.appendChild(title);
+
+    var hidden = loadHidden();
+    groups.forEach(function (g) {
+      var label = document.createElement('label');
+      label.className = 'hm-panel-filter-opt';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !hidden[g.name];
+      cb.setAttribute('data-cat', g.name);
+      cb.addEventListener('change', function () {
+        var map = loadHidden();
+        if (cb.checked) { delete map[g.name]; }
+        else { map[g.name] = true; }
+        saveHidden(map);
+        _applyCommodityCategoryHidden();
+      });
+      var span = document.createElement('span');
+      span.textContent = g.name;
+      label.appendChild(cb);
+      label.appendChild(span);
+      popup.appendChild(label);
+    });
+
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      popup.hidden = !popup.hidden;
+    });
+    document.addEventListener('click', function (e) {
+      if (popup.hidden) return;
+      if (popup.contains(e.target) || btn.contains(e.target)) return;
+      popup.hidden = true;
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !popup.hidden) popup.hidden = true;
+    });
+
+    filterWrap.appendChild(btn);
+    filterWrap.appendChild(popup);
+    /* Insert AFTER the info button so the order reads: info | filter |
+       move/stack/export/close. */
+    var infoBtn = header.querySelector('.hm-panel-info');
+    if (infoBtn && infoBtn.nextSibling) {
+      header.insertBefore(filterWrap, infoBtn.nextSibling);
+    } else {
+      header.insertBefore(filterWrap, header.firstChild);
+    }
+
+    _applyCommodityCategoryHidden();
+  }
+
+  function _applyCommodityCategoryHidden() {
+    var tbl = document.querySelector('#hm-commodities .hm-commod-tbl');
+    if (!tbl) return;
+    var hidden = {};
+    try {
+      var raw = localStorage.getItem('hm-commod-cats-v1');
+      if (raw) hidden = JSON.parse(raw) || {};
+    } catch (e) {}
+    tbl.querySelectorAll('tr[data-cat]').forEach(function (tr) {
+      var cat = tr.getAttribute('data-cat');
+      tr.setAttribute('data-cat-hidden', hidden[cat] ? 'true' : 'false');
+    });
   }
 
   function renderCurrencies(data) {
@@ -12804,6 +12982,15 @@
       /* Sticky thead is now CSS-native (position: sticky on .hm-table thead th)
          since the heat map lives inside a grid panel scroll container. */
       safeRender('gridstack', initGridStack);
+      /* Inject the commodity-category filter button now that the
+         panel-header chrome has been built by initGridStack. */
+      safeRender('commodFilter', function () {
+        var commItem = document.querySelector('.grid-stack-item[gs-id="hm-commodities"]');
+        var groups = window._hmCommoditiesGroups;
+        if (commItem && groups && typeof _installCommodityCategoryFilter === 'function') {
+          _installCommodityCategoryFilter(commItem, groups);
+        }
+      });
       /* After Gridstack is initialized AND all renderers have populated
          their panels, fit each grid item's height to its content AND set
          maxH to that height so users can't drag-resize taller than the
