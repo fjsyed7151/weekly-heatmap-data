@@ -4125,16 +4125,20 @@
     color: var(--hm-brown);
     background: var(--hm-bg-warm);
     min-width: 56px;
+    /* Match the column-header style (font-size 10 / uppercase /
+       letter-spacing) so the row labels and column labels look
+       consistent — previously row labels inherited the generic
+       12px cell style and read bigger than the column headers. */
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
   }
   .hm-app .hm-cm-table th:last-child,
   .hm-app .hm-cm-table td:last-child { border-right: none; }
   .hm-app .hm-cm-table tbody tr:last-child td { border-bottom: none; }
-  /* Round the last row's first/last edge cells so the table content
-     doesn't poke past the panel card's 5px rounded corners. The first
-     cell of the last row is a TH (row-label) here, not a TD. */
-  .hm-app .hm-cm-table tbody tr:last-child th:first-child {
-    border-bottom-left-radius: 5px;
-  }
+  /* Removed: the bottom-left rounding on the last row's first cell
+     (NOK row-label). The user wants square corners on that cell so
+     it sits flush with the panel chrome. */
   .hm-app .hm-cm-table tbody tr:last-child td:last-child {
     border-bottom-right-radius: 5px;
   }
