@@ -5307,12 +5307,13 @@
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
   }
-  /* Hide rows whose category is toggled off. Applied via JS-set
-     data-cat-hidden attribute. Both the category subheader (.hm-commod-cat
-     / .hm-fx-cat) and the data rows share the same `data-cat` attribute
-     so a single selector covers both. */
+  /* Hide rows / cards whose category is toggled off. Applied via
+     JS-set data-cat-hidden attribute.
+       - hm-commod-tbl + hm-fx-tbl: tr[data-cat] (subheader + data rows)
+       - hm-econ-body: any descendant with data-cat (subhead div + grid div) */
   .hm-app .hm-commod-tbl tr[data-cat][data-cat-hidden="true"],
-  .hm-app .hm-fx-tbl tr[data-cat][data-cat-hidden="true"] {
+  .hm-app .hm-fx-tbl tr[data-cat][data-cat-hidden="true"],
+  .hm-app .hm-econ-body [data-cat][data-cat-hidden="true"] {
     display: none !important;
   }
 </style>
@@ -8271,16 +8272,19 @@
   }
 
   function _applyCategoryHidden(storageKey, tableSelector) {
-    var tbl = document.querySelector(tableSelector);
-    if (!tbl) return;
+    var root = document.querySelector(tableSelector);
+    if (!root) return;
     var hidden = {};
     try {
       var raw = localStorage.getItem(storageKey);
       if (raw) hidden = JSON.parse(raw) || {};
     } catch (e) {}
-    tbl.querySelectorAll('tr[data-cat]').forEach(function (tr) {
-      var cat = tr.getAttribute('data-cat');
-      tr.setAttribute('data-cat-hidden', hidden[cat] ? 'true' : 'false');
+    /* Use [data-cat] (not tr[data-cat]) so this works on non-table
+       panels (e.g. the economic-indicators card grid where the data-cat
+       attribute lives on subhead divs + grid divs, not on tr's). */
+    root.querySelectorAll('[data-cat]').forEach(function (el) {
+      var cat = el.getAttribute('data-cat');
+      el.setAttribute('data-cat-hidden', hidden[cat] ? 'true' : 'false');
     });
   }
 
@@ -8601,11 +8605,13 @@
       if (g.name) {
         var sub = document.createElement('div');
         sub.className = 'hm-econ-subhead';
+        sub.setAttribute('data-cat', g.name);
         sub.textContent = g.name;
         body.appendChild(sub);
       }
       var grid = document.createElement('div');
       grid.className = 'hm-econ-grid';
+      grid.setAttribute('data-cat', g.name);
       /* 3 items \u2192 3-column row (avoids the awkward single full-width card at
          the bottom). 1 item \u2192 1-column full row. Everything else stays on the
          2-column grid the CSS defaults to. */
@@ -8620,6 +8626,16 @@
 
     section.appendChild(body);
     container.appendChild(section);
+
+    /* Cache groups for the filter installer (runs AFTER initGridStack). */
+    window._hmEconomyGroups = groups;
+    var econItem = document.querySelector('.grid-stack-item[gs-id="hm-economy"]');
+    _installCategoryFilter({
+      panelItem: econItem,
+      groups: groups,
+      storageKey: 'hm-econ-cats-v1',
+      tableSelector: '#hm-economy .hm-econ-body',
+    });
   }
 
   /* ---------- Sector performance chart ---------- */
@@ -13081,6 +13097,18 @@
             groups: groups,
             storageKey: 'hm-fx-cats-v1',
             tableSelector: '#hm-currencies .hm-fx-tbl',
+          });
+        }
+      });
+      safeRender('econFilter', function () {
+        var econItem = document.querySelector('.grid-stack-item[gs-id="hm-economy"]');
+        var groups = window._hmEconomyGroups;
+        if (econItem && groups && typeof _installCategoryFilter === 'function') {
+          _installCategoryFilter({
+            panelItem: econItem,
+            groups: groups,
+            storageKey: 'hm-econ-cats-v1',
+            tableSelector: '#hm-economy .hm-econ-body',
           });
         }
       });
