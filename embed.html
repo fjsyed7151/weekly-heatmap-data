@@ -7854,7 +7854,12 @@
                     if (!d) return '';
                     var parts = d.split('-');
                     var mo = new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' });
-                    return mo + ' ' + parseInt(parts[2], 10);
+                    /* YTD+ periods can cross year boundaries — append
+                       the year so the date is unambiguous. Short
+                       periods (1W/1M/3M/6M) stay "Mon DD". */
+                    var withYear = (idxPeriod === 'ytd' || idxPeriod === 'y1' || idxPeriod === 'y3' || idxPeriod === 'y5' || idxPeriod === 'y10');
+                    var base = mo + ' ' + parseInt(parts[2], 10);
+                    return withYear ? (base + ', ' + parts[0]) : base;
                   },
                   label: function (c) {
                     var v = c.parsed.y;
