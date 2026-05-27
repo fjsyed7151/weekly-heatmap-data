@@ -1278,15 +1278,15 @@
     text-decoration: line-through;
   }
 
-  /* Settings popup (reference-line toggles). Mirrors .sb-opts-dd pattern.
-     Uses position:fixed so it escapes the chart panel's stacking context —
-     a position:absolute popup with z-index:50 still gets covered by the
-     next panel below in the column because z-index only competes within
-     the same stacking context. JS positions it under the gear button. */
+  /* Settings popup (reference-line toggles). JS appends the popup to
+     <body> on open so it has no panel ancestors that could trap it
+     inside a stacking / clipping context. position:absolute with
+     document-relative coords (window.scrollX/Y + button rect) so it
+     stays glued to the button as the page scrolls. */
   .hm-app .hm-settings-wrap { position: relative; display: inline-block; }
   .hm-app .hm-settings-popup {
-    position: fixed;
-    z-index: 1000;
+    position: absolute;
+    z-index: 9999;
     min-width: 160px;
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
@@ -6903,10 +6903,18 @@
       popup.appendChild(label);
     });
 
-    /* Position the fixed-position popup under the gear button. Re-runs
-       on scroll/resize so the popup tracks the button if the page
-       moves. Right-aligned to the button, then clamped to viewport so
-       it never gets clipped on narrow screens. */
+    /* Position the popup under the gear button. The popup is moved
+       to document.body on open so it has no panel ancestors that
+       could trap it inside a stacking / containing-block context.
+       Coordinates are document-relative (window.scrollY + rect.top)
+       so the popup stays anchored to the button as the page scrolls
+       — we update on scroll/resize.
+
+       The popup also needs an outer-most ancestor that's reachable
+       via Element.contains checks for the outside-click logic, which
+       is why we track _refPopupParent (the .hm-settings-wrap it was
+       originally a child of). */
+    var _refPopupParent = popup.parentNode;
     function positionRefPopup() {
       if (popup.hasAttribute('hidden')) return;
       var btnRect = gearBtn.getBoundingClientRect();
@@ -6915,17 +6923,18 @@
       popup.style.left = '0px';
       popup.style.top = '0px';
       var popRect = popup.getBoundingClientRect();
-      var top = btnRect.bottom + 4;
-      var left = btnRect.right - popRect.width;
-      /* Clamp into viewport with 4px margin. */
-      if (left < 4) left = 4;
-      if (left + popRect.width > window.innerWidth - 4) {
-        left = window.innerWidth - 4 - popRect.width;
+      /* Document-relative coords so it stays glued to the button
+         even as the page scrolls. Right-aligned under the button. */
+      var top  = window.scrollY + btnRect.bottom + 4;
+      var left = window.scrollX + btnRect.right  - popRect.width;
+      if (left < window.scrollX + 4) left = window.scrollX + 4;
+      if (left + popRect.width > window.scrollX + window.innerWidth - 4) {
+        left = window.scrollX + window.innerWidth - 4 - popRect.width;
       }
-      if (top + popRect.height > window.innerHeight - 4) {
-        /* Flip above the button if there's no room below. */
-        top = btnRect.top - 4 - popRect.height;
-        if (top < 4) top = 4;
+      if (btnRect.bottom + 4 + popRect.height > window.innerHeight - 4) {
+        /* Flip above the button if there's no room below the viewport. */
+        top = window.scrollY + btnRect.top - 4 - popRect.height;
+        if (top < window.scrollY + 4) top = window.scrollY + 4;
       }
       popup.style.top = top + 'px';
       popup.style.left = left + 'px';
@@ -6933,6 +6942,14 @@
     }
     var _refScrollHandler = null;
     function openRefPopup() {
+      /* Move popup to .hm-app on open so the chart panel's stacking +
+         clipping contexts can't trap it, while still inheriting the
+         theme's CSS custom properties (--hm-panel, --hm-border, etc.)
+         which are scoped to .hm-app. */
+      var appRoot = document.getElementById('hm-app') || document.querySelector('.hm-app');
+      if (appRoot && popup.parentNode !== appRoot) {
+        appRoot.appendChild(popup);
+      }
       popup.removeAttribute('hidden');
       positionRefPopup();
       _refScrollHandler = function () { positionRefPopup(); };
