@@ -12609,6 +12609,21 @@
         clonePanelHeader.style.setProperty('display', 'none', 'important');
       }
 
+      /* The metrics-heatmap thead has `position: sticky; top: 24px`
+         to clear the panel-header (24px) below the navbar on the
+         live page. In the export clone the panel-header is display:
+         none, but the 24px sticky offset persists — without an
+         overflow:auto scroll ancestor the sticky behaves as relative
+         + top: 24px, shifting the entire thead 24px DOWN and
+         producing a 24px white gap above the gold header in the
+         captured PNG. Zero it out for the export. */
+      if (panelId === 'hm-heatmap-wrap') {
+        clone.querySelectorAll('.hm-table thead th').forEach(function (th) {
+          th.style.setProperty('top', '0', 'important');
+          th.style.setProperty('position', 'static', 'important');
+        });
+      }
+
       /* Force overflow:visible INLINE on every internal scroll
          container in the clone. The .hm-export-stage scope on the
          CSS rule that hides scrollbars doesn't reach into html-to-
