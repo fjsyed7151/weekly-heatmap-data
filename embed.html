@@ -4464,6 +4464,161 @@
     flex: 1;
   }
 
+  /* Brand-customization popup (highlight color + export logo). Same
+     visual language as the customize-view popup. */
+  .hm-app .hm-brand-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+  .hm-app .hm-brand-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 300px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    background: var(--hm-panel);
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    padding: 12px 16px;
+    z-index: 100;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--hm-dark);
+  }
+  .hm-app.dark .hm-brand-panel {
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  }
+  .hm-app .hm-brand-panel[hidden] { display: none; }
+  .hm-app .hm-brand-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--hm-border);
+  }
+  .hm-app .hm-brand-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--hm-gold);
+  }
+  .hm-app .hm-brand-reset {
+    font-family: 'Karla', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--hm-brown);
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .hm-app .hm-brand-reset:hover { color: var(--hm-gold); }
+  .hm-app .hm-brand-section {
+    margin-top: 10px;
+  }
+  .hm-app .hm-brand-section:first-of-type { margin-top: 0; }
+  .hm-app .hm-brand-label {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--hm-muted);
+    margin-bottom: 6px;
+  }
+  .hm-app .hm-brand-color-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hm-app .hm-brand-color-row input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--hm-border);
+    border-radius: 4px;
+    padding: 0;
+    cursor: pointer;
+    background: var(--hm-panel);
+  }
+  .hm-app .hm-brand-color-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  .hm-app .hm-brand-color-row input[type="color"]::-webkit-color-swatch { border: none; border-radius: 3px; }
+  .hm-app .hm-brand-color-row input[type="text"] {
+    flex: 1;
+    font-family: 'Karla', sans-serif;
+    font-size: 12px;
+    color: var(--hm-dark);
+    background: var(--hm-panel);
+    border: 1px solid var(--hm-border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    text-transform: uppercase;
+  }
+  .hm-app .hm-brand-color-row input[type="text"]:focus {
+    outline: none;
+    border-color: var(--hm-gold);
+  }
+  .hm-app .hm-brand-hint {
+    font-size: 10px;
+    color: var(--hm-muted);
+    margin-top: 4px;
+  }
+  .hm-app .hm-brand-logo-preview {
+    height: 60px;
+    border: 1px dashed var(--hm-border);
+    border-radius: 4px;
+    background: var(--hm-bg-warm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    margin-bottom: 6px;
+  }
+  .hm-app .hm-brand-logo-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .hm-app .hm-brand-logo-placeholder {
+    font-size: 10px;
+    color: var(--hm-muted);
+    font-style: italic;
+  }
+  .hm-app .hm-brand-logo-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .hm-app .hm-brand-logo-upload,
+  .hm-app .hm-brand-logo-clear {
+    flex: 1;
+    font-family: 'Karla', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid var(--hm-border);
+    background: var(--hm-panel);
+    color: var(--hm-dark);
+  }
+  .hm-app .hm-brand-logo-upload:hover,
+  .hm-app .hm-brand-logo-clear:hover {
+    border-color: var(--hm-gold);
+    color: var(--hm-gold);
+  }
+  .hm-app .hm-brand-logo-clear {
+    border-style: dashed;
+  }
+  .hm-app .hm-brand-logo-hint--error { color: var(--hm-red); }
+
   /* Info popover (next to theme toggle) */
   .hm-app .hm-info-wrap {
     position: relative;
@@ -5442,6 +5597,46 @@
             <button type="button" class="hm-customize-reset" id="hm-customize-reset">Show all</button>
           </div>
           <div id="hm-customize-body"></div>
+        </div>
+      </div>
+      <!-- Brand-customization popup: highlight color + export-footer logo upload. -->
+      <div class="hm-brand-wrap">
+        <button class="hm-btn" id="hm-brand-toggle" type="button" aria-label="Brand colors &amp; logo" title="Brand colors &amp; logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/>
+            <circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/>
+            <circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/>
+            <circle cx="6.5" cy="12.5" r="0.5" fill="currentColor"/>
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+          </svg>
+        </button>
+        <div class="hm-brand-panel" id="hm-brand-panel" hidden>
+          <div class="hm-brand-header">
+            <span class="hm-brand-title">Brand &amp; logo</span>
+            <button type="button" class="hm-brand-reset" id="hm-brand-reset">Reset</button>
+          </div>
+          <div class="hm-brand-section">
+            <label class="hm-brand-label" for="hm-brand-color">Highlight color</label>
+            <div class="hm-brand-color-row">
+              <input type="color" id="hm-brand-color" value="#daa520" />
+              <input type="text" id="hm-brand-color-hex" value="#DAA520" maxlength="7" spellcheck="false" autocomplete="off" />
+            </div>
+            <div class="hm-brand-hint">Applies to header bars, accents, and image exports.</div>
+          </div>
+          <div class="hm-brand-section">
+            <label class="hm-brand-label">Export logo</label>
+            <div class="hm-brand-logo-preview" id="hm-brand-logo-preview">
+              <span class="hm-brand-logo-placeholder">No custom logo</span>
+            </div>
+            <div class="hm-brand-logo-actions">
+              <label class="hm-brand-logo-upload">
+                <input type="file" id="hm-brand-logo-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden />
+                <span>Upload</span>
+              </label>
+              <button type="button" class="hm-brand-logo-clear" id="hm-brand-logo-clear">Remove</button>
+            </div>
+            <div class="hm-brand-hint" id="hm-brand-logo-hint">PNG, JPG, SVG, or WEBP. Max 500&nbsp;KB, 600&nbsp;&times;&nbsp;200&nbsp;px.</div>
+          </div>
         </div>
       </div>
       <button class="hm-btn" id="hm-theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
@@ -6995,6 +7190,249 @@
         try { localStorage.removeItem('hm-cols-layout-v2'); } catch (e) {}
         try { localStorage.removeItem('hm-cols-layout-v1'); } catch (e) {}
         window.location.reload();
+      });
+    }
+  })();
+
+  /* ---------- Brand customization: highlight color + export logo ----------
+     One color picker for the gold highlight (--hm-gold), one upload slot
+     for a logo that replaces StableBread's in the image-export footer.
+     Both persist to localStorage and apply on every page load.
+     - hm-theme-overrides-v1 = { gold: "#xxxxxx" }
+     - hm-custom-logo-v1     = data: URL of the uploaded image
+     Exposed via window.getCustomExportLogoDataUrl() so the export
+     pipeline can swap it in.
+  */
+  var BRAND_OVERRIDES_KEY = 'hm-theme-overrides-v1';
+  var BRAND_LOGO_KEY      = 'hm-custom-logo-v1';
+  var BRAND_LOGO_MAX_BYTES = 500 * 1024;     /* 500 KB */
+  var BRAND_LOGO_MAX_W = 600;
+  var BRAND_LOGO_MAX_H = 200;
+  var DEFAULT_GOLD = '#daa520';
+
+  function _loadBrandOverrides() {
+    try {
+      var raw = localStorage.getItem(BRAND_OVERRIDES_KEY);
+      if (!raw) return {};
+      var v = JSON.parse(raw);
+      return v && typeof v === 'object' ? v : {};
+    } catch (e) { return {}; }
+  }
+  function _saveBrandOverrides(map) {
+    try { localStorage.setItem(BRAND_OVERRIDES_KEY, JSON.stringify(map)); } catch (e) {}
+  }
+  function _loadCustomLogo() {
+    try { return localStorage.getItem(BRAND_LOGO_KEY) || null; } catch (e) { return null; }
+  }
+  function _saveCustomLogo(dataUrl) {
+    try {
+      if (dataUrl) localStorage.setItem(BRAND_LOGO_KEY, dataUrl);
+      else         localStorage.removeItem(BRAND_LOGO_KEY);
+    } catch (e) {}
+  }
+  /* Public accessor used by the export footer composer. */
+  window.getCustomExportLogoDataUrl = function () { return _loadCustomLogo(); };
+
+  /* Apply saved color override to :root (covers both light + dark since
+     both .hm-app and .hm-app.dark currently set --hm-gold to the same
+     value, so a single override on .hm-app cascades to both). */
+  function _applyBrandColor(hex) {
+    var app = document.getElementById('hm-app') || document.querySelector('.hm-app');
+    if (!app) return;
+    if (hex && /^#?[0-9a-fA-F]{6}$/.test(hex)) {
+      var v = hex.charAt(0) === '#' ? hex : '#' + hex;
+      app.style.setProperty('--hm-gold', v);
+    } else {
+      app.style.removeProperty('--hm-gold');
+    }
+  }
+
+  /* Validate a hex string. Accepts "abc" or "abcdef" or with leading #. */
+  function _normalizeHex(input) {
+    var s = String(input || '').trim().replace(/^#/, '');
+    if (/^[0-9a-fA-F]{3}$/.test(s)) {
+      /* expand shorthand */
+      s = s.split('').map(function (c) { return c + c; }).join('');
+    }
+    if (/^[0-9a-fA-F]{6}$/.test(s)) return '#' + s.toLowerCase();
+    return null;
+  }
+
+  /* Run on first load to ensure saved override is applied before any
+     painting. The IIFE below also re-applies it when the popup binds. */
+  (function _applyBrandOnLoad() {
+    var ov = _loadBrandOverrides();
+    if (ov.gold) _applyBrandColor(ov.gold);
+  })();
+
+  (function () {
+    var toggle  = document.getElementById('hm-brand-toggle');
+    var panel   = document.getElementById('hm-brand-panel');
+    var reset   = document.getElementById('hm-brand-reset');
+    var colorEl = document.getElementById('hm-brand-color');
+    var hexEl   = document.getElementById('hm-brand-color-hex');
+    var fileEl  = document.getElementById('hm-brand-logo-input');
+    var preview = document.getElementById('hm-brand-logo-preview');
+    var clearEl = document.getElementById('hm-brand-logo-clear');
+    var hintEl  = document.getElementById('hm-brand-logo-hint');
+    var DEFAULT_HINT = hintEl ? hintEl.textContent : '';
+    if (!toggle || !panel) return;
+
+    function setHint(msg, isError) {
+      if (!hintEl) return;
+      hintEl.textContent = msg || DEFAULT_HINT;
+      hintEl.classList.toggle('hm-brand-logo-hint--error', !!isError);
+    }
+
+    function refreshLogoPreview() {
+      if (!preview) return;
+      var dataUrl = _loadCustomLogo();
+      preview.innerHTML = '';
+      if (dataUrl) {
+        var img = document.createElement('img');
+        img.src = dataUrl;
+        img.alt = 'Custom logo preview';
+        preview.appendChild(img);
+      } else {
+        var ph = document.createElement('span');
+        ph.className = 'hm-brand-logo-placeholder';
+        ph.textContent = 'No custom logo';
+        preview.appendChild(ph);
+      }
+    }
+
+    function syncInputsFromStorage() {
+      var ov = _loadBrandOverrides();
+      var gold = ov.gold || DEFAULT_GOLD;
+      if (colorEl) colorEl.value = gold;
+      if (hexEl)   hexEl.value   = gold.toUpperCase();
+      refreshLogoPreview();
+      setHint(null, false);
+    }
+
+    /* Initial sync. */
+    syncInputsFromStorage();
+
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) syncInputsFromStorage();
+    });
+    document.addEventListener('click', function (e) {
+      if (panel.hidden) return;
+      if (panel.contains(e.target) || toggle.contains(e.target)) return;
+      panel.hidden = true;
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) panel.hidden = true;
+    });
+
+    /* Color picker (native color input) — fires 'input' continuously
+       and 'change' on commit. Use 'input' for live preview. */
+    if (colorEl) {
+      colorEl.addEventListener('input', function () {
+        var hex = _normalizeHex(colorEl.value);
+        if (!hex) return;
+        var ov = _loadBrandOverrides();
+        ov.gold = hex;
+        _saveBrandOverrides(ov);
+        _applyBrandColor(hex);
+        if (hexEl) hexEl.value = hex.toUpperCase();
+      });
+    }
+
+    /* Hex text input — accept on Enter or blur. */
+    if (hexEl) {
+      var commitHex = function () {
+        var hex = _normalizeHex(hexEl.value);
+        if (!hex) {
+          /* invalid — snap back to current saved value */
+          syncInputsFromStorage();
+          return;
+        }
+        var ov = _loadBrandOverrides();
+        ov.gold = hex;
+        _saveBrandOverrides(ov);
+        _applyBrandColor(hex);
+        if (colorEl) colorEl.value = hex;
+        hexEl.value = hex.toUpperCase();
+      };
+      hexEl.addEventListener('change', commitHex);
+      hexEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { commitHex(); hexEl.blur(); }
+      });
+    }
+
+    /* Logo upload. Validates: file type (already filtered by accept=),
+       file size <= BRAND_LOGO_MAX_BYTES, decoded image dims <= 600×200.
+       On success, saves data URL + refreshes preview. */
+    if (fileEl) {
+      fileEl.addEventListener('change', function () {
+        var file = fileEl.files && fileEl.files[0];
+        if (!file) return;
+        if (file.size > BRAND_LOGO_MAX_BYTES) {
+          setHint('Too large. Max 500 KB (this file is ' + Math.round(file.size / 1024) + ' KB).', true);
+          fileEl.value = '';
+          return;
+        }
+        var allowed = /^image\/(png|jpeg|jpg|svg\+xml|webp)$/;
+        if (!allowed.test(file.type)) {
+          setHint('Unsupported format. Use PNG, JPG, SVG, or WEBP.', true);
+          fileEl.value = '';
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function () {
+          var dataUrl = reader.result;
+          /* SVGs don't have intrinsic pixel dims the same way — skip
+             dimension check for them; size cap is enough. */
+          if (file.type === 'image/svg+xml') {
+            _saveCustomLogo(dataUrl);
+            refreshLogoPreview();
+            setHint(null, false);
+            fileEl.value = '';
+            return;
+          }
+          var img = new Image();
+          img.onload = function () {
+            if (img.naturalWidth > BRAND_LOGO_MAX_W || img.naturalHeight > BRAND_LOGO_MAX_H) {
+              setHint('Image is ' + img.naturalWidth + '×' + img.naturalHeight + ' px. Max 600 × 200 px.', true);
+              fileEl.value = '';
+              return;
+            }
+            _saveCustomLogo(dataUrl);
+            refreshLogoPreview();
+            setHint(null, false);
+            fileEl.value = '';
+          };
+          img.onerror = function () {
+            setHint('Could not read image.', true);
+            fileEl.value = '';
+          };
+          img.src = dataUrl;
+        };
+        reader.onerror = function () {
+          setHint('Could not read file.', true);
+          fileEl.value = '';
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (clearEl) {
+      clearEl.addEventListener('click', function () {
+        _saveCustomLogo(null);
+        refreshLogoPreview();
+        setHint(null, false);
+      });
+    }
+
+    if (reset) {
+      reset.addEventListener('click', function () {
+        try { localStorage.removeItem(BRAND_OVERRIDES_KEY); } catch (e) {}
+        try { localStorage.removeItem(BRAND_LOGO_KEY); } catch (e) {}
+        _applyBrandColor(null);
+        syncInputsFromStorage();
       });
     }
   })();
@@ -12262,7 +12700,19 @@
           }
         };
         logoImg.onerror = drawTextOnly;
-        logoImg.src = 'https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png';
+        /* Use the user's uploaded logo if they've configured one in
+           the brand-customization popup; otherwise default to the
+           StableBread logo. Data URLs don't need crossOrigin so we
+           clear it to avoid the browser warning. */
+        var customLogo = (typeof window.getCustomExportLogoDataUrl === 'function')
+          ? window.getCustomExportLogoDataUrl()
+          : null;
+        if (customLogo) {
+          logoImg.crossOrigin = null;
+          logoImg.src = customLogo;
+        } else {
+          logoImg.src = 'https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png';
+        }
       };
       panelImg.onerror = function () { reject(new Error('Could not load captured panel image')); };
       panelImg.src = panelDataUrl;
