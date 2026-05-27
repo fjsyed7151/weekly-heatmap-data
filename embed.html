@@ -5990,11 +5990,54 @@
   var app = document.getElementById("hm-app");
   var cachedData = null;
 
+  /* Persist chart state (selected metrics + view mode) across reloads.
+     The selected entries are keyed by metric id; on load we re-validate
+     each saved entry against the freshly-fetched dataset and drop any
+     ids that no longer exist. */
+  var CHART_STATE_KEY = 'hm-chart-state-v1';
+  function _loadChartState() {
+    try {
+      var raw = localStorage.getItem(CHART_STATE_KEY);
+      if (!raw) return null;
+      var v = JSON.parse(raw);
+      if (!v || typeof v !== 'object') return null;
+      if (!Array.isArray(v.selected)) v.selected = [];
+      if (v.viewMode !== 'separated') v.viewMode = 'combined';
+      return v;
+    } catch (e) { return null; }
+  }
+  function saveChartState() {
+    try {
+      localStorage.setItem(CHART_STATE_KEY, JSON.stringify({
+        selected: chartState.selected,
+        viewMode: chartState.viewMode,
+      }));
+    } catch (e) {}
+  }
+  /* Load only viewMode at startup. The 'selected' array is restored
+     AFTER initial render completes (see safeRender('restoreChartState')
+     below) — restoring before render triggers a Chart.js / resize-
+     observer cascade during bootstrap that hangs the page. */
+  var _savedChartState = _loadChartState();
   var chartState = {
     selected: [],
-    viewMode: 'combined'
+    viewMode: (_savedChartState && _savedChartState.viewMode) || 'combined',
   };
   var chartInstances = [];
+
+  /* Persist sector chart's ticker selections similarly. */
+  var SECTOR_SELECTED_KEY = 'hm-sector-selected-v1';
+  function _loadSectorSelected() {
+    try {
+      var raw = localStorage.getItem(SECTOR_SELECTED_KEY);
+      if (!raw) return null;
+      var v = JSON.parse(raw);
+      return (v && typeof v === 'object') ? v : null;
+    } catch (e) { return null; }
+  }
+  function saveSectorSelected() {
+    try { localStorage.setItem(SECTOR_SELECTED_KEY, JSON.stringify(sectorSelected)); } catch (e) {}
+  }
 
   /* Register Chart.js plugins once. */
   if (window.Chart && window.ChartDataLabels) Chart.register(ChartDataLabels);
@@ -6346,6 +6389,7 @@
     } else {
       chartState.selected = chartState.selected.filter(function (s) { return s.id !== metricId; });
     }
+    saveChartState();
     updateChartSectionVisibility();
     updateCheckboxAvailability();
     updateCountLabel();
@@ -6354,6 +6398,7 @@
 
   function removeMetric(metricId) {
     chartState.selected = chartState.selected.filter(function (s) { return s.id !== metricId; });
+    saveChartState();
     var cb = document.querySelector('.hm-cb[data-id="' + metricId + '"]');
     if (cb) cb.checked = false;
     updateChartSectionVisibility();
@@ -6863,6 +6908,7 @@
       b.innerHTML = spec[1];
       b.addEventListener('click', function () {
         entry.type = spec[0];
+        saveChartState();
         renderCharts();
       });
       types.appendChild(b);
@@ -6896,6 +6942,7 @@
         entry.refLines[spec[0]] = cb.checked;
         var anyActive = entry.refLines.avg || entry.refLines.min || entry.refLines.max;
         gearBtn.classList.toggle('active', !!anyActive);
+        saveChartState();
         updateAnnotationsOnly();  /* chart updates in-place; popup stays open */
       });
       label.appendChild(cb);
@@ -6996,6 +7043,7 @@
     labelsBtn.innerHTML = ICON_LABELS;
     labelsBtn.addEventListener('click', function () {
       entry.dataLabels = !entry.dataLabels;
+      saveChartState();
       renderCharts();
     });
     controls.appendChild(labelsBtn);
@@ -7010,6 +7058,7 @@
       visBtn.innerHTML = entry.hidden ? ICON_EYE_OFF : ICON_EYE;
       visBtn.addEventListener('click', function () {
         entry.hidden = !entry.hidden;
+        saveChartState();
         renderCharts();
       });
       controls.appendChild(visBtn);
@@ -7030,6 +7079,7 @@
   /* ---------- Toolbar wiring ---------- */
   function setViewMode(mode) {
     chartState.viewMode = mode;
+    saveChartState();
     document.getElementById('hm-chart-combined').classList.toggle('active', mode === 'combined');
     document.getElementById('hm-chart-separated').classList.toggle('active', mode === 'separated');
     renderCharts();
@@ -9492,7 +9542,7 @@
     }
     return { dates: sc.dates, spy: sc.spy, series: sc.series };
   }
-  var sectorSelected = {};
+  var sectorSelected = _loadSectorSelected() || {};
   var sectorShowSpy = true;
   var sectorViewMode = 'combined';
   var _sc = null;
@@ -9670,6 +9720,22 @@
     _sectorInfo = sectorInfo;
     if (Object.keys(sectorSelected).length === 0) {
       data.sectors.slice(0, 3).forEach(function (s) { sectorSelected[s.ticker] = true; });
+      saveSectorSelected();
+    } else {
+      /* Validate saved tickers against the live dataset; drop any
+         tickers that no longer exist. */
+      var validTickers = {};
+      data.sectors.forEach(function (s) { validTickers[s.ticker] = true; });
+      var changed = false;
+      Object.keys(sectorSelected).forEach(function (t) {
+        if (!validTickers[t]) { delete sectorSelected[t]; changed = true; }
+      });
+      /* If validation wiped everything, fall back to the default 3. */
+      if (Object.keys(sectorSelected).length === 0) {
+        data.sectors.slice(0, 3).forEach(function (s) { sectorSelected[s.ticker] = true; });
+        changed = true;
+      }
+      if (changed) saveSectorSelected();
     }
 
     /* SPY returns for the vs-SPY column. Computed on the fly from sc.spy
@@ -9891,7 +9957,7 @@
       var cbTd = document.createElement('td');
       var cb = document.createElement('input');
       cb.type = 'checkbox'; cb.className = 'hm-scb'; cb.checked = !!sectorSelected[s.ticker];
-      cb.addEventListener('change', function (e) { e.stopPropagation(); sectorSelected[s.ticker] = cb.checked; buildSectorCharts(); });
+      cb.addEventListener('change', function (e) { e.stopPropagation(); sectorSelected[s.ticker] = cb.checked; saveSectorSelected(); buildSectorCharts(); });
       cbTd.appendChild(cb);
       tr.appendChild(cbTd);
       var tdName = document.createElement('td');
@@ -9907,7 +9973,7 @@
       });
       tr.addEventListener('click', function (e) {
         if (e.target.tagName === 'INPUT') return;
-        cb.checked = !cb.checked; sectorSelected[s.ticker] = cb.checked; buildSectorCharts();
+        cb.checked = !cb.checked; sectorSelected[s.ticker] = cb.checked; saveSectorSelected(); buildSectorCharts();
       });
       tbody.appendChild(tr);
       sectorRows.push({ sector: s, cb: cb });
@@ -13993,6 +14059,46 @@
         setTimeout(window.applyUniversalPeriod, 50);
         setTimeout(window.applyUniversalPeriod, 250);
         setTimeout(window.applyUniversalPeriod, 800);
+      });
+      /* Restore saved chart-state.selected AFTER all panels have
+         rendered + Gridstack has settled. Doing it earlier creates a
+         Chart.js + ResizeObserver cascade that hangs the bootstrap.
+         We replay each saved entry's metric by calling the same
+         onCheckboxChange path the user would. */
+      safeRender('restoreChartState', function () {
+        if (!_savedChartState || !_savedChartState.selected || !_savedChartState.selected.length) return;
+        if (!cachedData || !cachedData.sections) return;
+        /* Build a fast lookup of metric rows by id for re-application. */
+        var rowsById = {};
+        cachedData.sections.forEach(function (s) {
+          (s.rows || []).forEach(function (row) {
+            rowsById[makeId(row.name)] = row;
+          });
+        });
+        _savedChartState.selected.forEach(function (saved) {
+          var row = rowsById[saved.id];
+          if (!row) return;  /* metric no longer exists in dataset */
+          /* Use the same path as user-clicked checkboxes so all the
+             downstream side effects (visibility, count, render) fire
+             normally — just programmatically. */
+          var cb = document.querySelector('.hm-cb[data-id="' + saved.id + '"]');
+          onCheckboxChange(saved.id, row, true, cb);
+          /* Re-apply the per-metric settings (type/hidden/dataLabels/
+             refLines/color) that don't survive the bare add. */
+          var entry = chartState.selected.find ?
+            chartState.selected.find(function (e) { return e.id === saved.id; }) :
+            chartState.selected.filter(function (e) { return e.id === saved.id; })[0];
+          if (entry) {
+            if (saved.type)       entry.type = saved.type;
+            if (saved.color)      entry.color = saved.color;
+            entry.hidden = !!saved.hidden;
+            entry.dataLabels = !!saved.dataLabels;
+            entry.refLines = saved.refLines || { avg: false, min: false, max: false };
+          }
+          if (cb) cb.checked = true;
+        });
+        saveChartState();
+        if (typeof renderCharts === 'function') renderCharts();
       });
     })
     .catch(function (err) {
