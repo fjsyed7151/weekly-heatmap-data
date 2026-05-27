@@ -1278,13 +1278,15 @@
     text-decoration: line-through;
   }
 
-  /* Settings popup (reference-line toggles). Mirrors .sb-opts-dd pattern. */
+  /* Settings popup (reference-line toggles). Mirrors .sb-opts-dd pattern.
+     Uses position:fixed so it escapes the chart panel's stacking context —
+     a position:absolute popup with z-index:50 still gets covered by the
+     next panel below in the column because z-index only competes within
+     the same stacking context. JS positions it under the gear button. */
   .hm-app .hm-settings-wrap { position: relative; display: inline-block; }
   .hm-app .hm-settings-popup {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    z-index: 50;
+    position: fixed;
+    z-index: 1000;
     min-width: 160px;
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
@@ -6901,14 +6903,66 @@
       popup.appendChild(label);
     });
 
+    /* Position the fixed-position popup under the gear button. Re-runs
+       on scroll/resize so the popup tracks the button if the page
+       moves. Right-aligned to the button, then clamped to viewport so
+       it never gets clipped on narrow screens. */
+    function positionRefPopup() {
+      if (popup.hasAttribute('hidden')) return;
+      var btnRect = gearBtn.getBoundingClientRect();
+      /* Render off-screen first to get its measured size, then place. */
+      popup.style.visibility = 'hidden';
+      popup.style.left = '0px';
+      popup.style.top = '0px';
+      var popRect = popup.getBoundingClientRect();
+      var top = btnRect.bottom + 4;
+      var left = btnRect.right - popRect.width;
+      /* Clamp into viewport with 4px margin. */
+      if (left < 4) left = 4;
+      if (left + popRect.width > window.innerWidth - 4) {
+        left = window.innerWidth - 4 - popRect.width;
+      }
+      if (top + popRect.height > window.innerHeight - 4) {
+        /* Flip above the button if there's no room below. */
+        top = btnRect.top - 4 - popRect.height;
+        if (top < 4) top = 4;
+      }
+      popup.style.top = top + 'px';
+      popup.style.left = left + 'px';
+      popup.style.visibility = '';
+    }
+    var _refScrollHandler = null;
+    function openRefPopup() {
+      popup.removeAttribute('hidden');
+      positionRefPopup();
+      _refScrollHandler = function () { positionRefPopup(); };
+      window.addEventListener('scroll', _refScrollHandler, true);
+      window.addEventListener('resize', _refScrollHandler);
+    }
+    function closeRefPopup() {
+      popup.setAttribute('hidden', '');
+      if (_refScrollHandler) {
+        window.removeEventListener('scroll', _refScrollHandler, true);
+        window.removeEventListener('resize', _refScrollHandler);
+        _refScrollHandler = null;
+      }
+    }
     gearBtn.addEventListener('click', function (e) {
       e.stopPropagation();
       /* Close other popups */
       document.querySelectorAll('.hm-settings-popup').forEach(function (p) {
         if (p !== popup && !p.hasAttribute('hidden')) p.setAttribute('hidden', '');
       });
-      if (popup.hasAttribute('hidden')) popup.removeAttribute('hidden');
-      else popup.setAttribute('hidden', '');
+      if (popup.hasAttribute('hidden')) openRefPopup();
+      else closeRefPopup();
+    });
+    document.addEventListener('click', function (e) {
+      if (popup.hasAttribute('hidden')) return;
+      if (popup.contains(e.target) || gearBtn.contains(e.target)) return;
+      closeRefPopup();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !popup.hasAttribute('hidden')) closeRefPopup();
     });
     settingsWrap.appendChild(gearBtn);
     settingsWrap.appendChild(popup);
