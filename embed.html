@@ -4613,9 +4613,6 @@
     border-color: var(--hm-gold);
     color: var(--hm-gold);
   }
-  .hm-app .hm-brand-logo-clear {
-    border-style: dashed;
-  }
   .hm-app .hm-brand-logo-hint--error { color: var(--hm-red); }
 
   /* Image crop modal — shown after a valid upload so the user can
@@ -4677,7 +4674,7 @@
     background: #f0eee9;
     color: #15171c;
     border: none;
-    border-radius: 999px;
+    border-radius: 5px;
     padding: 6px 18px;
     font-family: 'Karla', sans-serif;
     font-size: 13px;
@@ -4685,9 +4682,20 @@
     cursor: pointer;
   }
   .hm-app .hm-brand-crop-apply:hover { background: #ffffff; }
+  /* Stage background: checkerboard so the user can see image edges
+     even when an upload has transparent pixels, and so the modal
+     reads distinctly against a near-black dashboard chrome. Two
+     gray tones blended via a 16x16 grid of conic gradients. */
   .hm-app .hm-brand-crop-stage {
     position: relative;
-    background: #0a0b0e;
+    background-color: #2a2d35;
+    background-image:
+      linear-gradient(45deg, #383b44 25%, transparent 25%),
+      linear-gradient(-45deg, #383b44 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #383b44 75%),
+      linear-gradient(-45deg, transparent 75%, #383b44 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
     width: 100%;
     aspect-ratio: 3 / 1;
     overflow: hidden;
@@ -5783,12 +5791,12 @@
             </div>
             <div class="hm-brand-logo-actions">
               <label class="hm-brand-logo-upload">
-                <input type="file" id="hm-brand-logo-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden />
+                <input type="file" id="hm-brand-logo-input" accept="image/png,image/jpeg" hidden />
                 <span>Upload</span>
               </label>
               <button type="button" class="hm-brand-logo-clear" id="hm-brand-logo-clear">Remove</button>
             </div>
-            <div class="hm-brand-hint" id="hm-brand-logo-hint">PNG, JPG, SVG, or WEBP. Max 500&nbsp;KB. You'll be able to crop after upload.</div>
+            <div class="hm-brand-hint" id="hm-brand-logo-hint">PNG or JPG, max 500&nbsp;KB. Recommended: 3:1 landscape (around 600&nbsp;&times;&nbsp;200&nbsp;px). You'll be able to crop after upload.</div>
           </div>
         </div>
       </div>
@@ -7516,11 +7524,10 @@
       });
     }
 
-    /* Logo upload. Validates file type + size; opens a Twitter-style
-       crop modal so the user can pan + zoom into the 600x200 logo
-       frame. Apply commits the captured region as the saved logo.
-       SVGs bypass the crop modal — they're vector, max dimensions
-       are meaningless, and rasterizing them defeats the point. */
+    /* Logo upload. Validates PNG/JPG only + size; opens the
+       Twitter-style crop modal so the user can pan + zoom into
+       the 600x200 logo frame. Apply commits the captured region
+       as the saved logo. */
     if (fileEl) {
       fileEl.addEventListener('change', function () {
         var file = fileEl.files && fileEl.files[0];
@@ -7530,23 +7537,15 @@
           fileEl.value = '';
           return;
         }
-        var allowed = /^image\/(png|jpeg|jpg|svg\+xml|webp)$/;
+        var allowed = /^image\/(png|jpeg|jpg)$/;
         if (!allowed.test(file.type)) {
-          setHint('Unsupported format. Use PNG, JPG, SVG, or WEBP.', true);
+          setHint('Unsupported format. Use PNG or JPG.', true);
           fileEl.value = '';
           return;
         }
         var reader = new FileReader();
         reader.onload = function () {
           var dataUrl = reader.result;
-          /* SVG: save directly, skip the crop UI. */
-          if (file.type === 'image/svg+xml') {
-            _saveCustomLogo(dataUrl);
-            refreshLogoPreview();
-            setHint(null, false);
-            fileEl.value = '';
-            return;
-          }
           var img = new Image();
           img.onload = function () {
             openCropModal(img);
