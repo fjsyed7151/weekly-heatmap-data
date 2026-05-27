@@ -404,18 +404,29 @@
     border-top-left-radius: 0;
     border-top-right-radius: 0;
   }
-  /* Metrics table (hm-heatmap-wrap): make the table's gold thead
-     (column-header row) sticky JUST BELOW the panel navbar so it
-     stays visible when the user scrolls vertically inside the
-     cell. Base .hm-table thead th already has position:sticky;
-     top:0 \u2014 but top:0 means it stacks AT the cell's top edge,
-     where the panel navbar (also sticky top:0, z-index:6) covers
-     it. Top:24px puts the thead just below the 24px navbar so
-     both stay visible on scroll, no overlap. Scoped to the
-     heatmap so the same sticky pattern doesn't affect any other
-     table that might reuse .hm-table. */
+  /* Metrics table (hm-heatmap-wrap): the gold thead is NOT sticky
+     anymore. With internal vertical scroll removed (panel sizes to
+     its full table height), sticky-pinning caused the gold dates to
+     continue showing even when the user had scrolled past the table
+     \u2014 the column headers stayed visible but were no longer over any
+     visible data. Static positioning makes the thead behave like a
+     normal column header that scrolls with its rows. The
+     horizontally-sticky first two columns (.hm-check-col + .hm-metric)
+     still pin so the metric name + checkbox stay pinned during
+     horizontal scroll. */
   .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
-    top: 24px;
+    position: static;
+    top: auto;
+  }
+  /* Restore HORIZONTAL-only sticky on the checkbox + metric thead
+     cells. They need to follow horizontal scroll like their tbody
+     counterparts (so the metric label / checkbox column stays pinned
+     left). top:auto disables the vertical pin so they don't stick
+     to viewport-top when the user scrolls down past the table. */
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th.hm-check-col,
+  .hm-app .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th.hm-metric {
+    position: sticky;
+    top: auto;
   }
   /* Same trick for the GOLD header band (.hm-factors-header) on
      ranking panels: pin it to viewport-left + cell-width so the
@@ -5152,11 +5163,14 @@
      the first panel." User wants the first panel flush against the
      topbar (modulo the topbar's own 4px margin-bottom) \u2014 no gap.) */
 
-  /* Heatmap thead sticks inside the cell's scroll container, just
-     below the 24px panel-header at the top of the wrap. */
-  .hm-app .hm-col .grid-stack-item[gs-id="hm-heatmap-wrap"] .hm-table thead th {
-    top: 24px !important;
-  }
+  /* (Removed the 'thead top: 24px !important' rule that used to pin
+     the gold header below the 24px panel-header. With internal
+     vertical scroll gone from the metrics panel, sticky-pinning
+     caused the gold dates to keep showing even after the user had
+     scrolled past the table. The thead now scrolls with the data
+     naturally. Per-panel CSS earlier in the file sets the heatmap
+     thead th to position:static / top:auto and re-enables
+     horizontal-only sticky on the check-col + metric columns.) */
 
   /* Defensive stretch: when columns collapse/expand the cell width
      changes. The panel-wrap should grow to fill the new cell width
@@ -13335,25 +13349,13 @@
         clonePanelHeader.style.setProperty('display', 'none', 'important');
       }
 
-      /* The metrics-heatmap thead has `position: sticky; top: 24px`
-         to clear the panel-header (24px) below the navbar on the
-         live page. In the export clone the panel-header is display:
-         none, but the 24px sticky offset persists — without an
-         overflow:auto scroll ancestor the sticky behaves as relative
-         + top: 24px, shifting the entire thead 24px DOWN and
-         producing a 24px white gap above the gold header in the
-         captured PNG. Zero it out for the export. */
+      /* Strip the dotted-underline tooltip affordance from metric
+         names in the export. On the live page the dotted bottom
+         border tells users the label is hoverable for a chart;
+         in a static PNG it's just visual noise. .hm-export-stage
+         descendant selectors don't survive html-to-image's
+         foreignObject capture, so this has to be inline. */
       if (panelId === 'hm-heatmap-wrap') {
-        clone.querySelectorAll('.hm-table thead th').forEach(function (th) {
-          th.style.setProperty('top', '0', 'important');
-          th.style.setProperty('position', 'static', 'important');
-        });
-        /* Strip the dotted-underline tooltip affordance from metric
-           names in the export. On the live page the dotted bottom
-           border tells users the label is hoverable for a chart;
-           in a static PNG it's just visual noise. .hm-export-stage
-           descendant selectors don't survive html-to-image's
-           foreignObject capture, so this has to be inline. */
         clone.querySelectorAll('span.hm-metric-tip').forEach(function (s) {
           s.style.setProperty('border-bottom', 'none', 'important');
         });
