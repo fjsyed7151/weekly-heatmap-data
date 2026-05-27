@@ -4588,7 +4588,6 @@
   .hm-app .hm-brand-logo-placeholder {
     font-size: 10px;
     color: var(--hm-muted);
-    font-style: italic;
   }
   .hm-app .hm-brand-logo-actions {
     display: flex;
@@ -4618,6 +4617,137 @@
     border-style: dashed;
   }
   .hm-app .hm-brand-logo-hint--error { color: var(--hm-red); }
+
+  /* Image crop modal — shown after a valid upload so the user can
+     pan + zoom into the 600x200 logo frame before saving. */
+  .hm-app .hm-brand-crop-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hm-app .hm-brand-crop-modal[hidden] { display: none; }
+  .hm-app .hm-brand-crop-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+  }
+  .hm-app .hm-brand-crop-window {
+    position: relative;
+    background: #15171c;
+    color: #f0eee9;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+    width: 720px;
+    max-width: calc(100vw - 32px);
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-app .hm-brand-crop-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .hm-app .hm-brand-crop-title {
+    font-family: 'Karla', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #f0eee9;
+  }
+  .hm-app .hm-brand-crop-cancel {
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: #f0eee9;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hm-app .hm-brand-crop-cancel svg { width: 18px; height: 18px; }
+  .hm-app .hm-brand-crop-cancel:hover { background: rgba(255, 255, 255, 0.08); }
+  .hm-app .hm-brand-crop-apply {
+    background: #f0eee9;
+    color: #15171c;
+    border: none;
+    border-radius: 999px;
+    padding: 6px 18px;
+    font-family: 'Karla', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .hm-app .hm-brand-crop-apply:hover { background: #ffffff; }
+  .hm-app .hm-brand-crop-stage {
+    position: relative;
+    background: #0a0b0e;
+    width: 100%;
+    aspect-ratio: 3 / 1;
+    overflow: hidden;
+    user-select: none;
+    cursor: grab;
+  }
+  .hm-app .hm-brand-crop-stage:active { cursor: grabbing; }
+  .hm-app .hm-brand-crop-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .hm-app .hm-brand-crop-frame {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--hm-gold);
+    pointer-events: none;
+  }
+  .hm-app .hm-brand-crop-controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .hm-app .hm-brand-crop-controls svg {
+    width: 18px;
+    height: 18px;
+    color: #b3b0a8;
+    flex-shrink: 0;
+  }
+  .hm-app .hm-brand-crop-controls input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.16);
+    outline: none;
+    cursor: pointer;
+  }
+  .hm-app .hm-brand-crop-controls input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--hm-gold);
+    border: none;
+    cursor: pointer;
+  }
+  .hm-app .hm-brand-crop-controls input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--hm-gold);
+    border: none;
+    cursor: pointer;
+  }
 
   /* Info popover (next to theme toggle) */
   .hm-app .hm-info-wrap {
@@ -5628,6 +5758,29 @@
             <div class="hm-brand-logo-preview" id="hm-brand-logo-preview">
               <span class="hm-brand-logo-placeholder">No custom logo</span>
             </div>
+            <!-- Crop modal: appears after a valid upload, lets the user
+                 pan / zoom the image inside a 600x200 frame before saving. -->
+            <div class="hm-brand-crop-modal" id="hm-brand-crop-modal" hidden>
+              <div class="hm-brand-crop-backdrop"></div>
+              <div class="hm-brand-crop-window">
+                <div class="hm-brand-crop-topbar">
+                  <button type="button" class="hm-brand-crop-cancel" id="hm-brand-crop-cancel" aria-label="Cancel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                  </button>
+                  <span class="hm-brand-crop-title">Position logo</span>
+                  <button type="button" class="hm-brand-crop-apply" id="hm-brand-crop-apply">Apply</button>
+                </div>
+                <div class="hm-brand-crop-stage" id="hm-brand-crop-stage">
+                  <canvas class="hm-brand-crop-canvas" id="hm-brand-crop-canvas"></canvas>
+                  <div class="hm-brand-crop-frame" aria-hidden="true"></div>
+                </div>
+                <div class="hm-brand-crop-controls">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                  <input type="range" id="hm-brand-crop-zoom" min="1" max="400" value="100" step="1" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                </div>
+              </div>
+            </div>
             <div class="hm-brand-logo-actions">
               <label class="hm-brand-logo-upload">
                 <input type="file" id="hm-brand-logo-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden />
@@ -5635,7 +5788,7 @@
               </label>
               <button type="button" class="hm-brand-logo-clear" id="hm-brand-logo-clear">Remove</button>
             </div>
-            <div class="hm-brand-hint" id="hm-brand-logo-hint">PNG, JPG, SVG, or WEBP. Max 500&nbsp;KB, 600&nbsp;&times;&nbsp;200&nbsp;px.</div>
+            <div class="hm-brand-hint" id="hm-brand-logo-hint">PNG, JPG, SVG, or WEBP. Max 500&nbsp;KB. You'll be able to crop after upload.</div>
           </div>
         </div>
       </div>
@@ -7363,9 +7516,11 @@
       });
     }
 
-    /* Logo upload. Validates: file type (already filtered by accept=),
-       file size <= BRAND_LOGO_MAX_BYTES, decoded image dims <= 600×200.
-       On success, saves data URL + refreshes preview. */
+    /* Logo upload. Validates file type + size; opens a Twitter-style
+       crop modal so the user can pan + zoom into the 600x200 logo
+       frame. Apply commits the captured region as the saved logo.
+       SVGs bypass the crop modal — they're vector, max dimensions
+       are meaningless, and rasterizing them defeats the point. */
     if (fileEl) {
       fileEl.addEventListener('change', function () {
         var file = fileEl.files && fileEl.files[0];
@@ -7384,8 +7539,7 @@
         var reader = new FileReader();
         reader.onload = function () {
           var dataUrl = reader.result;
-          /* SVGs don't have intrinsic pixel dims the same way — skip
-             dimension check for them; size cap is enough. */
+          /* SVG: save directly, skip the crop UI. */
           if (file.type === 'image/svg+xml') {
             _saveCustomLogo(dataUrl);
             refreshLogoPreview();
@@ -7395,13 +7549,7 @@
           }
           var img = new Image();
           img.onload = function () {
-            if (img.naturalWidth > BRAND_LOGO_MAX_W || img.naturalHeight > BRAND_LOGO_MAX_H) {
-              setHint('Image is ' + img.naturalWidth + '×' + img.naturalHeight + ' px. Max 600 × 200 px.', true);
-              fileEl.value = '';
-              return;
-            }
-            _saveCustomLogo(dataUrl);
-            refreshLogoPreview();
+            openCropModal(img);
             setHint(null, false);
             fileEl.value = '';
           };
@@ -7418,6 +7566,166 @@
         reader.readAsDataURL(file);
       });
     }
+
+    /* ---------- Crop modal ----------
+       Twitter-style pan + zoom into a 3:1 (600x200) frame.
+       cropState holds the current pan offset (in *image* pixels, the
+       point at the center of the frame) and the zoom multiplier
+       relative to the "cover" scale (zoom=1.0 = exactly covers the
+       frame, never any letterbox). Drag to pan, slider for zoom,
+       Apply renders the framed region to a 600x200 PNG. */
+    var cropModal  = document.getElementById('hm-brand-crop-modal');
+    var cropStage  = document.getElementById('hm-brand-crop-stage');
+    var cropCanvas = document.getElementById('hm-brand-crop-canvas');
+    var cropZoom   = document.getElementById('hm-brand-crop-zoom');
+    var cropApply  = document.getElementById('hm-brand-crop-apply');
+    var cropCancel = document.getElementById('hm-brand-crop-cancel');
+    var cropState  = { img: null, scale: 1, zoom: 1, panX: 0, panY: 0, dragging: false };
+
+    function openCropModal(img) {
+      if (!cropModal || !cropCanvas) return;
+      cropState.img = img;
+      cropState.panX = img.naturalWidth / 2;
+      cropState.panY = img.naturalHeight / 2;
+      cropState.zoom = 1;
+      if (cropZoom) cropZoom.value = 100;
+      cropModal.hidden = false;
+      /* Two rAFs: first lets the modal mount, second runs after layout
+         + aspect-ratio resolution has actually given the stage its
+         final pixel dims. Without two, the stage can still be 0w on
+         the first frame. */
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { syncCropCanvas(); drawCrop(); });
+      });
+    }
+    function closeCropModal() {
+      if (!cropModal) return;
+      cropModal.hidden = true;
+      cropState.img = null;
+    }
+    /* Pulls the canvas's internal pixel dims into sync with the
+       stage's current rendered size, AND recomputes the cover scale
+       so the image always starts (and zoom=1 always means) "fully
+       covers the frame". Called on open + on every draw so window
+       resizes don't desync. */
+    function syncCropCanvas() {
+      if (!cropCanvas || !cropStage || !cropState.img) return;
+      var rect = cropStage.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) return;
+      var w = Math.round(rect.width);
+      var h = Math.round(rect.height);
+      if (cropCanvas.width !== w)  cropCanvas.width  = w;
+      if (cropCanvas.height !== h) cropCanvas.height = h;
+      var coverW = rect.width  / cropState.img.naturalWidth;
+      var coverH = rect.height / cropState.img.naturalHeight;
+      cropState.scale = Math.max(coverW, coverH);
+    }
+    function drawCrop() {
+      var img = cropState.img;
+      if (!img || !cropCanvas) return;
+      syncCropCanvas();
+      var ctx = cropCanvas.getContext('2d');
+      var w = cropCanvas.width, h = cropCanvas.height;
+      ctx.clearRect(0, 0, w, h);
+      var s = cropState.scale * cropState.zoom;
+      /* Image dest size in canvas pixels. */
+      var destW = img.naturalWidth  * s;
+      var destH = img.naturalHeight * s;
+      /* panX/panY = image-coords of the point shown at canvas center.
+         Clamp so the image always covers the frame (no empty bands). */
+      var minPanX = (w / 2) / s;
+      var maxPanX = img.naturalWidth  - minPanX;
+      var minPanY = (h / 2) / s;
+      var maxPanY = img.naturalHeight - minPanY;
+      if (minPanX > maxPanX) cropState.panX = img.naturalWidth  / 2;
+      else cropState.panX = Math.min(Math.max(cropState.panX, minPanX), maxPanX);
+      if (minPanY > maxPanY) cropState.panY = img.naturalHeight / 2;
+      else cropState.panY = Math.min(Math.max(cropState.panY, minPanY), maxPanY);
+      /* Compute top-left in canvas coords. */
+      var dx = w / 2 - cropState.panX * s;
+      var dy = h / 2 - cropState.panY * s;
+      ctx.drawImage(img, dx, dy, destW, destH);
+    }
+
+    if (cropZoom) {
+      cropZoom.addEventListener('input', function () {
+        /* Slider: 1..400 = 0.01x..4x. */
+        cropState.zoom = parseInt(cropZoom.value, 10) / 100;
+        if (!cropState.zoom || cropState.zoom < 0.01) cropState.zoom = 0.01;
+        drawCrop();
+      });
+    }
+    if (cropStage) {
+      var lastX = 0, lastY = 0;
+      cropStage.addEventListener('pointerdown', function (e) {
+        cropState.dragging = true;
+        lastX = e.clientX; lastY = e.clientY;
+        try { cropStage.setPointerCapture(e.pointerId); } catch (err) {}
+      });
+      cropStage.addEventListener('pointermove', function (e) {
+        if (!cropState.dragging) return;
+        var dx = e.clientX - lastX;
+        var dy = e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
+        var s = cropState.scale * cropState.zoom;
+        cropState.panX -= dx / s;
+        cropState.panY -= dy / s;
+        drawCrop();
+      });
+      var endDrag = function (e) {
+        cropState.dragging = false;
+        try { cropStage.releasePointerCapture(e.pointerId); } catch (err) {}
+      };
+      cropStage.addEventListener('pointerup', endDrag);
+      cropStage.addEventListener('pointercancel', endDrag);
+      /* Wheel = zoom around pointer position. */
+      cropStage.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        var factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+        var next = Math.min(4, Math.max(0.01, cropState.zoom * factor));
+        cropState.zoom = next;
+        if (cropZoom) cropZoom.value = Math.round(next * 100);
+        drawCrop();
+      }, { passive: false });
+    }
+    if (cropCancel) cropCancel.addEventListener('click', closeCropModal);
+    if (cropApply) {
+      cropApply.addEventListener('click', function () {
+        var img = cropState.img;
+        if (!img) { closeCropModal(); return; }
+        /* Render the framed region into a 600x200 output canvas. The
+           stage canvas displays at potentially different pixel dims,
+           so we re-derive the math from cropState directly. */
+        var out = document.createElement('canvas');
+        out.width  = BRAND_LOGO_MAX_W;   /* 600 */
+        out.height = BRAND_LOGO_MAX_H;   /* 200 */
+        var octx = out.getContext('2d');
+        octx.imageSmoothingQuality = 'high';
+        /* Effective scale at output resolution: stage canvas displays
+           at cropCanvas.width pixels for the frame's 3:1 aspect. To
+           reproduce that exact crop at 600x200 we scale by
+           (600 / cropCanvas.width). */
+        var stageW = cropCanvas.width || 1;
+        var ratio = out.width / stageW;
+        var s = cropState.scale * cropState.zoom * ratio;
+        var destW = img.naturalWidth  * s;
+        var destH = img.naturalHeight * s;
+        var dx = out.width  / 2 - cropState.panX * s;
+        var dy = out.height / 2 - cropState.panY * s;
+        octx.drawImage(img, dx, dy, destW, destH);
+        var dataUrl = out.toDataURL('image/png');
+        _saveCustomLogo(dataUrl);
+        refreshLogoPreview();
+        closeCropModal();
+      });
+    }
+    /* Close on backdrop click / Escape. */
+    if (cropModal) {
+      cropModal.querySelector('.hm-brand-crop-backdrop').addEventListener('click', closeCropModal);
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && cropModal && !cropModal.hidden) closeCropModal();
+    });
 
     if (clearEl) {
       clearEl.addEventListener('click', function () {
