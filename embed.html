@@ -1639,9 +1639,10 @@
      only when needed; the table's min-width triggers overflow. */
   .hm-app .hm-commod-wrap {
     border: 0;
-    /* Top corners square \u2014 table thead is a gold band that should read as
-       a flat title bar like the calendar / ranking-table headers. */
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    /* Square corners \u2014 the outer panel card is also square (border-radius:0
+       on .grid-stack-item), so any rounding on the inner wrap creates a
+       visible mismatch in the bottom corners. */
+    border-radius: 0;
     overflow-x: auto;
     overflow-y: hidden;
     background: var(--hm-panel);
@@ -1694,14 +1695,13 @@
   /* Alternating row bg */
   .hm-app .hm-commod-tbl tbody tr:nth-child(even) td { background: var(--hm-bg-alt); }
   .hm-app .hm-commod-tbl tbody tr:last-child td { border-bottom: none; }
-  /* Round the last row's first and last cells to match the wrap's 5px
-     bottom corner radius (same fix as the FX table \u2014 square cells were
-     clipping past the rounded wrap on the bottom row). */
-  .hm-app .hm-commod-tbl tbody tr:last-child td:first-child {
-    border-bottom-left-radius: 5px;
-  }
+  /* Last-row corner cells stay square \u2014 wrap is square so no clipping
+     concern, and the rounded edges previously created a visible
+     mismatch with the panel card. */
+  .hm-app .hm-commod-tbl tbody tr:last-child td:first-child,
   .hm-app .hm-commod-tbl tbody tr:last-child td:last-child {
-    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
   }
   /* Row hover: matches sector / currency tables. We DO want the row-wide
      warm background on all cells EXCEPT the % 52W High cell, which carries
@@ -1820,8 +1820,9 @@
   /* Currencies table \u2014 shares all styling with commodities */
   .hm-app .hm-fx-wrap {
     border: 0;
-    /* Top corners square \u2014 same rationale as commodities wrap above. */
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    /* Square corners \u2014 outer panel card is square; rounding the inner wrap
+       creates a visible mismatch in the bottom corners. */
+    border-radius: 0;
     overflow-x: auto;
     overflow-y: hidden;
     background: var(--hm-panel);
@@ -1866,15 +1867,13 @@
   .hm-app .hm-fx-tbl td:last-child { border-right: none; }
   .hm-app .hm-fx-tbl tbody tr:nth-child(even) td { background: var(--hm-bg-alt); }
   .hm-app .hm-fx-tbl tbody tr:last-child td { border-bottom: none; }
-  /* Round the last row's first and last cells to match the wrap's 5px
-     bottom-left/bottom-right radius \u2014 without this the square cell
-     corners poke past the rounded wrap, clipping the visual edge (most
-     visible on the bottom NOK row in the FX table). */
-  .hm-app .hm-fx-tbl tbody tr:last-child td:first-child {
-    border-bottom-left-radius: 5px;
-  }
+  /* Last-row corner cells stay square \u2014 wrap is square so no clipping
+     concern, and the rounded edges previously created a visible
+     mismatch with the panel card. */
+  .hm-app .hm-fx-tbl tbody tr:last-child td:first-child,
   .hm-app .hm-fx-tbl tbody tr:last-child td:last-child {
-    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
   }
   /* Row hover: matches sector / commodity tables. % 52W High cell keeps its
      conditional heat-map color (marked `.hm-pct-keep` from the renderer). */
