@@ -1470,6 +1470,18 @@
   .hm-app span.hm-metric-tip {
     border-bottom: 1px dotted var(--hm-border);
   }
+  /* Quadrant name chips (Gave + Macro Compass) ARE <span class="...
+     hm-metric-tip"> for the hover-tip plumbing, but they're bordered
+     boxes — not inline text labels. Restore the solid bottom border
+     that the dotted-underline rule above clobbers. */
+  .hm-app span.hm-gave-qname,
+  .hm-app span.hm-mc-qname {
+    border-bottom-style: solid;
+  }
+  .hm-app span.hm-gave-qname.active,
+  .hm-app span.hm-mc-qname.active {
+    border-bottom-color: var(--hm-gold);
+  }
   .hm-app #hm-mtip {
     position: fixed;
     z-index: 2147483000;
@@ -5329,32 +5341,6 @@
     color: var(--hm-muted, #6b6050);
     line-height: 1.4;
   }
-  .hm-app .hm-export-resolution {
-    display: inline-flex;
-    gap: 4px;
-  }
-  .hm-app .hm-export-res-btn {
-    flex: 1 1 0;
-    padding: 6px 12px;
-    background: transparent;
-    border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
-    color: var(--hm-dark);
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: border-color 120ms, color 120ms, background 120ms;
-  }
-  .hm-app .hm-export-res-btn:hover {
-    border-color: var(--hm-gold);
-    color: var(--hm-gold);
-  }
-  .hm-app .hm-export-res-btn.active {
-    background: var(--hm-gold);
-    border-color: var(--hm-gold);
-    color: var(--hm-white);
-  }
   .hm-app .hm-export-checkbox {
     display: inline-flex;
     align-items: center;
@@ -5939,15 +5925,6 @@
     </div>
     <div class="hm-export-modal-body">
       <aside class="hm-export-sidebar">
-        <div class="hm-export-section">
-          <div class="hm-export-section-label">Resolution</div>
-          <div class="hm-export-resolution">
-            <button class="hm-export-res-btn" data-res="1" type="button">1x</button>
-            <button class="hm-export-res-btn active" data-res="2" type="button">2x</button>
-            <button class="hm-export-res-btn" data-res="3" type="button">3x</button>
-          </div>
-          <div class="hm-export-section-hint">Pixel density. Higher = sharper, larger file.</div>
-        </div>
         <div class="hm-export-section">
           <div class="hm-export-section-label">Footer handle</div>
           <input type="text" class="hm-export-input" id="hm-export-handle" value="StableBread" maxlength="30" autocomplete="off">
@@ -13097,19 +13074,17 @@
   }
 
   function applyExportDefaults() {
-    /* Resolution defaults to 2x \u2014 most users want retina-quality. */
-    document.querySelectorAll('.hm-export-res-btn').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-res') === '2');
-    });
     var h = document.getElementById('hm-export-handle');
     if (h) h.value = 'StableBread';
   }
 
   function getExportOptions() {
-    var resBtn = document.querySelector('.hm-export-res-btn.active');
+    /* Resolution is locked to 2x — the chooser was removed because
+       2x is the only crispness most users want, and 1x/3x were
+       footguns (1x looks soft, 3x bloats file size for no gain). */
     var handleEl = document.getElementById('hm-export-handle');
     return {
-      resolution: resBtn ? parseInt(resBtn.getAttribute('data-res'), 10) || 2 : 2,
+      resolution: 2,
       handle: handleEl ? handleEl.value : ''
     };
   }
@@ -13310,16 +13285,10 @@
         'hm-theme-treemap':1200
       };
       var pinnedW = EXPORT_PINNED_WIDTHS[panelId];
-      /* Small-panel sharpness bump: panels pinned below 800px at the
-         default 2x pixel ratio output a PNG less than 1600px wide,
-         which looks soft when viewed at any zoom above 100%. Bump to
-         3x so the output is at least 1800px and stays crisp.
-         Respects explicit 1x (user wants small file size) and
-         explicit 3x (user already picked sharper). Only the default
-         2x gets auto-promoted. */
-      if (pinnedW && pinnedW < 800 && pixelRatio === 2) {
-        pixelRatio = 3;
-      }
+      /* Resolution is locked to 2x for every panel (user chose to
+         remove the chooser). Previously a small-panel auto-bump-to-3x
+         existed here; dropped per user request to keep behavior
+         consistent and predictable. */
       if (pinnedW) {
         fakeItem.style.width = pinnedW + 'px';
       } else {
@@ -13378,6 +13347,15 @@
         clone.querySelectorAll('.hm-table thead th').forEach(function (th) {
           th.style.setProperty('top', '0', 'important');
           th.style.setProperty('position', 'static', 'important');
+        });
+        /* Strip the dotted-underline tooltip affordance from metric
+           names in the export. On the live page the dotted bottom
+           border tells users the label is hoverable for a chart;
+           in a static PNG it's just visual noise. .hm-export-stage
+           descendant selectors don't survive html-to-image's
+           foreignObject capture, so this has to be inline. */
+        clone.querySelectorAll('span.hm-metric-tip').forEach(function (s) {
+          s.style.setProperty('border-bottom', 'none', 'important');
         });
       }
 
@@ -13752,16 +13730,6 @@
       /* Don't double-fire when the close button itself is clicked. */
       if (e.target.closest('#hm-export-modal-close')) return;
       closeExportModal();
-    });
-    /* Resolution radio-style buttons. */
-    document.querySelectorAll('.hm-export-res-btn').forEach(function (b) {
-      b.addEventListener('click', function () {
-        document.querySelectorAll('.hm-export-res-btn').forEach(function (x) {
-          x.classList.remove('active');
-        });
-        b.classList.add('active');
-        refreshModalPreview();
-      });
     });
     /* Footer @handle input \u2014 re-render on each keystroke (debounced
        inside refreshModalPreview). */
