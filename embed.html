@@ -8648,6 +8648,22 @@
 
     var theme = getTheme();
 
+    window.PANEL_INFO_HTML['hm-indexes'] = function () {
+      return (
+        '<p><b>Headline benchmarks at a glance</b> \u2014 major equity indexes plus key ' +
+          'cross-asset gauges, each as a card with its level, period change, and a ' +
+          'sparkline.</p>' +
+        '<p><b>Period pills</b> (top-right) set the lookback for every card at once: ' +
+          '1W through 10Y. The price-change figure and the sparkline both reflect the ' +
+          'selected window, not just the last day.</p>' +
+        '<p><b>Sparkline</b>: uses daily closes for short windows (&le;6M) so the line ' +
+          'reads as a curve, and weekly closes for longer ones. Green = up over the ' +
+          'window, red = down.</p>'
+      );
+    };
+    var idxItem = document.querySelector('.grid-stack-item[gs-id="hm-indexes"]');
+    if (idxItem) idxItem.classList.add('hm-has-info');
+
     /* Wrap the 4-card grid inside a section that carries the gold title
        band. The cards themselves keep their existing per-card chrome
        (border + sparkline); the section is just structural to anchor the
@@ -8951,14 +8967,21 @@
     var asOf = data.as_of || '\u2014';
     window.PANEL_INFO_HTML['hm-commodities'] = function () {
       return (
-        '<p><b>Daily close</b> \u00b7 ' + asOf + '</p>' +
-        '<p><b>Front-month continuous</b>: prices are Yahoo\'s =F tickers, ' +
-          'which auto-roll between contracts. Specific contract month is not exposed.</p>' +
+        '<p><b>Front-month commodity futures</b>, grouped by sector. Daily close \u00b7 ' + asOf + '.</p>' +
+        '<p><b>Last</b>: most recent settle. Prices are Yahoo\'s =F continuous tickers, ' +
+          'which auto-roll between contracts \u2014 the specific contract month isn\'t exposed.</p>' +
+        '<p><b>1D / 1W / 1M / YTD</b>: percent change over the trailing day, week, ' +
+          'month, and since Jan 1. Green = up, red = down. 1W and 1M are measured ' +
+          'against the weekly closes 1 and ~4 weeks back; YTD is from the first close ' +
+          'of the year.</p>' +
         '<p><b>52W Range</b>: horizontal slider with the 52-week low on the left ' +
           'and high on the right. Gold marker shows where the current price sits ' +
           'between them.</p>' +
-        '<p><b>Anomalies</b>: rows with impossible daily moves (>50% or scale ' +
-          'shift >5x) show \u2014 to suppress contract-rollover artifacts.</p>'
+        '<p><b>Categories</b>: use the funnel icon in the panel header to show / hide ' +
+          'Agricultural, Energy, Livestock, or Metals. Selection is saved and is ' +
+          'reflected in image exports.</p>' +
+        '<p><b>Anomalies</b>: rows with impossible daily moves (>50% or a >5\u00d7 scale ' +
+          'shift) show \u2014 to suppress contract-rollover artifacts.</p>'
       );
     };
     /* Tag the gridstack item so the info button becomes visible. */
@@ -9186,13 +9209,20 @@
     var asOf = data.as_of || '\u2014';
     window.PANEL_INFO_HTML['hm-currencies'] = function () {
       return (
-        '<p><b>Daily close</b> \u00b7 ' + asOf + '</p>' +
+        '<p><b>Spot FX rates</b>, grouped by region. Daily close \u00b7 ' + asOf + '.</p>' +
         '<p><b>Pair convention</b>: USD-base pairs (USD/X) read "X per dollar" \u2014 ' +
           'rate up = USD strong. Inverse pairs (X/USD like EUR/USD) read the ' +
           'opposite \u2014 rate up = USD weak.</p>' +
+        '<p><b>1D / 1W / 1M / YTD</b>: percent change in the rate over the trailing ' +
+          'day, week, month, and since Jan 1. Green = rate up, red = rate down ' +
+          '(interpret direction using the pair convention above). 1W and 1M use the ' +
+          'weekly closes 1 and ~4 weeks back.</p>' +
         '<p><b>52W Range</b>: horizontal slider with the 52-week low on the left ' +
           'and high on the right. Gold marker shows where the current rate sits ' +
-          'between them.</p>'
+          'between them.</p>' +
+        '<p><b>Regions</b>: use the funnel icon in the panel header to show / hide ' +
+          'Americas, Asia &amp; Oceania, or EMEA. Selection is saved and reflected ' +
+          'in image exports.</p>'
       );
     };
     var fxItem = document.querySelector('.grid-stack-item[gs-id="hm-currencies"]');
@@ -9380,6 +9410,24 @@
     var container = document.getElementById('hm-economy');
     if (!container || !data.economy || !data.economy.length) return;
     container.innerHTML = '';
+
+    window.PANEL_INFO_HTML['hm-economy'] = function () {
+      return (
+        '<p><b>Latest hard + soft macro data</b>, grouped into Inflation, Labor, ' +
+          'Consumer, Real Activity, Leading Indicators, and Valuation &amp; Monetary.</p>' +
+        '<p>Each card shows the <b>most recent reading</b> and the <b>prior</b> period, ' +
+          'with an arrow: green = improved vs last period, red = deteriorated, gray = ' +
+          'unchanged. "Improved" is direction-aware \u2014 for indicators where lower is ' +
+          'better (e.g. jobless claims) a fall is green.</p>' +
+        '<p>Mostly monthly series; the date in parentheses on each card is its own ' +
+          'as-of. Hover a card for a plain-English definition and a 5-year history ' +
+          'chart (recessions shaded).</p>' +
+        '<p><b>Categories</b>: use the funnel icon in the panel header to show / hide ' +
+          'groups. Selection is saved and reflected in image exports.</p>'
+      );
+    };
+    var econItem0 = document.querySelector('.grid-stack-item[gs-id="hm-economy"]');
+    if (econItem0) econItem0.classList.add('hm-has-info');
 
     var section = document.createElement('div');
     section.className = 'hm-econ-section';
@@ -9708,6 +9756,23 @@
     var sc = data.sector_chart;
     _sc = sc;
     var theme = getTheme();
+
+    window.PANEL_INFO_HTML['hm-sector-chart'] = function () {
+      return (
+        '<p><b>Cumulative return of the 11 GICS sector ETFs</b> over the selected ' +
+          'period, all rebased to 0% at the start so lines are directly comparable.</p>' +
+        '<p><b>Period pills</b> set the window (1W\u201310Y). Short windows use daily ' +
+          'closes for a smooth line; longer ones use weekly.</p>' +
+        '<p><b>Sector toggles</b>: tick / untick sectors in the table to add or remove ' +
+          'their lines (selection is saved across reloads). The S&amp;P 500 is overlaid ' +
+          'as a dashed benchmark so you can see which sectors are leading or lagging ' +
+          'the index.</p>' +
+        '<p>Use the layout icon in the header to switch between one combined chart and ' +
+          'a small-multiples grid (one mini-chart per sector).</p>'
+      );
+    };
+    var scItem = document.querySelector('.grid-stack-item[gs-id="hm-sector-chart"]');
+    if (scItem) scItem.classList.add('hm-has-info');
     /* Initial state: 3M view in DAILY mode (matches the active button
        at first render). 66 daily closes = 13 weeks of return spans \u2014
        matches compute_returns.m3 = pct_at(13). */
@@ -10155,6 +10220,21 @@
     container.innerHTML = '';
     var theme = getTheme();
 
+    window.PANEL_INFO_HTML['hm-stylefactor'] = function () {
+      return (
+        '<p><b>Morningstar-style 3\u00d73 equity style box.</b> Rows are market cap ' +
+          '(Large / Mid / Small), columns are style (Value / Blend / Growth). Each ' +
+          'cell is the return of the matching ETF over the selected period.</p>' +
+        '<p><b>Period pills</b> set the lookback (1W\u201310Y) for all nine cells at once. ' +
+          'Cell color scales with return \u2014 green positive, red negative \u2014 so leadership ' +
+          '(e.g. large growth vs small value) is visible at a glance.</p>' +
+        '<p>Use it to read the market\'s current size/style tilt and how it rotates ' +
+          'as you step through timeframes.</p>'
+      );
+    };
+    var sfItem = document.querySelector('.grid-stack-item[gs-id="hm-stylefactor"]');
+    if (sfItem) sfItem.classList.add('hm-has-info');
+
     var wrap = document.createElement('div');
     wrap.className = 'hm-stylefactor';
 
@@ -10379,6 +10459,22 @@
     var container = document.getElementById('hm-factors');
     if (!container || !data.factors || !data.factors.length) return;
     container.innerHTML = '';
+
+    window.PANEL_INFO_HTML['hm-factors'] = function () {
+      return (
+        '<p><b>Equity factor performance.</b> Ranks the major investable factors ' +
+          '(e.g. Momentum, Quality, Low Volatility, Value, Size, High Dividend, Growth) ' +
+          'by return over the selected period, each via its representative ETF.</p>' +
+        '<p><b>Period pills</b> set the lookback (1W\u201310Y). The <b>Abs / vs SPY</b> ' +
+          'toggle switches between absolute return and return relative to the S&amp;P 500 ' +
+          '\u2014 relative mode shows which factors are actually beating the benchmark, not ' +
+          'just rising with it.</p>' +
+        '<p>Bars are sorted best-to-worst and colored green / red by sign, so factor ' +
+          'leadership is immediately legible.</p>'
+      );
+    };
+    var facItem = document.querySelector('.grid-stack-item[gs-id="hm-factors"]');
+    if (facItem) facItem.classList.add('hm-has-info');
 
     var card = document.createElement('div');
     card.className = 'hm-factors-card';
@@ -12002,6 +12098,23 @@
     container.innerHTML = '';
     var theme = getTheme();
 
+    window.PANEL_INFO_HTML['hm-theme-treemap'] = function () {
+      return (
+        '<p><b>Thematic / industry ETF performance as a treemap.</b> Each tile is a ' +
+          'theme (e.g. semis, biotech, clean energy, defense). Tile <b>color</b> = ' +
+          'return over the selected period \u2014 green positive, red negative, brighter = ' +
+          'bigger move.</p>' +
+        '<p><b>Period pills</b> set the window (1W\u201310Y). The <b>Abs / vs SPY</b> toggle ' +
+          'switches between absolute return and return relative to the S&amp;P 500, so ' +
+          'you can isolate genuine thematic out/under-performance from broad-market ' +
+          'drift.</p>' +
+        '<p>Hover a tile for the theme name and exact figure. A quick read of which ' +
+          'corners of the market are hot or cold right now.</p>'
+      );
+    };
+    var tmItem = document.querySelector('.grid-stack-item[gs-id="hm-theme-treemap"]');
+    if (tmItem) tmItem.classList.add('hm-has-info');
+
     var spyReturns = data.spy_returns || {};
 
     /* Backend ships m1..y10 for themes; 1W is computed in the frontend
@@ -12333,8 +12446,48 @@
   };
 
   /* Per-panel info-popup HTML. Renderers populate this when they have
-     data-dependent notes. */
+     data-dependent notes; static panels (no render fn) are registered
+     here directly. Any panel with an entry gets its info (i) button
+     auto-shown via the class-tagging loop in initGridStack. */
   window.PANEL_INFO_HTML = {};
+
+  /* Metrics Heat Map (the main table — built by render(), but its copy
+     is static so it lives here). */
+  window.PANEL_INFO_HTML['hm-heatmap-wrap'] = function () {
+    return (
+      '<p><b>The core dashboard.</b> ~50 macro &amp; market metrics across nine ' +
+        'sections (Equities, Breadth, Sentiment &amp; Positioning, Volatility, Rates, ' +
+        'Credit &amp; Liquidity, Commodities &amp; FX, Labor, Cross-Asset Regime), each ' +
+        'shown as 13 weekly readings plus 5-year context columns.</p>' +
+      '<p><b>Cell color</b>: where each weekly reading sits in its own trailing ' +
+        '5-year range. Green = bullish end of the range, red = bearish end, pale = ' +
+        'middle. Direction-aware \u2014 for "lower-is-better" metrics (e.g. credit spreads) ' +
+        'the scale is flipped so green always means risk-on.</p>' +
+      '<p><b>%ile</b>: the latest reading\'s percentile within its 5-year history. ' +
+        '<b>5y Avg / Min / Max</b>: the mean and extremes over that window, for ' +
+        'a quick sense of how stretched the current value is.</p>' +
+      '<p><b>Plot a metric</b>: tick the checkbox on any row to chart it in the ' +
+        'Metrics Chart panel (up to 6 at once). Selections persist across reloads.</p>' +
+      '<p><b>Sections</b>: use the funnel icon in the panel header to show / hide ' +
+        'whole sections. Hover any metric name for a plain-English definition and, ' +
+        'where available, a 5-year history chart.</p>'
+    );
+  };
+
+  /* Metrics Chart (built in static HTML, fed by the heat-map checkboxes). */
+  window.PANEL_INFO_HTML['hm-chart-section'] = function () {
+    return (
+      '<p><b>Charts the metrics you tick</b> in the Metrics Heat Map \u2014 up to 6 at ' +
+        'once. Empty until you select at least one row.</p>' +
+      '<p><b>Combined vs separated</b>: combined overlays every series on one set of ' +
+        'axes (each metric keeps its own scale); separated draws one mini-chart per ' +
+        'metric. Toggle in the panel header.</p>' +
+      '<p><b>Per-series controls</b> (hover a legend row): switch line / bar / stacked-bar, ' +
+        'toggle data labels, hide/show, remove, or open the gear to overlay <b>5-year ' +
+        'avg / min / max reference lines</b>.</p>' +
+      '<p>Selections, view mode, and per-series settings all persist across reloads.</p>'
+    );
+  };
 
   /* Display titles shown in each panel's window-style header. */
   var PANEL_TITLES = {
@@ -12931,6 +13084,16 @@
     refreshStackedFlag();
     refreshStickyOffset();
     refreshAllMoveButtons();
+
+    /* Auto-show the info (i) button on every panel that has registered
+       PANEL_INFO_HTML content. Renderers run before initGridStack, so
+       all data-driven entries exist by now; static entries are
+       registered at module top. Idempotent — adding the class twice is
+       harmless, so renderers that also add it manually still work. */
+    Object.keys(window.PANEL_INFO_HTML || {}).forEach(function (id) {
+      var infoItem = document.querySelector('.grid-stack-item[gs-id="' + id + '"]');
+      if (infoItem) infoItem.classList.add('hm-has-info');
+    });
 
     /* gridInstance back-compat: legacy code paths gate on
        window.gridInstance being truthy. Sentinel keeps them happy. */
