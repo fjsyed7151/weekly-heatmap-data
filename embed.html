@@ -1727,14 +1727,6 @@
   }
   .hm-app .hm-commod-chg.up { color: var(--hm-green); }
   .hm-app .hm-commod-chg.down { color: var(--hm-red); }
-  /* Percent-in-parens inside the combined Chg cell — slightly lighter
-     weight + small font so the absolute number reads as primary. */
-  .hm-app .hm-commod-chg .hm-chg-pct,
-  .hm-app .hm-fx-chg .hm-chg-pct {
-    font-weight: 500;
-    font-size: 11px;
-    opacity: 0.85;
-  }
   /* Sparkline trend cell: stretches to fill the cell width via
      preserveAspectRatio="none" on the SVG. Old fixed 48px width left a
      gap on the left at wider column widths. */
@@ -8982,7 +8974,7 @@
       '<thead><tr>' +
         '<th>Commodity</th>' +
         '<th>Last</th>' +
-        '<th>Chg</th>' +
+        '<th>1D</th>' +
         '<th>1W</th>' +
         '<th>1M</th>' +
         '<th>YTD</th>' +
@@ -9004,16 +8996,12 @@
 
         var rangeBar = _build52wRangeBar(c.w52_low, c.w52_high, c.price, 2, theme);
 
-        /* Combined daily change cell: "<abs> (<pct>%)" with one color. */
-        var chgHtml, chgCls;
-        if (c.anomaly || c.change === null || c.change === undefined) {
-          chgHtml = '<span class="hm-anom">\u2014</span>';
-          chgCls = '';
+        /* 1D = daily % change. Dash on anomaly. */
+        var oneD;
+        if (c.anomaly || c.change_pct === null || c.change_pct === undefined) {
+          oneD = ['<span class="hm-anom">\u2014</span>', ''];
         } else {
-          var sign = c.change >= 0 ? '+' : '';
-          chgCls = c.change >= 0 ? 'up' : 'down';
-          chgHtml = sign + c.change.toFixed(2) +
-                    ' <span class="hm-chg-pct">(' + sign + c.change_pct.toFixed(2) + '%)</span>';
+          oneD = _fmtPct(c.change_pct);
         }
         var ytd = _fmtPct(c.ytd_pct);
         /* 1W / 1M derived from the 13-weekly-close sparkline array.
@@ -9028,7 +9016,7 @@
         tr.innerHTML =
           '<td>' + c.name + '<span class="hm-ticker">' + c.ticker + '</span>' + unitHtml + '</td>' +
           '<td>' + c.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>' +
-          '<td class="hm-commod-chg ' + chgCls + '">' + chgHtml + '</td>' +
+          '<td class="hm-commod-chg ' + oneD[1] + '">' + oneD[0] + '</td>' +
           '<td class="hm-commod-chg ' + oneW[1] + '">' + oneW[0] + '</td>' +
           '<td class="hm-commod-chg ' + oneM[1] + '">' + oneM[0] + '</td>' +
           '<td class="hm-commod-chg ' + ytd[1] + '">' + ytd[0] + '</td>' +
@@ -9219,7 +9207,7 @@
       '<thead><tr>' +
         '<th>Currency</th>' +
         '<th>Last</th>' +
-        '<th>Chg</th>' +
+        '<th>1D</th>' +
         '<th>1W</th>' +
         '<th>1M</th>' +
         '<th>YTD</th>' +
@@ -9242,16 +9230,12 @@
 
         var rangeBar = _build52wRangeBar(c.w52_low, c.w52_high, c.price, dec, theme);
 
-        /* Combined daily change cell: "<abs> (<pct>%)" with one color. */
-        var chgHtml, chgCls;
-        if (c.anomaly || c.change === null || c.change === undefined) {
-          chgHtml = '<span class="hm-anom">\u2014</span>';
-          chgCls = '';
+        /* 1D = daily % change. Dash on anomaly. */
+        var oneD;
+        if (c.anomaly || c.change_pct === null || c.change_pct === undefined) {
+          oneD = ['<span class="hm-anom">\u2014</span>', ''];
         } else {
-          var sign = c.change >= 0 ? '+' : '';
-          chgCls = c.change >= 0 ? 'up' : 'down';
-          chgHtml = sign + c.change.toFixed(dec) +
-                    ' <span class="hm-chg-pct">(' + sign + c.change_pct.toFixed(2) + '%)</span>';
+          oneD = _fmtPct(c.change_pct);
         }
         var ytd = _fmtPct(c.ytd_pct);
         var sp = c.sparkline || [];
@@ -9261,7 +9245,7 @@
         tr.innerHTML =
           '<td>' + c.name + '<span class="hm-ticker">' + c.ticker + '</span></td>' +
           '<td>' + c.price.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec }) + '</td>' +
-          '<td class="hm-fx-chg ' + chgCls + '">' + chgHtml + '</td>' +
+          '<td class="hm-fx-chg ' + oneD[1] + '">' + oneD[0] + '</td>' +
           '<td class="hm-fx-chg ' + oneW[1] + '">' + oneW[0] + '</td>' +
           '<td class="hm-fx-chg ' + oneM[1] + '">' + oneM[0] + '</td>' +
           '<td class="hm-fx-chg ' + ytd[1] + '">' + ytd[0] + '</td>' +
