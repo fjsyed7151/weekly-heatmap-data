@@ -13663,6 +13663,21 @@
         clone.querySelectorAll('span.hm-metric-tip').forEach(function (s) {
           s.style.setProperty('border-bottom', 'none', 'important');
         });
+        /* Drop the checkbox (plot-select) column from the export — it's
+           an interactive affordance with no meaning in a static image.
+           Hide BOTH the per-row .hm-check-col cells AND the section-
+           header rows' first cell (.hm-section-blank), which sits in the
+           same column, so the table's column count stays aligned. Then
+           neutralize the metric column's sticky-left:40px (it was offset
+           to clear the 40px checkbox column) so it sits flush at the
+           left edge with no gap. */
+        clone.querySelectorAll('.hm-check-col, .hm-section-blank').forEach(function (el) {
+          el.style.setProperty('display', 'none', 'important');
+        });
+        clone.querySelectorAll('.hm-metric').forEach(function (el) {
+          el.style.setProperty('position', 'static', 'important');
+          el.style.setProperty('left', 'auto', 'important');
+        });
       }
 
       /* Force overflow:visible INLINE on every internal scroll
