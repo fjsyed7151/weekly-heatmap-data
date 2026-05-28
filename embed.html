@@ -13674,7 +13674,12 @@
         clone.querySelectorAll('.hm-check-col, .hm-section-blank').forEach(function (el) {
           el.style.setProperty('display', 'none', 'important');
         });
-        clone.querySelectorAll('.hm-metric').forEach(function (el) {
+        /* Both the metric column AND the section-header label carry
+           position:sticky; left:40px (offset to clear the 40px checkbox
+           column during horizontal scroll). With the checkbox column
+           gone they'd render 40px in from the left edge — indented
+           section headers. Force static so both sit flush left. */
+        clone.querySelectorAll('.hm-metric, .hm-section-label').forEach(function (el) {
           el.style.setProperty('position', 'static', 'important');
           el.style.setProperty('left', 'auto', 'important');
         });
