@@ -1654,12 +1654,9 @@
     border-spacing: 0;
     font-variant-numeric: tabular-nums;
   }
-  /* Width hints \u2014 caps the 52W and 13W Trend columns so auto-layout
-     doesn't hand them a chunk of spare horizontal space. Other columns
-     stay content-sized; spare goes to col 1 (name) which has the widest
-     natural content. Bar/sparkline inside fill the cell normally. */
-  .hm-app .hm-commod-tbl th:nth-child(6),
-  .hm-app .hm-commod-tbl td:nth-child(6) { width: 160px; }
+  /* Width hint \u2014 cap the 52W Range bar column so auto-layout doesn't
+     give it spare width. Other columns stay content-sized; spare goes
+     to col 1 (name). Range bar fills the cell. */
   .hm-app .hm-commod-tbl th:nth-child(7),
   .hm-app .hm-commod-tbl td:nth-child(7) { width: 160px; }
   /* Compact density: sidebar tables need to fit a lot of rows. Trimmed
@@ -1730,6 +1727,14 @@
   }
   .hm-app .hm-commod-chg.up { color: var(--hm-green); }
   .hm-app .hm-commod-chg.down { color: var(--hm-red); }
+  /* Percent-in-parens inside the combined Chg cell — slightly lighter
+     weight + small font so the absolute number reads as primary. */
+  .hm-app .hm-commod-chg .hm-chg-pct,
+  .hm-app .hm-fx-chg .hm-chg-pct {
+    font-weight: 500;
+    font-size: 11px;
+    opacity: 0.85;
+  }
   /* Sparkline trend cell: stretches to fill the cell width via
      preserveAspectRatio="none" on the SVG. Old fixed 48px width left a
      gap on the left at wider column widths. */
@@ -1828,8 +1833,6 @@
     background: var(--hm-panel);
   }
   /* Same caps for currencies. */
-  .hm-app .hm-fx-tbl th:nth-child(6),
-  .hm-app .hm-fx-tbl td:nth-child(6) { width: 160px; }
   .hm-app .hm-fx-tbl th:nth-child(7),
   .hm-app .hm-fx-tbl td:nth-child(7) { width: 160px; }
   .hm-app .hm-fx-tbl {
@@ -8918,6 +8921,21 @@
     return [sign + v.toFixed(2) + '%', cls];
   }
 
+  /* Compute % change from a weekly-cadence sparkline array.
+     `arr` is a list of weekly closes ending at the most recent close.
+     `nBack` = how many weeks ago to compare against (1W=2, 1M=5 since
+     arr[-1] is the current week and arr[-nBack] is nBack-1 weeks back).
+     Returns [displayString, cssClass] same shape as _fmtPct. */
+  function _pctFromSpark(arr, currentPrice, nBack) {
+    if (!arr || arr.length < nBack) return ['<span class="hm-anom">\u2014</span>', ''];
+    var prior = arr[arr.length - nBack];
+    if (prior === null || prior === undefined || prior === 0) {
+      return ['<span class="hm-anom">\u2014</span>', ''];
+    }
+    var pct = (currentPrice / prior - 1) * 100;
+    return _fmtPct(pct);
+  }
+
   /* "X/USD" pairs are USD-quote \u2014 when the rate goes up, USD WEAKENS. So for
      the heat-color score we flip the sign so green always = USD strong,
      red always = USD weak. USDJPY-style pairs (USD-base) keep the original
@@ -8965,10 +8983,10 @@
         '<th>Commodity</th>' +
         '<th>Last</th>' +
         '<th>Chg</th>' +
-        '<th>% Chg</th>' +
+        '<th>1W</th>' +
+        '<th>1M</th>' +
         '<th>YTD</th>' +
         '<th>52W Range</th>' +
-        '<th>13W Trend</th>' +
       '</tr></thead>';
 
     var tbody = document.createElement('tbody');
@@ -8983,24 +9001,27 @@
       group.items.forEach(function (c) {
         var tr = document.createElement('tr');
         tr.setAttribute('data-cat', group.name);
-        var isUp = (c.change_pct || 0) >= 0;
-        var sparkSvg = _buildSparkSvg(c.sparkline || [], isUp);
 
         var rangeBar = _build52wRangeBar(c.w52_low, c.w52_high, c.price, 2, theme);
 
-        /* Change cells: show dash for anomalies. */
-        var chgHtml, chgPctHtml, chgCls;
+        /* Combined daily change cell: "<abs> (<pct>%)" with one color. */
+        var chgHtml, chgCls;
         if (c.anomaly || c.change === null || c.change === undefined) {
           chgHtml = '<span class="hm-anom">\u2014</span>';
-          chgPctHtml = '<span class="hm-anom">\u2014</span>';
           chgCls = '';
         } else {
           var sign = c.change >= 0 ? '+' : '';
           chgCls = c.change >= 0 ? 'up' : 'down';
-          chgHtml = sign + c.change.toFixed(2);
-          chgPctHtml = sign + c.change_pct.toFixed(2) + '%';
+          chgHtml = sign + c.change.toFixed(2) +
+                    ' <span class="hm-chg-pct">(' + sign + c.change_pct.toFixed(2) + '%)</span>';
         }
         var ytd = _fmtPct(c.ytd_pct);
+        /* 1W / 1M derived from the 13-weekly-close sparkline array.
+           sparkline[-1] = today's price; sparkline[-2] = 1w ago;
+           sparkline[-5] = ~4w ago (1m). */
+        var sp = c.sparkline || [];
+        var oneW = _pctFromSpark(sp, c.price, 2);
+        var oneM = _pctFromSpark(sp, c.price, 5);
 
         var unitHtml = c.unit ? '<span class="hm-unit">' + c.unit + '</span>' : '';
 
@@ -9008,10 +9029,10 @@
           '<td>' + c.name + '<span class="hm-ticker">' + c.ticker + '</span>' + unitHtml + '</td>' +
           '<td>' + c.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>' +
           '<td class="hm-commod-chg ' + chgCls + '">' + chgHtml + '</td>' +
-          '<td class="hm-commod-chg ' + chgCls + '">' + chgPctHtml + '</td>' +
+          '<td class="hm-commod-chg ' + oneW[1] + '">' + oneW[0] + '</td>' +
+          '<td class="hm-commod-chg ' + oneM[1] + '">' + oneM[0] + '</td>' +
           '<td class="hm-commod-chg ' + ytd[1] + '">' + ytd[0] + '</td>' +
-          '<td><span class="hm-w52-bar">' + rangeBar + '</span></td>' +
-          '<td><span class="hm-commod-spark">' + sparkSvg + '</span></td>';
+          '<td><span class="hm-w52-bar">' + rangeBar + '</span></td>';
 
         tbody.appendChild(tr);
       });
@@ -9199,10 +9220,10 @@
         '<th>Currency</th>' +
         '<th>Last</th>' +
         '<th>Chg</th>' +
-        '<th>% Chg</th>' +
+        '<th>1W</th>' +
+        '<th>1M</th>' +
         '<th>YTD</th>' +
         '<th>52W Range</th>' +
-        '<th>13W Trend</th>' +
       '</tr></thead>';
 
     var tbody = document.createElement('tbody');
@@ -9218,33 +9239,33 @@
         var tr = document.createElement('tr');
         tr.setAttribute('data-cat', group.name);
         var dec = c.decimals || 4;
-        var isUp = (c.change_pct || 0) >= 0;
-        var sparkSvg = _buildSparkSvg(c.sparkline || [], isUp);
 
         var rangeBar = _build52wRangeBar(c.w52_low, c.w52_high, c.price, dec, theme);
 
-        /* Change cells: dash on anomaly. */
-        var chgHtml, chgPctHtml, chgCls;
+        /* Combined daily change cell: "<abs> (<pct>%)" with one color. */
+        var chgHtml, chgCls;
         if (c.anomaly || c.change === null || c.change === undefined) {
           chgHtml = '<span class="hm-anom">\u2014</span>';
-          chgPctHtml = '<span class="hm-anom">\u2014</span>';
           chgCls = '';
         } else {
           var sign = c.change >= 0 ? '+' : '';
           chgCls = c.change >= 0 ? 'up' : 'down';
-          chgHtml = sign + c.change.toFixed(dec);
-          chgPctHtml = sign + c.change_pct.toFixed(2) + '%';
+          chgHtml = sign + c.change.toFixed(dec) +
+                    ' <span class="hm-chg-pct">(' + sign + c.change_pct.toFixed(2) + '%)</span>';
         }
         var ytd = _fmtPct(c.ytd_pct);
+        var sp = c.sparkline || [];
+        var oneW = _pctFromSpark(sp, c.price, 2);
+        var oneM = _pctFromSpark(sp, c.price, 5);
 
         tr.innerHTML =
           '<td>' + c.name + '<span class="hm-ticker">' + c.ticker + '</span></td>' +
           '<td>' + c.price.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec }) + '</td>' +
           '<td class="hm-fx-chg ' + chgCls + '">' + chgHtml + '</td>' +
-          '<td class="hm-fx-chg ' + chgCls + '">' + chgPctHtml + '</td>' +
+          '<td class="hm-fx-chg ' + oneW[1] + '">' + oneW[0] + '</td>' +
+          '<td class="hm-fx-chg ' + oneM[1] + '">' + oneM[0] + '</td>' +
           '<td class="hm-fx-chg ' + ytd[1] + '">' + ytd[0] + '</td>' +
-          '<td><span class="hm-w52-bar">' + rangeBar + '</span></td>' +
-          '<td><span class="hm-fx-spark">' + sparkSvg + '</span></td>';
+          '<td><span class="hm-w52-bar">' + rangeBar + '</span></td>';
 
         tbody.appendChild(tr);
       });
