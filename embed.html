@@ -1,7 +1,7 @@
 
 <!-- Weekly Market Heat Map widget. Paste this entire block into an Oxygen Code Block. -->
 
-<link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
@@ -1807,9 +1807,11 @@
   }
   .hm-app .hm-panel-info-popup p { margin: 0 0 6px 0; }
   .hm-app .hm-panel-info-popup p:last-child { margin-bottom: 0; }
+  /* Bold terms in panel info popups stay the default text color.
+     Gold is reserved for top-level header chrome; gold on every
+     bold word read as overdone. */
   .hm-app .hm-panel-info-popup b {
     font-weight: 700;
-    color: var(--hm-gold);
   }
   .hm-app .hm-panel-info-popup .hm-color-good { color: var(--hm-green); font-weight: 700; }
   .hm-app .hm-panel-info-popup .hm-color-bad { color: var(--hm-red); font-weight: 700; }
@@ -6010,7 +6012,7 @@
   }
   /* Load only viewMode at startup. The 'selected' array is restored
      AFTER initial render completes (see safeRender('restoreChartState')
-     below) — restoring before render triggers a Chart.js / resize-
+     below) \u2014 restoring before render triggers a Chart.js / resize-
      observer cascade during bootstrap that hangs the page. */
   var _savedChartState = _loadChartState();
   var chartState = {
@@ -6184,12 +6186,22 @@
     return row.direction === "neg" ? -t : t;
   }
   function toMmDd(iso) { var p = iso.split("-"); return p[1] + "/" + p[2]; }
+  /* Full US date for anywhere a date is written out (as-of stamps,
+     calendar rows, export footer). ISO "2026-05-22" -> "05/22/2026".
+     Returns the input untouched if it doesn't look like an ISO date,
+     so a malformed feed value degrades to itself instead of "undefined". */
+  function toMmDdYyyy(iso) {
+    if (!iso || typeof iso !== 'string') return iso || '';
+    var p = iso.split('-');
+    if (p.length !== 3 || p[0].length !== 4) return iso;
+    return p[1] + '/' + p[2] + '/' + p[0];
+  }
 
   /* ---------- Table render ---------- */
   function render(data) {
     cachedData = data;
     var theme = getTheme();
-    document.getElementById("hm-asof-date").textContent = data.as_of ? toMmDd(data.as_of) : "--";
+    document.getElementById("hm-asof-date").textContent = data.as_of ? toMmDdYyyy(data.as_of) : "--";
 
     var table = document.getElementById("hm-table");
     table.innerHTML = "";
@@ -6219,7 +6231,7 @@
     var sectionMap = {};
     data.sections.forEach(function (s) { sectionMap[s.name] = s.rows; });
 
-    /* Build groups for the per-section filter — list each rendered
+    /* Build groups for the per-section filter \u2014 list each rendered
        section (i.e. ones that have data) in the SECTION_ORDER order. */
     var metricsGroups = [];
 
@@ -6949,7 +6961,7 @@
        could trap it inside a stacking / containing-block context.
        Coordinates are document-relative (window.scrollY + rect.top)
        so the popup stays anchored to the button as the page scrolls
-       — we update on scroll/resize.
+       \u2014 we update on scroll/resize.
 
        The popup also needs an outer-most ancestor that's reachable
        via Element.contains checks for the outside-click logic, which
@@ -7491,11 +7503,14 @@
   function _loadCustomLogo() {
     try { return localStorage.getItem(BRAND_LOGO_KEY) || null; } catch (e) { return null; }
   }
+  /* Returns false when the write fails (usually localStorage quota),
+     so callers can tell the user instead of silently dropping the logo. */
   function _saveCustomLogo(dataUrl) {
     try {
       if (dataUrl) localStorage.setItem(BRAND_LOGO_KEY, dataUrl);
       else         localStorage.removeItem(BRAND_LOGO_KEY);
-    } catch (e) {}
+      return true;
+    } catch (e) { return false; }
   }
   /* Public accessor used by the export footer composer. */
   window.getCustomExportLogoDataUrl = function () { return _loadCustomLogo(); };
@@ -7594,7 +7609,7 @@
       if (e.key === 'Escape' && !panel.hidden) panel.hidden = true;
     });
 
-    /* Color picker (native color input) — fires 'input' continuously
+    /* Color picker (native color input) \u2014 fires 'input' continuously
        and 'change' on commit. Use 'input' for live preview. */
     if (colorEl) {
       colorEl.addEventListener('input', function () {
@@ -7608,12 +7623,12 @@
       });
     }
 
-    /* Hex text input — accept on Enter or blur. */
+    /* Hex text input \u2014 accept on Enter or blur. */
     if (hexEl) {
       var commitHex = function () {
         var hex = _normalizeHex(hexEl.value);
         if (!hex) {
-          /* invalid — snap back to current saved value */
+          /* invalid \u2014 snap back to current saved value */
           syncInputsFromStorage();
           return;
         }
@@ -7819,7 +7834,9 @@
         var dy = out.height / 2 - cropState.panY * s;
         octx.drawImage(img, dx, dy, destW, destH);
         var dataUrl = out.toDataURL('image/png');
-        _saveCustomLogo(dataUrl);
+        if (!_saveCustomLogo(dataUrl)) {
+          setHint('Could not save the logo. Browser storage may be full.', true);
+        }
         refreshLogoPreview();
         closeCropModal();
       });
@@ -7951,7 +7968,7 @@
         var anchorTxt = econ && econ.anchor ? econ.anchor : '';
         html += '<div class="hm-mtip-chart-meta">' +
                   '<span class="hm-mtip-anchor">' + anchorTxt + '</span>' +
-                  '<span class="hm-mtip-meta-right">5y monthly &middot; as of ' + (econ.as_of || '') + '</span>' +
+                  '<span class="hm-mtip-meta-right">5y monthly &middot; as of ' + toMmDdYyyy(econ.as_of || '') + '</span>' +
                 '</div>';
       }
       mtip.innerHTML = html;
@@ -8063,42 +8080,38 @@
        click away. Same pattern as the Growth \u00d7 Policy panel. */
     window.PANEL_INFO_HTML['hm-gave-wrap'] = function () {
       return (
-        '<p><b>Charles Gave\'s Four Quadrants</b> \u2014 a regime classifier from his ' +
-          '<i>General Theory of Portfolio Construction</i> (2024). Originally framed as ' +
-          'economic activity vs prices, Gave later renamed the axes to reflect what his ' +
-          'ratios actually measure: <b>energy efficiency</b> and <b>currency quality</b>.</p>' +
-        '<p><b>X axis \u00b7 Energy efficiency</b><br>' +
-          'Ratio: <code>S&amp;P 500 / WTI</code>. The S&amp;P 500 proxies private-sector ' +
-          'output; WTI proxies the energy cost to produce it. Above its 7y MA = ' +
-          'businesses extracting more value per unit of energy \u2192 boom (right). Below = bust.</p>' +
-        '<p><b>Y axis \u00b7 Currency quality</b><br>' +
-          'Ratio: <code>Gold / IEF</code> (the 7-10y Treasury ETF as a free proxy for ' +
-          'long-bond total return). When gold outperforms bonds (above 7y MA), currency ' +
-          'is debasing \u2192 inflationary regime (top). When bonds outperform gold (below ' +
-          '7y MA), bonds are a proper store of value \u2192 deflationary regime (bottom).</p>' +
-        '<p><b>Marker placement</b>: <code>(ratio \u2212 MA) / 7y std</code>, clamped to \u00b12\u03c3 ' +
-          '\u2192 \u00b11. Reflects how unusual the deviation is vs the recent regime. ' +
-          'Classification uses the raw above/below MA test only.</p>' +
+        '<p><b>Charles Gave\'s Four Quadrants</b>, a regime classifier from his ' +
+          '<i>General Theory of Portfolio Construction</i> (2024). The axes measure ' +
+          'energy efficiency and currency quality.</p>' +
+        '<p><b>X axis (energy efficiency)</b>: S&amp;P 500 / WTI. The S&amp;P 500 ' +
+          'proxies private-sector output, WTI the energy cost to produce it. Above ' +
+          'its 7y MA, businesses extract more value per unit of energy. That is a ' +
+          'boom (right side). Below is a bust.</p>' +
+        '<p><b>Y axis (currency quality)</b>: Gold / IEF, with the 7-10y Treasury ' +
+          'ETF standing in for long-bond total return. Gold beating bonds means the ' +
+          'currency is debasing, an inflationary regime (top). Bonds beating gold ' +
+          'means they still store value, a deflationary regime (bottom).</p>' +
+        '<p><b>Marker placement</b>: (ratio minus MA) / 7y std, clamped to 2 sigma. ' +
+          'Shows how unusual the current deviation is. Classification itself uses ' +
+          'the raw above/below MA test.</p>' +
         '<p><b>Quadrants</b><br>' +
-          'Q1 \u00b7 NE \u00b7 <b>Inflationary Boom</b> \u00b7 long real assets (gold, commodities, ' +
-          'real estate, value, EM); short long bonds<br>' +
-          'Q2 \u00b7 NW \u00b7 <b>Inflationary Bust</b> \u00b7 stagflation; long cash + energy; short ' +
-          'financials and duration<br>' +
-          'Q3 \u00b7 SW \u00b7 <b>Deflationary Bust</b> \u00b7 flight to safety; long long-dated ' +
+          'Q1 (NE) <b>Inflationary Boom</b>: long real assets (gold, commodities, ' +
+          'real estate, value, EM), short long bonds<br>' +
+          'Q2 (NW) <b>Inflationary Bust</b>: stagflation. Long cash and energy, ' +
+          'short financials and duration<br>' +
+          'Q3 (SW) <b>Deflationary Bust</b>: flight to safety. Long long-dated ' +
           'government bonds<br>' +
-          'Q4 \u00b7 SE \u00b7 <b>Deflationary Boom</b> \u00b7 "natural state of capitalism"; long ' +
-          'innovative growth + bonds + real estate. <i>All true US bull markets occur ' +
+          'Q4 (SE) <b>Deflationary Boom</b>: the "natural state of capitalism." Long ' +
+          'innovative growth, bonds, real estate. <i>All true US bull markets occur ' +
           'here.</i></p>' +
-        '<p><b>Three companion charts</b><br>' +
-          '<b>S&amp;P 500 / WTI</b> \u2014 primary X-axis driver<br>' +
-          '<b>Gold / IEF</b> \u2014 primary Y-axis driver<br>' +
-          '<b>S&amp;P 500 / Gold</b> \u2014 money illusion. Stocks rising vs gold = real ' +
-          'gains; flat or falling vs gold = monetary debasement masquerading as upside. ' +
-          'This ratio crossing below its 7y MA often <i>leads</i> S&amp;P/WTI doing the ' +
-          'same by a few months \u2014 early warning of a regime shift.</p>' +
-        '<p><b>Free-data caveat</b>: Gave\'s original work uses Bloomberg UST 7-10y ' +
-          'total return back to 1973. We use the IEF ETF (since 2002), which captures ' +
-          'both price and coupon. Slightly shorter history but identical signal.</p>'
+        '<p><b>Companion charts</b>: S&amp;P 500 / WTI drives the X axis. Gold / IEF ' +
+          'drives the Y axis. S&amp;P 500 / Gold is the money-illusion check: stocks ' +
+          'rising against gold are real gains, stocks flat or falling against gold ' +
+          'are debasement dressed up as upside. That ratio crossing below its 7y MA ' +
+          'often leads S&amp;P/WTI by a few months.</p>' +
+        '<p><b>Data note</b>: Gave\'s original uses Bloomberg UST 7-10y total return ' +
+          'back to 1973. We use the IEF ETF (since 2002), which captures both price ' +
+          'and coupon. Shorter history, same signal.</p>'
       );
     };
     var gaveItem = document.querySelector('.grid-stack-item[gs-id="hm-gave-wrap"]');
@@ -8423,17 +8436,17 @@
         '<p><b>X axis \u00b7 Growth</b><br>' +
           'A composite of two real-economy indicators, each anchored at its expansion/' +
           'contraction threshold and divided by its rough historical standard deviation:<br>' +
-          '&nbsp;&nbsp;<code>growth = 0.5 \u00b7 (ISM Services \u2212 50) / 3.5 + 0.5 \u00b7 (INDPRO YoY \u2212 2) / 5.5</code><br>' +
+          '&nbsp;&nbsp;<code>growth = 0.5 \u00b7 (ISM Services \u2212 50) / 3.5 + 0.5 \u00b7 (INDPRO y/y \u2212 2) / 5.5</code><br>' +
           'Sign tells the regime (above/below neutral); \u00b11 \u2248 one std above/below trend.</p>' +
         '<p><b>Y axis \u00b7 Policy stance</b><br>' +
           'Real Fed Funds vs the long-run neutral rate (R* \u2248 0.5%, NY Fed HLW estimate):<br>' +
-          '&nbsp;&nbsp;<code>stance = (0.5 \u2212 [EFFR \u2212 core PCE YoY]) / 2.0</code><br>' +
+          '&nbsp;&nbsp;<code>stance = (0.5 \u2212 [EFFR \u2212 core PCE y/y]) / 2.0</code><br>' +
           'Positive = net easing (Fed below neutral); negative = net tightening. ' +
           '\u00b11 \u2248 200 bps from neutral. Sign convention chosen so easing goes UP on the ' +
           'plane.</p>' +
-        '<p><b>Inflation tint</b>: core PCE YoY vs 2.5% threshold. Above = high (subtle ' +
-          'orange overlay); below = low (subtle blue overlay). Same growth/policy ' +
-          'quadrant gives different trade conviction under high vs low CPI.</p>' +
+        '<p><b>Inflation tint</b>: Core PCE y/y vs a 2.5% threshold. Above gets a ' +
+          'subtle orange overlay, below gets blue. The same growth/policy quadrant ' +
+          'carries different trade conviction under high vs low inflation.</p>' +
         '<p><b>Marker placement</b>: <code>x = clamp(growth, \u22121, +1)</code>, ' +
           '<code>y = clamp(stance, \u22121, +1)</code>. Both axes use fixed (not rolling) ' +
           'normalization so a reading of growth = +1 always plots at the same spot on ' +
@@ -8443,15 +8456,15 @@
           'NE \u00b7 <b>Risk On</b> (accel + easing) \u00b7 long broad equities + credit + EM<br>' +
           'SW \u00b7 <b>Recession Risk</b> (decel + tight) \u00b7 long dollar + cash + vol<br>' +
           'SE \u00b7 <b>Late Cycle</b> (accel + tight) \u00b7 long commodities + value + EM</p>' +
-        '<p><b>Regime ribbon</b>: row of colored squares under the active-trades panel ' +
-          'showing the last ~24 weekly quadrant assignments. Lets you see at a glance how ' +
-          'persistent the current regime is and any recent transitions. The current week ' +
-          '(rightmost) is ringed in gold. Hover any square for the date + regime.</p>' +
-        '<p><b>Data sources</b>: ISM Services PMI (Trading Economics), Industrial Production ' +
-          'YoY (FRED INDPRO), Effective Fed Funds (FRED DFF), core PCE YoY (FRED PCEPILFE). ' +
-          'Conference Board LEI would be a stronger growth signal but it\'s paywalled; ISM ' +
-          'Services + INDPRO is the cleanest free combination (one diffusion / forward-looking, ' +
-          'one realized output).</p>'
+        '<p><b>Regime ribbon</b>: Colored squares under the active-trades panel ' +
+          'showing the last 13 weekly quadrant assignments. Shows how persistent the ' +
+          'current regime is and any recent transitions. Hover any square for the ' +
+          'date and regime.</p>' +
+        '<p><b>Data sources</b>: ISM Services PMI (Trading Economics), Industrial ' +
+          'Production y/y (FRED INDPRO), Effective Fed Funds (FRED DFF), core PCE y/y ' +
+          '(FRED PCEPILFE). Conference Board LEI would be a stronger growth signal ' +
+          'but it\'s paywalled. ISM Services plus INDPRO is the best free pairing: ' +
+          'one forward-looking diffusion index, one realized output series.</p>'
       );
     };
     var mcItem = document.querySelector('.grid-stack-item[gs-id="hm-macrocompass"]');
@@ -8650,15 +8663,14 @@
 
     window.PANEL_INFO_HTML['hm-indexes'] = function () {
       return (
-        '<p><b>Headline benchmarks at a glance</b> \u2014 major equity indexes plus key ' +
+        '<p><b>Headline benchmarks at a glance.</b> Major equity indexes plus key ' +
           'cross-asset gauges, each as a card with its level, period change, and a ' +
           'sparkline.</p>' +
-        '<p><b>Period pills</b> (top-right) set the lookback for every card at once: ' +
-          '1W through 10Y. The price-change figure and the sparkline both reflect the ' +
-          'selected window, not just the last day.</p>' +
-        '<p><b>Sparkline</b>: uses daily closes for short windows (&le;6M) so the line ' +
-          'reads as a curve, and weekly closes for longer ones. Green = up over the ' +
-          'window, red = down.</p>'
+        '<p><b>Period pills</b>: Set the lookback for every card at once, 1W through ' +
+          '10Y. The change figure and the sparkline both reflect the selected window, ' +
+          'not just the last day.</p>' +
+        '<p><b>Sparkline</b>: Daily closes for windows of 6M or less, weekly closes ' +
+          'for longer ones. Green is up over the window, red is down.</p>'
       );
     };
     var idxItem = document.querySelector('.grid-stack-item[gs-id="hm-indexes"]');
@@ -8831,7 +8843,7 @@
                     if (!d) return '';
                     var parts = d.split('-');
                     var mo = new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' });
-                    /* YTD+ periods can cross year boundaries — append
+                    /* YTD+ periods can cross year boundaries \u2014 append
                        the year so the date is unambiguous. Short
                        periods (1W/1M/3M/6M) stay "Mon DD". */
                     var withYear = (idxPeriod === 'ytd' || idxPeriod === 'y1' || idxPeriod === 'y3' || idxPeriod === 'y5' || idxPeriod === 'y10');
@@ -8923,7 +8935,11 @@
 
   /* Format YTD or % Chg with sign, return [html, cls]. Dash for null/anomaly. */
   function _fmtPct(v) {
-    if (v === null || v === undefined) return ['<span class="hm-anom">\u2014</span>', ''];
+    /* isFinite also rejects NaN/Infinity from divide-by-zero or bad
+       feed values, which would otherwise render as "+NaN%". */
+    if (v === null || v === undefined || typeof v !== 'number' || !isFinite(v)) {
+      return ['<span class="hm-anom">\u2014</span>', ''];
+    }
     var sign = v >= 0 ? '+' : '';
     var cls = v >= 0 ? 'up' : 'down';
     return [sign + v.toFixed(2) + '%', cls];
@@ -8967,21 +8983,21 @@
     var asOf = data.as_of || '\u2014';
     window.PANEL_INFO_HTML['hm-commodities'] = function () {
       return (
-        '<p><b>Front-month commodity futures</b>, grouped by sector. Daily close \u00b7 ' + asOf + '.</p>' +
-        '<p><b>Last</b>: most recent settle. Prices are Yahoo\'s =F continuous tickers, ' +
-          'which auto-roll between contracts \u2014 the specific contract month isn\'t exposed.</p>' +
-        '<p><b>1D / 1W / 1M / YTD</b>: percent change over the trailing day, week, ' +
-          'month, and since Jan 1. Green = up, red = down. 1W and 1M are measured ' +
-          'against the weekly closes 1 and ~4 weeks back; YTD is from the first close ' +
-          'of the year.</p>' +
-        '<p><b>52W Range</b>: horizontal slider with the 52-week low on the left ' +
-          'and high on the right. Gold marker shows where the current price sits ' +
-          'between them.</p>' +
-        '<p><b>Categories</b>: use the funnel icon in the panel header to show / hide ' +
-          'Agricultural, Energy, Livestock, or Metals. Selection is saved and is ' +
-          'reflected in image exports.</p>' +
-        '<p><b>Anomalies</b>: rows with impossible daily moves (>50% or a >5\u00d7 scale ' +
-          'shift) show \u2014 to suppress contract-rollover artifacts.</p>'
+        '<p><b>Front-month commodity futures</b>, grouped by sector. Daily close, ' +
+          'as of ' + toMmDdYyyy(asOf) + '.</p>' +
+        '<p><b>Last</b>: Most recent settle. Prices are Yahoo\'s =F continuous ' +
+          'tickers, which auto-roll between contracts. The specific contract month ' +
+          'isn\'t exposed.</p>' +
+        '<p><b>1D / 1W / 1M / YTD</b>: Percent change over the trailing day, week, ' +
+          'month, and since Jan 1. Green is up, red is down. 1W and 1M measure ' +
+          'against the weekly closes 1 and 4 weeks back.</p>' +
+        '<p><b>52W Range</b>: Slider with the 52-week low on the left and high on ' +
+          'the right. The gold marker is the current price.</p>' +
+        '<p><b>Categories</b>: The funnel icon in the panel header shows or hides ' +
+          'Agricultural, Energy, Livestock, and Metals. Your selection is saved and ' +
+          'carries into image exports.</p>' +
+        '<p><b>Anomalies</b>: Rows with impossible daily moves (over 50%, or a 5x ' +
+          'scale shift) show a dash to suppress contract-rollover artifacts.</p>'
       );
     };
     /* Tag the gridstack item so the info button becomes visible. */
@@ -9017,7 +9033,12 @@
         var tr = document.createElement('tr');
         tr.setAttribute('data-cat', group.name);
 
-        var rangeBar = _build52wRangeBar(c.w52_low, c.w52_high, c.price, 2, theme);
+        /* A null/missing price from the feed must degrade to a dashed
+           row, not throw and blank the whole panel. */
+        var hasPrice = typeof c.price === 'number' && isFinite(c.price);
+        var rangeBar = hasPrice
+          ? _build52wRangeBar(c.w52_low, c.w52_high, c.price, 2, theme)
+          : '<span class="hm-anom">\u2014</span>';
 
         /* 1D = daily % change. Dash on anomaly. */
         var oneD;
@@ -9031,14 +9052,17 @@
            sparkline[-1] = today's price; sparkline[-2] = 1w ago;
            sparkline[-5] = ~4w ago (1m). */
         var sp = c.sparkline || [];
-        var oneW = _pctFromSpark(sp, c.price, 2);
-        var oneM = _pctFromSpark(sp, c.price, 5);
+        var oneW = hasPrice ? _pctFromSpark(sp, c.price, 2) : ['<span class="hm-anom">\u2014</span>', ''];
+        var oneM = hasPrice ? _pctFromSpark(sp, c.price, 5) : ['<span class="hm-anom">\u2014</span>', ''];
 
         var unitHtml = c.unit ? '<span class="hm-unit">' + c.unit + '</span>' : '';
+        var priceHtml = hasPrice
+          ? c.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : '<span class="hm-anom">\u2014</span>';
 
         tr.innerHTML =
           '<td>' + c.name + '<span class="hm-ticker">' + c.ticker + '</span>' + unitHtml + '</td>' +
-          '<td>' + c.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>' +
+          '<td>' + priceHtml + '</td>' +
           '<td class="hm-commod-chg ' + oneD[1] + '">' + oneD[0] + '</td>' +
           '<td class="hm-commod-chg ' + oneW[1] + '">' + oneW[0] + '</td>' +
           '<td class="hm-commod-chg ' + oneM[1] + '">' + oneM[0] + '</td>' +
@@ -9057,7 +9081,7 @@
     /* Cache groups so the filter installer (which runs AFTER initGridStack
        has built the panel-header chrome) can read them. */
     window._hmCommoditiesGroups = data.commodities;
-    /* Try injecting now — works on re-render (theme toggle) once chrome
+    /* Try injecting now \u2014 works on re-render (theme toggle) once chrome
        is already built. Initial-load injection happens via the explicit
        install call right after initGridStack in the bootstrap chain. */
     _installCategoryFilter({
@@ -9069,7 +9093,7 @@
   }
 
   /* Standalone so the panel-header chrome doesn't have to be modified
-     by the framework. Idempotent — early-returns if filter already there.
+     by the framework. Idempotent \u2014 early-returns if filter already there.
      If header is missing (renderer ran before initGridStack on initial
      load), silently no-ops; the bootstrap chain re-calls this after
      gridstack init.
@@ -9209,20 +9233,19 @@
     var asOf = data.as_of || '\u2014';
     window.PANEL_INFO_HTML['hm-currencies'] = function () {
       return (
-        '<p><b>Spot FX rates</b>, grouped by region. Daily close \u00b7 ' + asOf + '.</p>' +
-        '<p><b>Pair convention</b>: USD-base pairs (USD/X) read "X per dollar" \u2014 ' +
-          'rate up = USD strong. Inverse pairs (X/USD like EUR/USD) read the ' +
-          'opposite \u2014 rate up = USD weak.</p>' +
-        '<p><b>1D / 1W / 1M / YTD</b>: percent change in the rate over the trailing ' +
-          'day, week, month, and since Jan 1. Green = rate up, red = rate down ' +
-          '(interpret direction using the pair convention above). 1W and 1M use the ' +
-          'weekly closes 1 and ~4 weeks back.</p>' +
-        '<p><b>52W Range</b>: horizontal slider with the 52-week low on the left ' +
-          'and high on the right. Gold marker shows where the current rate sits ' +
-          'between them.</p>' +
-        '<p><b>Regions</b>: use the funnel icon in the panel header to show / hide ' +
-          'Americas, Asia &amp; Oceania, or EMEA. Selection is saved and reflected ' +
-          'in image exports.</p>'
+        '<p><b>Spot FX rates</b>, grouped by region. Daily close, as of ' +
+          toMmDdYyyy(asOf) + '.</p>' +
+        '<p><b>Pair convention</b>: USD-base pairs (USD/X) read "X per dollar," so ' +
+          'rate up means a strong dollar. Inverse pairs like EUR/USD read the ' +
+          'opposite way: rate up means a weak dollar.</p>' +
+        '<p><b>1D / 1W / 1M / YTD</b>: Percent change in the rate over the trailing ' +
+          'day, week, month, and since Jan 1. Green is rate up, red is rate down. ' +
+          'Read direction through the pair convention above.</p>' +
+        '<p><b>52W Range</b>: Slider with the 52-week low on the left and high on ' +
+          'the right. The gold marker is the current rate.</p>' +
+        '<p><b>Regions</b>: The funnel icon in the panel header shows or hides ' +
+          'Americas, Asia &amp; Oceania, and EMEA. Your selection is saved and ' +
+          'carries into image exports.</p>'
       );
     };
     var fxItem = document.querySelector('.grid-stack-item[gs-id="hm-currencies"]');
@@ -9258,7 +9281,11 @@
         tr.setAttribute('data-cat', group.name);
         var dec = c.decimals || 4;
 
-        var rangeBar = _build52wRangeBar(c.w52_low, c.w52_high, c.price, dec, theme);
+        /* Same null-price guard as the commodity table. */
+        var hasPrice = typeof c.price === 'number' && isFinite(c.price);
+        var rangeBar = hasPrice
+          ? _build52wRangeBar(c.w52_low, c.w52_high, c.price, dec, theme)
+          : '<span class="hm-anom">\u2014</span>';
 
         /* 1D = daily % change. Dash on anomaly. */
         var oneD;
@@ -9269,12 +9296,15 @@
         }
         var ytd = _fmtPct(c.ytd_pct);
         var sp = c.sparkline || [];
-        var oneW = _pctFromSpark(sp, c.price, 2);
-        var oneM = _pctFromSpark(sp, c.price, 5);
+        var oneW = hasPrice ? _pctFromSpark(sp, c.price, 2) : ['<span class="hm-anom">\u2014</span>', ''];
+        var oneM = hasPrice ? _pctFromSpark(sp, c.price, 5) : ['<span class="hm-anom">\u2014</span>', ''];
+        var priceHtml = hasPrice
+          ? c.price.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec })
+          : '<span class="hm-anom">\u2014</span>';
 
         tr.innerHTML =
           '<td>' + c.name + '<span class="hm-ticker">' + c.ticker + '</span></td>' +
-          '<td>' + c.price.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec }) + '</td>' +
+          '<td>' + priceHtml + '</td>' +
           '<td class="hm-fx-chg ' + oneD[1] + '">' + oneD[0] + '</td>' +
           '<td class="hm-fx-chg ' + oneW[1] + '">' + oneW[0] + '</td>' +
           '<td class="hm-fx-chg ' + oneM[1] + '">' + oneM[0] + '</td>' +
@@ -9293,7 +9323,7 @@
     /* Cache groups so the filter installer (which runs AFTER initGridStack
        has built the panel-header chrome) can read them. */
     window._hmCurrenciesGroups = data.currencies;
-    /* Try injecting now — works on re-render once chrome is built. */
+    /* Try injecting now \u2014 works on re-render once chrome is built. */
     _installCategoryFilter({
       panelItem: fxItem,
       groups: data.currencies,
@@ -9315,11 +9345,8 @@
     /* Subtitle = actual event count + window end date (e.g. "12 events \u00b7 thru Jun 15").
        Beats hardcoded "Next 8 Weeks" which can lie if server returns fewer. */
     var calCount = data.calendar.length;
-    var lastDate = new Date(data.calendar[calCount - 1].date + 'T00:00:00');
-    var lastMo = lastDate.toLocaleDateString('en-US', { month: 'short' });
-    var lastDa = lastDate.getDate();
     var calSub = calCount + ' event' + (calCount === 1 ? '' : 's') +
-                 ' \u00b7 thru ' + lastMo + ' ' + lastDa;
+                 ' \u00b7 thru ' + toMmDdYyyy(data.calendar[calCount - 1].date);
     hdr.innerHTML = '<span>Upcoming Releases</span><span class="hm-cal-sub">' + calSub + '</span>';
     section.appendChild(hdr);
 
@@ -9328,21 +9355,21 @@
        \u2014 instead of a native title-attr tooltip. */
     window.PANEL_INFO_HTML['hm-calendar'] = function () {
       return (
-        '<p><b>Impact rating</b>: how market-moving the release tends to be.</p>' +
+        '<p><b>Impact rating</b>: How market-moving the release tends to be.</p>' +
         '<p>' +
           '<span class="hm-cal-dot" data-impact="high" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>' +
-          '<b>High</b> \u2014 CPI, Jobs (NFP), FOMC. Big intraday moves in stocks, rates, FX.' +
+          '<b>High</b>: CPI, Jobs (NFP), FOMC. Big intraday moves in stocks, rates, FX.' +
         '</p>' +
         '<p>' +
           '<span class="hm-cal-dot" data-impact="medium" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>' +
-          '<b>Medium</b> \u2014 PPI, GDP, Retail Sales. Tradable, but smaller average impact.' +
+          '<b>Medium</b>: PPI, GDP, Retail Sales. Tradable, but smaller average impact.' +
         '</p>' +
         '<p>' +
           '<span class="hm-cal-dot" data-impact="low" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>' +
-          '<b>Low</b> \u2014 Sentiment surveys (UMich). Brief intraday ripple at most.' +
+          '<b>Low</b>: Sentiment surveys (UMich). Brief intraday ripple at most.' +
         '</p>' +
-        '<p><b>Prev</b>: the most recent published value of each release. ' +
-          'Unit hint (YoY, MoM, QoQ saar, Index, Range) shown above the value.</p>'
+        '<p><b>Prev</b>: The most recent published value of each release, with the ' +
+          'unit (y/y, m/m, q/q saar, index, range) above the value.</p>'
       );
     };
     /* Tag the gridstack item so the info button becomes visible. */
@@ -9353,7 +9380,6 @@
     body.className = 'hm-cal-body';
 
     data.calendar.forEach(function (e) {
-      var eventDate = new Date(e.date + 'T00:00:00');
       var row;
       if (e.url) {
         row = document.createElement('a');
@@ -9364,9 +9390,7 @@
         row = document.createElement('div');
       }
       row.className = 'hm-cal-row';
-      /* Format date as "Apr 28" */
-      var mo = eventDate.toLocaleDateString('en-US', { month: 'short' });
-      var da = eventDate.getDate();
+      var dateLabel = toMmDdYyyy(e.date);
       var impact = (e.impact || 'low');
       var time = (e.time || '');
       var prevVal = (e.prev || '').trim();
@@ -9395,7 +9419,7 @@
               'title="Impact: ' + impact.charAt(0).toUpperCase() + impact.slice(1) + '"></span>' +
         '<span class="hm-cal-name">' + e.name + '</span>' +
         '<span class="hm-cal-when">' +
-          '<span class="hm-cal-date">' + mo + ' ' + da + '</span>' +
+          '<span class="hm-cal-date">' + dateLabel + '</span>' +
           (time ? '<span class="hm-cal-time">' + time + '</span>' : '') +
         '</span>' +
         prevHtml;
@@ -9413,17 +9437,17 @@
 
     window.PANEL_INFO_HTML['hm-economy'] = function () {
       return (
-        '<p><b>Latest hard + soft macro data</b>, grouped into Inflation, Labor, ' +
+        '<p><b>Latest hard and soft macro data</b>, grouped into Inflation, Labor, ' +
           'Consumer, Real Activity, Leading Indicators, and Valuation &amp; Monetary.</p>' +
-        '<p>Each card shows the <b>most recent reading</b> and the <b>prior</b> period, ' +
-          'with an arrow: green = improved vs last period, red = deteriorated, gray = ' +
-          'unchanged. "Improved" is direction-aware \u2014 for indicators where lower is ' +
-          'better (e.g. jobless claims) a fall is green.</p>' +
-        '<p>Mostly monthly series; the date in parentheses on each card is its own ' +
-          'as-of. Hover a card for a plain-English definition and a 5-year history ' +
-          'chart (recessions shaded).</p>' +
-        '<p><b>Categories</b>: use the funnel icon in the panel header to show / hide ' +
-          'groups. Selection is saved and reflected in image exports.</p>'
+        '<p>Each card shows the most recent reading and the prior period. Green ' +
+          'arrow means improved vs last period, red means deteriorated, gray means ' +
+          'unchanged. Improvement is direction-aware: for lower-is-better series ' +
+          'like jobless claims, a fall is green.</p>' +
+        '<p>Mostly monthly series. The date in parentheses on each card is that ' +
+          'series\' own as-of. Hover a card for a definition and a 5-year history ' +
+          'chart with recessions shaded.</p>' +
+        '<p><b>Categories</b>: The funnel icon in the panel header shows or hides ' +
+          'groups. Your selection is saved and carries into image exports.</p>'
       );
     };
     var econItem0 = document.querySelector('.grid-stack-item[gs-id="hm-economy"]');
@@ -9479,6 +9503,23 @@
       var prev = ind.prev;
       var fmtVal, fmtPrev;
 
+      /* Null guard: a missing value or prior from the feed renders as
+         a dashed card instead of throwing on .toFixed and blanking
+         the whole panel. */
+      var valOk = typeof val === 'number' && isFinite(val);
+      var prevOk = typeof prev === 'number' && isFinite(prev);
+      if (!valOk || !prevOk) {
+        if (!valOk) val = 0;
+        if (!prevOk) prev = 0;
+        card.innerHTML =
+          '<div class="hm-econ-name">' + ind.name + '</div>' +
+          '<div class="hm-econ-row">' +
+            '<div class="hm-econ-value">\u2014</div>' +
+            '<div class="hm-econ-prev">no data</div>' +
+          '</div>';
+        return card;
+      }
+
       if (ind.format === 'pct1') {
         fmtVal = val.toFixed(1) + '%';
         fmtPrev = prev.toFixed(1) + '%';
@@ -9514,7 +9555,7 @@
       var arrowCls = noChange ? '' : (improved ? 'up' : 'down');
       var arrowChar = noChange ? '\u2013' : (val > prev ? '\u25B2' : '\u25BC');
 
-      var asOf = ind.as_of ? '<span style="color:var(--hm-muted);font-size:10px;margin-left:4px;white-space:nowrap">(' + ind.as_of + ')</span>' : '';
+      var asOf = ind.as_of ? '<span style="color:var(--hm-muted);font-size:10px;margin-left:4px;white-space:nowrap">(' + toMmDdYyyy(ind.as_of) + ')</span>' : '';
       /* Anchor (Fed target / recession trigger / etc.) used to render
          under each card; now lives only inside the hover popup's
          chart-meta row to declutter the card grid. */
@@ -9760,15 +9801,14 @@
     window.PANEL_INFO_HTML['hm-sector-chart'] = function () {
       return (
         '<p><b>Cumulative return of the 11 GICS sector ETFs</b> over the selected ' +
-          'period, all rebased to 0% at the start so lines are directly comparable.</p>' +
-        '<p><b>Period pills</b> set the window (1W\u201310Y). Short windows use daily ' +
-          'closes for a smooth line; longer ones use weekly.</p>' +
-        '<p><b>Sector toggles</b>: tick / untick sectors in the table to add or remove ' +
-          'their lines (selection is saved across reloads). The S&amp;P 500 is overlaid ' +
-          'as a dashed benchmark so you can see which sectors are leading or lagging ' +
-          'the index.</p>' +
-        '<p>Use the layout icon in the header to switch between one combined chart and ' +
-          'a small-multiples grid (one mini-chart per sector).</p>'
+          'period, all rebased to 0% at the start so the lines compare directly.</p>' +
+        '<p><b>Period pills</b>: Set the window, 1W to 10Y. Short windows use daily ' +
+          'closes for a smooth line, longer ones use weekly.</p>' +
+        '<p><b>Sector toggles</b>: Tick sectors in the table to add or remove their ' +
+          'lines. Selection is saved across reloads. The S&amp;P 500 overlays as a ' +
+          'dashed benchmark, so leaders and laggards vs the index read directly.</p>' +
+        '<p>The layout icon in the header switches between one combined chart and a ' +
+          'grid of mini-charts, one per sector.</p>'
       );
     };
     var scItem = document.querySelector('.grid-stack-item[gs-id="hm-sector-chart"]');
@@ -10185,7 +10225,7 @@
      return vs SPY for the same period (cell return \u2212 SPY return). */
   var sbMode = 'abs';
 
-  /* ──────────────────────────────────────────────────────────────────
+  /* \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
      Canonical period set. Used by EVERY period selector in the dashboard:
        - Style Box / Factors panels
        - Fixed Income / Global Indexes / Country ETFs / Currency Matrix /
@@ -10196,7 +10236,7 @@
      Keys map directly to the JSON fields shipped by build_performance_grid
      and the various specific builders (build_fixed_income, build_global_indexes,
      etc. all ship m1/m3/m6/ytd/y1/y3/y5/y10).
-     ────────────────────────────────────────────────────────────────── */
+     \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
   var STANDARD_PERIODS = [
     { key: 'w1',  label: '1W'  },
     { key: 'm1',  label: '1M'  },
@@ -10222,12 +10262,12 @@
 
     window.PANEL_INFO_HTML['hm-stylefactor'] = function () {
       return (
-        '<p><b>Morningstar-style 3\u00d73 equity style box.</b> Rows are market cap ' +
+        '<p><b>Morningstar-style 3x3 equity style box.</b> Rows are market cap ' +
           '(Large / Mid / Small), columns are style (Value / Blend / Growth). Each ' +
           'cell is the return of the matching ETF over the selected period.</p>' +
-        '<p><b>Period pills</b> set the lookback (1W\u201310Y) for all nine cells at once. ' +
-          'Cell color scales with return \u2014 green positive, red negative \u2014 so leadership ' +
-          '(e.g. large growth vs small value) is visible at a glance.</p>' +
+        '<p><b>Period pills</b>: Set the lookback (1W to 10Y) for all nine cells at ' +
+          'once. Cell color scales with return, green positive and red negative, so ' +
+          'leadership like large growth vs small value reads at a glance.</p>' +
         '<p>Use it to read the market\'s current size/style tilt and how it rotates ' +
           'as you step through timeframes.</p>'
       );
@@ -10463,14 +10503,14 @@
     window.PANEL_INFO_HTML['hm-factors'] = function () {
       return (
         '<p><b>Equity factor performance.</b> Ranks the major investable factors ' +
-          '(e.g. Momentum, Quality, Low Volatility, Value, Size, High Dividend, Growth) ' +
+          '(Momentum, Quality, Low Volatility, Value, Size, High Dividend, Growth) ' +
           'by return over the selected period, each via its representative ETF.</p>' +
-        '<p><b>Period pills</b> set the lookback (1W\u201310Y). The <b>Abs / vs SPY</b> ' +
-          'toggle switches between absolute return and return relative to the S&amp;P 500 ' +
-          '\u2014 relative mode shows which factors are actually beating the benchmark, not ' +
-          'just rising with it.</p>' +
-        '<p>Bars are sorted best-to-worst and colored green / red by sign, so factor ' +
-          'leadership is immediately legible.</p>'
+        '<p><b>Period pills</b>: Set the lookback, 1W to 10Y. The <b>Abs / vs SPY</b> ' +
+          'toggle switches between absolute return and return relative to the ' +
+          'S&amp;P 500. Relative mode shows which factors are beating the benchmark ' +
+          'rather than just rising with it.</p>' +
+        '<p>Rows sort best to worst and color green or red by sign, so factor ' +
+          'leadership reads immediately.</p>'
       );
     };
     var facItem = document.querySelector('.grid-stack-item[gs-id="hm-factors"]');
@@ -10735,15 +10775,17 @@
       var asOf = fi.ref_as_of ? (' (yield/duration as of ' + fi.ref_as_of + ')') : '';
       return (
         '<p><b>Bond ETF performance, sliced by exposure</b>: International credit, ' +
-          'US high-grade, US high-yield, US gov/agencies, US Treasury duration ladder.</p>' +
-        '<p><b>Yield / Duration</b>: 30-day SEC yield + effective duration shown next ' +
-          'to each ticker' + asOf + '. Price return alone is misleading without the ' +
-          'income on the position and its rate-sensitivity. Hover the pair for the ' +
+          'US high-grade, US high-yield, US gov/agencies, and the US Treasury ' +
+          'duration ladder.</p>' +
+        '<p><b>Yield / Duration</b>: 30-day SEC yield and effective duration next ' +
+          'to each ticker' + asOf + '. Price return alone misleads without the ' +
+          'income on the position and its rate sensitivity. Hover the pair for the ' +
           'as-of date.</p>' +
-        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation is calibrated ' +
-          'per period to the strongest visible mover, so leaders pop without burying ' +
-          'mid-range cells in gray.</p>' +
-        '<p><b>Sort</b>: each column orders top-to-bottom by the active period\'s return.</p>'
+        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation calibrates ' +
+          'per period to the strongest visible mover, so leaders pop without ' +
+          'burying mid-range cells in gray.</p>' +
+        '<p><b>Sort</b>: Each column orders top to bottom by the active period\'s ' +
+          'return.</p>'
       );
     };
     var fiItem = document.querySelector('.grid-stack-item[gs-id="hm-fixed-income"]');
@@ -10971,15 +11013,16 @@
     /* Register the panel info popup. */
     window.PANEL_INFO_HTML['hm-global-indexes'] = function () {
       return (
-        '<p><b>Regional equity indexes, in their local currency by default</b>: ' +
-          'Americas, Europe (incl. Turkey), Asia / Pacific.</p>' +
-        '<p><b>Local / USD toggle</b>: index returns are shipped in local currency. ' +
-          'Flip to USD to apply the local-vs-USD FX move and see what a US investor ' +
-          'would actually have earned. Critical for FX-distorted EM moves \u2014 Turkey ' +
-          'BIST in lira looks dramatically different in USD terms.</p>' +
-        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation calibrated per ' +
-          'period to the strongest visible mover.</p>' +
-        '<p><b>Sort</b>: each region orders top-to-bottom by the active period\'s return.</p>'
+        '<p><b>Regional equity indexes</b>, grouped Americas, Europe (incl. Turkey), ' +
+          'and Asia / Pacific. Local currency by default.</p>' +
+        '<p><b>Local / USD toggle</b>: Flip to USD to apply the local-vs-USD FX move ' +
+          'and see what a US investor would actually have earned. This matters most ' +
+          'for FX-distorted EM moves. Turkey\'s BIST in lira reads very differently ' +
+          'in dollar terms.</p>' +
+        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation calibrates ' +
+          'per period to the strongest visible mover.</p>' +
+        '<p><b>Sort</b>: Each region orders top to bottom by the active period\'s ' +
+          'return.</p>'
       );
     };
     var giItem = document.querySelector('.grid-stack-item[gs-id="hm-global-indexes"]');
@@ -11224,13 +11267,14 @@
         '<p><b>Single-country ETF performance, regional split</b>: Americas, Europe, ' +
           'Asia / Pacific, Mideast / Africa. Mostly iShares MSCI funds plus a few ' +
           'Global X / VanEck alternatives where iShares isn\'t available.</p>' +
-        '<p><b>USD / Local toggle</b>: ETFs trade in USD so their returns are FX-' +
-          'adjusted by construction. Flip to Local to back out the local-vs-USD FX ' +
-          'move and see the underlying local-market return \u2014 useful for separating ' +
-          'currency moves from actual equity-market performance.</p>' +
-        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation calibrated per ' +
-          'period to the strongest visible mover.</p>' +
-        '<p><b>Sort</b>: each region orders top-to-bottom by the active period\'s return.</p>'
+        '<p><b>USD / Local toggle</b>: ETFs trade in USD, so their returns are ' +
+          'FX-adjusted by construction. Flip to Local to back out the FX move and ' +
+          'see the underlying local-market return. This separates currency moves ' +
+          'from actual equity performance.</p>' +
+        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation calibrates ' +
+          'per period to the strongest visible mover.</p>' +
+        '<p><b>Sort</b>: Each region orders top to bottom by the active period\'s ' +
+          'return.</p>'
       );
     };
     var ceItem = document.querySelector('.grid-stack-item[gs-id="hm-country-etfs"]');
@@ -11446,15 +11490,16 @@
       return (
         '<p><b>Commodity performance rankings</b>: Energy, Metals, Agricultural, ' +
           'Indices (broad-basket ETFs).</p>' +
-        '<p><b>Pricing basis pill</b> next to each ticker tells you what is actually ' +
-          'driving the row\'s return:<br>' +
-          '<b>FRONT-MONTH</b> \u2014 front-month futures contract<br>' +
-          '<b>FUTURES ETF</b> \u2014 ETF holding rolled futures (USO, GSG, DBC, BDRY)<br>' +
-          '<b>EQUITIES</b> \u2014 basket of producer/miner equities, used as a proxy where ' +
-          'no clean futures contract exists (Steel SLX, Coal COAL).</p>' +
-        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation calibrated per ' +
-          'period to the strongest visible mover.</p>' +
-        '<p><b>Sort</b>: each group orders top-to-bottom by the active period\'s return.</p>'
+        '<p>The pricing-basis pill next to each ticker tells you what actually ' +
+          'drives the row\'s return:<br>' +
+          '<b>FRONT-MONTH</b>: front-month futures contract<br>' +
+          '<b>FUTURES ETF</b>: ETF holding rolled futures (USO, GSG, DBC, BDRY)<br>' +
+          '<b>EQUITIES</b>: basket of producer/miner equities, used where no liquid ' +
+          'futures contract exists (Steel SLX, Coal COAL).</p>' +
+        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation calibrates ' +
+          'per period to the strongest visible mover.</p>' +
+        '<p><b>Sort</b>: Each group orders top to bottom by the active period\'s ' +
+          'return.</p>'
       );
     };
     var cpItem = document.querySelector('.grid-stack-item[gs-id="hm-commodity-perf"]');
@@ -11809,10 +11854,16 @@
        cross-axis convention + color scale. */
     window.PANEL_INFO_HTML['hm-currency-matrix'] = function () {
       return (
-        '<p><b>How to read</b>: each cell is <i>row currency vs. column currency</i> over the selected period.</p>' +
-        '<p>Example: cell <b>EUR / JPY = +12.3%</b> means EUR strengthened 12.3% against JPY. Green = row beat column, red = row lagged column.</p>' +
-        '<p><b>Color scale</b>: continuous, anchored at 0%. Saturation scales with the largest visible cell so the strongest mover always pops; smaller moves stay light.</p>' +
-        '<p><b>Sort toggle</b>: when on, rows + columns reorder strongest-to-weakest for the active period \u2014 green pools in the top-right, red in the bottom-left.</p>'
+        '<p><b>How to read</b>: Each cell is <i>row currency vs column currency</i> ' +
+          'over the selected period.</p>' +
+        '<p>Example: EUR / JPY = +12.3% means EUR strengthened 12.3% against JPY. ' +
+          'Green means the row beat the column, red means it lagged.</p>' +
+        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation scales with ' +
+          'the largest visible cell so the strongest mover always pops. Smaller ' +
+          'moves stay light.</p>' +
+        '<p><b>Sort toggle</b>: When on, rows and columns reorder strongest to ' +
+          'weakest for the active period. Green pools in the top-right, red in the ' +
+          'bottom-left.</p>'
       );
     };
     var cmItem = document.querySelector('.grid-stack-item[gs-id="hm-currency-matrix"]');
@@ -12100,14 +12151,14 @@
 
     window.PANEL_INFO_HTML['hm-theme-treemap'] = function () {
       return (
-        '<p><b>Thematic / industry ETF performance as a treemap.</b> Each tile is a ' +
-          'theme (e.g. semis, biotech, clean energy, defense). Tile <b>color</b> = ' +
-          'return over the selected period \u2014 green positive, red negative, brighter = ' +
-          'bigger move.</p>' +
-        '<p><b>Period pills</b> set the window (1W\u201310Y). The <b>Abs / vs SPY</b> toggle ' +
-          'switches between absolute return and return relative to the S&amp;P 500, so ' +
-          'you can isolate genuine thematic out/under-performance from broad-market ' +
-          'drift.</p>' +
+        '<p><b>Thematic and industry ETF performance as a treemap.</b> Each tile is ' +
+          'a theme: semis, biotech, clean energy, defense, and so on. Tile color is ' +
+          'the return over the selected period. Green positive, red negative, ' +
+          'brighter means a bigger move.</p>' +
+        '<p><b>Period pills</b>: Set the window, 1W to 10Y. The <b>Abs / vs SPY</b> ' +
+          'toggle switches between absolute return and return relative to the ' +
+          'S&amp;P 500, which separates thematic out/under-performance from ' +
+          'broad-market drift.</p>' +
         '<p>Hover a tile for the theme name and exact figure. A quick read of which ' +
           'corners of the market are hot or cold right now.</p>'
       );
@@ -12451,41 +12502,39 @@
      auto-shown via the class-tagging loop in initGridStack. */
   window.PANEL_INFO_HTML = {};
 
-  /* Metrics Heat Map (the main table — built by render(), but its copy
+  /* Metrics Heat Map (the main table \u2014 built by render(), but its copy
      is static so it lives here). */
   window.PANEL_INFO_HTML['hm-heatmap-wrap'] = function () {
     return (
-      '<p><b>The core dashboard.</b> ~50 macro &amp; market metrics across nine ' +
-        'sections (Equities, Breadth, Sentiment &amp; Positioning, Volatility, Rates, ' +
-        'Credit &amp; Liquidity, Commodities &amp; FX, Labor, Cross-Asset Regime), each ' +
-        'shown as 13 weekly readings plus 5-year context columns.</p>' +
-      '<p><b>Cell color</b>: where each weekly reading sits in its own trailing ' +
-        '5-year range. Green = bullish end of the range, red = bearish end, pale = ' +
-        'middle. Direction-aware \u2014 for "lower-is-better" metrics (e.g. credit spreads) ' +
-        'the scale is flipped so green always means risk-on.</p>' +
-      '<p><b>%ile</b>: the latest reading\'s percentile within its 5-year history. ' +
-        '<b>5y Avg / Min / Max</b>: the mean and extremes over that window, for ' +
-        'a quick sense of how stretched the current value is.</p>' +
-      '<p><b>Plot a metric</b>: tick the checkbox on any row to chart it in the ' +
-        'Metrics Chart panel (up to 6 at once). Selections persist across reloads.</p>' +
-      '<p><b>Sections</b>: use the funnel icon in the panel header to show / hide ' +
-        'whole sections. Hover any metric name for a plain-English definition and, ' +
-        'where available, a 5-year history chart.</p>'
+      '<p><b>The core dashboard.</b> Roughly 50 macro and market metrics across ' +
+        'nine sections, each shown as 13 weekly readings plus 5-year context ' +
+        'columns.</p>' +
+      '<p><b>Cell color</b>: Where the reading sits in its own trailing 5-year ' +
+        'range. Green is the bullish end, red is the bearish end, pale is the ' +
+        'middle. The scale flips for lower-is-better metrics like credit spreads, ' +
+        'so green always means risk-on.</p>' +
+      '<p><b>%ile</b>: The latest reading\'s percentile within its 5-year history. ' +
+        '<b>5y Avg / Min / Max</b> give the mean and extremes over that window.</p>' +
+      '<p><b>Plot a metric</b>: Tick the checkbox on any row to chart it in the ' +
+        'Metrics Chart panel, up to 6 at once. Selections survive reloads.</p>' +
+      '<p><b>Sections</b>: The funnel icon in the panel header shows or hides whole ' +
+        'sections. Hover any metric name for a definition and, where available, a ' +
+        '5-year history chart.</p>'
     );
   };
 
   /* Metrics Chart (built in static HTML, fed by the heat-map checkboxes). */
   window.PANEL_INFO_HTML['hm-chart-section'] = function () {
     return (
-      '<p><b>Charts the metrics you tick</b> in the Metrics Heat Map \u2014 up to 6 at ' +
+      '<p><b>Charts the metrics you tick</b> in the Metrics Heat Map, up to 6 at ' +
         'once. Empty until you select at least one row.</p>' +
-      '<p><b>Combined vs separated</b>: combined overlays every series on one set of ' +
-        'axes (each metric keeps its own scale); separated draws one mini-chart per ' +
-        'metric. Toggle in the panel header.</p>' +
-      '<p><b>Per-series controls</b> (hover a legend row): switch line / bar / stacked-bar, ' +
-        'toggle data labels, hide/show, remove, or open the gear to overlay <b>5-year ' +
-        'avg / min / max reference lines</b>.</p>' +
-      '<p>Selections, view mode, and per-series settings all persist across reloads.</p>'
+      '<p><b>Combined vs separated</b>: Combined overlays every series on one set ' +
+        'of axes, each on its own scale. Separated draws one mini-chart per metric. ' +
+        'Toggle in the panel header.</p>' +
+      '<p><b>Per-series controls</b>: Each legend row can switch line, bar, or ' +
+        'stacked-bar, toggle data labels, hide, or remove the series. The gear ' +
+        'overlays 5-year avg, min, and max reference lines.</p>' +
+      '<p>Selections, view mode, and per-series settings all survive reloads.</p>'
     );
   };
 
@@ -13088,7 +13137,7 @@
     /* Auto-show the info (i) button on every panel that has registered
        PANEL_INFO_HTML content. Renderers run before initGridStack, so
        all data-driven entries exist by now; static entries are
-       registered at module top. Idempotent — adding the class twice is
+       registered at module top. Idempotent \u2014 adding the class twice is
        harmless, so renderers that also add it manually still work. */
     Object.keys(window.PANEL_INFO_HTML || {}).forEach(function (id) {
       var infoItem = document.querySelector('.grid-stack-item[gs-id="' + id + '"]');
@@ -13221,9 +13270,10 @@
         var FOOTER_TEXT_INSET = 12 * pixelRatio;  /* 12 visual: link sits 12 visual px in from panel left edge */
         var FOOTER_LOGO_INSET = 12 * pixelRatio;  /* 12 visual: logo sits 12 visual px in from panel right edge */
         var DIVIDER_GAP = 0;                      /* divider flush against the panel bottom */
-        var FOOTER_H = 32 * pixelRatio;           /* 32 visual: logo (16 visual) centered with 8 visual breathing room above + below */
+        var FOOTER_H = 38 * pixelRatio;           /* 38 visual: two text lines (URL + data date) with breathing room */
         var LOGO_H = 16 * pixelRatio;             /* 16 visual logo height */
-        var FOOTER_FONT_PX = 12 * pixelRatio;     /* 12 visual font, matches panel content text size */
+        var FOOTER_FONT_PX = 10 * pixelRatio;     /* 10 visual: URL line, smaller so the date stamp fits below */
+        var FOOTER_DATE_FONT_PX = 9 * pixelRatio; /* 9 visual: data-date stamp under the URL */
         /* cropTopPx is the output-pixel height of the panel-header slot
            in the captured PNG. The panel-header is visibility:hidden
            in export-mode (no inner shift), so the captured PNG has an
@@ -13260,22 +13310,38 @@
         ctx.fillRect(0, dividerY, canvas.width, 1);
         var midY = dividerY + FOOTER_H / 2;
         var fontColor = dark ? '#c9c1b3' : '#5a5042';
-        /* Footer text: URL on the left, optional ' | @handle' appended
-           if the user supplied a handle in the sidebar. ASCII pipe
-           (not a middle-dot) keeps the canvas render safe under any
-           charset interpretation \u2014 the embed has no <meta charset>
-           because it's a WordPress fragment, so non-ASCII glyphs
-           occasionally render double-encoded ("A-circumflex middle-dot")
-           in the wild. */
+        var dateColor = dark ? '#8a8378' : '#8a8073';
+        /* Footer text: URL line on top, data-date stamp below it.
+           ASCII-only strings keep the canvas render safe under any
+           charset interpretation (the embed is a WordPress fragment
+           with no <meta charset>). */
         var text = 'stablebread.com/macro';
         if (handle) text += ' | @' + handle.replace(/^@/, '');
+        /* Date stamp: the as-of date of the data shown in the panel,
+           not the date the user clicked export. */
+        var dataDate = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
+          ? toMmDdYyyy(cachedData.as_of) : '';
+        var dateText = dataDate ? ('Data as of ' + dataDate) : '';
         var footerFont = '600 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
-        function drawTextOnly() {
-          ctx.fillStyle = fontColor;
-          ctx.font = footerFont;
+        var dateFont = '500 ' + FOOTER_DATE_FONT_PX + 'px Karla, sans-serif';
+        /* Two-line layout: URL baseline sits in the upper half, date
+           in the lower half. With no date, the URL re-centers. */
+        var line1Y = dateText ? (dividerY + FOOTER_H * 0.35) : midY;
+        var line2Y = dividerY + FOOTER_H * 0.72;
+        function drawFooterText() {
           ctx.textBaseline = 'middle';
           ctx.textAlign = 'left';
-          ctx.fillText(text, FOOTER_TEXT_INSET, midY);
+          ctx.fillStyle = fontColor;
+          ctx.font = footerFont;
+          ctx.fillText(text, FOOTER_TEXT_INSET, line1Y);
+          if (dateText) {
+            ctx.fillStyle = dateColor;
+            ctx.font = dateFont;
+            ctx.fillText(dateText, FOOTER_TEXT_INSET, line2Y);
+          }
+        }
+        function drawTextOnly() {
+          drawFooterText();
           try { resolve(canvas.toDataURL('image/png')); }
           catch (e) { reject(e); }
         }
@@ -13285,17 +13351,13 @@
           try {
             var logoH = LOGO_H;
             var logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
-            /* Link sits 12 visual px in from the LEFT edge of the
-               canvas; logo sits 12 visual px in from the RIGHT edge.
-               Both insets are independent of panel width. */
+            /* Text sits 12 visual px in from the LEFT edge of the
+               canvas; logo sits 12 visual px in from the RIGHT edge,
+               vertically centered across both text lines. */
             var logoX = canvas.width - logoW - FOOTER_LOGO_INSET;
             var logoY = midY - logoH / 2;
             ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
-            ctx.fillStyle = fontColor;
-            ctx.font = footerFont;
-            ctx.textBaseline = 'middle';
-            ctx.textAlign = 'left';
-            ctx.fillText(text, FOOTER_TEXT_INSET, midY);
+            drawFooterText();
             resolve(canvas.toDataURL('image/png'));
           } catch (e) {
             drawTextOnly();
@@ -13397,7 +13459,7 @@
   }
 
   function getExportOptions() {
-    /* Resolution is locked to 2x — the chooser was removed because
+    /* Resolution is locked to 2x \u2014 the chooser was removed because
        2x is the only crispness most users want, and 1x/3x were
        footguns (1x looks soft, 3x bloats file size for no gain). */
     var handleEl = document.getElementById('hm-export-handle');
@@ -13663,7 +13725,7 @@
         clone.querySelectorAll('span.hm-metric-tip').forEach(function (s) {
           s.style.setProperty('border-bottom', 'none', 'important');
         });
-        /* Drop the checkbox (plot-select) column from the export — it's
+        /* Drop the checkbox (plot-select) column from the export \u2014 it's
            an interactive affordance with no meaning in a static image.
            Hide BOTH the per-row .hm-check-col cells AND the section-
            header rows' first cell (.hm-section-blank), which sits in the
@@ -13677,7 +13739,7 @@
         /* Both the metric column AND the section-header label carry
            position:sticky; left:40px (offset to clear the 40px checkbox
            column during horizontal scroll). With the checkbox column
-           gone they'd render 40px in from the left edge — indented
+           gone they'd render 40px in from the left edge \u2014 indented
            section headers. Force static so both sit flush left. */
         clone.querySelectorAll('.hm-metric, .hm-section-label').forEach(function (el) {
           el.style.setProperty('position', 'static', 'important');
@@ -13704,7 +13766,7 @@
          They have `flex: 1 1 auto; min-height: 0` so the LIVE wrap
          can shrink to the cell's height (and use its own scrollbar).
          In the export we need them to expand to the table's natural
-         height instead — otherwise overflow:visible alone makes the
+         height instead \u2014 otherwise overflow:visible alone makes the
          table extend BELOW the flex item's box but the flex parent
          doesn't grow to include it, so clone.scrollHeight under-
          reports and the last row gets clipped at the captured panel
@@ -13840,9 +13902,9 @@
         /* Commodity table: subpixel rounding compounds per row.
            At full count (~30 visible rows) +10 was the tested sweet
            spot. When the user hides categories, fewer rows render so
-           the buffer must shrink proportionally — otherwise a gap
+           the buffer must shrink proportionally \u2014 otherwise a gap
            appears above the footer. Linear scale: ~10px @ 30 rows
-           → ~1.3px per visible row, floored at +1 so subpixel rounding
+           \u2192 ~1.3px per visible row, floored at +1 so subpixel rounding
            never clips. */
         var visRows = clone.querySelectorAll(
           '.hm-commod-tbl tbody tr:not(.hm-commod-cat):not([data-cat-hidden="true"])'
@@ -14139,13 +14201,60 @@
     requestAnimationFrame(function () { fitItemToContent(item); });
   }
 
-  fetch(HEATMAP_URL + "?t=" + Math.floor(Date.now() / 600000))
-    .then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
+  /* Fetch with one retry. Transient CDN hiccups and cold raw.github
+     caches are the most common load failure; a single 2s-delayed retry
+     with a fresh cache-buster clears most of them. */
+  function fetchHeatmapJson() {
+    function attempt() {
+      return fetch(HEATMAP_URL + "?t=" + Math.floor(Date.now() / 600000))
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        });
+    }
+    return attempt().catch(function () {
+      return new Promise(function (resolve) { setTimeout(resolve, 2000); })
+        .then(function () {
+          /* Second attempt busts any poisoned intermediate cache. */
+          return fetch(HEATMAP_URL + "?t=" + Date.now())
+            .then(function (r) {
+              if (!r.ok) throw new Error('HTTP ' + r.status);
+              return r.json();
+            });
+        });
+    });
+  }
+
+  /* Stale-data check: the feed updates weekdays. If as_of is more than
+     5 calendar days old, surface a notice on the topbar info button so
+     a silent pipeline failure doesn't go unnoticed. */
+  function checkDataFreshness(data) {
+    try {
+      if (!data || !data.as_of) return;
+      var asOfMs = new Date(data.as_of + 'T00:00:00').getTime();
+      if (!isFinite(asOfMs)) return;
+      var ageDays = (Date.now() - asOfMs) / 86400000;
+      if (ageDays <= 5) return;
+      var infoBtn = document.getElementById('hm-info-toggle');
+      if (infoBtn) {
+        infoBtn.style.color = '#d8930f';
+        infoBtn.title = 'Data is ' + Math.floor(ageDays) + ' days old (last update ' +
+                        toMmDdYyyy(data.as_of) + ')';
+      }
+      var asOfEl = document.getElementById('hm-asof-date');
+      if (asOfEl) {
+        asOfEl.style.color = '#d8930f';
+        asOfEl.textContent = toMmDdYyyy(data.as_of) + ' (stale)';
+      }
+    } catch (e) { /* freshness check must never break the page */ }
+  }
+
+  fetchHeatmapJson()
     .then(function (data) {
       safeRender('heatmap',      function () { render(data); });
+      /* After render() so the stale styling overrides the as-of text
+         render() just wrote. */
+      safeRender('freshness',    function () { checkDataFreshness(data); });
       safeRender('gaveQuadrant', function () { renderGaveQuadrant(data); });
       safeRender('gaveCharts',   function () { renderGaveCharts(data); });
       safeRender('macroCompass', function () { renderMacroCompass(data); });
@@ -14267,7 +14376,7 @@
           if (!row) return;  /* metric no longer exists in dataset */
           /* Use the same path as user-clicked checkboxes so all the
              downstream side effects (visibility, count, render) fire
-             normally — just programmatically. */
+             normally \u2014 just programmatically. */
           var cb = document.querySelector('.hm-cb[data-id="' + saved.id + '"]');
           onCheckboxChange(saved.id, row, true, cb);
           /* Re-apply the per-metric settings (type/hidden/dataLabels/
