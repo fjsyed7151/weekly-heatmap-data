@@ -5323,69 +5323,29 @@
     background: rgba(218, 165, 32, 0.08);
   }
   .hm-app .hm-export-modal-close svg { width: 14px; height: 14px; }
-  .hm-app .hm-export-modal-body {
-    flex: 1 1 auto;
-    min-height: 0;
+  /* Bottom toolbar: sits below the preview, mirrors the dashboard's
+     top toolbar (panel bg, top border, space-between layout). Left side
+     is reserved for future export controls; right side holds the
+     primary Export action. */
+  .hm-app .hm-export-toolbar {
+    flex: 0 0 auto;
     display: flex;
-  }
-  .hm-app .hm-export-sidebar {
-    flex: 0 0 320px;
-    background: var(--hm-panel);
-    border-right: 1px solid var(--hm-border);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    overflow-y: auto;
-  }
-  .hm-app .hm-export-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .hm-app .hm-export-section-label {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--hm-brown, #513C0C);
-  }
-  .hm-app .hm-export-section-hint {
-    font-size: 11px;
-    color: var(--hm-muted, #6b6050);
-    line-height: 1.4;
-  }
-  .hm-app .hm-export-checkbox {
-    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--hm-dark);
-    cursor: pointer;
-    user-select: none;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 20px;
+    background: var(--hm-panel);
+    border-top: 1px solid var(--hm-border);
   }
-  .hm-app .hm-export-checkbox input { accent-color: var(--hm-gold); width: 14px; height: 14px; }
-  .hm-app .hm-export-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px 10px;
-    background: var(--hm-bg);
-    border: 1px solid var(--hm-border);
-    border-radius: var(--hm-r);
-    color: var(--hm-dark);
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    transition: border-color 120ms;
-  }
-  .hm-app .hm-export-input:focus {
-    outline: none;
-    border-color: var(--hm-gold);
-  }
-  .hm-app .hm-export-spacer { flex: 1 1 auto; }
-  .hm-app .hm-export-actions {
+  .hm-app .hm-export-toolbar-left {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .hm-app .hm-export-toolbar-right {
+    display: flex;
+    align-items: center;
     gap: 8px;
   }
   .hm-app .hm-export-btn {
@@ -5922,11 +5882,11 @@
   </div>
 
   <!-- Export Chart modal: full-screen overlay opened on download click.
-       Sidebar (left) holds minimal options + Export PNG button; preview
-       area (right) shows the rendered PNG. The actual render runs on a
-       clone of the panel placed in `#hm-export-stage`, so the live
-       dashboard never shifts. Hidden by default; aria-hidden flips with
-       the open/close state for AT. -->
+       Header (top) + full-width preview + a bottom toolbar holding the
+       Export button (and room for more controls later). The actual
+       render runs on a clone of the panel placed in `#hm-export-stage`,
+       so the live dashboard never shifts. Hidden by default; aria-hidden
+       flips with the open/close state for AT. -->
   <div class="hm-export-modal" id="hm-export-modal" hidden aria-hidden="true" role="dialog" aria-labelledby="hm-export-modal-title">
     <div class="hm-export-modal-topbar">
       <span class="hm-export-modal-title" id="hm-export-modal-title">Export Chart</span>
@@ -5937,24 +5897,25 @@
         </svg>
       </button>
     </div>
-    <div class="hm-export-modal-body">
-      <aside class="hm-export-sidebar">
-        <div class="hm-export-spacer"></div>
-        <div class="hm-export-actions">
-          <button class="hm-export-btn hm-export-btn-primary" id="hm-export-download" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            <span>Export PNG</span>
-          </button>
-        </div>
-      </aside>
-      <main class="hm-export-preview-area">
-        <div class="hm-export-preview-loading" id="hm-export-preview-loading">Generating preview...</div>
-        <img class="hm-export-preview-img" id="hm-export-preview-img" hidden alt="Export preview">
-      </main>
+    <main class="hm-export-preview-area">
+      <div class="hm-export-preview-loading" id="hm-export-preview-loading">Generating preview...</div>
+      <img class="hm-export-preview-img" id="hm-export-preview-img" hidden alt="Export preview">
+    </main>
+    <!-- Bottom toolbar: mirrors the dashboard's top toolbar styling.
+         Left side reserved for future export controls; right side holds
+         the primary Export action. -->
+    <div class="hm-export-toolbar">
+      <div class="hm-export-toolbar-left"></div>
+      <div class="hm-export-toolbar-right">
+        <button class="hm-export-btn hm-export-btn-primary" id="hm-export-download" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Export PNG</span>
+        </button>
+      </div>
     </div>
     <!-- Offscreen render stage: the cloned panel + its fake .grid-stack-item
          wrapper live here during capture so html-to-image can reach them
@@ -13269,7 +13230,7 @@
         var dataDate = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
           ? toMmDdYyyy(cachedData.as_of) : '';
         var srcLabel = 'Source: ';
-        var srcRest = 'stablebread.com/macro' + (dataDate ? ' | ' + dataDate : '');
+        var srcRest = 'stablebread.com/macro' + (dataDate ? ' | As of: ' + dataDate : '');
         var boldFont = '700 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
         var regFont = '500 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
         function drawFooterText() {
@@ -14037,14 +13998,13 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !modal.hidden) closeExportModal();
     });
-    /* Backdrop click also closes. Anywhere outside the sidebar AND
-       outside the actual preview image \u2014 so the dark area around the
-       preview, the topbar gap next to the title, etc. all dismiss.
-       Clicks inside the sidebar (option controls) and on the preview
-       image are NOT close triggers \u2014 users want to interact with
-       those. */
+    /* Backdrop click also closes. Anywhere outside the bottom toolbar
+       AND outside the actual preview image \u2014 so the dark area around
+       the preview, the topbar gap next to the title, etc. all dismiss.
+       Clicks inside the toolbar (controls) and on the preview image are
+       NOT close triggers \u2014 users want to interact with those. */
     modal.addEventListener('click', function (e) {
-      if (e.target.closest('.hm-export-sidebar')) return;
+      if (e.target.closest('.hm-export-toolbar')) return;
       if (e.target.id === 'hm-export-preview-img') return;
       /* Don't double-fire when the close button itself is clicked. */
       if (e.target.closest('#hm-export-modal-close')) return;
