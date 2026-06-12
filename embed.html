@@ -5324,29 +5324,43 @@
   }
   .hm-app .hm-export-modal-close svg { width: 14px; height: 14px; }
   /* Bottom toolbar: sits below the preview, mirrors the dashboard's
-     top toolbar (panel bg, top border, space-between layout). Left side
-     is reserved for future export controls; right side holds the
-     primary Export action. */
+     top toolbar (panel bg, top border). The control group is centered;
+     the filename input sits 24px to the left of the Export button. */
   .hm-app .hm-export-toolbar {
     flex: 0 0 auto;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    justify-content: center;
     padding: 12px 20px;
     background: var(--hm-panel);
     border-top: 1px solid var(--hm-border);
   }
-  .hm-app .hm-export-toolbar-left {
+  .hm-app .hm-export-toolbar-group {
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-width: 0;
+    gap: 24px;
   }
-  .hm-app .hm-export-toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .hm-app .hm-export-filename {
+    width: 300px;
+    max-width: 42vw;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    background: var(--hm-bg);
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    color: var(--hm-dark);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    transition: border-color 120ms;
+  }
+  .hm-app .hm-export-filename:focus {
+    outline: none;
+    border-color: var(--hm-gold);
+  }
+  .hm-app .hm-export-filename::placeholder {
+    color: var(--hm-muted);
+    font-weight: 500;
   }
   .hm-app .hm-export-btn {
     display: inline-flex;
@@ -5902,11 +5916,13 @@
       <img class="hm-export-preview-img" id="hm-export-preview-img" hidden alt="Export preview">
     </main>
     <!-- Bottom toolbar: mirrors the dashboard's top toolbar styling.
-         Left side reserved for future export controls; right side holds
-         the primary Export action. -->
+         A centered group holds the filename input and the Export button
+         (24px apart). The input renames the download; its placeholder
+         shows the default filename when left blank. -->
     <div class="hm-export-toolbar">
-      <div class="hm-export-toolbar-left"></div>
-      <div class="hm-export-toolbar-right">
+      <div class="hm-export-toolbar-group">
+        <input type="text" class="hm-export-filename" id="hm-export-filename"
+               autocomplete="off" spellcheck="false" aria-label="File name">
         <button class="hm-export-btn hm-export-btn-primary" id="hm-export-download" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -13230,7 +13246,7 @@
         var dataDate = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
           ? toMmDdYyyy(cachedData.as_of) : '';
         var srcLabel = 'Source: ';
-        var srcRest = 'stablebread.com/macro' + (dataDate ? ' | As of: ' + dataDate : '');
+        var srcRest = 'stablebread.com/macro' + (dataDate ? ' | Data as of ' + dataDate : '');
         var boldFont = '700 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
         var regFont = '500 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
         function drawFooterText() {
@@ -13321,6 +13337,15 @@
      earlier slow render from clobbering a newer fast one. */
   var _exportPreviewSeq = 0;
 
+  /* Default download filename for the current export target, e.g.
+     "stablebread-commodities-2026-06-12.png". Used as the input's
+     placeholder and as the fallback when the user leaves it blank. */
+  function _defaultExportFilename() {
+    if (!_exportTargetId) return 'stablebread-export.png';
+    var dateStr = (new Date()).toISOString().slice(0, 10);
+    return 'stablebread-' + _slug(_exportTargetId) + '-' + dateStr + '.png';
+  }
+
   function openExportModal(item) {
     var modal = document.getElementById('hm-export-modal');
     if (!modal || !item) return;
@@ -13328,6 +13353,13 @@
     if (!id) return;
     _exportTargetId = id;
     modal.dataset.itemId = id;
+    /* Reset the filename field; placeholder shows the default name so
+       the user sees what the file will be called if they leave it blank. */
+    var nameInput = document.getElementById('hm-export-filename');
+    if (nameInput) {
+      nameInput.value = '';
+      nameInput.placeholder = _defaultExportFilename();
+    }
     modal.hidden = false;
     modal.setAttribute('aria-hidden', 'false');
     /* Lock body scroll so the dashboard underneath doesn't move
@@ -13410,8 +13442,17 @@
     if (btn) btn.disabled = true;
     var opts = getExportOptions();
     renderPanelToPNG(item, opts).then(function (dataUrl) {
-      var dateStr = (new Date()).toISOString().slice(0, 10);
-      var fileName = 'stablebread-' + _slug(_exportTargetId) + '-' + dateStr + '.png';
+      /* Use the user's filename if they typed one; otherwise the
+         default. Strip characters illegal in filenames and force a
+         single .png extension. */
+      var nameInput = document.getElementById('hm-export-filename');
+      var typed = nameInput && nameInput.value.trim();
+      var fileName;
+      if (typed) {
+        fileName = typed.replace(/[\/\\:*?"<>|]+/g, '-').replace(/\.png$/i, '') + '.png';
+      } else {
+        fileName = _defaultExportFilename();
+      }
       var a = document.createElement('a');
       a.href = dataUrl;
       a.download = fileName;
@@ -14013,6 +14054,13 @@
     /* Export PNG button. */
     var dlBtn = document.getElementById('hm-export-download');
     if (dlBtn) dlBtn.addEventListener('click', downloadExportPNG);
+    /* Enter in the filename field triggers the export. */
+    var nameInput = document.getElementById('hm-export-filename');
+    if (nameInput) {
+      nameInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); downloadExportPNG(); }
+      });
+    }
   })();
 
   /* Legacy in-place exporter kept as a thin shim \u2014 routes to the
