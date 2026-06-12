@@ -5338,7 +5338,7 @@
   .hm-app .hm-export-toolbar-group {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 16px;
   }
   .hm-app .hm-export-filename {
     width: 300px;
@@ -13199,9 +13199,9 @@
         var FOOTER_TEXT_INSET = 12 * pixelRatio;  /* 12 visual: text sits 12 visual px in from panel left edge */
         var FOOTER_LOGO_INSET = 12 * pixelRatio;  /* 12 visual: logo sits 12 visual px in from panel right edge */
         var DIVIDER_GAP = 0;                      /* divider flush against the panel bottom */
-        var FOOTER_H = 32 * pixelRatio;           /* 32 visual: one text line + logo, vertically centered */
+        var FOOTER_H = 32 * pixelRatio;           /* 32 visual: two text lines + logo, vertically centered */
         var LOGO_H = 16 * pixelRatio;             /* 16 visual logo height */
-        var FOOTER_FONT_PX = 11 * pixelRatio;     /* 11 visual footer text */
+        var FOOTER_FONT_PX = 9 * pixelRatio;      /* 9 visual: small enough to fit two lines in the 32px footer */
         /* cropTopPx is the output-pixel height of the panel-header slot
            in the captured PNG. The panel-header is visibility:hidden
            in export-mode (no inner shift), so the captured PNG has an
@@ -13238,26 +13238,37 @@
         ctx.fillRect(0, dividerY, canvas.width, 1);
         var midY = dividerY + FOOTER_H / 2;
         var fontColor = dark ? '#c9c1b3' : '#5a5042';
-        /* One footer line: bold "Source:" label, then the URL and the
-           as-of date of the data shown (not the export click date).
+        /* Two footer lines at a small font so both fit in the same
+           32px footer height:
+             line 1: bold "Source:" label + the URL
+             line 2: "Data as of <date>" (the data's as-of, not the
+                     export click date)
            ASCII-only strings keep the canvas render safe under any
            charset interpretation (the embed is a WordPress fragment
            with no <meta charset>). */
         var dataDate = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
           ? toMmDdYyyy(cachedData.as_of) : '';
         var srcLabel = 'Source: ';
-        var srcRest = 'stablebread.com/macro' + (dataDate ? ' | Data as of ' + dataDate : '');
+        var srcUrl = 'stablebread.com/macro';
+        var dateLine = dataDate ? ('Data as of ' + dataDate) : '';
         var boldFont = '700 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
         var regFont = '500 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
+        /* Line baselines: split the footer into upper/lower halves.
+           With no date, the single line re-centers. */
+        var line1Y = dateLine ? (dividerY + FOOTER_H * 0.36) : midY;
+        var line2Y = dividerY + FOOTER_H * 0.70;
         function drawFooterText() {
           ctx.textBaseline = 'middle';
           ctx.textAlign = 'left';
           ctx.fillStyle = fontColor;
           ctx.font = boldFont;
-          ctx.fillText(srcLabel, FOOTER_TEXT_INSET, midY);
+          ctx.fillText(srcLabel, FOOTER_TEXT_INSET, line1Y);
           var labelW = ctx.measureText(srcLabel).width;
           ctx.font = regFont;
-          ctx.fillText(srcRest, FOOTER_TEXT_INSET + labelW, midY);
+          ctx.fillText(srcUrl, FOOTER_TEXT_INSET + labelW, line1Y);
+          if (dateLine) {
+            ctx.fillText(dateLine, FOOTER_TEXT_INSET, line2Y);
+          }
         }
         function drawTextOnly() {
           drawFooterText();
@@ -13337,13 +13348,15 @@
      earlier slow render from clobbering a newer fast one. */
   var _exportPreviewSeq = 0;
 
-  /* Default download filename for the current export target, e.g.
-     "stablebread-commodities-2026-06-12.png". Used as the input's
-     placeholder and as the fallback when the user leaves it blank. */
-  function _defaultExportFilename() {
-    if (!_exportTargetId) return 'stablebread-export.png';
+  /* Default download name (no extension) for the current export target,
+     e.g. "stablebread-commodities-2026-06-12". Shown as the input
+     placeholder (extension omitted — the .png is implied) and used as
+     the fallback base name when the user leaves the field blank. The
+     ".png" is appended at download time, not shown to the user. */
+  function _defaultExportBaseName() {
+    if (!_exportTargetId) return 'stablebread-export';
     var dateStr = (new Date()).toISOString().slice(0, 10);
-    return 'stablebread-' + _slug(_exportTargetId) + '-' + dateStr + '.png';
+    return 'stablebread-' + _slug(_exportTargetId) + '-' + dateStr;
   }
 
   function openExportModal(item) {
@@ -13358,7 +13371,7 @@
     var nameInput = document.getElementById('hm-export-filename');
     if (nameInput) {
       nameInput.value = '';
-      nameInput.placeholder = _defaultExportFilename();
+      nameInput.placeholder = _defaultExportBaseName();
     }
     modal.hidden = false;
     modal.setAttribute('aria-hidden', 'false');
@@ -13442,17 +13455,15 @@
     if (btn) btn.disabled = true;
     var opts = getExportOptions();
     renderPanelToPNG(item, opts).then(function (dataUrl) {
-      /* Use the user's filename if they typed one; otherwise the
-         default. Strip characters illegal in filenames and force a
-         single .png extension. */
+      /* Use the user's name if they typed one, otherwise the default
+         base name. Strip characters illegal in filenames, drop any
+         .png the user typed, then append a single .png at download. */
       var nameInput = document.getElementById('hm-export-filename');
       var typed = nameInput && nameInput.value.trim();
-      var fileName;
-      if (typed) {
-        fileName = typed.replace(/[\/\\:*?"<>|]+/g, '-').replace(/\.png$/i, '') + '.png';
-      } else {
-        fileName = _defaultExportFilename();
-      }
+      var base = typed
+        ? typed.replace(/[\/\\:*?"<>|]+/g, '-').replace(/\.png$/i, '')
+        : _defaultExportBaseName();
+      var fileName = base + '.png';
       var a = document.createElement('a');
       a.href = dataUrl;
       a.download = fileName;
