@@ -12595,8 +12595,13 @@
       toCol.querySelectorAll(':scope > .grid-stack-item[gs-id]')
     );
     var insertBefore = null;
+    /* Insert ABOVE the panel the moved one was horizontally next to:
+       find the first target sibling whose BOTTOM edge is past the
+       moved panel's top, and drop in before it. Comparing against the
+       sibling's bottom (not its top) is what places the panel above
+       its horizontal neighbor instead of below it. */
     for (var i = 0; i < siblings.length; i++) {
-      if (siblings[i].getBoundingClientRect().top > fromTop) {
+      if (siblings[i].getBoundingClientRect().bottom > fromTop) {
         insertBefore = siblings[i];
         break;
       }
