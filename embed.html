@@ -4320,7 +4320,11 @@
     display: inline-flex;
     gap: 4px;
     margin-left: 4px;
-    border-left: 1px solid var(--hm-border);
+    /* Soft white-alpha divider. These toggle groups live on the gold
+       header band in both themes, so a translucent white reads as a
+       gentle separator instead of the harsh opaque --hm-border line
+       (light gray in light mode, near-black in dark). */
+    border-left: 1px solid rgba(255, 255, 255, 0.32);
     padding-left: 8px;
   }
   @media (max-width: 700px) {
@@ -5340,18 +5344,36 @@
     align-items: center;
     gap: 16px;
   }
+  /* Label + input share a sub-group: 8px between the label and the box,
+     while the box-to-button gap stays 16px (the parent group gap). */
+  .hm-app .hm-export-filename-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hm-app .hm-export-filename-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--hm-muted);
+    white-space: nowrap;
+  }
   .hm-app .hm-export-filename {
-    width: 300px;
-    max-width: 42vw;
+    width: 280px;
+    max-width: 38vw;
     box-sizing: border-box;
-    padding: 9px 12px;
+    /* 10px vertical padding + 13px font matches the Export button's box
+       height so the input and button line up the same. */
+    padding: 10px 12px;
     background: var(--hm-bg);
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
     color: var(--hm-dark);
     font-family: inherit;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
+    line-height: 1.2;
     transition: border-color 120ms;
   }
   .hm-app .hm-export-filename:focus {
@@ -5921,8 +5943,11 @@
          shows the default filename when left blank. -->
     <div class="hm-export-toolbar">
       <div class="hm-export-toolbar-group">
-        <input type="text" class="hm-export-filename" id="hm-export-filename"
-               autocomplete="off" spellcheck="false" aria-label="File name">
+        <div class="hm-export-filename-wrap">
+          <label class="hm-export-filename-label" for="hm-export-filename">File name</label>
+          <input type="text" class="hm-export-filename" id="hm-export-filename"
+                 autocomplete="off" spellcheck="false" aria-label="File name">
+        </div>
         <button class="hm-export-btn hm-export-btn-primary" id="hm-export-download" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
