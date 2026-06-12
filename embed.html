@@ -13225,8 +13225,9 @@
         var FOOTER_LOGO_INSET = 12 * pixelRatio;  /* 12 visual: logo sits 12 visual px in from panel right edge */
         var DIVIDER_GAP = 0;                      /* divider flush against the panel bottom */
         var FOOTER_H = 32 * pixelRatio;           /* 32 visual: two text lines + logo, vertically centered */
+        var FOOTER_SRC_FONT_PX = 10 * pixelRatio;  /* 10 visual: Source line */
+        var FOOTER_DATE_FONT_PX = 8 * pixelRatio;  /* 8 visual: Data line */
         var LOGO_H = 16 * pixelRatio;             /* 16 visual logo height */
-        var FOOTER_FONT_PX = 9 * pixelRatio;      /* 9 visual: small enough to fit two lines in the 32px footer */
         /* cropTopPx is the output-pixel height of the panel-header slot
            in the captured PNG. The panel-header is visibility:hidden
            in export-mode (no inner shift), so the captured PNG has an
@@ -13273,26 +13274,34 @@
            with no <meta charset>). */
         var dataDate = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
           ? toMmDdYyyy(cachedData.as_of) : '';
-        var srcLabel = 'Source: ';
         var srcUrl = 'stablebread.com/macro';
-        var dateLine = dataDate ? ('Data as of ' + dataDate) : '';
-        var boldFont = '700 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
-        var regFont = '500 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
+        /* Only the leading word is bold; the colon and the rest are
+           regular weight. Source line at 10px, Data line at 8px. */
+        var srcBoldFont = '700 ' + FOOTER_SRC_FONT_PX + 'px Karla, sans-serif';
+        var srcRegFont  = '500 ' + FOOTER_SRC_FONT_PX + 'px Karla, sans-serif';
+        var dateBoldFont = '700 ' + FOOTER_DATE_FONT_PX + 'px Karla, sans-serif';
+        var dateRegFont  = '500 ' + FOOTER_DATE_FONT_PX + 'px Karla, sans-serif';
         /* Line baselines: split the footer into upper/lower halves.
            With no date, the single line re-centers. */
-        var line1Y = dateLine ? (dividerY + FOOTER_H * 0.36) : midY;
+        var line1Y = dataDate ? (dividerY + FOOTER_H * 0.36) : midY;
         var line2Y = dividerY + FOOTER_H * 0.70;
         function drawFooterText() {
           ctx.textBaseline = 'middle';
           ctx.textAlign = 'left';
           ctx.fillStyle = fontColor;
-          ctx.font = boldFont;
-          ctx.fillText(srcLabel, FOOTER_TEXT_INSET, line1Y);
-          var labelW = ctx.measureText(srcLabel).width;
-          ctx.font = regFont;
-          ctx.fillText(srcUrl, FOOTER_TEXT_INSET + labelW, line1Y);
-          if (dateLine) {
-            ctx.fillText(dateLine, FOOTER_TEXT_INSET, line2Y);
+          /* Line 1: bold "Source" + regular ": stablebread.com/macro". */
+          ctx.font = srcBoldFont;
+          ctx.fillText('Source', FOOTER_TEXT_INSET, line1Y);
+          var srcW = ctx.measureText('Source').width;
+          ctx.font = srcRegFont;
+          ctx.fillText(': ' + srcUrl, FOOTER_TEXT_INSET + srcW, line1Y);
+          /* Line 2: bold "Data" + regular ": <date>". */
+          if (dataDate) {
+            ctx.font = dateBoldFont;
+            ctx.fillText('Data', FOOTER_TEXT_INSET, line2Y);
+            var dataW = ctx.measureText('Data').width;
+            ctx.font = dateRegFont;
+            ctx.fillText(': ' + dataDate, FOOTER_TEXT_INSET + dataW, line2Y);
           }
         }
         function drawTextOnly() {
