@@ -1560,7 +1560,9 @@
     background: var(--hm-bg-warm);
     color: var(--hm-gold);
     font-weight: 700;
-    font-size: 12px;
+    /* 10px matches the commodity/FX table category labels so the gold
+       section headers read at one consistent size across panels. */
+    font-size: 10px;
     text-transform: uppercase;
     padding: 6px 12px;
     border-bottom: 2px solid var(--hm-border);
@@ -5937,14 +5939,8 @@
     </div>
     <div class="hm-export-modal-body">
       <aside class="hm-export-sidebar">
-        <div class="hm-export-section">
-          <div class="hm-export-section-label">Footer handle</div>
-          <input type="text" class="hm-export-input" id="hm-export-handle" value="StableBread" maxlength="30" autocomplete="off">
-          <div class="hm-export-section-hint">@username shown in the footer next to the logo.</div>
-        </div>
         <div class="hm-export-spacer"></div>
         <div class="hm-export-actions">
-          <button class="hm-export-btn hm-export-btn-secondary" id="hm-export-reset" type="button">Reset</button>
           <button class="hm-export-btn hm-export-btn-primary" id="hm-export-download" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -8080,38 +8076,22 @@
        click away. Same pattern as the Growth \u00d7 Policy panel. */
     window.PANEL_INFO_HTML['hm-gave-wrap'] = function () {
       return (
-        '<p><b>Charles Gave\'s Four Quadrants</b>, a regime classifier from his ' +
-          '<i>General Theory of Portfolio Construction</i> (2024). The axes measure ' +
-          'energy efficiency and currency quality.</p>' +
-        '<p><b>X axis (energy efficiency)</b>: S&amp;P 500 / WTI. The S&amp;P 500 ' +
-          'proxies private-sector output, WTI the energy cost to produce it. Above ' +
-          'its 7y MA, businesses extract more value per unit of energy. That is a ' +
-          'boom (right side). Below is a bust.</p>' +
-        '<p><b>Y axis (currency quality)</b>: Gold / IEF, with the 7-10y Treasury ' +
-          'ETF standing in for long-bond total return. Gold beating bonds means the ' +
-          'currency is debasing, an inflationary regime (top). Bonds beating gold ' +
-          'means they still store value, a deflationary regime (bottom).</p>' +
-        '<p><b>Marker placement</b>: (ratio minus MA) / 7y std, clamped to 2 sigma. ' +
-          'Shows how unusual the current deviation is. Classification itself uses ' +
-          'the raw above/below MA test.</p>' +
+        '<p><b>Charles Gave\'s Four Quadrants</b>, a regime classifier. Two ratios ' +
+          'place the market on the plane.</p>' +
+        '<p><b>X axis</b>: S&amp;P 500 / WTI, energy efficiency. Above its 7-year ' +
+          'average is a boom (right), below is a bust (left).</p>' +
+        '<p><b>Y axis</b>: Gold / IEF, currency quality. Gold beating bonds means ' +
+          'an inflationary regime (top). Bonds beating gold means deflationary ' +
+          '(bottom).</p>' +
         '<p><b>Quadrants</b><br>' +
-          'Q1 (NE) <b>Inflationary Boom</b>: long real assets (gold, commodities, ' +
-          'real estate, value, EM), short long bonds<br>' +
-          'Q2 (NW) <b>Inflationary Bust</b>: stagflation. Long cash and energy, ' +
-          'short financials and duration<br>' +
-          'Q3 (SW) <b>Deflationary Bust</b>: flight to safety. Long long-dated ' +
-          'government bonds<br>' +
-          'Q4 (SE) <b>Deflationary Boom</b>: the "natural state of capitalism." Long ' +
-          'innovative growth, bonds, real estate. <i>All true US bull markets occur ' +
-          'here.</i></p>' +
-        '<p><b>Companion charts</b>: S&amp;P 500 / WTI drives the X axis. Gold / IEF ' +
-          'drives the Y axis. S&amp;P 500 / Gold is the money-illusion check: stocks ' +
-          'rising against gold are real gains, stocks flat or falling against gold ' +
-          'are debasement dressed up as upside. That ratio crossing below its 7y MA ' +
-          'often leads S&amp;P/WTI by a few months.</p>' +
-        '<p><b>Data note</b>: Gave\'s original uses Bloomberg UST 7-10y total return ' +
-          'back to 1973. We use the IEF ETF (since 2002), which captures both price ' +
-          'and coupon. Shorter history, same signal.</p>'
+          'Q1 (NE) <b>Inflationary Boom</b>: long real assets, short long bonds<br>' +
+          'Q2 (NW) <b>Inflationary Bust</b>: stagflation. Long cash and energy<br>' +
+          'Q3 (SW) <b>Deflationary Bust</b>: flight to safety. Long government bonds<br>' +
+          'Q4 (SE) <b>Deflationary Boom</b>: long growth, bonds, real estate. ' +
+          '<i>All true US bull markets occur here.</i></p>' +
+        '<p><b>Companion charts</b>: The two axis ratios, plus S&amp;P 500 / Gold ' +
+          'as a money-illusion check. Stocks rising against gold are real gains; ' +
+          'flat or falling against gold is debasement dressed up as upside.</p>'
       );
     };
     var gaveItem = document.querySelector('.grid-stack-item[gs-id="hm-gave-wrap"]');
@@ -8430,41 +8410,23 @@
        and the user can pull up details on demand via the [i] button. */
     window.PANEL_INFO_HTML['hm-macrocompass'] = function () {
       return (
-        '<p><b>Growth \u00d7 Policy regime classifier</b> with inflation as a third dimension. ' +
-          'Tells you which macro setup we\'re in and the trade tilts that historically ' +
-          'work in that setup.</p>' +
-        '<p><b>X axis \u00b7 Growth</b><br>' +
-          'A composite of two real-economy indicators, each anchored at its expansion/' +
-          'contraction threshold and divided by its rough historical standard deviation:<br>' +
-          '&nbsp;&nbsp;<code>growth = 0.5 \u00b7 (ISM Services \u2212 50) / 3.5 + 0.5 \u00b7 (INDPRO y/y \u2212 2) / 5.5</code><br>' +
-          'Sign tells the regime (above/below neutral); \u00b11 \u2248 one std above/below trend.</p>' +
-        '<p><b>Y axis \u00b7 Policy stance</b><br>' +
-          'Real Fed Funds vs the long-run neutral rate (R* \u2248 0.5%, NY Fed HLW estimate):<br>' +
-          '&nbsp;&nbsp;<code>stance = (0.5 \u2212 [EFFR \u2212 core PCE y/y]) / 2.0</code><br>' +
-          'Positive = net easing (Fed below neutral); negative = net tightening. ' +
-          '\u00b11 \u2248 200 bps from neutral. Sign convention chosen so easing goes UP on the ' +
-          'plane.</p>' +
-        '<p><b>Inflation tint</b>: Core PCE y/y vs a 2.5% threshold. Above gets a ' +
-          'subtle orange overlay, below gets blue. The same growth/policy quadrant ' +
-          'carries different trade conviction under high vs low inflation.</p>' +
-        '<p><b>Marker placement</b>: <code>x = clamp(growth, \u22121, +1)</code>, ' +
-          '<code>y = clamp(stance, \u22121, +1)</code>. Both axes use fixed (not rolling) ' +
-          'normalization so a reading of growth = +1 always plots at the same spot on ' +
-          'the chart, regardless of which decade you\'re in.</p>' +
+        '<p><b>Growth \u00d7 Policy regime classifier</b> with inflation as a tint. ' +
+          'Shows which macro setup we\'re in and the trade tilts that historically ' +
+          'work in it.</p>' +
+        '<p><b>X axis</b>: Growth, a composite of ISM Services and Industrial ' +
+          'Production. Right is accelerating, left is decelerating.</p>' +
+        '<p><b>Y axis</b>: Fed policy vs neutral. Up is easing, down is ' +
+          'tightening.</p>' +
+        '<p><b>Tint</b>: Orange means inflation is running above 2.5%, blue means ' +
+          'below. The same quadrant carries different conviction under high vs low ' +
+          'inflation.</p>' +
         '<p><b>Quadrants</b><br>' +
-          'NW \u00b7 <b>Soft Landing</b> (decel + easing) \u00b7 long Treasuries + quality growth<br>' +
-          'NE \u00b7 <b>Risk On</b> (accel + easing) \u00b7 long broad equities + credit + EM<br>' +
-          'SW \u00b7 <b>Recession Risk</b> (decel + tight) \u00b7 long dollar + cash + vol<br>' +
-          'SE \u00b7 <b>Late Cycle</b> (accel + tight) \u00b7 long commodities + value + EM</p>' +
-        '<p><b>Regime ribbon</b>: Colored squares under the active-trades panel ' +
-          'showing the last 13 weekly quadrant assignments. Shows how persistent the ' +
-          'current regime is and any recent transitions. Hover any square for the ' +
-          'date and regime.</p>' +
-        '<p><b>Data sources</b>: ISM Services PMI (Trading Economics), Industrial ' +
-          'Production y/y (FRED INDPRO), Effective Fed Funds (FRED DFF), core PCE y/y ' +
-          '(FRED PCEPILFE). Conference Board LEI would be a stronger growth signal ' +
-          'but it\'s paywalled. ISM Services plus INDPRO is the best free pairing: ' +
-          'one forward-looking diffusion index, one realized output series.</p>'
+          'NW <b>Soft Landing</b> (decel + easing): long Treasuries, quality growth<br>' +
+          'NE <b>Risk On</b> (accel + easing): long broad equities, credit, EM<br>' +
+          'SW <b>Recession Risk</b> (decel + tight): long dollar, cash, vol<br>' +
+          'SE <b>Late Cycle</b> (accel + tight): long commodities, value, EM</p>' +
+        '<p><b>Regime ribbon</b>: The squares below show the last 13 weekly regime ' +
+          'reads. Hover any square for the date.</p>'
       );
     };
     var mcItem = document.querySelector('.grid-stack-item[gs-id="hm-macrocompass"]');
@@ -8985,19 +8947,14 @@
       return (
         '<p><b>Front-month commodity futures</b>, grouped by sector. Daily close, ' +
           'as of ' + toMmDdYyyy(asOf) + '.</p>' +
-        '<p><b>Last</b>: Most recent settle. Prices are Yahoo\'s =F continuous ' +
-          'tickers, which auto-roll between contracts. The specific contract month ' +
-          'isn\'t exposed.</p>' +
         '<p><b>1D / 1W / 1M / YTD</b>: Percent change over the trailing day, week, ' +
-          'month, and since Jan 1. Green is up, red is down. 1W and 1M measure ' +
-          'against the weekly closes 1 and 4 weeks back.</p>' +
-        '<p><b>52W Range</b>: Slider with the 52-week low on the left and high on ' +
-          'the right. The gold marker is the current price.</p>' +
+          'month, and since Jan 1. Green is up, red is down.</p>' +
+        '<p><b>52W Range</b>: 52-week low on the left, high on the right. The gold ' +
+          'marker is the current price.</p>' +
         '<p><b>Categories</b>: The funnel icon in the panel header shows or hides ' +
-          'Agricultural, Energy, Livestock, and Metals. Your selection is saved and ' +
-          'carries into image exports.</p>' +
-        '<p><b>Anomalies</b>: Rows with impossible daily moves (over 50%, or a 5x ' +
-          'scale shift) show a dash to suppress contract-rollover artifacts.</p>'
+          'sectors. Your selection is saved and carries into image exports.</p>' +
+        '<p>A dash means the value was suppressed as a contract-rollover ' +
+          'artifact.</p>'
       );
     };
     /* Tag the gridstack item so the info button becomes visible. */
@@ -10777,15 +10734,10 @@
         '<p><b>Bond ETF performance, sliced by exposure</b>: International credit, ' +
           'US high-grade, US high-yield, US gov/agencies, and the US Treasury ' +
           'duration ladder.</p>' +
-        '<p><b>Yield / Duration</b>: 30-day SEC yield and effective duration next ' +
-          'to each ticker' + asOf + '. Price return alone misleads without the ' +
-          'income on the position and its rate sensitivity. Hover the pair for the ' +
-          'as-of date.</p>' +
-        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation calibrates ' +
-          'per period to the strongest visible mover, so leaders pop without ' +
-          'burying mid-range cells in gray.</p>' +
-        '<p><b>Sort</b>: Each column orders top to bottom by the active period\'s ' +
-          'return.</p>'
+        '<p><b>Yield / Duration</b>: The pills next to each ticker show 30-day SEC ' +
+          'yield and effective duration' + asOf + '.</p>' +
+        '<p>Green is a positive return over the selected period, red is negative. ' +
+          'Each column sorts by the active period\'s return.</p>'
       );
     };
     var fiItem = document.querySelector('.grid-stack-item[gs-id="hm-fixed-income"]');
@@ -11013,16 +10965,13 @@
     /* Register the panel info popup. */
     window.PANEL_INFO_HTML['hm-global-indexes'] = function () {
       return (
-        '<p><b>Regional equity indexes</b>, grouped Americas, Europe (incl. Turkey), ' +
-          'and Asia / Pacific. Local currency by default.</p>' +
-        '<p><b>Local / USD toggle</b>: Flip to USD to apply the local-vs-USD FX move ' +
-          'and see what a US investor would actually have earned. This matters most ' +
-          'for FX-distorted EM moves. Turkey\'s BIST in lira reads very differently ' +
-          'in dollar terms.</p>' +
-        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation calibrates ' +
-          'per period to the strongest visible mover.</p>' +
-        '<p><b>Sort</b>: Each region orders top to bottom by the active period\'s ' +
-          'return.</p>'
+        '<p><b>Regional equity indexes</b>, grouped Americas, Europe, and Asia / ' +
+          'Pacific. Local currency by default.</p>' +
+        '<p><b>Local / USD toggle</b>: Flip to USD to see what a US investor would ' +
+          'actually have earned after the FX move. This matters most for ' +
+          'FX-distorted EM markets like Turkey.</p>' +
+        '<p>Green is a positive return over the selected period, red is negative. ' +
+          'Each region sorts by the active period\'s return.</p>'
       );
     };
     var giItem = document.querySelector('.grid-stack-item[gs-id="hm-global-indexes"]');
@@ -11267,14 +11216,10 @@
         '<p><b>Single-country ETF performance, regional split</b>: Americas, Europe, ' +
           'Asia / Pacific, Mideast / Africa. Mostly iShares MSCI funds plus a few ' +
           'Global X / VanEck alternatives where iShares isn\'t available.</p>' +
-        '<p><b>USD / Local toggle</b>: ETFs trade in USD, so their returns are ' +
-          'FX-adjusted by construction. Flip to Local to back out the FX move and ' +
-          'see the underlying local-market return. This separates currency moves ' +
-          'from actual equity performance.</p>' +
-        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation calibrates ' +
-          'per period to the strongest visible mover.</p>' +
-        '<p><b>Sort</b>: Each region orders top to bottom by the active period\'s ' +
-          'return.</p>'
+        '<p><b>USD / Local toggle</b>: ETFs trade in USD. Flip to Local to back ' +
+          'out the FX move and see the underlying local-market return.</p>' +
+        '<p>Green is a positive return over the selected period, red is negative. ' +
+          'Each region sorts by the active period\'s return.</p>'
       );
     };
     var ceItem = document.querySelector('.grid-stack-item[gs-id="hm-country-etfs"]');
@@ -11490,16 +11435,13 @@
       return (
         '<p><b>Commodity performance rankings</b>: Energy, Metals, Agricultural, ' +
           'Indices (broad-basket ETFs).</p>' +
-        '<p>The pricing-basis pill next to each ticker tells you what actually ' +
-          'drives the row\'s return:<br>' +
+        '<p>The pill next to each ticker tells you what drives the row\'s return:<br>' +
           '<b>FRONT-MONTH</b>: front-month futures contract<br>' +
-          '<b>FUTURES ETF</b>: ETF holding rolled futures (USO, GSG, DBC, BDRY)<br>' +
-          '<b>EQUITIES</b>: basket of producer/miner equities, used where no liquid ' +
-          'futures contract exists (Steel SLX, Coal COAL).</p>' +
-        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation calibrates ' +
-          'per period to the strongest visible mover.</p>' +
-        '<p><b>Sort</b>: Each group orders top to bottom by the active period\'s ' +
-          'return.</p>'
+          '<b>FUTURES ETF</b>: ETF holding rolled futures<br>' +
+          '<b>EQUITIES</b>: producer/miner equity basket, used where no liquid ' +
+          'futures contract exists.</p>' +
+        '<p>Green is a positive return over the selected period, red is negative. ' +
+          'Each group sorts by the active period\'s return.</p>'
       );
     };
     var cpItem = document.querySelector('.grid-stack-item[gs-id="hm-commodity-perf"]');
@@ -11857,13 +11799,10 @@
         '<p><b>How to read</b>: Each cell is <i>row currency vs column currency</i> ' +
           'over the selected period.</p>' +
         '<p>Example: EUR / JPY = +12.3% means EUR strengthened 12.3% against JPY. ' +
-          'Green means the row beat the column, red means it lagged.</p>' +
-        '<p><b>Color scale</b>: Continuous, anchored at 0%. Saturation scales with ' +
-          'the largest visible cell so the strongest mover always pops. Smaller ' +
-          'moves stay light.</p>' +
+          'Green means the row beat the column, red means it lagged. Stronger ' +
+          'moves are more saturated.</p>' +
         '<p><b>Sort toggle</b>: When on, rows and columns reorder strongest to ' +
-          'weakest for the active period. Green pools in the top-right, red in the ' +
-          'bottom-left.</p>'
+          'weakest for the active period.</p>'
       );
     };
     var cmItem = document.querySelector('.grid-stack-item[gs-id="hm-currency-matrix"]');
@@ -13243,7 +13182,6 @@
      card. */
   function _composeExportWithFooter(panelDataUrl, item, cropTopPx, options) {
     options = options || {};
-    var handle = (options.handle || '').trim();
     /* pixelRatio that produced panelImg \u2014 used to scale the footer
        font and logo so they read at the same VISUAL size regardless
        of which resolution the user picked (1x/2x/3x). Without this,
@@ -13267,13 +13205,12 @@
            at `pixelRatio` (1/2/3) \u2014 its naturalWidth/Height are
            already in output px, so we line up footer dimensions
            with the same unit. */
-        var FOOTER_TEXT_INSET = 12 * pixelRatio;  /* 12 visual: link sits 12 visual px in from panel left edge */
+        var FOOTER_TEXT_INSET = 12 * pixelRatio;  /* 12 visual: text sits 12 visual px in from panel left edge */
         var FOOTER_LOGO_INSET = 12 * pixelRatio;  /* 12 visual: logo sits 12 visual px in from panel right edge */
         var DIVIDER_GAP = 0;                      /* divider flush against the panel bottom */
-        var FOOTER_H = 38 * pixelRatio;           /* 38 visual: two text lines (URL + data date) with breathing room */
+        var FOOTER_H = 32 * pixelRatio;           /* 32 visual: one text line + logo, vertically centered */
         var LOGO_H = 16 * pixelRatio;             /* 16 visual logo height */
-        var FOOTER_FONT_PX = 10 * pixelRatio;     /* 10 visual: URL line, smaller so the date stamp fits below */
-        var FOOTER_DATE_FONT_PX = 9 * pixelRatio; /* 9 visual: data-date stamp under the URL */
+        var FOOTER_FONT_PX = 11 * pixelRatio;     /* 11 visual footer text */
         /* cropTopPx is the output-pixel height of the panel-header slot
            in the captured PNG. The panel-header is visibility:hidden
            in export-mode (no inner shift), so the captured PNG has an
@@ -13310,35 +13247,26 @@
         ctx.fillRect(0, dividerY, canvas.width, 1);
         var midY = dividerY + FOOTER_H / 2;
         var fontColor = dark ? '#c9c1b3' : '#5a5042';
-        var dateColor = dark ? '#8a8378' : '#8a8073';
-        /* Footer text: URL line on top, data-date stamp below it.
+        /* One footer line: bold "Source:" label, then the URL and the
+           as-of date of the data shown (not the export click date).
            ASCII-only strings keep the canvas render safe under any
            charset interpretation (the embed is a WordPress fragment
            with no <meta charset>). */
-        var text = 'stablebread.com/macro';
-        if (handle) text += ' | @' + handle.replace(/^@/, '');
-        /* Date stamp: the as-of date of the data shown in the panel,
-           not the date the user clicked export. */
         var dataDate = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
           ? toMmDdYyyy(cachedData.as_of) : '';
-        var dateText = dataDate ? ('Data as of ' + dataDate) : '';
-        var footerFont = '600 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
-        var dateFont = '500 ' + FOOTER_DATE_FONT_PX + 'px Karla, sans-serif';
-        /* Two-line layout: URL baseline sits in the upper half, date
-           in the lower half. With no date, the URL re-centers. */
-        var line1Y = dateText ? (dividerY + FOOTER_H * 0.35) : midY;
-        var line2Y = dividerY + FOOTER_H * 0.72;
+        var srcLabel = 'Source: ';
+        var srcRest = 'stablebread.com/macro' + (dataDate ? ' | ' + dataDate : '');
+        var boldFont = '700 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
+        var regFont = '500 ' + FOOTER_FONT_PX + 'px Karla, sans-serif';
         function drawFooterText() {
           ctx.textBaseline = 'middle';
           ctx.textAlign = 'left';
           ctx.fillStyle = fontColor;
-          ctx.font = footerFont;
-          ctx.fillText(text, FOOTER_TEXT_INSET, line1Y);
-          if (dateText) {
-            ctx.fillStyle = dateColor;
-            ctx.font = dateFont;
-            ctx.fillText(dateText, FOOTER_TEXT_INSET, line2Y);
-          }
+          ctx.font = boldFont;
+          ctx.fillText(srcLabel, FOOTER_TEXT_INSET, midY);
+          var labelW = ctx.measureText(srcLabel).width;
+          ctx.font = regFont;
+          ctx.fillText(srcRest, FOOTER_TEXT_INSET + labelW, midY);
         }
         function drawTextOnly() {
           drawFooterText();
@@ -13425,9 +13353,6 @@
     if (!id) return;
     _exportTargetId = id;
     modal.dataset.itemId = id;
-    /* Reset sidebar to defaults each open so leftover state from a
-       previous session doesn't surprise the user. */
-    applyExportDefaults();
     modal.hidden = false;
     modal.setAttribute('aria-hidden', 'false');
     /* Lock body scroll so the dashboard underneath doesn't move
@@ -13453,20 +13378,12 @@
     }
   }
 
-  function applyExportDefaults() {
-    var h = document.getElementById('hm-export-handle');
-    if (h) h.value = 'StableBread';
-  }
-
   function getExportOptions() {
     /* Resolution is locked to 2x \u2014 the chooser was removed because
        2x is the only crispness most users want, and 1x/3x were
-       footguns (1x looks soft, 3x bloats file size for no gain). */
-    var handleEl = document.getElementById('hm-export-handle');
-    return {
-      resolution: 2,
-      handle: handleEl ? handleEl.value : ''
-    };
+       footguns (1x looks soft, 3x bloats file size for no gain).
+       The footer is fixed: Source + URL + data date, no options. */
+    return { resolution: 2 };
   }
 
   /* Re-render the preview using the current sidebar options. We
@@ -14118,16 +14035,6 @@
       /* Don't double-fire when the close button itself is clicked. */
       if (e.target.closest('#hm-export-modal-close')) return;
       closeExportModal();
-    });
-    /* Footer @handle input \u2014 re-render on each keystroke (debounced
-       inside refreshModalPreview). */
-    var handle = document.getElementById('hm-export-handle');
-    if (handle) handle.addEventListener('input', refreshModalPreview);
-    /* Reset button: re-apply defaults + re-render. */
-    var resetBtn = document.getElementById('hm-export-reset');
-    if (resetBtn) resetBtn.addEventListener('click', function () {
-      applyExportDefaults();
-      refreshModalPreview();
     });
     /* Export PNG button. */
     var dlBtn = document.getElementById('hm-export-download');
