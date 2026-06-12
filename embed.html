@@ -6430,11 +6430,17 @@
     if (!item) return;
     var wasVisible = item.style.display !== 'none' && !item.hidden;
     var hasSelection = chartState.selected.length > 0;
+    /* The chart panel is tied to the Metrics Heat Map — its checkboxes
+       are the only source of selections. If the heat map is hidden via
+       the customize panel, hide the chart too. Selections are kept, so
+       re-showing the heat map brings the chart back. */
+    var heatmapHidden = getHiddenBlocks().indexOf('hm-heatmap-wrap') >= 0;
+    var showChart = hasSelection && !heatmapHidden;
     var canvases = document.getElementById('hm-chart-canvases');
-    if (canvases) canvases.style.display = hasSelection ? '' : 'none';
-    item.style.display = hasSelection ? '' : 'none';
+    if (canvases) canvases.style.display = showChart ? '' : 'none';
+    item.style.display = showChart ? '' : 'none';
 
-    if (hasSelection && !wasVisible && !window._chartPanelManuallyMoved) {
+    if (showChart && !wasVisible && !window._chartPanelManuallyMoved) {
       /* Just transitioned to visible AND user hasn't manually moved
          \u2014 position chart panel immediately before the heatmap. */
       var heatmap = document.querySelector('.grid-stack-item[gs-id="hm-heatmap-wrap"]');
@@ -7376,6 +7382,9 @@
     /* Collapse wrapper containers when all their togglable children are hidden,
        otherwise the wrapper's own border/padding renders as an empty box. */
     collapseEmptyWrapper('hm-gave-wrap', ['hm-gave-quadrant', 'hm-gave-charts']);
+    /* The Metrics Chart follows the Metrics Heat Map: re-evaluate it so
+       hiding/showing the heat map closes/reopens its associated chart. */
+    if (typeof updateChartSectionVisibility === 'function') updateChartSectionVisibility();
   }
 
   function collapseEmptyWrapper(wrapId, childIds) {
