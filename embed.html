@@ -13191,27 +13191,48 @@
       .replace(/^-+|-+$/g, '');
   }
 
-  /* Maps a period key to the window's start date, anchored at endIso.
+  /* Maps a period key to the window's actual MEASUREMENT start date.
+
+     Period returns are computed by the backend from a Friday-resampled
+     weekly series (build.py compute_returns): m3 = the close 13 weekly
+     rows back, y1 = 52 back, etc. The resampled index is uniformly
+     spaced consecutive Fridays (resample('W-FRI').last().ffill()), and
+     as_of is the last grid date — so the date of the close k steps back
+     is EXACTLY endIso - 7k days. This is grid arithmetic on the real
+     data index, not a calendar approximation (e.g. '1M' = 4 weekly
+     steps = 28 days, NOT one calendar month).
+
+     YTD matches the backend's anchor: the first Friday at-or-after
+     Jan 1 of the as-of year.
+
      Accepts both key styles used across panels: 'm3'/'y1'/'w1' (most
      panels) and '3M'/'1Y'/'1W' (sector chart labels). Returns ISO
      'YYYY-MM-DD' or null for unknown keys. */
+  var _PERIOD_WEEK_STEPS = {
+    w1: 1, m1: 4, m3: 13, m6: 26, y1: 52, y3: 156, y5: 260, y10: 520,
+    '1w': 1, '1m': 4, '3m': 13, '6m': 26, '1y': 52, '3y': 156, '5y': 260, '10y': 520
+  };
   function _periodStartIso(periodKey, endIso) {
     if (!periodKey || !endIso) return null;
     var k = String(periodKey).toLowerCase();
     var end = new Date(endIso + 'T00:00:00');
     if (isNaN(end.getTime())) return null;
-    if (k === 'ytd') return endIso.slice(0, 4) + '-01-01';
-    var m = k.match(/^([wmy])(\d+)$/) || k.match(/^(\d+)([wmy])$/);
-    if (!m) return null;
-    var firstIsUnit = isNaN(parseInt(m[1], 10));
-    var unit = firstIsUnit ? m[1] : m[2];
-    var n = parseInt(firstIsUnit ? m[2] : m[1], 10);
+    function iso(d) {
+      function pad(x) { return (x < 10 ? '0' : '') + x; }
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    }
+    if (k === 'ytd') {
+      /* First Friday at-or-after Jan 1 (backend: first weekly
+         observation >= year start). getDay(): Friday = 5. */
+      var jan1 = new Date(end.getFullYear(), 0, 1);
+      jan1.setDate(jan1.getDate() + ((5 - jan1.getDay() + 7) % 7));
+      return iso(jan1);
+    }
+    var steps = _PERIOD_WEEK_STEPS[k];
+    if (!steps) return null;
     var d = new Date(end.getTime());
-    if (unit === 'w')      d.setDate(d.getDate() - 7 * n);
-    else if (unit === 'm') d.setMonth(d.getMonth() - n);
-    else if (unit === 'y') d.setFullYear(d.getFullYear() - n);
-    function pad(x) { return (x < 10 ? '0' : '') + x; }
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    d.setDate(d.getDate() - 7 * steps);
+    return iso(d);
   }
 
   /* Footer date stamp, per panel. Panels whose whole visual is ONE
