@@ -13191,6 +13191,70 @@
       .replace(/^-+|-+$/g, '');
   }
 
+  /* Maps a period key to the window's start date, anchored at endIso.
+     Accepts both key styles used across panels: 'm3'/'y1'/'w1' (most
+     panels) and '3M'/'1Y'/'1W' (sector chart labels). Returns ISO
+     'YYYY-MM-DD' or null for unknown keys. */
+  function _periodStartIso(periodKey, endIso) {
+    if (!periodKey || !endIso) return null;
+    var k = String(periodKey).toLowerCase();
+    var end = new Date(endIso + 'T00:00:00');
+    if (isNaN(end.getTime())) return null;
+    if (k === 'ytd') return endIso.slice(0, 4) + '-01-01';
+    var m = k.match(/^([wmy])(\d+)$/) || k.match(/^(\d+)([wmy])$/);
+    if (!m) return null;
+    var firstIsUnit = isNaN(parseInt(m[1], 10));
+    var unit = firstIsUnit ? m[1] : m[2];
+    var n = parseInt(firstIsUnit ? m[2] : m[1], 10);
+    var d = new Date(end.getTime());
+    if (unit === 'w')      d.setDate(d.getDate() - 7 * n);
+    else if (unit === 'm') d.setMonth(d.getMonth() - n);
+    else if (unit === 'y') d.setFullYear(d.getFullYear() - n);
+    function pad(x) { return (x < 10 ? '0' : '') + x; }
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  /* Footer date stamp, per panel. Panels whose whole visual is ONE
+     selected window (period pills) stamp that window as a
+     'start - end' range. The metrics heat map / metrics chart stamp
+     the actual first-to-last weekly column dates. Multi-window tables
+     (commodities, currencies: 1D/1W/1M/YTD shown at once, each column
+     self-labeled) and point-in-time panels (regime classifiers,
+     economy, calendar) stamp the single as-of date. */
+  function _exportDateStamp(panelId) {
+    var endIso = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
+      ? cachedData.as_of : null;
+    if (!endIso) return '';
+    var startIso = null;
+    if (panelId === 'hm-heatmap-wrap' || panelId === 'hm-chart-section') {
+      /* Visible weekly columns carry their own exact dates. */
+      try {
+        var dts = cachedData.sections[0].rows[0].dates;
+        if (dts && dts.length) startIso = dts[0];
+      } catch (e) {}
+    } else {
+      /* Single-window panels: read the live period state var. */
+      var periodByPanel = {
+        'hm-indexes':         function () { return idxPeriod; },
+        'hm-sector-chart':    function () { return sectorPeriod; },
+        'hm-stylefactor':     function () { return sbPeriod; },
+        'hm-factors':         function () { return fPeriod; },
+        'hm-fixed-income':    function () { return fiPeriod; },
+        'hm-global-indexes':  function () { return giPeriod; },
+        'hm-country-etfs':    function () { return cePeriod; },
+        'hm-commodity-perf':  function () { return cpPeriod; },
+        'hm-currency-matrix': function () { return cmPeriod; },
+        'hm-theme-treemap':   function () { return treemapPeriod; },
+      };
+      var getPeriod = periodByPanel[panelId];
+      if (getPeriod) {
+        try { startIso = _periodStartIso(getPeriod(), endIso); } catch (e) {}
+      }
+    }
+    if (startIso) return toMmDdYyyy(startIso) + ' - ' + toMmDdYyyy(endIso);
+    return toMmDdYyyy(endIso);
+  }
+
   /* Composite the captured panel image with a footer strip below.
      The whole canvas is panel-bg (no outer dashboard-bg ring).
      Layout = padding around the panel image + a footer with URL +
@@ -13272,8 +13336,9 @@
            ASCII-only strings keep the canvas render safe under any
            charset interpretation (the embed is a WordPress fragment
            with no <meta charset>). */
-        var dataDate = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
-          ? toMmDdYyyy(cachedData.as_of) : '';
+        var dataDate = _exportDateStamp(
+          (item && item.getAttribute) ? (item.getAttribute('gs-id') || '') : ''
+        );
         var srcUrl = 'stablebread.com/macro';
         /* Only the leading word is bold; the colon and the rest are
            regular weight. Source line at 10px, Data line at 8px. */
