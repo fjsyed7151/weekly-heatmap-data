@@ -2550,7 +2550,7 @@
     padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     position: relative;
     overflow: hidden;
     min-width: 0;
@@ -2581,7 +2581,7 @@
     .hm-app .hm-idx-card:last-child { border-bottom: none; }
   }
   .hm-app .hm-idx-label {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-brown);
@@ -2969,6 +2969,11 @@
   .hm-app .hm-indexes-section > .hm-gold-header {
     margin-bottom: 0;
     border-radius: 0;
+    /* Title "Index Snapshot" at 12px (period pills keep their own 10px).
+       Horizontal padding 12px so the title's left edge lines up with
+       the cards below (which use 12px padding). */
+    font-size: 12px;
+    padding: 6px 12px;
   }
   /* Period pills inside the indexes gold header. Visual styling matches
      the factors panel pills (10px Karla, white outline, fill on active)
