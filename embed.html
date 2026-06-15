@@ -696,7 +696,6 @@
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-brown);
   }
   .hm-app .hm-col-btn {
@@ -1949,7 +1948,6 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
     color: var(--hm-muted);
   }
   .hm-app .hm-gave-state {
@@ -1983,7 +1981,6 @@
     font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-muted);
     padding: 4px 2px;
   }
@@ -2013,7 +2010,6 @@
     font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-muted);
     padding: 2px 4px 0;
   }
@@ -2074,7 +2070,6 @@
     font-weight: 800;
     opacity: 0.55;
     margin-right: 5px;
-    letter-spacing: 0.4px;
   }
   .hm-app .hm-gave-qname.active > .hm-gave-qnum { opacity: 1; }
   /* Position marker: a single gold dot with a pulsing outer ring so the
@@ -2130,7 +2125,6 @@
     color: var(--hm-white);
     font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.6px;
     text-transform: uppercase;
     padding: 2px 6px;
     border-radius: 3px;
@@ -2169,7 +2163,6 @@
     display: inline-block;
     font-size: 9.5px;
     font-weight: 800;
-    letter-spacing: 0.3px;
     padding: 1px 6px;
     border-radius: 3px;
     margin-right: 6px;
@@ -2206,7 +2199,6 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
     color: var(--hm-muted);
     margin-bottom: 4px;
   }
@@ -2293,7 +2285,6 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
     color: var(--hm-muted);
   }
   .hm-app .hm-mc-state {
@@ -2324,7 +2315,6 @@
     font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-muted);
     padding: 4px 2px;
   }
@@ -2350,7 +2340,6 @@
     font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-muted);
     padding: 2px 4px 0;
   }
@@ -2384,7 +2373,6 @@
     font-weight: 600;
     color: var(--hm-muted);
     text-transform: uppercase;
-    letter-spacing: 0.4px;
     flex: 0 0 auto;
     align-self: center;
     margin-right: 8px;
@@ -2469,7 +2457,6 @@
     font-weight: 800;
     opacity: 0.55;
     margin-right: 5px;
-    letter-spacing: 0.4px;
   }
   .hm-app .hm-mc-qname.active > .hm-mc-qnum { opacity: 1; }
   /* Active quadrant's LONG/SHORT trade list rendered below the plane, full
@@ -2493,7 +2480,6 @@
     display: inline-block;
     font-size: 9.5px;
     font-weight: 800;
-    letter-spacing: 0.3px;
     padding: 1px 6px;
     border-radius: 3px;
     margin-right: 6px;
@@ -2561,10 +2547,10 @@
     border: none;
     border-right: 1px solid var(--hm-border);
     border-radius: 0;
-    padding: 12px 16px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     position: relative;
     overflow: hidden;
     min-width: 0;
@@ -2595,15 +2581,23 @@
     .hm-app .hm-idx-card:last-child { border-bottom: none; }
   }
   .hm-app .hm-idx-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-brown);
   }
-  /* Stack price + change vertically instead of side-by-side: the change
-     string (e.g. "+123.45 (+0.98%)") used to wrap awkwardly next to the
-     big price when the card narrowed. Stacked = always stable layout. */
-  .hm-app .hm-idx-row {
+  /* Two-column top row: left = name + price (stacked), right = change +
+     %change (stacked, right-aligned). Top-aligned so name lines up with
+     the absolute change. Splitting abs / % onto separate lines keeps
+     each line short, so wide 10Y index-point moves never overflow the
+     card. Works the same in the 4-across and 2x2 views. */
+  .hm-app .hm-idx-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .hm-app .hm-idx-id {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -2614,22 +2608,30 @@
     font-size: 16px;
     font-weight: 700;
     color: var(--hm-dark);
-    line-height: 1.2;
+    line-height: 1;
     font-variant-numeric: tabular-nums;
   }
-  .hm-app .hm-idx-change {
+  .hm-app .hm-idx-move {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .hm-app .hm-idx-change-abs,
+  .hm-app .hm-idx-change-pct {
     font-size: 12px;
     font-weight: 600;
-    text-align: left;
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    line-height: 1.2;
   }
-  .hm-app .hm-idx-change.up { color: var(--hm-green); }
-  .hm-app .hm-idx-change.down { color: var(--hm-red); }
+  .hm-app .hm-idx-move.up { color: var(--hm-green); }
+  .hm-app .hm-idx-move.down { color: var(--hm-red); }
   .hm-app .hm-idx-spark {
     height: 48px;
     width: 100%;
-    margin-top: 4px;
     position: relative;
   }
   .hm-app .hm-idx-spark canvas { display: block; width: 100% !important; height: 100% !important; }
@@ -2934,7 +2936,6 @@
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-    letter-spacing: 0.4px;
   }
   .hm-app .hm-gold-header .hm-gold-state {
     font-weight: 500;
@@ -2945,7 +2946,6 @@
   .hm-app .hm-gold-header .hm-gold-state b {
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
     margin-left: 4px;
   }
   /* When the gold header sits inside a padded card (.hm-gave-wrap, .hm-mc),
@@ -2993,7 +2993,6 @@
     height: 22px;
     display: inline-flex;
     align-items: center;
-    letter-spacing: 0.3px;
     text-transform: none;
   }
   .hm-app .hm-indexes-period-btn.active {
@@ -3048,7 +3047,6 @@
     font-size: 10px;
     color: var(--hm-brown);
     text-transform: uppercase;
-    letter-spacing: 0.3px;
     margin-bottom: 3px;
   }
   .hm-app .hm-idx-tooltip-body {
@@ -3171,7 +3169,6 @@
     font-weight: 600;
     color: var(--hm-muted, #8a7e62);
     text-transform: uppercase;
-    letter-spacing: 0.3px;
     opacity: 0.85;
   }
   .hm-app .hm-cal-prev-val {
@@ -3240,7 +3237,6 @@
     font-weight: 700;
     font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
     padding: 8px 12px;
     border-top: 1px solid var(--hm-border);
     /* 2px under the subhead band \u2014 emphasizes section break vs. the 1px
@@ -3696,7 +3692,6 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-gold);
     background: var(--hm-bg-warm);
     padding: 6px 12px;
@@ -3772,7 +3767,6 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-gold);
     background: var(--hm-bg-warm);
     padding: 6px 12px;
@@ -3868,7 +3862,6 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-gold);
     background: var(--hm-bg-warm);
     padding: 6px 12px;
@@ -3937,7 +3930,6 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-gold);
     background: var(--hm-bg-warm);
     padding: 6px 12px;
@@ -4006,7 +3998,6 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-gold);
     background: var(--hm-bg-warm);
     padding: 6px 12px;
@@ -4059,7 +4050,6 @@
     display: inline-block;
     font-size: 8.5px;
     font-weight: 700;
-    letter-spacing: 0.4px;
     text-transform: uppercase;
     color: var(--hm-muted);
     border: 1px solid var(--hm-border);
@@ -4107,7 +4097,6 @@
     text-transform: uppercase;
     color: var(--hm-brown);
     font-size: 10px;
-    letter-spacing: 0.4px;
   }
   .hm-app .hm-majors-country {
     display: inline-flex;
@@ -4154,7 +4143,6 @@
        12px cell style and read bigger than the column headers. */
     font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
   }
   .hm-app .hm-cm-table th:last-child,
   .hm-app .hm-cm-table td:last-child { border-right: none; }
@@ -4168,7 +4156,6 @@
     text-transform: uppercase;
     color: var(--hm-brown);
     font-size: 10px;
-    letter-spacing: 0.4px;
     text-align: center;
   }
   .hm-app .hm-cm-diag {
@@ -4256,7 +4243,6 @@
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-brown);
-    letter-spacing: 0.4px;
     padding: 0 2px;
   }
   .hm-app .hm-treemap-blocks {
@@ -4427,7 +4413,6 @@
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
     color: var(--hm-gold);
   }
   .hm-app .hm-customize-reset {
@@ -4446,7 +4431,6 @@
     font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-muted);
     margin: 8px 0 4px;
   }
@@ -4530,7 +4514,6 @@
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
     color: var(--hm-gold);
   }
   .hm-app .hm-brand-reset {
@@ -4554,7 +4537,6 @@
     font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--hm-muted);
     margin-bottom: 6px;
   }
@@ -4816,7 +4798,6 @@
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
     color: var(--hm-gold);
     margin-bottom: 6px;
   }
@@ -5230,7 +5211,6 @@
     font-family: 'Karla', sans-serif;
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--hm-brown, #513C0C);
     margin-bottom: 8px;
@@ -5305,7 +5285,6 @@
   .hm-app .hm-export-modal-title {
     font-size: 15px;
     font-weight: 700;
-    letter-spacing: 0.02em;
     color: var(--hm-white);
   }
   .hm-app .hm-export-modal-close {
@@ -5354,7 +5333,6 @@
   .hm-app .hm-export-filename-label {
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--hm-muted);
     white-space: nowrap;
@@ -5548,7 +5526,6 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
     color: var(--hm-brown);
     margin-bottom: 6px;
     padding: 0 2px;
@@ -8740,11 +8717,15 @@
       sparkWrap.appendChild(canvas);
 
       card.innerHTML =
-        '<div class="hm-idx-label">' + idx.name + '</div>' +
-        '<div class="hm-idx-row">' +
-          '<span class="hm-idx-close">' + currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>' +
-          '<span class="hm-idx-change ' + cls + '">' + sign + periodChange.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-          ' (' + sign + periodChangePct.toFixed(2) + '%)</span>' +
+        '<div class="hm-idx-top">' +
+          '<div class="hm-idx-id">' +
+            '<div class="hm-idx-label">' + idx.name + '</div>' +
+            '<span class="hm-idx-close">' + currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>' +
+          '</div>' +
+          '<div class="hm-idx-move ' + cls + '">' +
+            '<span class="hm-idx-change-abs">' + sign + periodChange.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>' +
+            '<span class="hm-idx-change-pct">' + sign + periodChangePct.toFixed(2) + '%</span>' +
+          '</div>' +
         '</div>';
       card.appendChild(sparkWrap);
       grid.appendChild(card);
