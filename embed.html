@@ -13273,14 +13273,26 @@
     return iso(d);
   }
 
-  /* Footer date stamp, per panel. Panels whose whole visual is ONE
-     selected window (period pills) stamp that window as a
-     'start - end' range. The metrics heat map / metrics chart stamp
-     the actual first-to-last weekly column dates. Multi-window tables
-     (commodities, currencies: 1D/1W/1M/YTD shown at once, each column
-     self-labeled) and point-in-time panels (regime classifiers,
-     economy, calendar) stamp the single as-of date. */
+  /* Footer / info-popup date stamp, per panel. Everything here is anchored
+     to the latest weekly market close (cachedData.as_of):
+       - Period panels (pills) stamp that window as a 'start - end' range.
+       - Metrics heat map / chart stamp the actual first-to-last weekly
+         column dates.
+       - Multi-window tables (commodities, currencies: 1D/1W/1M/YTD shown
+         at once, each column self-labeled) and point-in-time MARKET panels
+         (regime classifiers, built from market ratios as of the close)
+         stamp the single as-of close date.
+     EXCLUDED (return ''): panels whose displayed values are NOT anchored to
+     the market close, where a single as_of would overstate freshness. Both
+     already surface their real, granular dates inline:
+       - Economy: each indicator carries its own release month (the data
+         spans ~Jan-Jun here), shown in parentheses on every card; the
+         popup says so explicitly. One global date would contradict that.
+       - Calendar: a forward schedule of upcoming releases, each row dated,
+         with the window end in the header subtitle. A market-close
+         "Data:" date doesn't describe a forward schedule. */
   function _exportDateStamp(panelId) {
+    if (panelId === 'hm-economy' || panelId === 'hm-calendar') return '';
     var endIso = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
       ? cachedData.as_of : null;
     if (!endIso) return '';
