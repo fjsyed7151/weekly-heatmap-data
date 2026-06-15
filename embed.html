@@ -1819,6 +1819,23 @@
   }
   .hm-app .hm-panel-info-popup .hm-color-good { color: var(--hm-green); font-weight: 700; }
   .hm-app .hm-panel-info-popup .hm-color-bad { color: var(--hm-red); font-weight: 700; }
+  /* Data-window stamp at the foot of every panel info popup. Mirrors the
+     export footer's "Data: <window>" line EXACTLY: same _exportDateStamp
+     source, same MM/DD/YYYY format, same bold-leading-word + muted look,
+     same hairline divider above it. So the live info box and the exported
+     image can never disagree. Period panels show the measurement window
+     (start - end, end = the as-of/freshness); point-in-time and
+     multi-window panels show the single as-of date. The color matches the
+     export footer's text exactly (#5a5042 light / #c9c1b3 dark). */
+  .hm-app .hm-panel-info-popup .hm-info-datastamp {
+    margin: 8px 0 0 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--hm-border);
+    font-size: 10px;
+    line-height: 1.4;
+    color: #5a5042;
+  }
+  .hm-app.dark .hm-panel-info-popup .hm-info-datastamp { color: #c9c1b3; }
 
   /* Currencies table \u2014 shares all styling with commodities */
   .hm-app .hm-fx-wrap {
@@ -13130,6 +13147,10 @@
     var entry = window.PANEL_INFO_HTML && window.PANEL_INFO_HTML[id];
     if (!entry) return;
     var html = (typeof entry === 'function') ? entry() : String(entry);
+    /* Append the data-window stamp to EVERY panel popup from one place, so
+       it's formatted and styled identically across all info boxes and
+       always matches that panel's export footer. */
+    html += _dataStampInfoHtml(id);
 
     var popup = document.createElement('div');
     popup.className = 'hm-panel-info-popup';
@@ -13291,6 +13312,18 @@
     }
     if (startIso) return toMmDdYyyy(startIso) + ' - ' + toMmDdYyyy(endIso);
     return toMmDdYyyy(endIso);
+  }
+
+  /* HTML version of the export footer's "Data:" line, for the panel info
+     popups. Reuses the exact same _exportDateStamp source so the live info
+     box and the exported image always show the identical window/as-of for
+     a given panel and period. Returns '' (nothing appended) when data
+     hasn't loaded yet, so the popup just shows its normal copy. */
+  function _dataStampInfoHtml(panelId) {
+    var stamp = '';
+    try { stamp = _exportDateStamp(panelId); } catch (e) {}
+    if (!stamp) return '';
+    return '<p class="hm-info-datastamp"><b>Data</b>: ' + stamp + '</p>';
   }
 
   /* Composite the captured panel image with a footer strip below.
