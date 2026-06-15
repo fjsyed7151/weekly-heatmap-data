@@ -73,7 +73,16 @@
   .hm-app {
     font-family: 'Karla', -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 14px;
-    line-height: 1.55;
+    /* App-wide line-height system: base is 1 because the vast majority of
+       dashboard text is single-line and should never carry leading (labels,
+       values, table cells, pills, headers). The two exceptions set their own
+       line-height explicitly:
+         - paragraph copy that wraps (info popups, the About / customize /
+           brand panels, hover tooltips) -> 1.5
+         - main header sections that can wrap to 2 lines -> 1.2
+       So changing this base to 1 tightened all the single-line UI without
+       touching prose, which keeps its explicit 1.5. */
+    line-height: 1;
     color: var(--hm-dark);
     /* Solid bg only \u2014 measurable grid lives on .grid-stack so it aligns
        exactly with the 12-column geometry and the cell row height. */
@@ -1507,7 +1516,7 @@
     border-radius: var(--hm-r);
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     font-size: 12px;
-    line-height: 1.55;
+    line-height: 1.5;
     color: var(--hm-dark);
     pointer-events: none;
     opacity: 0;
@@ -1802,7 +1811,9 @@
     z-index: 9999;
     box-shadow: 0 6px 18px rgba(0,0,0,0.18);
     font-size: 10px;
-    line-height: 1;
+    /* Paragraph copy -> 1.5 (per the app-wide line-height rule). The
+       single-line data stamp inside sets its own line-height: 1. */
+    line-height: 1.5;
     color: var(--hm-dark);
     font-weight: 500;
   }
@@ -2631,10 +2642,10 @@
   }
   .hm-app .hm-idx-change-abs,
   .hm-app .hm-idx-change-pct {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    line-height: 1.2;
+    line-height: 1;
   }
   .hm-app .hm-idx-move.up { color: var(--hm-green); }
   .hm-app .hm-idx-move.down { color: var(--hm-red); }
@@ -3087,7 +3098,7 @@
     font-size: 10px;
     color: var(--hm-brown);
     text-transform: uppercase;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
   }
   .hm-app .hm-idx-tooltip-body {
     font-weight: 600;
@@ -4440,7 +4451,7 @@
     z-index: 100;
     box-shadow: 0 6px 24px rgba(0,0,0,0.15);
     font-size: 12px;
-    line-height: 1.55;
+    line-height: 1.5;
     color: var(--hm-dark);
   }
   .hm-app.dark .hm-customize-panel {
@@ -4541,7 +4552,7 @@
     z-index: 100;
     box-shadow: 0 6px 24px rgba(0,0,0,0.15);
     font-size: 12px;
-    line-height: 1.55;
+    line-height: 1.5;
     color: var(--hm-dark);
   }
   .hm-app.dark .hm-brand-panel {
@@ -4832,7 +4843,7 @@
     z-index: 100;
     box-shadow: 0 6px 24px rgba(0,0,0,0.15);
     font-size: 12px;
-    line-height: 1.55;
+    line-height: 1.5;
     color: #2d2d2d;
   }
   .hm-app.dark .hm-info-panel {
