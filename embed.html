@@ -1392,13 +1392,16 @@
   .hm-app .hm-table thead th {
     font-weight: 700;
     font-size: 12px;
-    /* Override the shared th/td rule so the gold header band reads at the
-       same height as .hm-factors-header (8px vertical padding, normal
-       line-height). The line-height: 1 in the shared rule keeps data cells
-       tight but makes the thead look squashed compared to other panels'
-       gold bars \u2014 this rule restores parity. */
-    padding: 8px 12px;
-    line-height: 1.2;
+    /* Match the universal gold-ribbon height (34px) so this table's gold
+       header bar reads at the same height as every other panel's band
+       (.hm-gold-header / .hm-factors-header / etc., all 6px vertical padding
+       + 34px min-height). min-height doesn't apply to table cells, so use
+       height (a minimum for table-cell boxes) + vertical-align:middle to
+       center the title; line-height:1 stays consistent with the rest. */
+    padding: 6px 12px;
+    height: 34px;
+    vertical-align: middle;
+    line-height: 1;
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
@@ -2653,7 +2656,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 8px 12px;
+    padding: 6px 12px;
     border-radius: 0;
     display: flex;
     align-items: center;
@@ -2940,6 +2943,25 @@
     gap: 8px;
     flex-wrap: wrap;
   }
+  /* Consistent gold-ribbon height across ALL panels. Headers that carry
+     period pills / toolbars (Index Snapshot, the ranking panels, etc.)
+     are ~34px tall: a 22px control row + 6px top/bottom padding. Text-only
+     headers (Macro Regime, Upcoming Releases) would otherwise collapse to
+     just the 12px title + padding and read as compressed next to them. This
+     floor reserves the same 34px so every ribbon matches; align-items:center
+     vertically centers the title. Controls that wrap to a second row in a
+     narrow column grow the band past this floor, which is intentional. All
+     these headers already compute box-sizing:border-box, so the floor
+     includes padding (no width side effects on the 100cqw sticky bands). */
+  .hm-app .hm-gold-header,
+  .hm-app .hm-factors-header,
+  .hm-app .hm-sector-header,
+  .hm-app .hm-sf-header,
+  .hm-app .hm-cal-header,
+  .hm-app .hm-econ-header,
+  .hm-app .hm-treemap-header {
+    min-height: 34px;
+  }
   .hm-app .hm-gold-header .hm-gold-state {
     font-weight: 500;
     text-transform: none;
@@ -3200,7 +3222,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 8px 12px;
+    padding: 6px 12px;
     border-radius: 0;
     display: flex;
     justify-content: space-between;
@@ -3410,7 +3432,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 8px 12px;
+    padding: 6px 12px;
     border-radius: 0;
     display: flex;
     justify-content: space-between;
@@ -3599,7 +3621,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 8px 12px;
+    padding: 6px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -4200,7 +4222,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 8px 12px;
+    padding: 6px 12px;
     border-radius: 0;
     display: flex;
     justify-content: space-between;
