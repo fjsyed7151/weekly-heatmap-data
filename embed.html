@@ -2712,7 +2712,7 @@
     background: var(--hm-panel);
     border: 0;
     border-radius: 0;
-    padding: 16px;
+    padding: 12px;
     overflow-x: auto;
   }
   .hm-app .hm-sector-canvas-wrap {
@@ -2930,7 +2930,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 6px 16px;
+    padding: 6px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -3485,7 +3485,9 @@
   .hm-app .hm-factors-card {
     background: var(--hm-panel);
     border: 0;
-    border-radius: var(--hm-r);
+    /* Square — the panel card is square; the bottom corners were
+       rounding (top was already forced square for the gold band). */
+    border-radius: 0;
     overflow: hidden;
     /* width: max-content + min-width: 100% \u2014 when the inner table is
        wider than the panel cell, the card extends with the table so its
@@ -3591,7 +3593,7 @@
     text-transform: uppercase;
     color: var(--hm-white);
     background: var(--hm-gold);
-    padding: 8px 16px;
+    padding: 8px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
