@@ -3069,29 +3069,10 @@
     z-index: 10000;
     opacity: 0;
     transition: opacity 80ms;
-    /* Anchor bottom-center to the data point, then nudge up by 10px so
-       the caret has room to sit between tooltip and the line. */
-    transform: translate(-50%, calc(-100% - 10px));
+    /* Anchor bottom-center to the data point, nudged up 6px so it sits just
+       above the point (no caret arrow). */
+    transform: translate(-50%, calc(-100% - 6px));
     box-shadow: 0 2px 6px rgba(0,0,0,0.18);
-  }
-  /* Caret arrow pointing down from the tooltip to the data point. Two
-     overlapping triangles fake a 1px border on the arrow itself so it
-     matches the tooltip's border. */
-  .hm-app .hm-idx-tooltip::before,
-  .hm-app .hm-idx-tooltip::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    border: 6px solid transparent;
-    transform: translateX(-50%);
-  }
-  .hm-app .hm-idx-tooltip::before {
-    bottom: -7px;
-    border-top-color: var(--hm-border);
-  }
-  .hm-app .hm-idx-tooltip::after {
-    bottom: -6px;
-    border-top-color: var(--hm-panel);
   }
   .hm-app .hm-idx-tooltip-title {
     font-weight: 700;
@@ -8670,14 +8651,9 @@
 
     window.PANEL_INFO_HTML['hm-indexes'] = function () {
       return (
-        '<p><b>Headline benchmarks at a glance.</b> Major equity indexes plus key ' +
-          'cross-asset gauges, each as a card with its level, period change, and a ' +
-          'sparkline.</p>' +
-        '<p><b>Period pills</b>: Set the lookback for every card at once, 1W through ' +
-          '10Y. The change figure and the sparkline both reflect the selected window, ' +
-          'not just the last day.</p>' +
-        '<p><b>Sparkline</b>: Daily closes for windows of 6M or less, weekly closes ' +
-          'for longer ones. Green is up over the window, red is down.</p>'
+        '<p>The four major U.S. stock indexes: the S&amp;P 500, Nasdaq, Dow, and ' +
+          'Russell 2000. Each card shows the index level, its change over the period ' +
+          'you pick, and a sparkline of that move.</p>'
       );
     };
     var idxItem = document.querySelector('.grid-stack-item[gs-id="hm-indexes"]');
