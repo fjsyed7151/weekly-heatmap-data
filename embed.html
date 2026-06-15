@@ -13495,6 +13495,13 @@
     }
     modal.hidden = false;
     modal.setAttribute('aria-hidden', 'false');
+    /* Offset the modal below the WordPress admin bar (logged-in admins
+       only). The admin bar is fixed at the viewport top with a higher
+       z-index than the modal, so without this it overlaps the modal's
+       "Export Chart" topbar. getAdminBarOffset() returns 0 when no bar
+       (logged-out visitors), so the modal fills the viewport normally. */
+    var barOffset = (typeof getAdminBarOffset === 'function') ? getAdminBarOffset() : 0;
+    modal.style.top = barOffset + 'px';
     /* Lock body scroll so the dashboard underneath doesn't move
        when the user scrolls the modal preview. */
     document.body.style.overflow = 'hidden';
