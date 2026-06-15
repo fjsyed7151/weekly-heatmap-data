@@ -2581,7 +2581,7 @@
     .hm-app .hm-idx-card:last-child { border-bottom: none; }
   }
   .hm-app .hm-idx-label {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-brown);
@@ -8724,7 +8724,7 @@
           '</div>' +
           '<div class="hm-idx-move ' + cls + '">' +
             '<span class="hm-idx-change-abs">' + sign + periodChange.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>' +
-            '<span class="hm-idx-change-pct">' + sign + periodChangePct.toFixed(2) + '%</span>' +
+            '<span class="hm-idx-change-pct">(' + sign + periodChangePct.toFixed(2) + '%)</span>' +
           '</div>' +
         '</div>';
       card.appendChild(sparkWrap);
