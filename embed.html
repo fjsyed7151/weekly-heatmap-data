@@ -1084,7 +1084,7 @@
      gold header band sits flush at the top edge. */
   .hm-app .hm-chart-section {
     border: 0;
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     background: var(--hm-panel);
     padding: 16px;
     overflow: hidden;
@@ -1382,8 +1382,8 @@
   /* Round the last-row corner cells so the table fills the .hm-scroll
      wrapper's rounded bottom corners cleanly (otherwise the cell's
      square background painted past the rounded border = visible cut). */
-  .hm-app .hm-table tbody tr:last-child td:first-child { border-bottom-left-radius: var(--hm-r); }
-  .hm-app .hm-table tbody tr:last-child td:last-child { border-bottom-right-radius: var(--hm-r); }
+  .hm-app .hm-table tbody tr:last-child td:first-child { border-bottom-left-radius: 0; }
+  .hm-app .hm-table tbody tr:last-child td:last-child { border-bottom-right-radius: 0; }
 
   /* Thead = the gold "metric header" row. position: sticky pins the row
      to the top of the cell's scroll container while user scrolls the
@@ -1910,7 +1910,7 @@
     border: 0;
     /* Top corners square so the gold header band reads as a flat title bar.
        Bottom corners stay rounded to keep card chrome consistent w/ others. */
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     padding: 16px;
     /* overflow:hidden so the gold-header inserted at the top (with neg
        margins to escape the padding) follows the card's border-radius. */
@@ -2263,7 +2263,7 @@
     background: var(--hm-panel);
     border: 0;
     /* Top corners square \u2014 gold header reads as a flat title bar. */
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     padding: 16px;
     /* overflow:hidden so the gold-header inserted at the top follows the
        card's border-radius rather than poking past it. */
@@ -2526,7 +2526,7 @@
     gap: 0;
     background: var(--hm-panel);
     border: 0;
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     margin-bottom: 0; /* Gridstack handles spacing */
     overflow: hidden;  /* clip child content to the rounded bottom corners */
   }
@@ -2711,7 +2711,7 @@
   .hm-app .hm-sector-body {
     background: var(--hm-panel);
     border: 0;
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     padding: 16px;
     overflow-x: auto;
   }
@@ -2925,7 +2925,7 @@
      the header optionally carries a "Current: X" subtitle (in lighter
      weight) for state-bearing panels like the regime quadrants. */
   .hm-app .hm-gold-header {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-white);
@@ -3065,7 +3065,7 @@
   }
   .hm-app .hm-cal-section > .hm-cal-body { flex: 1 1 auto; min-height: 0; }
   .hm-app .hm-cal-header {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-white);
@@ -3087,7 +3087,7 @@
   .hm-app .hm-cal-body {
     background: var(--hm-panel);
     border: 0;
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     /* No max-height / overflow: the grid item auto-fits to content via
        resizeToContent + maxH cap, so the calendar list grows naturally
        to its full row count instead of being scrolled inside a 280px box. */
@@ -3219,7 +3219,7 @@
   .hm-app .hm-econ-body {
     background: var(--hm-panel);
     border: 0;
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     overflow: hidden;
     /* Container query root: grids below query their own width (i.e. the
        sidebar's content width) and drop column count when tight, instead of
@@ -3437,7 +3437,7 @@
   .hm-app .hm-sf-body {
     background: var(--hm-panel);
     border: 0;
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     padding: 12px;
   }
   /* Style box 3x3 grid */
@@ -4223,7 +4223,7 @@
   .hm-app .hm-treemap-body {
     background: var(--hm-panel);
     border: 0;
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     padding: 12px;
   }
   /* Treemap grid is a flex-wrap row of category groups. At wider panel
@@ -4341,7 +4341,7 @@
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
     border-top: none;
-    border-radius: 0 0 var(--hm-r) var(--hm-r);
+    border-radius: 0;
     font-variant-numeric: tabular-nums;
   }
   .hm-app .hm-perf-table th {
