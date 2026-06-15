@@ -2543,12 +2543,23 @@
        horizontally; the navbar-fix CSS keeps the navbar pinned
        during that scroll. */
     grid-template-columns: repeat(4, max(140px, 25cqw));
-    gap: 0;
-    background: var(--hm-panel);
+    /* Dividers are drawn as the grid's own background showing through 1px
+       gaps between cards — NOT per-card borders. A per-card border-right
+       (the old approach) is tied to one card's box, and html-to-image fails
+       to rasterize it cleanly all the way to the card's fractional bottom
+       edge, so the vertical divider died in the bottom-padding region of the
+       export PNG (the footer never met the line). The gap-background is a
+       single continuous strip that spans the full grid height/width by
+       construction, so it can't stop short, and backgrounds always
+       rasterize. It also yields the right dividers in every layout
+       automatically: 4-col -> 3 verticals; 2-col -> a 2x2 cross; 1-col ->
+       horizontals between stacked cards. */
+    gap: 1px;
+    background: var(--hm-border);
     border: 0;
     border-radius: 0;
     margin-bottom: 0; /* Gridstack handles spacing */
-    overflow: hidden;  /* clip child content to the rounded bottom corners */
+    overflow: hidden;
   }
   /* Responsive cell-width breakpoints (@container queries, not
      @media \u2014 they trigger on the cell's width, not the viewport).
@@ -2563,9 +2574,11 @@
     .hm-app .hm-indexes { grid-template-columns: 1fr; }
   }
   .hm-app .hm-idx-card {
-    background: transparent;
+    /* Opaque panel-color tile; the 1px grid gaps between tiles reveal the
+       grid's border-color background as the dividers. No per-card borders
+       (see .hm-indexes) \u2014 those didn't survive the export rasterizer. */
+    background: var(--hm-panel);
     border: none;
-    border-right: 1px solid var(--hm-border);
     border-radius: 0;
     padding: 12px;
     display: flex;
@@ -2574,31 +2587,6 @@
     position: relative;
     overflow: hidden;
     min-width: 0;
-  }
-  .hm-app .hm-idx-card:last-child { border-right: none; }
-  /* In 2-col mode (\u2264720cqw cell width): right-borders become
-     vertical dividers between the 2 cells per row, plus a
-     horizontal divider between rows. */
-  @container (max-width: 720px) {
-    .hm-app .hm-idx-card { border-right: 1px solid var(--hm-border); }
-    .hm-app .hm-idx-card:nth-child(2n) { border-right: none; }
-    .hm-app .hm-idx-card:nth-child(-n+2) { border-bottom: 1px solid var(--hm-border); }
-  }
-  /* In 1-col stack (\u2264480cqw): each card is full-width, dividers
-     become horizontal between stacked rows. */
-  @container (max-width: 480px) {
-    .hm-app .hm-idx-card,
-    .hm-app .hm-idx-card:nth-child(2n) { border-right: none; }
-    .hm-app .hm-idx-card { border-bottom: 1px solid var(--hm-border); }
-    .hm-app .hm-idx-card:last-child { border-bottom: none; }
-  }
-  @media (max-width: 600px) {
-    .hm-app .hm-idx-card,
-    .hm-app .hm-idx-card:nth-child(2n) {
-      border-right: none;
-      border-bottom: 1px solid var(--hm-border);
-    }
-    .hm-app .hm-idx-card:last-child { border-bottom: none; }
   }
   .hm-app .hm-idx-label {
     font-size: 10px;
@@ -13322,7 +13310,10 @@
         try { startIso = _periodStartIso(getPeriod(), endIso); } catch (e) {}
       }
     }
-    if (startIso) return toMmDdYyyy(startIso) + ' - ' + toMmDdYyyy(endIso);
+    /* En dash (\u2013), not a plain hyphen: the en dash is the typographic
+       standard for ranges ("from X to Y"). Written as a \uXXXX escape so it
+       survives the charset-less WordPress fragment and the export canvas. */
+    if (startIso) return toMmDdYyyy(startIso) + ' \u2013 ' + toMmDdYyyy(endIso);
     return toMmDdYyyy(endIso);
   }
 
