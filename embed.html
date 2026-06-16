@@ -3091,6 +3091,12 @@
     flex-direction: column;
   }
   .hm-app .hm-cal-section > .hm-cal-body { flex: 1 1 auto; min-height: 0; }
+  /* Container-query root: calendar rows reflow off the PANEL's own width
+     (not the viewport), so a narrow column / small screen stacks the row
+     into two lines instead of crushing the event-name column. */
+  .hm-app .grid-stack-item[gs-id="hm-calendar"] > .grid-stack-item-content {
+    container-type: inline-size;
+  }
   .hm-app .hm-cal-header {
     font-size: 12px;
     line-height: 1;
@@ -3135,6 +3141,7 @@
   .hm-app .hm-cal-row {
     display: grid;
     grid-template-columns: 12px 1fr auto 76px;
+    grid-template-areas: "dot name when prev";
     align-items: center;
     padding: 6px 12px;
     border-bottom: 1px solid var(--hm-border);
@@ -3142,6 +3149,25 @@
     text-decoration: none;
     color: inherit;
     transition: background 80ms;
+  }
+  .hm-app .hm-cal-row > .hm-cal-dot  { grid-area: dot; }
+  .hm-app .hm-cal-row > .hm-cal-name { grid-area: name; }
+  .hm-app .hm-cal-row > .hm-cal-when { grid-area: when; }
+  .hm-app .hm-cal-row > .hm-cal-prev { grid-area: prev; }
+  /* Narrow panel (small screens / a tight column): stack each row into two
+     lines so the event name gets the full width and never crushes into a
+     ragged 2-3 line block. Line 1 = dot + name; line 2 = date/time (left)
+     and prev value (right), indented under the name. */
+  @container (max-width: 340px) {
+    .hm-app .hm-cal-row {
+      grid-template-columns: 12px 1fr auto;
+      grid-template-areas:
+        "dot name name"
+        ".   when prev";
+      align-items: start;
+      row-gap: 4px;
+    }
+    .hm-app .hm-cal-row > .hm-cal-when { align-items: flex-start; }
   }
   .hm-app a.hm-cal-row:hover { background: var(--hm-bg-warm); cursor: pointer; }
   .hm-app a.hm-cal-row .hm-cal-name {
