@@ -5620,6 +5620,9 @@
     border-radius: var(--hm-r);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
     padding: 8px;
+    /* Cap height + scroll for panels with many categories (treemap = 14). */
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
   }
   .hm-app.dark .hm-panel-filter-popup {
     background: var(--hm-bg-warm);
@@ -5683,7 +5686,8 @@
   .hm-app .hm-commod-tbl tr[data-cat][data-cat-hidden="true"],
   .hm-app .hm-fx-tbl tr[data-cat][data-cat-hidden="true"],
   .hm-app #hm-table tr[data-cat][data-cat-hidden="true"],
-  .hm-app .hm-econ-body [data-cat][data-cat-hidden="true"] {
+  .hm-app .hm-econ-body [data-cat][data-cat-hidden="true"],
+  .hm-app .hm-treemap-grid [data-cat][data-cat-hidden="true"] {
     display: none !important;
   }
 </style>
@@ -12212,7 +12216,9 @@
           '<li><b>vs SPY</b>: Its return minus the S&amp;P 500, which separates ' +
             'thematic out/under-performance from broad-market drift.</li>' +
         '</ul>' +
-        '<p>Hover a tile for a short description of the theme.</p>'
+        '<p>Hover a tile for a short description of the theme.</p>' +
+        '<p>The funnel icon in the panel header shows or hides theme ' +
+          'categories. Your selection is saved and carries into image exports.</p>'
       );
     };
     var tmItem = document.querySelector('.grid-stack-item[gs-id="hm-theme-treemap"]');
@@ -12327,6 +12333,7 @@
     catOrder.forEach(function (cat) {
       var group = document.createElement('div');
       group.className = 'hm-treemap-group';
+      group.setAttribute('data-cat', cat);
       var catLabel = document.createElement('div');
       catLabel.className = 'hm-treemap-cat';
       catLabel.textContent = cat;
@@ -12416,6 +12423,20 @@
       });
     }
     updateTreemapColors();
+
+    /* Cache categories so the filter installer (which runs AFTER
+       initGridStack builds the panel-header chrome) can read them, and
+       try installing now so re-renders pick it up once chrome exists. */
+    window._hmTreemapGroups = catOrder.map(function (c) { return { name: c }; });
+    var tmFilterItem = document.querySelector('.grid-stack-item[gs-id="hm-theme-treemap"]');
+    if (tmFilterItem && typeof _installCategoryFilter === 'function') {
+      _installCategoryFilter({
+        panelItem: tmFilterItem,
+        groups: window._hmTreemapGroups,
+        storageKey: 'hm-treemap-cats-v1',
+        tableSelector: '#hm-theme-treemap',
+      });
+    }
   }
 
   function renderPerfGrid(containerId, title, data, columns) {
@@ -14540,6 +14561,18 @@
             groups: groups,
             storageKey: 'hm-metrics-cats-v1',
             tableSelector: '#hm-table',
+          });
+        }
+      });
+      safeRender('treemapFilter', function () {
+        var tmItem = document.querySelector('.grid-stack-item[gs-id="hm-theme-treemap"]');
+        var groups = window._hmTreemapGroups;
+        if (tmItem && groups && typeof _installCategoryFilter === 'function') {
+          _installCategoryFilter({
+            panelItem: tmItem,
+            groups: groups,
+            storageKey: 'hm-treemap-cats-v1',
+            tableSelector: '#hm-theme-treemap',
           });
         }
       });
