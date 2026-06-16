@@ -1815,7 +1815,7 @@
        single-line data stamp inside sets its own line-height: 1. */
     line-height: 1.5;
     color: var(--hm-dark);
-    font-weight: 500;
+    font-weight: 400;
   }
   .hm-app.dark .hm-panel-info-popup {
     box-shadow: 0 6px 18px rgba(0,0,0,0.5);
@@ -3140,12 +3140,12 @@
      Widest prev content is ~55px, so 76px never clips. */
   .hm-app .hm-cal-row {
     display: grid;
-    grid-template-columns: 12px 1fr auto 76px;
+    grid-template-columns: 8px 1fr auto 76px;
     grid-template-areas: "dot name when prev";
     align-items: center;
     padding: 6px 12px;
     border-bottom: 1px solid var(--hm-border);
-    gap: 10px;
+    gap: 8px;
     text-decoration: none;
     color: inherit;
     transition: background 80ms;
@@ -3160,7 +3160,7 @@
      and prev value (right), indented under the name. */
   @container (max-width: 340px) {
     .hm-app .hm-cal-row {
-      grid-template-columns: 12px 1fr auto;
+      grid-template-columns: 8px 1fr auto;
       grid-template-areas:
         "dot name name"
         ".   when prev";
@@ -3180,7 +3180,8 @@
   .hm-app a.hm-cal-row:hover .hm-cal-name { color: var(--hm-gold); }
   .hm-app .hm-cal-row:last-child { border-bottom: none; }
   /* Impact dot \u2014 color is set inline per row from the `impact` field.
-     8px circle inside a 12px column for vertical alignment. */
+     8px circle filling an 8px grid column; the 8px row gap sets its
+     distance to the event name. */
   .hm-app .hm-cal-dot {
     width: 8px;
     height: 8px;
