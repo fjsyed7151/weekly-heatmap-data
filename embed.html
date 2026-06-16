@@ -3177,7 +3177,13 @@
       align-items: start;
       row-gap: 4px;
     }
-    .hm-app .hm-cal-row > .hm-cal-when { align-items: flex-start; }
+    /* On the stacked layout the date+time sit on one line (time beside the
+       date) rather than stacked, so the metadata row stays a single line. */
+    .hm-app .hm-cal-row > .hm-cal-when {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 6px;
+    }
     /* Center the dot with the title line (the row is start-aligned for the
        stacked metadata row, which would otherwise float the dot too high). */
     .hm-app .hm-cal-row > .hm-cal-dot { align-self: center; }
