@@ -9069,8 +9069,8 @@
           'marker is the current price.</p>' +
         '<p>The funnel icon in the panel header shows or hides categories. ' +
           'Your selection is saved and carries into image exports.</p>' +
-        '<p>A dash means a value was hidden because it reflected a futures contract ' +
-          'roll (the switch to a new month\'s contract) rather than a real price move.</p>'
+        '<p>A dash hides a value distorted by a futures contract roll to a new ' +
+          'month, not a real price move.</p>'
       );
     };
     /* Tag the gridstack item so the info button becomes visible. */
@@ -9316,8 +9316,7 @@
     var asOf = data.as_of || '\u2014';
     window.PANEL_INFO_HTML['hm-currencies'] = function () {
       return (
-        '<p><b>Spot FX rates</b>, grouped by region. Daily close, as of ' +
-          toMmDdYyyy(asOf) + '.</p>' +
+        '<p>Spot FX rates, grouped by region. Daily close.</p>' +
         '<p><b>Pair convention</b>: USD-base pairs (USD/X) read "X per dollar," so ' +
           'rate up means a strong dollar. Inverse pairs like EUR/USD read the ' +
           'opposite way: rate up means a weak dollar.</p>' +
