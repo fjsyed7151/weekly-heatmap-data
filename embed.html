@@ -10346,16 +10346,13 @@
 
     window.PANEL_INFO_HTML['hm-stylefactor'] = function () {
       return (
-        '<p><b>iShares S&amp;P 3x3 style box.</b> Rows are market cap (Large / Mid / ' +
-          'Small), columns are style (Value / Core / Growth).</p>' +
         '<p>The Abs / vs SPY toggle sets the return basis:</p>' +
         '<ul>' +
           '<li><b>Abs</b>: The cell ETF\'s own return over the period.</li>' +
           '<li><b>vs SPY</b>: Its return minus the S&amp;P 500, so size and style ' +
             'leadership shows net of the broad market.</li>' +
         '</ul>' +
-        '<p><b>Period pills</b>: Set the lookback (1W to 10Y) for all nine cells at ' +
-          'once. Green is positive over the period, red is negative.</p>'
+        '<p>Green is positive over the period, red is negative.</p>'
       );
     };
     var sfItem = document.querySelector('.grid-stack-item[gs-id="hm-stylefactor"]');
