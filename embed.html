@@ -12206,16 +12206,14 @@
     window.PANEL_INFO_HTML['hm-theme-treemap'] = function () {
       return (
         '<p>Thematic and industry ETFs as a treemap, one tile per theme: Semis, ' +
-          'biotech, clean energy, defense, and so on. Tile color is the return over ' +
-          'the period you select. Green is positive, red is negative, and brighter ' +
-          'means a bigger move.</p>' +
+          'biotech, clean energy, defense, and so on.</p>' +
         '<p>The Abs / vs SPY toggle sets the return basis:</p>' +
         '<ul>' +
           '<li><b>Abs</b>: The theme ETF\'s own return.</li>' +
           '<li><b>vs SPY</b>: Its return minus the S&amp;P 500, which separates ' +
             'thematic out/under-performance from broad-market drift.</li>' +
         '</ul>' +
-        '<p>Hover a tile for the theme name and exact figure.</p>'
+        '<p>Hover a tile for a short description of the theme.</p>'
       );
     };
     var tmItem = document.querySelector('.grid-stack-item[gs-id="hm-theme-treemap"]');
