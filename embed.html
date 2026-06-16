@@ -8139,7 +8139,7 @@
      plane (same pattern as the Growth \u00d7 Policy panel). */
   var GAVE_CELLS = [
     { key: 'infl_bust', row: 0, col: 0, name: 'Inflationary Bust',
-      hint: 'Stagflation \u2014 the investor\u2019s nightmare. Very few assets work.',
+      hint: 'Stagflation: the investor\u2019s nightmare. Very few assets work.',
       longs:  ['Cash (safest currency)', 'Energy'],
       shorts: ['Financial assets', 'Long-duration bonds', 'Long-duration equities'] },
     { key: 'infl_boom', row: 0, col: 1, name: 'Inflationary Boom',
@@ -11521,10 +11521,10 @@
     BZ:   "Brent Crude front-month ICE futures. Global benchmark crude; pricing reference for two-thirds of world oil.",
     CL:   "WTI Crude front-month NYMEX futures. North American benchmark crude; sensitive to US inventories + pipeline flows.",
     NG:   "Natural Gas Henry Hub front-month NYMEX futures. US gas benchmark; highly seasonal (winter heating, summer power).",
-    COAL: "Range Global Coal ETF. Equity basket of global coal mining companies (proxy for the commodity \u2014 no clean thermal-coal futures on Yahoo). Launched 2022, so 3Y/5Y/10Y may show dashes.",
+    COAL: "Range Global Coal ETF. Equity basket of global coal mining companies (proxy for the commodity, no clean thermal-coal futures on Yahoo). Launched 2022, so 3Y/5Y/10Y may show dashes.",
     GOLD: "Gold front-month COMEX futures. Safe-haven metal; real-yield- and dollar-sensitive.",
     SI:   "Silver front-month COMEX futures. Industrial + monetary metal; higher beta to gold moves.",
-    HG:   "Copper front-month COMEX futures. 'Dr. Copper' \u2014 cyclical bellwether for global industrial demand.",
+    HG:   "Copper front-month COMEX futures. 'Dr. Copper', cyclical bellwether for global industrial demand.",
     ALI:  "Aluminum LME futures. Construction + packaging + transportation metal.",
     SLX:  "VanEck Steel ETF. Steel producers + iron-ore miners proxy (no clean steel futures on Yahoo).",
     GF:   "Feeder Cattle front-month CME futures. Young cattle being fattened for slaughter; feed-cost sensitive.",
@@ -11623,7 +11623,7 @@
         var basisLabel = f.basis ? (BASIS_LABEL[f.basis] || f.basis) : '';
         var basisTip = f.basis === 'futures'     ? 'Front-month futures contract.' :
                        f.basis === 'futures_etf' ? 'ETF holding rolled futures contracts.' :
-                       f.basis === 'equities'    ? 'Equity basket of producers/miners \u2014 proxy for the underlying commodity.' :
+                       f.basis === 'equities'    ? 'Equity basket of producers/miners, a proxy for the underlying commodity.' :
                        f.basis === 'spot'        ? 'Physical spot price.' : '';
         var tip = COMMODITY_PERF_TIPS[f.ticker];
         var tipBody = (basisTip ? basisTip + ' ' : '') + (tip || '');
