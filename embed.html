@@ -12205,16 +12205,17 @@
 
     window.PANEL_INFO_HTML['hm-theme-treemap'] = function () {
       return (
-        '<p><b>Thematic and industry ETF performance as a treemap.</b> Each tile is ' +
-          'a theme: semis, biotech, clean energy, defense, and so on. Tile color is ' +
-          'the return over the selected period. Green positive, red negative, ' +
-          'brighter means a bigger move.</p>' +
-        '<p><b>Period pills</b>: Set the window, 1W to 10Y. The <b>Abs / vs SPY</b> ' +
-          'toggle switches between absolute return and return relative to the ' +
-          'S&amp;P 500, which separates thematic out/under-performance from ' +
-          'broad-market drift.</p>' +
-        '<p>Hover a tile for the theme name and exact figure. A quick read of which ' +
-          'corners of the market are hot or cold right now.</p>'
+        '<p>Thematic and industry ETFs as a treemap, one tile per theme: Semis, ' +
+          'biotech, clean energy, defense, and so on. Tile color is the return over ' +
+          'the period you select. Green is positive, red is negative, and brighter ' +
+          'means a bigger move.</p>' +
+        '<p>The Abs / vs SPY toggle sets the return basis:</p>' +
+        '<ul>' +
+          '<li><b>Abs</b>: The theme ETF\'s own return.</li>' +
+          '<li><b>vs SPY</b>: Its return minus the S&amp;P 500, which separates ' +
+            'thematic out/under-performance from broad-market drift.</li>' +
+        '</ul>' +
+        '<p>Hover a tile for the theme name and exact figure.</p>'
       );
     };
     var tmItem = document.querySelector('.grid-stack-item[gs-id="hm-theme-treemap"]');
