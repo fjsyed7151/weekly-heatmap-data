@@ -3900,7 +3900,7 @@
      duration in muted (rate-risk hint). Cursor:help signals there's a
      tooltip with the freshness date. */
   .hm-app .hm-fi-yd {
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 600;
     white-space: nowrap;
     cursor: help;
@@ -10524,15 +10524,16 @@
 
     window.PANEL_INFO_HTML['hm-factors'] = function () {
       return (
-        '<p><b>Equity factor performance.</b> Ranks the major investable factors ' +
-          '(Momentum, Quality, Low Volatility, Value, Size, High Dividend, Growth) ' +
-          'by return over the selected period, each via its representative ETF.</p>' +
-        '<p><b>Period pills</b>: Set the lookback, 1W to 10Y. The <b>Abs / vs SPY</b> ' +
-          'toggle switches between absolute return and return relative to the ' +
-          'S&amp;P 500. Relative mode shows which factors are beating the benchmark ' +
-          'rather than just rising with it.</p>' +
-        '<p>Rows sort best to worst and color green or red by sign, so factor ' +
-          'leadership reads immediately.</p>'
+        '<p>Equity factor returns over the period you select, each tracked by its ' +
+          'representative ETF: Momentum, Quality, Low Volatility, Value, Size, ' +
+          'High Dividend, and Growth.</p>' +
+        '<p>The Abs / vs SPY toggle sets the return basis:</p>' +
+        '<ul>' +
+          '<li><b>Abs</b>: The factor ETF\'s own return.</li>' +
+          '<li><b>vs SPY</b>: Its return minus the S&amp;P 500, so you see which ' +
+            'factors are beating the market, not just rising with it.</li>' +
+        '</ul>' +
+        '<p>Green is positive over the period, red is negative. Rows sort high to low.</p>'
       );
     };
     var facItem = document.querySelector('.grid-stack-item[gs-id="hm-factors"]');
@@ -10796,13 +10797,13 @@
     window.PANEL_INFO_HTML['hm-fixed-income'] = function () {
       var asOf = fi.ref_as_of ? (' (yield/duration as of ' + fi.ref_as_of + ')') : '';
       return (
-        '<p><b>Bond ETF performance, sliced by exposure</b>: International credit, ' +
-          'US high-grade, US high-yield, US gov/agencies, and the US Treasury ' +
-          'duration ladder.</p>' +
-        '<p><b>Yield / Duration</b>: The pills next to each ticker show 30-day SEC ' +
+        '<p>Bond ETF returns over the period you select, grouped by exposure: ' +
+          'International credit, US high-grade, US high-yield, US government, and ' +
+          'the Treasury duration ladder.</p>' +
+        '<p>Next to each ticker, the yield / duration cluster shows the 30-day SEC ' +
           'yield and effective duration' + asOf + '.</p>' +
-        '<p>Green is a positive return over the selected period, red is negative. ' +
-          'Each column sorts by the active period\'s return.</p>'
+        '<p>Green is positive over the period, red is negative. Each column sorts ' +
+          'high to low.</p>'
       );
     };
     var fiItem = document.querySelector('.grid-stack-item[gs-id="hm-fixed-income"]');
@@ -11030,13 +11031,16 @@
     /* Register the panel info popup. */
     window.PANEL_INFO_HTML['hm-global-indexes'] = function () {
       return (
-        '<p><b>Regional equity indexes</b>, grouped Americas, Europe, and Asia / ' +
-          'Pacific. Local currency by default.</p>' +
-        '<p><b>Local / USD toggle</b>: Flip to USD to see what a US investor would ' +
-          'actually have earned after the FX move. This matters most for ' +
-          'FX-distorted EM markets like Turkey.</p>' +
-        '<p>Green is a positive return over the selected period, red is negative. ' +
-          'Each region sorts by the active period\'s return.</p>'
+        '<p>Regional equity index returns over the period you select, grouped ' +
+          'Americas, Europe, and Asia / Pacific. Local currency by default.</p>' +
+        '<p>The Local / USD toggle sets the currency:</p>' +
+        '<ul>' +
+          '<li><b>Local</b>: The index\'s home-currency return.</li>' +
+          '<li><b>USD</b>: What a US investor earned after the FX move, which ' +
+            'matters most in FX-distorted EM markets like Turkey.</li>' +
+        '</ul>' +
+        '<p>Green is positive over the period, red is negative. Each region sorts ' +
+          'high to low.</p>'
       );
     };
     var giItem = document.querySelector('.grid-stack-item[gs-id="hm-global-indexes"]');
@@ -11278,13 +11282,17 @@
     /* Register the panel info popup. */
     window.PANEL_INFO_HTML['hm-country-etfs'] = function () {
       return (
-        '<p><b>Single-country ETF performance, regional split</b>: Americas, Europe, ' +
-          'Asia / Pacific, Mideast / Africa. Mostly iShares MSCI funds plus a few ' +
-          'Global X / VanEck alternatives where iShares isn\'t available.</p>' +
-        '<p><b>USD / Local toggle</b>: ETFs trade in USD. Flip to Local to back ' +
-          'out the FX move and see the underlying local-market return.</p>' +
-        '<p>Green is a positive return over the selected period, red is negative. ' +
-          'Each region sorts by the active period\'s return.</p>'
+        '<p>Single-country ETF returns over the period you select, grouped ' +
+          'Americas, Europe, Asia / Pacific, and Mideast / Africa. Mostly iShares ' +
+          'MSCI funds.</p>' +
+        '<p>The USD / Local toggle sets the currency:</p>' +
+        '<ul>' +
+          '<li><b>USD</b>: The return as the US-listed ETF trades.</li>' +
+          '<li><b>Local</b>: The underlying local-market return, with the FX move ' +
+            'backed out.</li>' +
+        '</ul>' +
+        '<p>Green is positive over the period, red is negative. Each region sorts ' +
+          'high to low.</p>'
       );
     };
     var ceItem = document.querySelector('.grid-stack-item[gs-id="hm-country-etfs"]');
