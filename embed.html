@@ -8670,6 +8670,12 @@
      'm3' (13 weeks) matches what build_indexes used to ship as a fixed
      window \u2014 this keeps initial load visually identical. */
   var idxPeriod = 'm3';
+  /* The ACTUAL first/last dates the index cards plot for the current period
+     (daily series for <=6M, weekly for longer). Captured during render so the
+     export / info-box date stamp shows real reported dates, not as_of - 7*weeks
+     calendar arithmetic (which can land on a non-trading day or miss the daily
+     window's true endpoints). */
+  var idxStampWindow = null;
 
   /* External-tooltip handler for the index sparklines. Renders the
      tooltip as a fixed-position DOM element instead of inside the canvas,
@@ -8709,6 +8715,7 @@
     var container = document.getElementById('hm-indexes');
     if (!container || !data.indexes || !data.indexes.length) return;
     container.innerHTML = '';
+    idxStampWindow = null;  /* recomputed below from the cards' actual dates */
     /* Destroy prior chart instances */
     indexChartInstances.forEach(function (c) { try { c.destroy(); } catch (e) {} });
     indexChartInstances = [];
@@ -8795,6 +8802,16 @@
         } else {
           slicedSpark = idx.sparkline.slice(-weeks);
           slicedDates = (idx.spark_dates || []).slice(-weeks);
+        }
+        /* Record the real plotted window (ISO dates sort lexicographically =
+           chronologically). Widen across cards in case some have less history. */
+        if (slicedDates && slicedDates.length) {
+          var _ws = slicedDates[0], _we = slicedDates[slicedDates.length - 1];
+          if (!idxStampWindow) idxStampWindow = { start: _ws, end: _we };
+          else {
+            if (_ws < idxStampWindow.start) idxStampWindow.start = _ws;
+            if (_we > idxStampWindow.end) idxStampWindow.end = _we;
+          }
         }
         if (slicedSpark && slicedSpark.length >= 2) {
           var startVal = slicedSpark[0];
@@ -13350,7 +13367,14 @@
       ? cachedData.as_of : null;
     if (!endIso) return '';
     var startIso = null;
-    if (panelId === 'hm-heatmap-wrap' || panelId === 'hm-chart-section') {
+    if (panelId === 'hm-indexes' && idxStampWindow && idxStampWindow.start && idxStampWindow.end) {
+      /* Index Snapshot: use the cards' ACTUAL plotted window (captured in
+         renderIndexes from the real spark dates) instead of as_of - 7*weeks
+         arithmetic. The end can lead as_of since the daily series runs a few
+         days past the last complete weekly Friday. */
+      startIso = idxStampWindow.start;
+      endIso = idxStampWindow.end;
+    } else if (panelId === 'hm-heatmap-wrap' || panelId === 'hm-chart-section') {
       /* Visible weekly columns carry their own exact dates. */
       try {
         var dts = cachedData.sections[0].rows[0].dates;
