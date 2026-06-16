@@ -3732,21 +3732,9 @@
     grid-template-columns: 1fr;
     min-width: 0;
   }
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-col,
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-gi-col,
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-ce-col,
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-cp-col,
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-fi-col {
-    border-right: none;
-    border-bottom: 1px solid var(--hm-border);
-  }
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-factors-col:last-child,
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-gi-col:last-child,
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-ce-col:last-child,
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-cp-col:last-child,
-  .hm-app .grid-stack-item.hm-stack-vertical .hm-fi-col:last-child {
-    border-bottom: none;
-  }
+  /* Stacked-mode column dividers are handled by the shared 1px grid
+     gap-background (see the *-body / *-col gap rule below); no per-column
+     border-bottom needed here — that would double up with the gap. */
   /* Vertical mode: pin the card to cell width so the body collapses
      to a single column with ellipsis-truncated names instead of
      growing the card past cell width. Note the navbar-fix CSS above
@@ -4071,6 +4059,32 @@
     flex-direction: column;
   }
   .hm-app .hm-cp-col:last-child { border-right: none; }
+  /* Column dividers for ALL ranking panels (Factors, Fixed Income, Global
+     Indexes, Country ETFs, Commodity Perf) come from a 1px grid gap that
+     reveals the grid's border-color background — NOT per-column borders.
+     html-to-image drops a 1px border at a fractional column boundary in the
+     export, so some columns lost their divider (FI's US HY / US Tsy, GI's
+     Asia/Pacific). A gap-background is a single continuous strip that always
+     rasterizes, and it works in BOTH orientations automatically: horizontal
+     grid -> vertical gaps between columns; stacked (1fr) grid -> horizontal
+     gaps between rows. Placed after every panel's *-col rule so it wins the
+     cascade. */
+  .hm-app .hm-factors-body,
+  .hm-app .hm-fi-body,
+  .hm-app .hm-gi-body,
+  .hm-app .hm-ce-body,
+  .hm-app .hm-cp-body {
+    gap: 1px;
+    background: var(--hm-border);
+  }
+  .hm-app .hm-factors-col,
+  .hm-app .hm-fi-col,
+  .hm-app .hm-gi-col,
+  .hm-app .hm-ce-col,
+  .hm-app .hm-cp-col {
+    border-right: none;
+    background: var(--hm-panel);
+  }
   .hm-app .hm-cp-col-header {
     font-size: 10px;
     font-weight: 700;
@@ -10795,13 +10809,12 @@
 
     /* Register the panel info popup. */
     window.PANEL_INFO_HTML['hm-fixed-income'] = function () {
-      var asOf = fi.ref_as_of ? (' (yield/duration as of ' + fi.ref_as_of + ')') : '';
       return (
         '<p>Bond ETF returns over the period you select, grouped by exposure: ' +
           'International credit, US high-grade, US high-yield, US government, and ' +
           'the Treasury duration ladder.</p>' +
         '<p>Next to each ticker, the yield / duration cluster shows the 30-day SEC ' +
-          'yield and effective duration' + asOf + '.</p>' +
+          'yield and effective duration.</p>' +
         '<p>Green is positive over the period, red is negative. Each column sorts ' +
           'high to low.</p>'
       );
