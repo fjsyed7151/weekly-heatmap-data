@@ -9246,17 +9246,27 @@
       popup.appendChild(label);
     });
 
+    /* The panel's .grid-stack-item-content is a stacking context (z-index:1),
+       so this absolutely-positioned popup paints UNDER sibling panels that come
+       later in the DOM - most visible when the panel is short because the user
+       hid categories. Lift this panel above its siblings (z-index:100, still
+       below the z-index:1000 topbar) while the popup is open; reset on close. */
+    var panelContent = panelItem.querySelector('.grid-stack-item-content') || panelItem;
+    function setFilterOpen(open) {
+      popup.hidden = !open;
+      panelContent.style.zIndex = open ? '100' : '';
+    }
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
-      popup.hidden = !popup.hidden;
+      setFilterOpen(popup.hidden);
     });
     document.addEventListener('click', function (e) {
       if (popup.hidden) return;
       if (popup.contains(e.target) || btn.contains(e.target)) return;
-      popup.hidden = true;
+      setFilterOpen(false);
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !popup.hidden) popup.hidden = true;
+      if (e.key === 'Escape' && !popup.hidden) setFilterOpen(false);
     });
 
     filterWrap.appendChild(btn);
@@ -10331,14 +10341,17 @@
 
     window.PANEL_INFO_HTML['hm-stylefactor'] = function () {
       return (
-        '<p><b>Morningstar-style 3x3 equity style box.</b> Rows are market cap ' +
-          '(Large / Mid / Small), columns are style (Value / Blend / Growth). Each ' +
-          'cell is the return of the matching ETF over the selected period.</p>' +
+        '<p><b>iShares S&amp;P 3x3 style box.</b> Rows are market cap (Large / Mid / ' +
+          'Small), columns are style (Value / Core / Growth). Each cell is one iShares ' +
+          'S&amp;P ETF: S&amp;P 500 for large caps, S&amp;P 400 for mid, S&amp;P 600 for small.</p>' +
+        '<p>The Abs / vs SPY toggle sets the return basis:</p>' +
+        '<ul>' +
+          '<li><b>Abs</b>: The cell ETF\'s own return over the period.</li>' +
+          '<li><b>vs SPY</b>: Its return minus the S&amp;P 500, so size and style ' +
+            'leadership shows net of the broad market.</li>' +
+        '</ul>' +
         '<p><b>Period pills</b>: Set the lookback (1W to 10Y) for all nine cells at ' +
-          'once. Cell color scales with return, green positive and red negative, so ' +
-          'leadership like large growth vs small value reads at a glance.</p>' +
-        '<p>Use it to read the market\'s current size/style tilt and how it rotates ' +
-          'as you step through timeframes.</p>'
+          'once. Green is positive over the period, red is negative.</p>'
       );
     };
     var sfItem = document.querySelector('.grid-stack-item[gs-id="hm-stylefactor"]');
@@ -10352,7 +10365,7 @@
     sbPanel.className = 'hm-stylefactor-panel';
     var sbHdr = document.createElement('div');
     sbHdr.className = 'hm-sf-header';
-    sbHdr.innerHTML = '<span>Size vs. Value</span>';
+    sbHdr.innerHTML = '<span>Style Box</span>';
     var sbBtns = document.createElement('div');
     sbBtns.className = 'hm-sf-period-btns';
 
@@ -10430,14 +10443,14 @@
        specific, no em-dashes. Each describes what the ETF tracks. */
     var STYLE_TIPS = {
       '0,0': {title: 'Large Value (IVE)', body: 'iShares S&P 500 Value ETF. Large-cap US stocks the index classifies as value: lower price multiples, higher dividend yields, and slower earnings, sales, and book-value growth than the broader large-cap universe.'},
-      '0,1': {title: 'Large Core (SPY)',  body: 'SPDR S&P 500 ETF. The full S&P 500, a mix of growth and value large caps. Shown here as the blend reference for the row.'},
+      '0,1': {title: 'Large Core (IVV)',  body: 'iShares Core S&P 500 ETF. The full S&P 500, a blend of growth and value large caps. The core reference for the row.'},
       '0,2': {title: 'Large Growth (IVW)', body: 'iShares S&P 500 Growth ETF. Large-cap US stocks the index classifies as growth: higher earnings, sales, and share-price momentum with higher price multiples.'},
       '1,0': {title: 'Mid Value (IJJ)',    body: 'iShares S&P Mid-Cap 400 Value ETF. Mid-cap US stocks (roughly $3.5B to $15B) the index classifies as value on the same low-multiple, slow-growth criteria as its large-cap counterpart.'},
-      '1,1': {title: 'Mid Core (IJH)',     body: 'iShares S&P Mid-Cap 400 ETF. The full mid-cap 400, a blend of growth and value. Shown here as the row\u2019s blend reference.'},
+      '1,1': {title: 'Mid Core (IJH)',     body: 'iShares S&P Mid-Cap 400 ETF. The full mid-cap 400, a blend of growth and value. The core reference for the row.'},
       '1,2': {title: 'Mid Growth (IJK)',   body: 'iShares S&P Mid-Cap 400 Growth ETF. Mid-cap US stocks the index classifies as growth based on sales growth, earnings change to price, and momentum.'},
-      '2,0': {title: 'Small Value (IWN)',  body: 'iShares Russell 2000 Value ETF. Small-cap US stocks (bottom 2000 of the Russell 3000) the index classifies as value using book-to-price and forecasted growth.'},
-      '2,1': {title: 'Small Core (IWM)',   body: 'iShares Russell 2000 ETF. The full Russell 2000, a blend of small-cap growth and value. Shown here as the row\u2019s blend reference.'},
-      '2,2': {title: 'Small Growth (IWO)', body: 'iShares Russell 2000 Growth ETF. Small-cap US stocks the index classifies as growth based on two-year sales growth and forward forecasts.'},
+      '2,0': {title: 'Small Value (IJS)',  body: 'iShares S&P SmallCap 600 Value ETF. Small-cap US stocks the index classifies as value on the same low-multiple, slower-growth criteria as the large- and mid-cap boxes.'},
+      '2,1': {title: 'Small Core (IJR)',   body: 'iShares Core S&P SmallCap 600 ETF. The full S&P SmallCap 600, a blend of small-cap growth and value. The core reference for the row.'},
+      '2,2': {title: 'Small Growth (IJT)', body: 'iShares S&P SmallCap 600 Growth ETF. Small-cap US stocks the index classifies as growth on sales and earnings growth and price momentum.'},
     };
     for (var r = 0; r < 3; r++) {
       var rl = document.createElement('div');
