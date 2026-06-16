@@ -4119,7 +4119,7 @@
      equities. (Steel SLX is producer equities, not spot steel.) */
   .hm-app .hm-cp-row .hm-basis {
     display: inline-block;
-    font-size: 8.5px;
+    font-size: 8px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-muted);
@@ -11492,15 +11492,13 @@
     /* Register the panel info popup. */
     window.PANEL_INFO_HTML['hm-commodity-perf'] = function () {
       return (
-        '<p><b>Commodity performance rankings</b>: Energy, Metals, Agricultural, ' +
-          'Indices (broad-basket ETFs).</p>' +
-        '<p>The pill next to each ticker tells you what drives the row\'s return:<br>' +
-          '<b>FRONT-MONTH</b>: front-month futures contract<br>' +
-          '<b>FUTURES ETF</b>: ETF holding rolled futures<br>' +
-          '<b>EQUITIES</b>: producer/miner equity basket, used where no liquid ' +
-          'futures contract exists.</p>' +
-        '<p>Green is a positive return over the selected period, red is negative. ' +
-          'Each group sorts by the active period\'s return.</p>'
+        '<p>Commodity returns over the period you select, grouped into Energy, ' +
+          'Metals, Agricultural, and Indices.</p>' +
+        '<p>The pill shows what drives each row\'s return:<br>' +
+          '<b>FRONT-MONTH</b>: The nearest futures contract.<br>' +
+          '<b>FUTURES ETF</b>: An ETF that rolls futures.<br>' +
+          '<b>EQUITIES</b>: Producer or miner stocks, used where no liquid futures exist.</p>' +
+        '<p>Green is positive over the period, red is negative. Each group sorts high to low.</p>'
       );
     };
     var cpItem = document.querySelector('.grid-stack-item[gs-id="hm-commodity-perf"]');
