@@ -9062,16 +9062,16 @@
     var asOf = data.as_of || '\u2014';
     window.PANEL_INFO_HTML['hm-commodities'] = function () {
       return (
-        '<p><b>Front-month commodity futures</b>, grouped by sector. Daily close, ' +
+        '<p>Front-month commodity futures, grouped by sector. Daily close, ' +
           'as of ' + toMmDdYyyy(asOf) + '.</p>' +
         '<p><b>1D / 1W / 1M / YTD</b>: Percent change over the trailing day, week, ' +
           'month, and since Jan 1. Green is up, red is down.</p>' +
         '<p><b>52W Range</b>: 52-week low on the left, high on the right. The gold ' +
           'marker is the current price.</p>' +
-        '<p><b>Categories</b>: The funnel icon in the panel header shows or hides ' +
-          'sectors. Your selection is saved and carries into image exports.</p>' +
-        '<p>A dash means the value was suppressed as a contract-rollover ' +
-          'artifact.</p>'
+        '<p>The funnel icon in the panel header shows or hides categories. ' +
+          'Your selection is saved and carries into image exports.</p>' +
+        '<p>A dash means a value was hidden because it reflected a futures contract ' +
+          'roll (the switch to a new month\'s contract) rather than a real price move.</p>'
       );
     };
     /* Tag the gridstack item so the info button becomes visible. */
@@ -9327,9 +9327,8 @@
           'Read direction through the pair convention above.</p>' +
         '<p><b>52W Range</b>: Slider with the 52-week low on the left and high on ' +
           'the right. The gold marker is the current rate.</p>' +
-        '<p><b>Regions</b>: The funnel icon in the panel header shows or hides ' +
-          'Americas, Asia &amp; Oceania, and EMEA. Your selection is saved and ' +
-          'carries into image exports.</p>'
+        '<p>The funnel icon in the panel header shows or hides categories. ' +
+          'Your selection is saved and carries into image exports.</p>'
       );
     };
     var fxItem = document.querySelector('.grid-stack-item[gs-id="hm-currencies"]');
@@ -9530,8 +9529,8 @@
         '<p>Mostly monthly series. The date in parentheses on each card is that ' +
           'series\' own as-of. Hover a card for a definition and a 5-year history ' +
           'chart with recessions shaded.</p>' +
-        '<p><b>Categories</b>: The funnel icon in the panel header shows or hides ' +
-          'groups. Your selection is saved and carries into image exports.</p>'
+        '<p>The funnel icon in the panel header shows or hides categories. ' +
+          'Your selection is saved and carries into image exports.</p>'
       );
     };
     var econItem0 = document.querySelector('.grid-stack-item[gs-id="hm-economy"]');
@@ -12233,8 +12232,8 @@
             'thematic out/under-performance from broad-market drift.</li>' +
         '</ul>' +
         '<p>Hover a tile for a short description of the theme.</p>' +
-        '<p>The funnel icon in the panel header shows or hides theme ' +
-          'categories. Your selection is saved and carries into image exports.</p>'
+        '<p>The funnel icon in the panel header shows or hides categories. ' +
+          'Your selection is saved and carries into image exports.</p>'
       );
     };
     var tmItem = document.querySelector('.grid-stack-item[gs-id="hm-theme-treemap"]');
@@ -12606,8 +12605,9 @@
         '<b>5y Avg / Min / Max</b> give the mean and extremes over that window.</p>' +
       '<p><b>Plot a metric</b>: Tick the checkbox on any row to chart it in the ' +
         'Metrics Chart panel, up to 6 at once. Selections survive reloads.</p>' +
-      '<p><b>Sections</b>: The funnel icon in the panel header shows or hides whole ' +
-        'sections. Hover any metric name for a definition and, where available, a ' +
+      '<p>The funnel icon in the panel header shows or hides categories. ' +
+        'Your selection is saved and carries into image exports.</p>' +
+      '<p>Hover any metric name for a definition and, where available, a ' +
         '5-year history chart.</p>'
     );
   };
