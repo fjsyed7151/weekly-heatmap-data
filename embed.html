@@ -1822,6 +1822,11 @@
   }
   .hm-app .hm-panel-info-popup p { margin: 0 0 4px 0; }
   .hm-app .hm-panel-info-popup p:last-child { margin-bottom: 0; }
+  /* Bulleted lists in panel info popups (e.g. the commodity basis pills). */
+  .hm-app .hm-panel-info-popup ul { margin: 0 0 4px 0; padding-left: 16px; }
+  .hm-app .hm-panel-info-popup li { margin: 0; }
+  .hm-app .hm-panel-info-popup ul:last-child,
+  .hm-app .hm-panel-info-popup li:last-child { margin-bottom: 0; }
   /* Bold terms in panel info popups stay the default text color.
      Gold is reserved for top-level header chrome; gold on every
      bold word read as overdone. */
@@ -11494,10 +11499,12 @@
       return (
         '<p>Commodity returns over the period you select, grouped into Energy, ' +
           'Metals, Agricultural, and Indices.</p>' +
-        '<p>The pill shows what drives each row\'s return:<br>' +
-          '<b>Front-Month</b>: The nearest futures contract.<br>' +
-          '<b>Futures ETF</b>: An ETF that rolls futures.<br>' +
-          '<b>Equities</b>: Producer or miner stocks, used where no liquid futures exist.</p>' +
+        '<p>The pill shows what drives each row\'s return:</p>' +
+        '<ul>' +
+          '<li><b>Front-Month</b>: The nearest futures contract.</li>' +
+          '<li><b>Futures ETF</b>: An ETF that rolls futures.</li>' +
+          '<li><b>Equities</b>: Producer or miner stocks, used where no liquid futures exist.</li>' +
+        '</ul>' +
         '<p>Green is positive over the period, red is negative. Each group sorts high to low.</p>'
       );
     };
@@ -14068,6 +14075,14 @@
           '.hm-fx-tbl tbody tr:not(.hm-fx-cat):not([data-cat-hidden="true"])'
         ).length || 18;
         captureH += Math.max(1, Math.ceil(visRows / 3));
+      } else {
+        /* Non-buffered panels end cleanly (no compounding sub-pixel row
+           stack), so Math.ceil(rectH) just adds up to ~1px of panel-bg
+           between the content and the footer divider — a faint gap (e.g.
+           commodity-perf: 237.3px content -> ceil 238). Round instead so the
+           footer sits flush; any sub-px trim lands in the last row's bottom
+           padding and is invisible. */
+        captureH = Math.round(rectH);
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
       clone.style.setProperty('height', captureH + 'px', 'important');
