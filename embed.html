@@ -10555,9 +10555,9 @@
     IJK:  "iShares S&P Mid-Cap 400 Growth. Mid-caps on the growth side of the S&P 400 cut.",
     IWM:  "iShares Russell 2000. The broad small-cap benchmark. Risk-on / reflation proxy.",
     IWO:  "iShares Russell 2000 Growth. Small-caps with higher P/B and growth expectations. " +
-          "Highest-beta US equity factor \u2014 leads in early-cycle recoveries.",
+          "Highest-beta US equity factor; leads in early-cycle recoveries.",
     IVW:  "iShares S&P 500 Growth. Large-caps scoring high on sales growth, EPS growth, momentum. " +
-          "Mega-cap growth concentration \u2014 overlaps heavily with MAGS.",
+          "Mega-cap growth concentration; overlaps heavily with MAGS.",
   };
 
   function renderFactors(data) {
@@ -10567,12 +10567,12 @@
 
     window.PANEL_INFO_HTML['hm-factors'] = function () {
       return (
-        '<p>Equity factor returns over the period you select, each tracked by its ' +
-          'representative ETF: Momentum, Quality, Low Volatility, Value, Size, ' +
-          'High Dividend, and Growth.</p>' +
+        '<p>Factor and strategy ETFs ranked by return over the period you select, in ' +
+          'three groups: Style factors, Qualitative strategies (spin-offs, buybacks, ' +
+          'IPOs, hedge-fund and private-equity proxies), and a Size vs Value style box.</p>' +
         '<p>The Abs / vs SPY toggle sets the return basis:</p>' +
         '<ul>' +
-          '<li><b>Abs</b>: The factor ETF\'s own return.</li>' +
+          '<li><b>Abs</b>: The ETF\'s own return.</li>' +
           '<li><b>vs SPY</b>: Its return minus the S&amp;P 500, so you see which ' +
             'factors are beating the market, not just rising with it.</li>' +
         '</ul>' +
@@ -10807,7 +10807,6 @@
     EMLC: "VanEck JPM EM Local Currency Bond. Local-currency EM sovereign debt. Higher yield plus direct EM FX exposure.",
     VWOB: "Vanguard EM Government Bond. Alternative USD-denominated EM sovereign basket. Different index than EMB but similar exposure.",
     EMHY: "iShares EM High Yield Bond. Just the below-investment-grade slice of USD EM sovereign + corporate debt.",
-    EMIH: "iShares EM Corp USD IG Bond. Investment-grade EM corporate debt in USD. Higher yield than US IG, lower risk than EMHY.",
     IGSB: "iShares 1-5 Year Investment Grade Corp. Short-duration US IG corporate bonds. Lower rate sensitivity than LQD.",
     IGIB: "iShares 5-10 Year Investment Grade Corp. Intermediate US IG corporate bonds. Core-duration IG bucket.",
     IGLB: "iShares 10+ Year Investment Grade Corp. Long-duration US IG corporate bonds. Maximum spread + duration combo.",
@@ -11273,7 +11272,7 @@
   /* Tooltip copy for each country ETF. Issuer-ticker-scope style so the
      reader knows what they're looking at (iShares MSCI vs Vanguard vs Global X). */
   var COUNTRY_ETF_TIPS = {
-    SPY:  "SPDR S&P 500. US large-cap benchmark \u2014 stands in for 'United States' in regional comparisons.",
+    SPY:  "SPDR S&P 500. US large-cap benchmark; stands in for 'United States' in regional comparisons.",
     EWC:  "iShares MSCI Canada. ~90 Canadian large + mid-caps. Heavy energy + financials weighting.",
     GXG:  "Global X MSCI Colombia. Colombian equity exposure. Small cap of tracked markets; high FX sensitivity.",
     EWW:  "iShares MSCI Mexico. Mexican large + mid-caps. Consumer staples, banks, telecom heavy.",
@@ -11304,7 +11303,7 @@
     EWH:  "iShares MSCI Hong Kong. Hong Kong-listed equities. Real estate + banks heavy (not mainland China exposure).",
     ENZL: "iShares MSCI New Zealand. New Zealand equities. Utilities + healthcare + agribusiness.",
     VNM:  "VanEck Vietnam ETF. Vietnamese equities. Banks + real estate + consumer.",
-    GXC:  "SPDR S&P China. Broad China equity exposure \u2014 both mainland and HK-listed.",
+    GXC:  "SPDR S&P China. Broad China equity exposure, both mainland and HK-listed.",
     EWT:  "iShares MSCI Taiwan. Taiwanese equities. TSMC dominates weight; tech-heavy.",
     EIDO: "iShares MSCI Indonesia. Indonesian equities. Banks + commodities + consumer.",
     EWY:  "iShares MSCI South Korea. South Korean equities. Samsung dominates; tech + autos.",
