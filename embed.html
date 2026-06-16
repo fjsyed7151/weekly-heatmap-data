@@ -1572,11 +1572,11 @@
     background: var(--hm-bg-warm);
     color: var(--hm-gold);
     font-weight: 700;
-    /* 10px matches the commodity/FX table category labels so the gold
-       section headers read at one consistent size across panels. */
-    font-size: 10px;
+    /* 12px matches the other gold section headers (ranking col-headers,
+       commodity / FX category rows, econ subheads) for one consistent size. */
+    font-size: 12px;
     text-transform: uppercase;
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-bottom: 2px solid var(--hm-border);
     border-right: none;
   }
@@ -1727,10 +1727,10 @@
   .hm-app .hm-commod-tbl tr.hm-commod-cat td {
     background: var(--hm-bg-warm) !important;
     color: var(--hm-gold);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-bottom: 2px solid var(--hm-border);
     border-right: none;
   }
@@ -1920,10 +1920,10 @@
   .hm-app .hm-fx-tbl tr.hm-fx-cat td {
     background: var(--hm-bg-warm) !important;
     color: var(--hm-gold);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-bottom: 2px solid var(--hm-border);
     border-right: none;
   }
@@ -10346,8 +10346,7 @@
     window.PANEL_INFO_HTML['hm-stylefactor'] = function () {
       return (
         '<p><b>iShares S&amp;P 3x3 style box.</b> Rows are market cap (Large / Mid / ' +
-          'Small), columns are style (Value / Core / Growth). Each cell is one iShares ' +
-          'S&amp;P ETF: S&amp;P 500 for large caps, S&amp;P 400 for mid, S&amp;P 600 for small.</p>' +
+          'Small), columns are style (Value / Core / Growth).</p>' +
         '<p>The Abs / vs SPY toggle sets the return basis:</p>' +
         '<ul>' +
           '<li><b>Abs</b>: The cell ETF\'s own return over the period.</li>' +
