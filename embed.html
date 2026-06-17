@@ -9764,7 +9764,13 @@
           caretSize: 6,
           caretPadding: 10,
           displayColors: true,
-          usePointStyle: true,
+          /* Series markers are short FILLED horizontal bars. We avoid
+             usePointStyle:'line' because Chart.js hardcodes that point's
+             stroke to 1px (too thin); a 14x3 filled box reads as a bolder
+             horizontal line. Height controls thickness. */
+          usePointStyle: false,
+          boxWidth: 14,
+          boxHeight: 3,
           bodyFont: { family: 'Karla', size: 12, weight: '500' },
           titleFont: { family: 'Karla', weight: '700', size: 12 },
           callbacks: {
@@ -9772,11 +9778,7 @@
               var v = c.parsed.y;
               if (v === null) return null;
               return c.dataset.label + ': ' + v.toFixed(2) + '%';
-            },
-            /* Tooltip series markers render as a short horizontal line
-               (matching the line chart + export legend) instead of a
-               filled circle. */
-            labelPointStyle: function () { return { pointStyle: 'line', rotation: 0 }; }
+            }
           }
         }
       },
