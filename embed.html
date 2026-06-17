@@ -3717,6 +3717,88 @@
     row-gap: 6px;
   }
   .hm-app .hm-factors-periods { display: flex; gap: 4px; flex-wrap: wrap; row-gap: 4px; }
+
+  /* ---------- S&P 500 Heat Map (full-width Finviz-style treemap) ---------- */
+  .hm-app .hm-fullwidth { width: 100%; margin: 8px 0 0; }
+  .hm-app .hm-fullwidth > .grid-stack-item-content { width: 100%; height: auto; }
+  .hm-app .hm-sp500-card {
+    border: 1px solid var(--hm-border);
+    background: var(--hm-panel);
+    overflow: hidden;
+  }
+  .hm-app .hm-sp500-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: 24px;
+    padding: 0 8px 0 12px;
+    background: var(--hm-gold);
+    color: var(--hm-white);
+  }
+  .hm-app .hm-sp500-title {
+    font-family: 'Karla', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--hm-white);
+  }
+  .hm-app .hm-sp500-controls { display: flex; align-items: center; gap: 8px; }
+  .hm-app .hm-sp500-sub {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--hm-white);
+    opacity: 0.85;
+  }
+  .hm-app .hm-sp500-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--hm-white);
+    cursor: pointer;
+    opacity: 0.85;
+  }
+  .hm-app .hm-sp500-btn:hover { opacity: 1; }
+  .hm-app .hm-sp500-btn svg { width: 14px; height: 14px; display: block; }
+  .hm-app .hm-sp500-svg { display: block; width: 100%; height: auto; background: var(--hm-bg); }
+  .hm-app .hm-sp500-legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px;
+    background: var(--hm-panel);
+    font-family: 'Karla', sans-serif;
+  }
+  .hm-app .hm-sp500-leg-sw {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 8px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-app .hm-sp500-leg-cap {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--hm-muted);
+    margin: 0 4px;
+  }
+  .hm-app .hm-sp500-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--hm-muted);
+    font-size: 12px;
+  }
   .hm-app .hm-factors-period-btn {
     font-family: 'Karla', sans-serif;
     font-size: 10px;
@@ -6037,6 +6119,10 @@
             </div>
           </div>
         </div>
+        <!-- Full-width S&P 500 treemap. Sibling of #hm-cols so it spans the
+             whole dashboard width, outside the 3-column grid. -->
+        <div class="grid-stack-item hm-fullwidth" gs-id="hm-sp500-treemap"><div class="grid-stack-item-content"><div id="hm-sp500-treemap"></div></div></div>
+
         <!-- Hidden legacy node kept so any orphan code that selects
              #hm-grid doesn't error. -->
         <div class="grid-stack" id="hm-grid" hidden></div>
@@ -6248,6 +6334,7 @@
       renderCommodityPerf(cachedData);
       renderCurrencyMatrix(cachedData);
       renderThemeTreemap(cachedData);
+      renderSp500Treemap(cachedData);
       if (chartState.selected.length) renderCharts();
     }
     syncStickyTheme();
@@ -7447,6 +7534,7 @@
     { id: 'hm-country-etfs',    label: 'Country ETF Performance',  group: 'Equities' },
     { id: 'hm-global-indexes',  label: 'Global Equity Indexes',    group: 'Equities' },
     { id: 'hm-theme-treemap',   label: 'Thematic Trends',          group: 'Equities' },
+    { id: 'hm-sp500-treemap',   label: 'S&P 500 Heat Map',         group: 'Equities' },
 
     // Fixed Income
     { id: 'hm-fixed-income',    label: 'Fixed Income Performance', group: 'Fixed Income' },
@@ -10323,6 +10411,191 @@
         fg: lum < 140 ? '#ffffff' : '#2d2d2d'
       };
     };
+  }
+
+  /* ---------- S&P 500 Heat Map (Finviz-style treemap) ---------- */
+  /* Squarified treemap (Bruls / Huizing / van Wijk): packs items into a
+     rect, keeping tiles as square as possible. Each item carries ._a
+     (its target area, pre-scaled to fill the rect); the function mutates
+     each with .x/.y/.w/.h in the rect's coordinate space. */
+  function sp500Worst(row, side) {
+    var sum = 0, mx = 0, mn = Infinity, i;
+    for (i = 0; i < row.length; i++) { var a = row[i]._a; sum += a; if (a > mx) mx = a; if (a < mn) mn = a; }
+    if (sum <= 0) return Infinity;
+    var s2 = sum * sum, sd2 = side * side;
+    return Math.max((sd2 * mx) / s2, s2 / (sd2 * mn));
+  }
+  function sp500LayoutRow(row, r) {
+    var sum = 0, i; for (i = 0; i < row.length; i++) sum += row[i]._a;
+    if (sum <= 0) return;
+    if (r.w < r.h) {                 /* lay along the top (shorter side = width) */
+      var th = sum / r.w, ox = r.x;
+      for (i = 0; i < row.length; i++) {
+        var len = row[i]._a / th;
+        row[i].x = ox; row[i].y = r.y; row[i].w = len; row[i].h = th; ox += len;
+      }
+      r.y += th; r.h -= th;
+    } else {                          /* lay down the left (shorter side = height) */
+      var tw = sum / r.h, oy = r.y;
+      for (i = 0; i < row.length; i++) {
+        var l2 = row[i]._a / tw;
+        row[i].x = r.x; row[i].y = oy; row[i].w = tw; row[i].h = l2; oy += l2;
+      }
+      r.x += tw; r.w -= tw;
+    }
+  }
+  function sp500Squarify(items, rect) {
+    var children = items.slice();   /* assumed sorted desc by ._a */
+    var r = { x: rect.x, y: rect.y, w: rect.w, h: rect.h };
+    var row = [], side = Math.min(r.w, r.h);
+    while (children.length) {
+      var c = children[0];
+      if (row.length === 0 || sp500Worst(row.concat([c]), side) <= sp500Worst(row, side)) {
+        row.push(children.shift());
+      } else {
+        sp500LayoutRow(row, r);
+        side = Math.min(r.w, r.h);
+        row = [];
+      }
+    }
+    if (row.length) sp500LayoutRow(row, r);
+  }
+  /* Same red/green palette as the heat-map cells, but saturated at +-3%
+     (a big daily move) so the treemap reads vividly like Finviz rather
+     than perfCellPaint's washed-out +-10% scale. */
+  function sp500Paint(val, theme) {
+    var p = PALETTE[theme];
+    var end = val >= 0 ? p.green : p.red;
+    var k = Math.min(Math.abs(val) / 3, 1);
+    var rgb = [0, 1, 2].map(function (i) { return Math.round(lerp(p.neutral[i], end[i], k)); });
+    var lum = luminance(rgb[0], rgb[1], rgb[2]);
+    return { bg: 'rgb(' + rgb.join(',') + ')', fg: lum < 140 ? '#ffffff' : '#2d2d2d' };
+  }
+  function sp500Esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  var SP500_VB_W = 1000, SP500_VB_H = 552;   /* ~1.81 aspect, Finviz-like */
+  function renderSp500Treemap(data) {
+    var host = document.getElementById('hm-sp500-treemap');
+    if (!host) return;
+    window.PANEL_INFO_HTML['hm-sp500-treemap'] = function () {
+      return (
+        '<p>Every S&amp;P 500 company as a treemap. Each tile is one stock, ' +
+          'sized by market capitalization and colored by its 1-day total return.</p>' +
+        '<p>Tiles are grouped into the 11 GICS sectors. Green is up, red is down, ' +
+          'with the shade saturating at a 3% move either way.</p>' +
+        '<p>Hover any tile for the company name, sector, and return.</p>'
+      );
+    };
+    var theme = app.classList.contains('dark') ? 'dark' : 'light';
+    var labelFill = theme === 'dark' ? '#c9c1b3' : '#6f6f6f';
+    var rows = (data && data.sp500_map) || [];
+
+    var head =
+      '<div class="hm-sp500-card">' +
+        '<div class="hm-sp500-header">' +
+          '<span class="hm-sp500-title">S&amp;P 500 Heat Map</span>' +
+          '<span class="hm-sp500-controls">' +
+            '<span class="hm-sp500-sub">1-day return &middot; sized by market cap</span>' +
+            '<button class="hm-sp500-btn" type="button" data-sp5="info" aria-label="About this panel" title="About this panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>' +
+            '<button class="hm-sp500-btn" type="button" data-sp5="export" aria-label="Download as image" title="Download as image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>' +
+          '</span>' +
+        '</div>';
+
+    if (!rows.length) {
+      host.innerHTML = head + '<div class="hm-sp500-empty">S&amp;P 500 constituent data is loading or unavailable.</div></div>';
+      _sp500WireButtons(host);
+      return;
+    }
+
+    /* Group by sector; sort sectors + members by market cap descending. */
+    var bySector = {};
+    rows.forEach(function (r) { (bySector[r.s || 'Other'] = bySector[r.s || 'Other'] || []).push(r); });
+    var sectors = Object.keys(bySector).map(function (name) {
+      var items = bySector[name].slice().sort(function (a, b) { return b.c - a.c; });
+      var total = 0; items.forEach(function (it) { total += it.c; });
+      return { name: name, items: items, _v: total };
+    }).sort(function (a, b) { return b._v - a._v; });
+
+    var W = SP500_VB_W, H = SP500_VB_H;
+    var grand = 0; sectors.forEach(function (s) { grand += s._v; });
+    var sScale = (W * H) / grand;
+    sectors.forEach(function (s) { s._a = s._v * sScale; });
+    sp500Squarify(sectors, { x: 0, y: 0, w: W, h: H });
+
+    var GAP = 1.1;    /* gutter between tiles (viewBox units) */
+    var HEAD = 13;    /* sector label strip height (viewBox units) */
+    var tilesSvg = [], labelsSvg = [];
+    sectors.forEach(function (s) {
+      var hasHead = s.h > HEAD * 2.4 && s.w > 42;
+      var hh = hasHead ? HEAD : 0;
+      if (hasHead) {
+        var nm = sp500Esc(s.name).toUpperCase();
+        var lf = Math.min(hh * 0.72, (s.w - 8) / Math.max(1, nm.length * 0.6));
+        if (lf >= 5.5) {
+          labelsSvg.push('<text x="' + (s.x + 4).toFixed(1) + '" y="' + (s.y + hh * 0.76).toFixed(1) +
+            '" font-size="' + lf.toFixed(1) + '" font-weight="700" font-family="Karla, sans-serif" fill="' + labelFill + '">' + nm + '</text>');
+        }
+      }
+      var body = { x: s.x, y: s.y + hh, w: s.w, h: s.h - hh };
+      var itot = 0; s.items.forEach(function (it) { itot += it.c; });
+      if (itot <= 0 || body.w <= 0 || body.h <= 0) return;
+      var iScale = (body.w * body.h) / itot;
+      s.items.forEach(function (it) { it._a = it.c * iScale; });
+      sp500Squarify(s.items, body);
+      s.items.forEach(function (it) {
+        var x = it.x + GAP / 2, y = it.y + GAP / 2, w = it.w - GAP, h = it.h - GAP;
+        if (w <= 0.3 || h <= 0.3) return;
+        var paint = sp500Paint(it.p, theme);
+        var sign = it.p >= 0 ? '+' : '';
+        var ttl = sp500Esc(it.n) + ' (' + sp500Esc(it.t) + '), ' + sp500Esc(it.s) + ', ' + sign + it.p.toFixed(2) + '%';
+        var g = '<g><title>' + ttl + '</title><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
+          '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + paint.bg + '"/>';
+        var d = Math.min(w, h);
+        if (d >= 14) {
+          var cx = (x + w / 2).toFixed(1);
+          var cy = y + h / 2;
+          var fT = Math.max(4, Math.min(d * 0.36, w * 0.40));
+          if (d >= 26) {
+            g += '<text x="' + cx + '" y="' + (cy - fT * 0.04).toFixed(1) + '" text-anchor="middle" fill="' + paint.fg +
+              '" font-size="' + fT.toFixed(1) + '" font-weight="700" font-family="Karla, sans-serif">' + sp500Esc(it.t) + '</text>';
+            g += '<text x="' + cx + '" y="' + (cy + fT * 0.86).toFixed(1) + '" text-anchor="middle" fill="' + paint.fg +
+              '" font-size="' + (fT * 0.72).toFixed(1) + '" font-weight="500" font-family="Karla, sans-serif">' + sign + it.p.toFixed(2) + '%</text>';
+          } else {
+            g += '<text x="' + cx + '" y="' + (cy + fT * 0.34).toFixed(1) + '" text-anchor="middle" fill="' + paint.fg +
+              '" font-size="' + fT.toFixed(1) + '" font-weight="700" font-family="Karla, sans-serif">' + sp500Esc(it.t) + '</text>';
+          }
+        }
+        g += '</g>';
+        tilesSvg.push(g);
+      });
+    });
+
+    var legSteps = [-3, -2, -1, 1, 2, 3];
+    var leg = '<span class="hm-sp500-leg-cap">Loss</span>';
+    legSteps.forEach(function (v) {
+      var pt = sp500Paint(v, theme);
+      leg += '<span class="hm-sp500-leg-sw" style="background:' + pt.bg + ';color:' + pt.fg + '">' + (v > 0 ? '+' : '') + v + '%</span>';
+    });
+    leg += '<span class="hm-sp500-leg-cap">Gain</span>';
+
+    host.innerHTML = head +
+      '<div class="hm-sp500-body">' +
+        '<svg class="hm-sp500-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">' +
+          tilesSvg.join('') + labelsSvg.join('') +
+        '</svg>' +
+        '<div class="hm-sp500-legend">' + leg + '</div>' +
+      '</div>' +
+    '</div>';
+    _sp500WireButtons(host);
+  }
+  function _sp500WireButtons(host) {
+    var item = host.closest('.grid-stack-item');
+    if (!item) return;
+    var ib = host.querySelector('[data-sp5="info"]');
+    var eb = host.querySelector('[data-sp5="export"]');
+    if (ib) ib.onclick = function (e) { e.stopPropagation(); toggleInfoPopup(item, 'hm-sp500-treemap', ib); };
+    if (eb) eb.onclick = function (e) { e.stopPropagation(); openExportModal(item); };
   }
 
   /* ---------- Style Box ---------- */
@@ -14445,6 +14718,7 @@
       safeRender('currencies',   function () { renderCurrencies(data); });
       safeRender('calendar',     function () { renderCalendar(data); });
       safeRender('economy',      function () { renderEconomy(data); });
+      safeRender('sp500Treemap', function () { renderSp500Treemap(data); });
       safeRender('sectorChart',  function () { renderSectorChart(data); });
       safeRender('styleFactor',  function () { renderStyleFactor(data); });
       safeRender('factors',      function () { renderFactors(data); });
