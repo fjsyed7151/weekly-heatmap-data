@@ -806,6 +806,13 @@
     grid-template-columns: 1fr !important;
     gap: 8px;
   }
+  /* Stacked: the per-column 32px bottom padding (page-bottom breathing
+     room) would insert a large gap between every column. Keep it only
+     on the last column; the rest fall back to the 8px grid row-gap so
+     the spacing matches the inter-panel rhythm. */
+  body.hm-cols-stacked .hm-app .hm-col:not(:last-child) {
+    padding-bottom: 0;
+  }
   body.hm-cols-stacked .hm-app .hm-col-divider { display: none; }
   body.hm-cols-stacked .hm-app .hm-col-header { display: none; }
   body.hm-cols-stacked .hm-app .hm-col-body {
@@ -1025,6 +1032,14 @@
   .hm-app .hm-topbar-col-btn.active {
     color: var(--hm-gold);
     border-color: var(--hm-gold);
+  }
+  /* Below the column-stacking breakpoint (1100px) the side columns
+     merge into a single stack, so the left and right column collapse
+     and pin controls, plus the separators that group them, no longer
+     do anything. Hide all four buttons and both separators. */
+  @media (max-width: 1100px) {
+    .hm-app .hm-topbar-col-btn,
+    .hm-app .hm-topbar-sep { display: none !important; }
   }
 
   .hm-app .hm-btn {
