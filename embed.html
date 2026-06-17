@@ -3786,11 +3786,12 @@
     max-width: 240px;
   }
   .hm-app.dark .hm-sp500-tip { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
-  .hm-app .hm-sp500-tip-name { font-size: 12px; font-weight: 700; color: #2d2d2d; line-height: 1.2; }
+  .hm-app .hm-sp500-tip-name { font-size: 12px; font-weight: 700; color: #2d2d2d; line-height: 1.25; margin-bottom: 4px; }
   .hm-app.dark .hm-sp500-tip-name { color: #e8e4dc; }
-  .hm-app .hm-sp500-tip-sub { font-size: 10px; font-weight: 600; color: var(--hm-muted); margin-top: 1px; }
-  .hm-app .hm-sp500-tip-ret { font-size: 12px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
-  .hm-app .hm-sp500-tip-cap { font-size: 10px; font-weight: 500; color: var(--hm-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .hm-app .hm-sp500-tip-line { font-size: 10px; font-weight: 600; margin-top: 2px; }
+  .hm-app .hm-sp500-tip-lbl { color: var(--hm-muted); }
+  .hm-app .hm-sp500-tip-val { color: #2d2d2d; font-variant-numeric: tabular-nums; }
+  .hm-app.dark .hm-sp500-tip-val { color: #e8e4dc; }
   .hm-app .hm-factors-period-btn {
     font-family: 'Karla', sans-serif;
     font-size: 10px;
@@ -10480,6 +10481,37 @@
     (app || document.body).appendChild(_sp500Tip);
     return _sp500Tip;
   }
+  var _sp500RO = null, _sp500Svg = null, _sp500ResizeHooked = false, _sp500RT = null;
+  /* Sector-name labels: clamp the ON-SCREEN size to 8-12px regardless of how
+     wide the SVG renders. The font-size attribute is in viewBox units, so it
+     would otherwise scale with the panel; we convert a target px (clamped,
+     and shrunk to fit the block width) back into viewBox units, and recompute
+     on resize via a ResizeObserver. Truncates with an ellipsis only if the
+     name can't fit even at the 8px floor. */
+  function sp500FitLabels(svg) {
+    if (!svg) return;
+    var rw = svg.getBoundingClientRect().width;
+    if (!rw) return;
+    var scale = rw / SP500_VB_W;
+    svg.querySelectorAll('.hm-sp500-seclabel').forEach(function (t) {
+      var bw = parseFloat(t.getAttribute('data-w')) || 60;
+      var sy = parseFloat(t.getAttribute('data-y')) || 0;
+      var name = t.getAttribute('data-name') || '';
+      var blockPx = bw * scale;
+      var fitPx = (blockPx - 6) / Math.max(1, name.length * 0.60);
+      var px = Math.max(8, Math.min(12, fitPx));
+      var fvb = px / scale;
+      t.setAttribute('font-size', fvb.toFixed(2));
+      t.setAttribute('y', (sy + fvb * 0.82).toFixed(1));
+      if (fitPx < 8) {
+        var maxChars = Math.floor((blockPx - 6) / (8 * 0.60));
+        var ell = String.fromCharCode(0x2026);
+        t.textContent = (maxChars >= 2 && maxChars < name.length) ? name.slice(0, maxChars - 1) + ell : (maxChars < 2 ? '' : name);
+      } else if (t.textContent !== name) {
+        t.textContent = name;
+      }
+    });
+  }
   function renderSp500Treemap(data) {
     var host = document.getElementById('hm-sp500-treemap');
     if (!host) return;
@@ -10525,11 +10557,11 @@
       var hh = hasHead ? HEAD : 0;
       if (hasHead) {
         var nm = sp500Esc(s.name).toUpperCase();
-        var lf = Math.min(hh * 0.72, (s.w - 8) / Math.max(1, nm.length * CH));
-        if (lf >= 5.5) {
-          labelsSvg.push('<text x="' + (s.x + 4).toFixed(1) + '" y="' + (s.y + hh * 0.76).toFixed(1) +
-            '" font-size="' + lf.toFixed(1) + '" font-weight="700" font-family="Karla,sans-serif" fill="' + labelFill + '">' + nm + '</text>');
-        }
+        /* font-size + y are set by sp500FitLabels (px-clamped); defaults here
+           just avoid a flash before it runs. */
+        labelsSvg.push('<text class="hm-sp500-seclabel" data-w="' + s.w.toFixed(1) + '" data-y="' + s.y.toFixed(1) +
+          '" data-name="' + nm + '" x="' + (s.x + 4).toFixed(1) + '" y="' + (s.y + 9).toFixed(1) +
+          '" font-size="8" font-weight="700" font-family="Karla,sans-serif" fill="' + labelFill + '">' + nm + '</text>');
       }
       var body = { x: s.x, y: s.y + hh, w: s.w, h: s.h - hh };
       var itot = 0; s.items.forEach(function (it) { itot += it.c; });
@@ -10585,29 +10617,43 @@
 
     /* Hover tooltip: company name, ticker, 1-day return, market cap. */
     var svg = host.querySelector('.hm-sp500-svg');
-    if (svg) {
-      var tip = sp500TipEl();
-      var hide = function () { tip.style.display = 'none'; };
-      svg.addEventListener('mousemove', function (e) {
-        var g = e.target.closest && e.target.closest('g[data-t]');
-        if (!g) { hide(); return; }
-        var p = parseFloat(g.getAttribute('data-p'));
-        var col = p >= 0 ? 'var(--hm-green)' : 'var(--hm-red)';
-        tip.innerHTML =
-          '<div class="hm-sp500-tip-name">' + g.getAttribute('data-n') + '</div>' +
-          '<div class="hm-sp500-tip-sub">' + g.getAttribute('data-t') + '</div>' +
-          '<div class="hm-sp500-tip-ret" style="color:' + col + '">' + (p >= 0 ? '+' : '') + p.toFixed(2) + '%</div>' +
-          '<div class="hm-sp500-tip-cap">Mkt cap ' + sp500FmtCap(+g.getAttribute('data-c')) + '</div>';
-        tip.style.display = 'block';
-        var tw = tip.offsetWidth, th = tip.offsetHeight;
-        var left = e.clientX + 14, top = e.clientY + 14;
-        if (left + tw > window.innerWidth - 8) left = e.clientX - tw - 14;
-        if (top + th > window.innerHeight - 8) top = e.clientY - th - 14;
-        tip.style.left = Math.max(8, left) + 'px';
-        tip.style.top = Math.max(8, top) + 'px';
-      });
-      svg.addEventListener('mouseleave', hide);
+    if (!svg) return;
+    _sp500Svg = svg;
+    sp500FitLabels(svg);
+    if (window.ResizeObserver) {
+      if (_sp500RO) _sp500RO.disconnect();
+      _sp500RO = new ResizeObserver(function () { sp500FitLabels(_sp500Svg); });
+      _sp500RO.observe(svg);
     }
+    /* Belt-and-suspenders: also re-clamp on window resize (debounced), in
+       case the ResizeObserver doesn't fire (some headless/embedded contexts). */
+    if (!_sp500ResizeHooked) {
+      _sp500ResizeHooked = true;
+      window.addEventListener('resize', function () {
+        clearTimeout(_sp500RT);
+        _sp500RT = setTimeout(function () { sp500FitLabels(_sp500Svg); }, 120);
+      });
+    }
+    var tip = sp500TipEl();
+    var hide = function () { tip.style.display = 'none'; };
+    svg.addEventListener('mousemove', function (e) {
+      var g = e.target.closest && e.target.closest('g[data-t]');
+      if (!g) { hide(); return; }
+      var p = parseFloat(g.getAttribute('data-p'));
+      var col = p >= 0 ? 'var(--hm-green)' : 'var(--hm-red)';
+      tip.innerHTML =
+        '<div class="hm-sp500-tip-name">' + g.getAttribute('data-n') + ' (' + g.getAttribute('data-t') + ')</div>' +
+        '<div class="hm-sp500-tip-line"><span class="hm-sp500-tip-lbl">Change:</span> <span class="hm-sp500-tip-val" style="color:' + col + '">' + (p >= 0 ? '+' : '') + p.toFixed(2) + '%</span></div>' +
+        '<div class="hm-sp500-tip-line"><span class="hm-sp500-tip-lbl">Market Cap:</span> <span class="hm-sp500-tip-val">' + sp500FmtCap(+g.getAttribute('data-c')) + '</span></div>';
+      tip.style.display = 'block';
+      var tw = tip.offsetWidth, th = tip.offsetHeight;
+      var left = e.clientX + 14, top = e.clientY + 14;
+      if (left + tw > window.innerWidth - 8) left = e.clientX - tw - 14;
+      if (top + th > window.innerHeight - 8) top = e.clientY - th - 14;
+      tip.style.left = Math.max(8, left) + 'px';
+      tip.style.top = Math.max(8, top) + 'px';
+    });
+    svg.addEventListener('mouseleave', hide);
   }
 
   /* ---------- Style Box ---------- */
