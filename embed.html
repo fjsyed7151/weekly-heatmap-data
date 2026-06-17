@@ -3720,7 +3720,11 @@
 
   /* ---------- S&P 500 Heat Map (treemap; lives in a 3-col panel) ---------- */
   .hm-app .hm-sp500-card {
-    border: 1px solid var(--hm-border);
+    /* No border: the panel cell (.grid-stack-item-content) already draws the
+       1px frame. A card border would double it — visible as a stray outline
+       around the component in image exports. Matches .hm-factors-card. */
+    border: 0;
+    border-radius: 0;
     background: var(--hm-panel);
     overflow: hidden;
   }
@@ -10484,7 +10488,7 @@
     return _sp500Tip;
   }
   var _sp500RO = null, _sp500Svg = null, _sp500ResizeHooked = false, _sp500RT = null;
-  /* Sector-name labels: clamp the ON-SCREEN size to 8-12px regardless of how
+  /* Sector-name labels: clamp the ON-SCREEN size to 6-10px regardless of how
      wide the SVG renders. The font-size attribute is in viewBox units, so it
      would otherwise scale with the panel; we convert a target px (clamped,
      and shrunk to fit the block width) back into viewBox units, and recompute
@@ -10501,7 +10505,7 @@
       var name = t.getAttribute('data-name') || '';
       var blockPx = bw * scale;
       var fitPx = (blockPx - 6) / Math.max(1, name.length * 0.60);
-      var px = Math.max(6, Math.min(12, fitPx));
+      var px = Math.max(6, Math.min(10, fitPx));
       var fvb = px / scale;
       t.setAttribute('font-size', fvb.toFixed(2));
       t.setAttribute('y', (sy + fvb * 0.82).toFixed(1));
@@ -10519,9 +10523,10 @@
     if (!host) return;
     window.PANEL_INFO_HTML['hm-sp500-treemap'] = function () {
       return (
-        '<p>Every S&amp;P 500 company as a treemap. Each tile is one stock, ' +
-          'sized by market capitalization and colored by its 1-day total return ' +
-          '(green up, red down, the shade saturating at a 3% move).</p>' +
+        '<p>Every S&amp;P 500 company as a treemap.</p>' +
+        '<p>Each tile is one stock, sized by market capitalization and colored ' +
+          'by its 1-day total return (green up, red down, the shade saturating ' +
+          'at a 3% move).</p>' +
         '<p>Tiles are grouped into the 11 GICS sectors.</p>' +
         '<p>Hover a tile for its company name, ticker, 1-day return, and market cap.</p>'
       );
