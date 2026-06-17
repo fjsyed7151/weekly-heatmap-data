@@ -2934,8 +2934,8 @@
     color: var(--hm-dark);
   }
   .hm-app .hm-sector-export-legend .hm-sleg-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
+    width: 14px; height: 2px;
+    border-radius: 0;
     flex-shrink: 0;
   }
   .hm-app.hm-sector-exporting .hm-sector-export-legend { display: flex !important; }
@@ -9767,7 +9767,11 @@
               var v = c.parsed.y;
               if (v === null) return null;
               return c.dataset.label + ': ' + v.toFixed(2) + '%';
-            }
+            },
+            /* Tooltip series markers render as a short horizontal line
+               (matching the line chart + export legend) instead of a
+               filled circle. */
+            labelPointStyle: function () { return { pointStyle: 'line', rotation: 0 }; }
           }
         }
       },
