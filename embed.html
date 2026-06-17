@@ -3452,7 +3452,7 @@
     }
   }
   .hm-app .hm-econ-name {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--hm-brown);
     text-transform: uppercase;
@@ -3474,22 +3474,12 @@
     line-height: 1.2;
   }
   .hm-app .hm-econ-prev {
-    font-size: 10.5px;
+    font-size: 10px;
     color: var(--hm-muted);
     white-space: nowrap;
   }
-  /* Reference anchor below value+prev: tiny muted line giving the user a
-     benchmark for the metric (Fed target, boundary, historical average,
-     recession trigger, etc.). Italic to read as a side-note, not data. */
-  .hm-app .hm-econ-anchor {
-    font-size: 9.5px;
-    font-style: italic;
-    color: var(--hm-muted);
-    opacity: 0.85;
-    margin-top: 2px;
-    line-height: 1.2;
-    white-space: nowrap;
-  }
+  /* hm-econ-anchor rule removed: the reference anchor now lives only in the
+     hover popup's chart-meta, not on the card, so the class was dead CSS. */
   .hm-app .hm-econ-arrow {
     font-weight: 700;
     font-size: 12px;
@@ -9544,12 +9534,12 @@
 
     window.PANEL_INFO_HTML['hm-economy'] = function () {
       return (
-        '<p><b>Latest hard and soft macro data</b>, grouped into Inflation, Labor, ' +
+        '<p>Latest hard and soft macro data, grouped into Inflation, Labor, ' +
           'Consumer, Real Activity, Leading Indicators, and Valuation &amp; Monetary.</p>' +
         '<p>Each card shows the most recent reading and the prior period. Green ' +
           'arrow means improved vs last period, red means deteriorated, gray means ' +
-          'unchanged. Improvement is direction-aware: for lower-is-better series ' +
-          'like jobless claims, a fall is green.</p>' +
+          'unchanged. Improvement is direction-aware: For lower-is-better series ' +
+          'like inflation, a fall is green.</p>' +
         '<p>Mostly monthly series. The date in parentheses on each card is that ' +
           'series\' own as-of. Hover a card for a definition and a 5-year history ' +
           'chart with recessions shaded.</p>' +
