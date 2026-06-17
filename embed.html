@@ -2891,7 +2891,7 @@
      band); the <select> reuses the warm/brown .hm-vs-select look. A
      hidden static span carries the value cleanly into image exports,
      since native <select> elements don't reliably rasterize. */
-  .hm-app .hm-period-control { display: inline-flex; align-items: center; gap: 6px; }
+  .hm-app .hm-period-control { display: inline-flex; align-items: center; gap: 4px; }
   .hm-app .hm-period-label {
     font-size: 10px; font-weight: 700; text-transform: uppercase;
     color: var(--hm-white); line-height: 1;
@@ -2899,25 +2899,23 @@
   .hm-app .hm-period-select {
     font-family: 'Karla', sans-serif;
     font-size: 10px; font-weight: 700;
-    color: var(--hm-brown);
-    background: var(--hm-bg-warm);
-    border: 1px solid var(--hm-border);
+    color: var(--hm-white);
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: var(--hm-r);
     height: 26px;
-    padding: 0 24px 0 8px;
+    padding: 0 22px 0 8px;
     cursor: pointer;
     -webkit-appearance: none; appearance: none; outline: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6050'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M2 2 5 5 8 2' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 8px center;
+    background-position: right 7px center;
   }
-  .hm-app .hm-period-select:focus { border-color: var(--hm-gold); }
-  .hm-app.dark .hm-period-select {
-    background-color: var(--hm-bg-alt);
-    color: var(--hm-dark);
-    border-color: var(--hm-border);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a90a0'/%3E%3C/svg%3E");
-  }
+  .hm-app .hm-period-select:hover { background: rgba(255, 255, 255, 0.24); }
+  .hm-app .hm-period-select:focus { border-color: var(--hm-white); }
+  /* Opened menu: native options render on the OS surface, so give them
+     readable dark-on-light colors (the control's own text is white). */
+  .hm-app .hm-period-select option { color: var(--hm-dark); background: var(--hm-panel); }
   /* Export: swap the native select for a plain static value so the period
      reads as clean "1M" text in the rasterized PNG. */
   .hm-app .hm-period-static { display: none; font-size: 10px; font-weight: 700; color: var(--hm-white); line-height: 1; }
@@ -5637,6 +5635,7 @@
   .hm-app .hm-export-stage .hm-factors-periods,
   .hm-app .hm-export-stage .hm-indexes-periods,
   .hm-app .hm-export-stage .hm-sector-period-btns,
+  .hm-app .hm-export-stage .hm-sector-toolbar,
   .hm-app .hm-export-stage .hm-sf-period-btns,
   .hm-app .hm-export-stage .hm-treemap-period-btns,
   .hm-app .hm-export-stage .hm-treemap-toggle {
@@ -10371,7 +10370,7 @@
     wrap.className = 'hm-period-control';
     var lbl = document.createElement('span');
     lbl.className = 'hm-period-label';
-    lbl.textContent = 'Period';
+    lbl.textContent = 'Period:';
     wrap.appendChild(lbl);
     var sel = document.createElement('select');
     sel.className = 'hm-period-select';
