@@ -1697,7 +1697,7 @@
     padding: 4px 12px;
     text-align: right;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 400;
     color: var(--hm-dark);
     border-bottom: 1px solid var(--hm-border);
     border-right: 1px solid var(--hm-border);
@@ -1896,7 +1896,7 @@
     padding: 4px 12px;
     text-align: right;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 400;
     color: var(--hm-dark);
     border-bottom: 1px solid var(--hm-border);
     border-right: 1px solid var(--hm-border);
@@ -2792,7 +2792,7 @@
   }
   .hm-app .hm-sector-tbl th {
     padding: 6px 12px;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1;
     font-weight: 700;
     text-transform: uppercase;
@@ -2810,7 +2810,7 @@
     font-size: 12px;
     line-height: 1;
     text-align: right;
-    font-weight: 600;
+    font-weight: 400;
     color: var(--hm-dark);
     border-bottom: 1px solid var(--hm-border);
     border-right: 1px solid var(--hm-border);
@@ -2863,7 +2863,7 @@
   }
   .hm-app .hm-vs-select {
     font-family: 'Karla', sans-serif;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--hm-brown);
     background: var(--hm-bg-warm);
@@ -6628,7 +6628,7 @@
     scales.x = {
       grid: { color: col.grid, drawBorder: false },
       border: { color: col.border },
-      ticks: { color: col.tick, font: { family: 'Karla', size: 11 } }
+      ticks: { color: col.tick, font: { family: 'Karla', size: 10 } }
     };
     if (isSeparated && primaryEntry) {
       var kind = kindOf(primaryEntry.format);
@@ -6636,7 +6636,7 @@
         type: 'linear', position: 'left',
         grid: { color: col.grid, drawBorder: false },
         border: { color: col.border },
-        ticks: { color: col.tick, font: { family: 'Karla', size: 11 }, callback: makeTickFmt(primaryEntry.format) },
+        ticks: { color: col.tick, font: { family: 'Karla', size: 10 }, callback: makeTickFmt(primaryEntry.format) },
         beginAtZero: false
       };
       return scales;
@@ -6657,7 +6657,7 @@
         display: i < 2,
         grid: { color: i === 0 ? col.grid : 'transparent', drawBorder: false },
         border: { color: col.border },
-        ticks: { color: col.tick, font: { family: 'Karla', size: 11 }, callback: makeTickFmt(axisFormats[k]) },
+        ticks: { color: col.tick, font: { family: 'Karla', size: 10 }, callback: makeTickFmt(axisFormats[k]) },
         beginAtZero: false
       };
     });
@@ -6726,7 +6726,7 @@
         caretPadding: 10,
         displayColors: true,
         usePointStyle: true,
-        titleFont: { family: 'Karla', size: 13, weight: '700' },
+        titleFont: { family: 'Karla', size: 12, weight: '700' },
         bodyFont:  { family: 'Karla', size: 12, weight: '500' },
         callbacks: {
           label: function (ctx) {
@@ -8037,11 +8037,11 @@
           },
           scales: {
             x: {
-              ticks: { color: textColor, font: { size: 9 }, maxTicksLimit: 4, autoSkip: true },
+              ticks: { color: textColor, font: { size: 8 }, maxTicksLimit: 4, autoSkip: true },
               grid: { color: gridColor, drawBorder: false },
             },
             y: {
-              ticks: { color: textColor, font: { size: 9 }, maxTicksLimit: 4 },
+              ticks: { color: textColor, font: { size: 8 }, maxTicksLimit: 4 },
               grid: { color: gridColor, drawBorder: false },
             },
           },
@@ -8430,7 +8430,7 @@
               caretPadding: 10,
               displayColors: true,
               usePointStyle: true,
-              titleFont: { family: 'Karla', size: 13, weight: '700' },
+              titleFont: { family: 'Karla', size: 12, weight: '700' },
               bodyFont:  { family: 'Karla', size: 12, weight: '500' },
               callbacks: {
                 title: function (items) {
@@ -8452,7 +8452,7 @@
             x: {
               ticks: {
                 color: textColor,
-                font: { family: 'Karla', size: 9 },
+                font: { family: 'Karla', size: 8 },
                 maxTicksLimit: 5,
                 autoSkip: true,
                 callback: function (v, i) {
@@ -8466,7 +8466,7 @@
               grid: { color: gridColor, drawBorder: false },
             },
             y: {
-              ticks: { color: textColor, font: { family: 'Karla', size: 9 }, maxTicksLimit: 4 },
+              ticks: { color: textColor, font: { family: 'Karla', size: 8 }, maxTicksLimit: 4 },
               grid: { color: gridColor, drawBorder: false },
             },
           },
@@ -9760,7 +9760,7 @@
           displayColors: true,
           usePointStyle: true,
           bodyFont: { family: 'Karla', size: 12, weight: '500' },
-          titleFont: { family: 'Karla', weight: '700', size: 13 },
+          titleFont: { family: 'Karla', weight: '700', size: 12 },
           callbacks: {
             label: function (c) {
               var v = c.parsed.y;
@@ -9771,8 +9771,8 @@
         }
       },
       scales: {
-        x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Karla', size: mini ? 9 : 11 }, maxTicksLimit: mini ? 6 : 12 } },
-        y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Karla', size: mini ? 9 : 11 }, callback: function (v) { return v.toFixed(0) + '%'; } } }
+        x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Karla', size: mini ? 8 : 10 }, maxTicksLimit: mini ? 6 : 12 } },
+        y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Karla', size: mini ? 8 : 10 }, callback: function (v) { return v.toFixed(0) + '%'; } } }
       }
     };
   }
