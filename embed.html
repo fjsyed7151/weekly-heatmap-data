@@ -2763,7 +2763,7 @@
     height: 240px;
     border: 0;
     border-radius: var(--hm-r);
-    padding: 28px 8px 8px;
+    padding: 24px 8px 8px;
     background: var(--hm-panel);
   }
   .hm-app .hm-sector-mini-wrap canvas { width: 100% !important; height: 100% !important; }
@@ -2792,11 +2792,11 @@
   }
   .hm-app .hm-sector-tbl th {
     padding: 6px 12px;
-    font-size: 12px;
+    font-size: 10px;
     line-height: 1;
     font-weight: 700;
     text-transform: uppercase;
-    color: var(--hm-brown);
+    color: var(--hm-gold);
     background: var(--hm-bg-warm);
     text-align: right;
     border-bottom: 1px solid var(--hm-border);
@@ -2863,7 +2863,7 @@
   }
   .hm-app .hm-vs-select {
     font-family: 'Karla', sans-serif;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
     color: var(--hm-brown);
     background: var(--hm-bg-warm);
@@ -9887,8 +9887,8 @@
       return (
         '<p><b>Cumulative return of the 11 GICS sector ETFs</b> over the selected ' +
           'period, all rebased to 0% at the start so the lines compare directly.</p>' +
-        '<p><b>Period pills</b>: Set the window, 1W to 10Y. Short windows use daily ' +
-          'closes for a smooth line, longer ones use weekly.</p>' +
+        '<p><b>Period pills</b>: Short windows use daily closes for a smoother line, ' +
+          'longer ones weekly.</p>' +
         '<p><b>Sector toggles</b>: Tick sectors in the table to add or remove their ' +
           'lines. Selection is saved across reloads. The S&amp;P 500 overlays as a ' +
           'dashed benchmark, so leaders and laggards vs the index read directly.</p>' +
