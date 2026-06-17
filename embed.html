@@ -2900,10 +2900,10 @@
     font-family: 'Karla', sans-serif;
     font-size: 10px; font-weight: 700;
     color: var(--hm-white);
-    background: rgba(255, 255, 255, 0.16);
+    background-color: rgba(255, 255, 255, 0.16);
     border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: var(--hm-r);
-    height: 26px;
+    height: 24px;
     padding: 0 22px 0 8px;
     cursor: pointer;
     -webkit-appearance: none; appearance: none; outline: none;
@@ -2911,7 +2911,7 @@
     background-repeat: no-repeat;
     background-position: right 7px center;
   }
-  .hm-app .hm-period-select:hover { background: rgba(255, 255, 255, 0.24); }
+  .hm-app .hm-period-select:hover { background-color: rgba(255, 255, 255, 0.24); }
   .hm-app .hm-period-select:focus { border-color: var(--hm-white); }
   /* Opened menu: native options render on the OS surface, so give them
      readable dark-on-light colors (the control's own text is white). */
@@ -2920,7 +2920,11 @@
      reads as clean "1M" text in the rasterized PNG. */
   .hm-app .hm-period-static { display: none; font-size: 10px; font-weight: 700; color: var(--hm-white); line-height: 1; }
   .hm-app .hm-export-stage .hm-period-select { display: none !important; }
-  .hm-app .hm-export-stage .hm-period-static { display: inline !important; }
+  /* Export: render "Period: 1M" as plain inline text at 12px with a normal
+     space (no flex, so html2canvas lays it out reliably on one line). */
+  .hm-app .hm-export-stage .hm-period-control { display: inline-block !important; }
+  .hm-app .hm-export-stage .hm-period-label { font-size: 12px; }
+  .hm-app .hm-export-stage .hm-period-static { display: inline !important; font-size: 12px; margin-left: 4px; }
 
   /* vs SPY as visually separate table */
   .hm-app .hm-sector-tables {
