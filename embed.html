@@ -3718,54 +3718,28 @@
   }
   .hm-app .hm-factors-periods { display: flex; gap: 4px; flex-wrap: wrap; row-gap: 4px; }
 
-  /* ---------- S&P 500 Heat Map (full-width Finviz-style treemap) ---------- */
-  .hm-app .hm-fullwidth { width: 100%; margin: 8px 0 0; }
-  .hm-app .hm-fullwidth > .grid-stack-item-content { width: 100%; height: auto; }
+  /* ---------- S&P 500 Heat Map (treemap; lives in a 3-col panel) ---------- */
   .hm-app .hm-sp500-card {
     border: 1px solid var(--hm-border);
     background: var(--hm-panel);
     overflow: hidden;
   }
-  .hm-app .hm-sp500-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    height: 24px;
-    padding: 0 8px 0 12px;
-    background: var(--hm-gold);
-    color: var(--hm-white);
+  /* The SVG compresses with the column down to its min-width, then this
+     wrapper scrolls horizontally. Header + legend sit outside it so they
+     stay put (full panel width). */
+  .hm-app .hm-sp500-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: var(--hm-bg);
   }
-  .hm-app .hm-sp500-title {
-    font-family: 'Karla', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--hm-white);
-  }
-  .hm-app .hm-sp500-controls { display: flex; align-items: center; gap: 8px; }
-  .hm-app .hm-sp500-sub {
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--hm-white);
-    opacity: 0.85;
-  }
-  .hm-app .hm-sp500-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--hm-white);
+  .hm-app .hm-sp500-svg {
+    display: block;
+    width: 100%;
+    min-width: 480px;
+    height: auto;
+    background: var(--hm-bg);
     cursor: pointer;
-    opacity: 0.85;
   }
-  .hm-app .hm-sp500-btn:hover { opacity: 1; }
-  .hm-app .hm-sp500-btn svg { width: 14px; height: 14px; display: block; }
-  .hm-app .hm-sp500-svg { display: block; width: 100%; height: auto; background: var(--hm-bg); }
   .hm-app .hm-sp500-legend {
     display: flex;
     align-items: center;
@@ -3799,6 +3773,24 @@
     color: var(--hm-muted);
     font-size: 12px;
   }
+  /* Hover tooltip: company name, ticker, 1-day return, market cap. */
+  .hm-app .hm-sp500-tip {
+    position: fixed;
+    z-index: 1200;
+    pointer-events: none;
+    background: var(--hm-panel);
+    border: 1px solid var(--hm-border);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    padding: 8px 10px;
+    font-family: 'Karla', sans-serif;
+    max-width: 240px;
+  }
+  .hm-app.dark .hm-sp500-tip { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+  .hm-app .hm-sp500-tip-name { font-size: 12px; font-weight: 700; color: #2d2d2d; line-height: 1.2; }
+  .hm-app.dark .hm-sp500-tip-name { color: #e8e4dc; }
+  .hm-app .hm-sp500-tip-sub { font-size: 10px; font-weight: 600; color: var(--hm-muted); margin-top: 1px; }
+  .hm-app .hm-sp500-tip-ret { font-size: 12px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .hm-app .hm-sp500-tip-cap { font-size: 10px; font-weight: 500; color: var(--hm-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
   .hm-app .hm-factors-period-btn {
     font-family: 'Karla', sans-serif;
     font-size: 10px;
@@ -6076,6 +6068,7 @@
           </div>
           <div class="hm-col-divider" data-divider="0" title="Drag to resize columns"></div>
           <div class="hm-col" data-col="center">
+            <div class="grid-stack-item" gs-id="hm-sp500-treemap"><div class="grid-stack-item-content"><div id="hm-sp500-treemap"></div></div></div>
             <div class="grid-stack-item" gs-id="hm-stylefactor"><div class="grid-stack-item-content"><div id="hm-stylefactor"></div></div></div>
             <div class="grid-stack-item" gs-id="hm-factors"><div class="grid-stack-item-content"><div id="hm-factors"></div></div></div>
             <div class="grid-stack-item" gs-id="hm-fixed-income"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
@@ -6119,10 +6112,6 @@
             </div>
           </div>
         </div>
-        <!-- Full-width S&P 500 treemap. Sibling of #hm-cols so it spans the
-             whole dashboard width, outside the 3-column grid. -->
-        <div class="grid-stack-item hm-fullwidth" gs-id="hm-sp500-treemap"><div class="grid-stack-item-content"><div id="hm-sp500-treemap"></div></div></div>
-
         <!-- Hidden legacy node kept so any orphan code that selects
              #hm-grid doesn't error. -->
         <div class="grid-stack" id="hm-grid" hidden></div>
@@ -10475,36 +10464,41 @@
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
   var SP500_VB_W = 1000, SP500_VB_H = 552;   /* ~1.81 aspect, Finviz-like */
+  function sp500FmtCap(c) {
+    if (!c || c <= 0) return '';
+    if (c >= 1e12) return '$' + (c / 1e12).toFixed(2) + 'T';
+    if (c >= 1e9)  return '$' + (c / 1e9).toFixed(1) + 'B';
+    if (c >= 1e6)  return '$' + Math.round(c / 1e6) + 'M';
+    return '$' + Math.round(c);
+  }
+  var _sp500Tip = null;
+  function sp500TipEl() {
+    if (_sp500Tip) return _sp500Tip;
+    _sp500Tip = document.createElement('div');
+    _sp500Tip.className = 'hm-sp500-tip';
+    _sp500Tip.style.display = 'none';
+    (app || document.body).appendChild(_sp500Tip);
+    return _sp500Tip;
+  }
   function renderSp500Treemap(data) {
     var host = document.getElementById('hm-sp500-treemap');
     if (!host) return;
     window.PANEL_INFO_HTML['hm-sp500-treemap'] = function () {
       return (
         '<p>Every S&amp;P 500 company as a treemap. Each tile is one stock, ' +
-          'sized by market capitalization and colored by its 1-day total return.</p>' +
-        '<p>Tiles are grouped into the 11 GICS sectors. Green is up, red is down, ' +
-          'with the shade saturating at a 3% move either way.</p>' +
-        '<p>Hover any tile for the company name, sector, and return.</p>'
+          'sized by market capitalization and colored by its 1-day total return ' +
+          '(green up, red down, the shade saturating at a 3% move).</p>' +
+        '<p>Tiles are grouped into the 11 GICS sectors.</p>' +
+        '<p>Hover a tile for its company name, ticker, 1-day return, and market cap.</p>'
       );
     };
     var theme = app.classList.contains('dark') ? 'dark' : 'light';
     var labelFill = theme === 'dark' ? '#c9c1b3' : '#6f6f6f';
     var rows = (data && data.sp500_map) || [];
 
-    var head =
-      '<div class="hm-sp500-card">' +
-        '<div class="hm-sp500-header">' +
-          '<span class="hm-sp500-title">S&amp;P 500 Heat Map</span>' +
-          '<span class="hm-sp500-controls">' +
-            '<span class="hm-sp500-sub">1-day return &middot; sized by market cap</span>' +
-            '<button class="hm-sp500-btn" type="button" data-sp5="info" aria-label="About this panel" title="About this panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>' +
-            '<button class="hm-sp500-btn" type="button" data-sp5="export" aria-label="Download as image" title="Download as image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>' +
-          '</span>' +
-        '</div>';
-
+    var head = '<div class="hm-sp500-card"><div class="hm-factors-header"><span>S&amp;P 500 Heat Map</span></div>';
     if (!rows.length) {
       host.innerHTML = head + '<div class="hm-sp500-empty">S&amp;P 500 constituent data is loading or unavailable.</div></div>';
-      _sp500WireButtons(host);
       return;
     }
 
@@ -10519,83 +10513,101 @@
 
     var W = SP500_VB_W, H = SP500_VB_H;
     var grand = 0; sectors.forEach(function (s) { grand += s._v; });
-    var sScale = (W * H) / grand;
-    sectors.forEach(function (s) { s._a = s._v * sScale; });
+    sectors.forEach(function (s) { s._a = s._v * (W * H) / grand; });
     sp500Squarify(sectors, { x: 0, y: 0, w: W, h: H });
 
-    var GAP = 1.1;    /* gutter between tiles (viewBox units) */
-    var HEAD = 13;    /* sector label strip height (viewBox units) */
+    var GAP = 1.1;     /* gutter between tiles (viewBox units) */
+    var HEAD = 13;     /* sector label strip height (viewBox units) */
+    var CH = 0.60;     /* Karla-bold char width / font-size (conservative, prevents overflow) */
     var tilesSvg = [], labelsSvg = [];
     sectors.forEach(function (s) {
       var hasHead = s.h > HEAD * 2.4 && s.w > 42;
       var hh = hasHead ? HEAD : 0;
       if (hasHead) {
         var nm = sp500Esc(s.name).toUpperCase();
-        var lf = Math.min(hh * 0.72, (s.w - 8) / Math.max(1, nm.length * 0.6));
+        var lf = Math.min(hh * 0.72, (s.w - 8) / Math.max(1, nm.length * CH));
         if (lf >= 5.5) {
           labelsSvg.push('<text x="' + (s.x + 4).toFixed(1) + '" y="' + (s.y + hh * 0.76).toFixed(1) +
-            '" font-size="' + lf.toFixed(1) + '" font-weight="700" font-family="Karla, sans-serif" fill="' + labelFill + '">' + nm + '</text>');
+            '" font-size="' + lf.toFixed(1) + '" font-weight="700" font-family="Karla,sans-serif" fill="' + labelFill + '">' + nm + '</text>');
         }
       }
       var body = { x: s.x, y: s.y + hh, w: s.w, h: s.h - hh };
       var itot = 0; s.items.forEach(function (it) { itot += it.c; });
       if (itot <= 0 || body.w <= 0 || body.h <= 0) return;
-      var iScale = (body.w * body.h) / itot;
-      s.items.forEach(function (it) { it._a = it.c * iScale; });
+      s.items.forEach(function (it) { it._a = it.c * (body.w * body.h) / itot; });
       sp500Squarify(s.items, body);
       s.items.forEach(function (it) {
         var x = it.x + GAP / 2, y = it.y + GAP / 2, w = it.w - GAP, h = it.h - GAP;
         if (w <= 0.3 || h <= 0.3) return;
         var paint = sp500Paint(it.p, theme);
         var sign = it.p >= 0 ? '+' : '';
-        var ttl = sp500Esc(it.n) + ' (' + sp500Esc(it.t) + '), ' + sp500Esc(it.s) + ', ' + sign + it.p.toFixed(2) + '%';
-        var g = '<g><title>' + ttl + '</title><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
-          '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + paint.bg + '"/>';
-        var d = Math.min(w, h);
-        if (d >= 14) {
-          var cx = (x + w / 2).toFixed(1);
-          var cy = y + h / 2;
-          var fT = Math.max(4, Math.min(d * 0.36, w * 0.40));
-          if (d >= 26) {
-            g += '<text x="' + cx + '" y="' + (cy - fT * 0.04).toFixed(1) + '" text-anchor="middle" fill="' + paint.fg +
-              '" font-size="' + fT.toFixed(1) + '" font-weight="700" font-family="Karla, sans-serif">' + sp500Esc(it.t) + '</text>';
-            g += '<text x="' + cx + '" y="' + (cy + fT * 0.86).toFixed(1) + '" text-anchor="middle" fill="' + paint.fg +
-              '" font-size="' + (fT * 0.72).toFixed(1) + '" font-weight="500" font-family="Karla, sans-serif">' + sign + it.p.toFixed(2) + '%</text>';
-          } else {
-            g += '<text x="' + cx + '" y="' + (cy + fT * 0.34).toFixed(1) + '" text-anchor="middle" fill="' + paint.fg +
-              '" font-size="' + fT.toFixed(1) + '" font-weight="700" font-family="Karla, sans-serif">' + sp500Esc(it.t) + '</text>';
-          }
+        var pctStr = sign + it.p.toFixed(2) + '%';
+        var tk = sp500Esc(it.t);
+        var g = '<g data-t="' + tk + '" data-n="' + sp500Esc(it.n) + '" data-p="' + it.p +
+          '" data-c="' + it.c + '">' +
+          '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) +
+          '" height="' + h.toFixed(1) + '" fill="' + paint.bg + '"/>';
+        var cx = (x + w / 2).toFixed(1), cy = y + h / 2;
+        /* Font sized to FIT the tile (width via char count, height via line count)
+           so labels never spill into neighbouring tiles. */
+        var f2 = Math.min((w * 0.86) / (tk.length * CH),
+                          (w * 0.86) / (pctStr.length * CH * 0.76),
+                          (h * 0.86) / 2.06);
+        var f1 = Math.min((w * 0.86) / (tk.length * CH), h * 0.6);
+        if (f2 >= 5.2) {
+          var fp = f2 * 0.76;
+          g += '<text x="' + cx + '" y="' + (cy - fp * 0.62).toFixed(1) + '" text-anchor="middle" dominant-baseline="central" fill="' + paint.fg +
+            '" font-size="' + f2.toFixed(1) + '" font-weight="700" font-family="Karla,sans-serif">' + tk + '</text>';
+          g += '<text x="' + cx + '" y="' + (cy + f2 * 0.6).toFixed(1) + '" text-anchor="middle" dominant-baseline="central" fill="' + paint.fg +
+            '" font-size="' + fp.toFixed(1) + '" font-weight="500" font-family="Karla,sans-serif">' + pctStr + '</text>';
+        } else if (f1 >= 4.0) {
+          g += '<text x="' + cx + '" y="' + cy.toFixed(1) + '" text-anchor="middle" dominant-baseline="central" fill="' + paint.fg +
+            '" font-size="' + f1.toFixed(1) + '" font-weight="700" font-family="Karla,sans-serif">' + tk + '</text>';
         }
         g += '</g>';
         tilesSvg.push(g);
       });
     });
 
-    var legSteps = [-3, -2, -1, 1, 2, 3];
     var leg = '<span class="hm-sp500-leg-cap">Loss</span>';
-    legSteps.forEach(function (v) {
+    [-3, -2, -1, 1, 2, 3].forEach(function (v) {
       var pt = sp500Paint(v, theme);
       leg += '<span class="hm-sp500-leg-sw" style="background:' + pt.bg + ';color:' + pt.fg + '">' + (v > 0 ? '+' : '') + v + '%</span>';
     });
     leg += '<span class="hm-sp500-leg-cap">Gain</span>';
 
     host.innerHTML = head +
-      '<div class="hm-sp500-body">' +
-        '<svg class="hm-sp500-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">' +
-          tilesSvg.join('') + labelsSvg.join('') +
-        '</svg>' +
-        '<div class="hm-sp500-legend">' + leg + '</div>' +
-      '</div>' +
+      '<div class="hm-sp500-scroll"><svg class="hm-sp500-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">' +
+        tilesSvg.join('') + labelsSvg.join('') +
+      '</svg></div>' +
+      '<div class="hm-sp500-legend">' + leg + '</div>' +
     '</div>';
-    _sp500WireButtons(host);
-  }
-  function _sp500WireButtons(host) {
-    var item = host.closest('.grid-stack-item');
-    if (!item) return;
-    var ib = host.querySelector('[data-sp5="info"]');
-    var eb = host.querySelector('[data-sp5="export"]');
-    if (ib) ib.onclick = function (e) { e.stopPropagation(); toggleInfoPopup(item, 'hm-sp500-treemap', ib); };
-    if (eb) eb.onclick = function (e) { e.stopPropagation(); openExportModal(item); };
+
+    /* Hover tooltip: company name, ticker, 1-day return, market cap. */
+    var svg = host.querySelector('.hm-sp500-svg');
+    if (svg) {
+      var tip = sp500TipEl();
+      var hide = function () { tip.style.display = 'none'; };
+      svg.addEventListener('mousemove', function (e) {
+        var g = e.target.closest && e.target.closest('g[data-t]');
+        if (!g) { hide(); return; }
+        var p = parseFloat(g.getAttribute('data-p'));
+        var col = p >= 0 ? 'var(--hm-green)' : 'var(--hm-red)';
+        tip.innerHTML =
+          '<div class="hm-sp500-tip-name">' + g.getAttribute('data-n') + '</div>' +
+          '<div class="hm-sp500-tip-sub">' + g.getAttribute('data-t') + '</div>' +
+          '<div class="hm-sp500-tip-ret" style="color:' + col + '">' + (p >= 0 ? '+' : '') + p.toFixed(2) + '%</div>' +
+          '<div class="hm-sp500-tip-cap">Mkt cap ' + sp500FmtCap(+g.getAttribute('data-c')) + '</div>';
+        tip.style.display = 'block';
+        var tw = tip.offsetWidth, th = tip.offsetHeight;
+        var left = e.clientX + 14, top = e.clientY + 14;
+        if (left + tw > window.innerWidth - 8) left = e.clientX - tw - 14;
+        if (top + th > window.innerHeight - 8) top = e.clientY - th - 14;
+        tip.style.left = Math.max(8, left) + 'px';
+        tip.style.top = Math.max(8, top) + 'px';
+      });
+      svg.addEventListener('mouseleave', hide);
+    }
   }
 
   /* ---------- Style Box ---------- */
@@ -12805,6 +12817,7 @@
     'hm-country-etfs':   'center',
     'hm-global-indexes': 'center',
     'hm-commodity-perf': 'center',
+    'hm-sp500-treemap':  'center',
     'hm-currency-matrix':'right',
     'hm-commodities':    'right',
     'hm-currencies':     'right',
@@ -12874,6 +12887,7 @@
     'hm-commodity-perf': 'Commodity Performance',
     'hm-currency-matrix':'Currency Performance',
     'hm-theme-treemap':  'Thematic Trends',
+    'hm-sp500-treemap':  'S&P 500 Heat Map',
     'hm-sector-chart':   'Sector Performance',
     'hm-chart-section':  'Metrics Chart',
     'hm-heatmap-wrap':   'Metrics Heat Map',
@@ -14234,7 +14248,7 @@
          scrollbars in the captured PNG. Inline overflow:visible
          eliminates the scrollbar at the source \u2014 content extends
          naturally instead of being clipped behind a scrollbar UI. */
-      clone.querySelectorAll('.hm-scroll, .hm-factors-scroll, .hm-commod-wrap, .hm-fx-wrap').forEach(function (s) {
+      clone.querySelectorAll('.hm-scroll, .hm-factors-scroll, .hm-commod-wrap, .hm-fx-wrap, .hm-sp500-scroll').forEach(function (s) {
         s.style.setProperty('overflow', 'visible', 'important');
         s.style.setProperty('overflow-x', 'visible', 'important');
         s.style.setProperty('overflow-y', 'visible', 'important');
