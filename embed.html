@@ -1550,7 +1550,6 @@
     gap: 8px;
   }
   .hm-app #hm-mtip .hm-mtip-anchor {
-    font-style: italic;
     text-align: left;
     flex: 1 1 auto;
     min-width: 0;
@@ -9532,8 +9531,8 @@
           'Mostly monthly; the date on each card is that series\' as-of.</p>' +
         '<p>Each card shows the newest reading and the prior one. A direction-aware ' +
           'arrow flags the move: Green for improving, red for worsening, gray for ' +
-          'flat, so a falling inflation rate shows green. Hover any card for a ' +
-          'definition and a 5-year history chart.</p>' +
+          'flat.</p>' +
+        '<p>Hover any card for a definition and a 5-year history chart.</p>' +
         '<p>The funnel icon in the panel header shows or hides categories. ' +
           'Your selection is saved and carries into image exports.</p>'
       );
@@ -14420,16 +14419,17 @@
     });
   }
 
-  /* Stale-data check: the feed updates weekdays. If as_of is more than
-     5 calendar days old, surface a notice on the topbar info button so
-     a silent pipeline failure doesn't go unnoticed. */
+  /* Stale-data check: as_of is anchored to the last completed Friday, so
+     mid-to-late week it is normally up to ~7 days old. Only flag once it
+     exceeds 9 days (a full weekly cycle has been missed), which points to a
+     silent pipeline failure rather than the normal weekly cadence. */
   function checkDataFreshness(data) {
     try {
       if (!data || !data.as_of) return;
       var asOfMs = new Date(data.as_of + 'T00:00:00').getTime();
       if (!isFinite(asOfMs)) return;
       var ageDays = (Date.now() - asOfMs) / 86400000;
-      if (ageDays <= 5) return;
+      if (ageDays <= 9) return;
       var infoBtn = document.getElementById('hm-info-toggle');
       if (infoBtn) {
         infoBtn.style.color = '#d8930f';
