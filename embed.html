@@ -3788,7 +3788,7 @@
   .hm-app.dark .hm-sp500-tip { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
   .hm-app .hm-sp500-tip-name { font-size: 12px; font-weight: 700; color: #2d2d2d; line-height: 1.25; margin-bottom: 4px; }
   .hm-app.dark .hm-sp500-tip-name { color: #e8e4dc; }
-  .hm-app .hm-sp500-tip-line { font-size: 10px; font-weight: 600; margin-top: 2px; }
+  .hm-app .hm-sp500-tip-line { font-size: 12px; font-weight: 600; margin-top: 3px; }
   .hm-app .hm-sp500-tip-lbl { color: var(--hm-muted); }
   .hm-app .hm-sp500-tip-val { color: #2d2d2d; font-variant-numeric: tabular-nums; }
   .hm-app.dark .hm-sp500-tip-val { color: #e8e4dc; }
@@ -9285,12 +9285,13 @@
     var groups = config.groups || [];
     var CAT_KEY = config.storageKey;
     var tableSelector = config.tableSelector;
+    var onChange = config.onChange;
     var header = panelItem.querySelector('.hm-panel-header');
     if (!header) return;
     /* If we've already injected the filter on a previous render, just
        reapply the saved state and return. */
     var existing = header.querySelector('.hm-panel-filter-wrap');
-    if (existing) { _applyCategoryHidden(CAT_KEY, tableSelector); return; }
+    if (existing) { if (tableSelector) _applyCategoryHidden(CAT_KEY, tableSelector); return; }
 
     function loadHidden() {
       try {
@@ -9343,7 +9344,8 @@
         if (cb.checked) { delete map[g.name]; }
         else { map[g.name] = true; }
         saveHidden(map);
-        _applyCategoryHidden(CAT_KEY, tableSelector);
+        if (tableSelector) _applyCategoryHidden(CAT_KEY, tableSelector);
+        if (onChange) onChange();
       });
       var span = document.createElement('span');
       span.textContent = g.name;
@@ -9386,7 +9388,7 @@
       header.insertBefore(filterWrap, header.firstChild);
     }
 
-    _applyCategoryHidden(CAT_KEY, tableSelector);
+    if (tableSelector) _applyCategoryHidden(CAT_KEY, tableSelector);
   }
 
   function _applyCategoryHidden(storageKey, tableSelector) {
@@ -10499,12 +10501,12 @@
       var name = t.getAttribute('data-name') || '';
       var blockPx = bw * scale;
       var fitPx = (blockPx - 6) / Math.max(1, name.length * 0.60);
-      var px = Math.max(8, Math.min(12, fitPx));
+      var px = Math.max(6, Math.min(12, fitPx));
       var fvb = px / scale;
       t.setAttribute('font-size', fvb.toFixed(2));
       t.setAttribute('y', (sy + fvb * 0.82).toFixed(1));
-      if (fitPx < 8) {
-        var maxChars = Math.floor((blockPx - 6) / (8 * 0.60));
+      if (fitPx < 6) {
+        var maxChars = Math.floor((blockPx - 6) / (6 * 0.60));
         var ell = String.fromCharCode(0x2026);
         t.textContent = (maxChars >= 2 && maxChars < name.length) ? name.slice(0, maxChars - 1) + ell : (maxChars < 2 ? '' : name);
       } else if (t.textContent !== name) {
@@ -10534,9 +10536,24 @@
       return;
     }
 
+    /* Full sector list (largest first) for the funnel filter popup. */
+    var capBySector = {};
+    rows.forEach(function (r) { var s = r.s || 'Other'; capBySector[s] = (capBySector[s] || 0) + r.c; });
+    window._hmSp500Groups = Object.keys(capBySector)
+      .sort(function (a, b) { return capBySector[b] - capBySector[a]; })
+      .map(function (n) { return { name: n }; });
+
+    /* Apply the sector filter: drop hidden sectors so the visible ones fill the
+       whole map (bigger tiles => more ticker names show). At least one sector
+       always remains (guarded in the filter popup). */
+    var hiddenSect = {};
+    try { var rawHS = localStorage.getItem('hm-sp500-sectors-v1'); if (rawHS) hiddenSect = JSON.parse(rawHS) || {}; } catch (e) {}
+    var vis = rows.filter(function (r) { return !hiddenSect[r.s || 'Other']; });
+    if (!vis.length) vis = rows;
+
     /* Group by sector; sort sectors + members by market cap descending. */
     var bySector = {};
-    rows.forEach(function (r) { (bySector[r.s || 'Other'] = bySector[r.s || 'Other'] || []).push(r); });
+    vis.forEach(function (r) { (bySector[r.s || 'Other'] = bySector[r.s || 'Other'] || []).push(r); });
     var sectors = Object.keys(bySector).map(function (name) {
       var items = bySector[name].slice().sort(function (a, b) { return b.c - a.c; });
       var total = 0; items.forEach(function (it) { total += it.c; });
@@ -14853,6 +14870,20 @@
             groups: groups,
             storageKey: 'hm-treemap-cats-v1',
             tableSelector: '#hm-theme-treemap',
+          });
+        }
+      });
+      safeRender('sp500Filter', function () {
+        var sp5Item = document.querySelector('.grid-stack-item[gs-id="hm-sp500-treemap"]');
+        var groups = window._hmSp500Groups;
+        if (sp5Item && groups && typeof _installCategoryFilter === 'function') {
+          /* Sectors filter re-renders the treemap (re-layout) instead of just
+             hiding DOM rows, so hidden sectors free up space for the rest. */
+          _installCategoryFilter({
+            panelItem: sp5Item,
+            groups: groups,
+            storageKey: 'hm-sp500-sectors-v1',
+            onChange: function () { renderSp500Treemap(cachedData); },
           });
         }
       });
