@@ -10508,7 +10508,11 @@
       var px = Math.max(6, Math.min(10, fitPx));
       var fvb = px / scale;
       t.setAttribute('font-size', fvb.toFixed(2));
-      t.setAttribute('y', (sy + fvb * 0.82).toFixed(1));
+      /* ~4px gap above the label, capped so it never pushes the text past the
+         13-unit sector strip into the tiles below (at narrow widths where the
+         label already fills the strip, the gap collapses to 0). */
+      var gapVB = Math.min(4 / scale, Math.max(0, 13 - fvb * 1.05));
+      t.setAttribute('y', (sy + gapVB + fvb * 0.82).toFixed(1));
       if (fitPx < 6) {
         var maxChars = Math.floor((blockPx - 6) / (6 * 0.60));
         var ell = String.fromCharCode(0x2026);
