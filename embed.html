@@ -2885,6 +2885,45 @@
     border-color: var(--hm-border);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a90a0'/%3E%3C/svg%3E");
   }
+
+  /* Unified "Period" dropdown — replaces the per-panel period pills in
+     every gold component header. The label is white (sits on the gold
+     band); the <select> reuses the warm/brown .hm-vs-select look. A
+     hidden static span carries the value cleanly into image exports,
+     since native <select> elements don't reliably rasterize. */
+  .hm-app .hm-period-control { display: inline-flex; align-items: center; gap: 6px; }
+  .hm-app .hm-period-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    color: var(--hm-white); line-height: 1;
+  }
+  .hm-app .hm-period-select {
+    font-family: 'Karla', sans-serif;
+    font-size: 10px; font-weight: 700;
+    color: var(--hm-brown);
+    background: var(--hm-bg-warm);
+    border: 1px solid var(--hm-border);
+    border-radius: var(--hm-r);
+    height: 26px;
+    padding: 0 24px 0 8px;
+    cursor: pointer;
+    -webkit-appearance: none; appearance: none; outline: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6050'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+  .hm-app .hm-period-select:focus { border-color: var(--hm-gold); }
+  .hm-app.dark .hm-period-select {
+    background-color: var(--hm-bg-alt);
+    color: var(--hm-dark);
+    border-color: var(--hm-border);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a90a0'/%3E%3C/svg%3E");
+  }
+  /* Export: swap the native select for a plain static value so the period
+     reads as clean "1M" text in the rasterized PNG. */
+  .hm-app .hm-period-static { display: none; font-size: 10px; font-weight: 700; color: var(--hm-white); line-height: 1; }
+  .hm-app .hm-export-stage .hm-period-select { display: none !important; }
+  .hm-app .hm-export-stage .hm-period-static { display: inline !important; }
+
   /* vs SPY as visually separate table */
   .hm-app .hm-sector-tables {
     display: flex;
@@ -5743,6 +5782,7 @@
         <div class="hm-universal-period-panel" id="hm-universal-period-panel" hidden>
           <div class="hm-universal-period-title">Universal time period</div>
           <div class="hm-universal-period-options">
+            <button type="button" class="hm-universal-period-opt" data-period="1D">1D</button>
             <button type="button" class="hm-universal-period-opt" data-period="1W">1W</button>
             <button type="button" class="hm-universal-period-opt" data-period="1M">1M</button>
             <button type="button" class="hm-universal-period-opt" data-period="3M">3M</button>
@@ -7270,14 +7310,14 @@
        active (gold bg). */
   (function () {
     var UNIV_KEY = 'hm-universal-period';
-    var PERIOD_LABELS = ['1W', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y'];
-    var PANEL_SELECTORS = [
-      '.hm-indexes-period-btn',
-      '.hm-sector-period-btn',
-      '.hm-sf-period-btn',
-      '.hm-factors-period-btn',
-      '.hm-treemap-period-btn'
-    ].join(', ');
+    var PERIOD_LABELS = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y'];
+    var LABEL_TO_KEY = {
+      '1D': 'd1', '1W': 'w1', '1M': 'm1', '3M': 'm3', '6M': 'm6',
+      'YTD': 'ytd', '1Y': 'y1', '3Y': 'y3', '5Y': 'y5', '10Y': 'y10'
+    };
+    /* Every panel's Period dropdown carries this class, so the universal
+       "set-all" control can drive them all at once. */
+    var SELECT_SEL = '.hm-period-select';
 
     var toggle = document.getElementById('hm-universal-period-toggle');
     var panel = document.getElementById('hm-universal-period-panel');
@@ -7303,12 +7343,8 @@
       opts.forEach(function (o) {
         o.classList.toggle('active', o.getAttribute('data-period') === currentPeriod);
       });
-      document.querySelectorAll(PANEL_SELECTORS).forEach(function (btn) {
-        btn.classList.toggle(
-          'hm-universal-active',
-          isPeriodBtn(btn) && btn.textContent.trim() === currentPeriod
-        );
-      });
+      /* (each panel's Period dropdown shows its own value; no per-panel
+         marking needed anymore) */
     }
 
     function applyUniversal() {
@@ -7320,13 +7356,15 @@
          a panel re-render (which detaches the old buttons mid-loop).
          Idempotent \u2014 only clicks buttons that aren't already active,
          so this is safe to call multiple times. */
-      var btns = Array.prototype.slice.call(document.querySelectorAll(PANEL_SELECTORS));
-      btns.forEach(function (btn) {
-        if (!btn.isConnected) return;  /* skip stale nodes from re-renders */
-        if (isPeriodBtn(btn) && btn.textContent.trim() === currentPeriod && !btn.classList.contains('active')) {
-          try { btn.click(); } catch (e) {}
-        }
-      });
+      var key = LABEL_TO_KEY[currentPeriod];
+      if (key) {
+        var sels = Array.prototype.slice.call(document.querySelectorAll(SELECT_SEL));
+        sels.forEach(function (sel) {
+          if (sel.value === key) return;  /* already there */
+          sel.value = key;
+          try { sel.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+        });
+      }
       markUniversal();
     }
 
@@ -7365,15 +7403,8 @@
     window.markUniversalPeriod = markUniversal;
     window.getUniversalPeriod = function () { return currentPeriod; };
 
-    /* Re-mark after ANY click on a period button (the panel may
-       have stripped the .hm-universal-active class as part of its
-       own siblings.forEach remove-active flow). Defer to next
-       frame so the panel's handler runs first. */
-    document.addEventListener('click', function (e) {
-      if (e.target.closest && e.target.closest(PANEL_SELECTORS)) {
-        requestAnimationFrame(markUniversal);
-      }
-    });
+    /* (Period dropdowns display their own value, so there's no need to
+       re-mark panels after a click.) */
 
     /* Initial popup state (without click-firing on panels \u2014 they
        haven't rendered yet). applyUniversalPeriod() below in the
@@ -8768,18 +8799,9 @@
     /* Full 9-period set on Index Snapshot. 1W's sparkline window is
        2 weekly closes (see _sparkWeeksFor) so the line draws fine \u2014
        short, but visible. */
-    var idxPeriodOpts = STANDARD_PERIODS;
-    idxPeriodOpts.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-indexes-period-btn' + (idxPeriod === p.key ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        idxPeriod = p.key;
-        renderIndexes(data);  /* re-render with new window */
-      });
-      btnWrap.appendChild(btn);
-    });
+    btnWrap.appendChild(makePeriodControl(idxPeriod, function (k) {
+      idxPeriod = k; renderIndexes(data);  /* re-render with new window */
+    }));
     hdr.appendChild(btnWrap);
     section.appendChild(hdr);
 
@@ -9991,65 +10013,60 @@
        YTD recomputes its slice from the year-start position at click
        time and picks daily vs weekly based on how far into the year. */
     var periods = [
-      { label: '1W',  weeks: 2,   days: 6,   daily: true  },
-      { label: '1M',  weeks: 5,   days: 22,  daily: true  },
-      { label: '3M',  weeks: 14,  days: 66,  daily: true  },
-      { label: '6M',  weeks: 27,  days: 131, daily: true  },
-      { label: 'YTD', weeks: -1,  days: -1,  daily: 'auto'},
-      { label: '1Y',  weeks: 53,  days: 0,   daily: false },
-      { label: '3Y',  weeks: 157, days: 0,   daily: false },
-      { label: '5Y',  weeks: 261, days: 0,   daily: false },
-      { label: '10Y', weeks: 521, days: 0,   daily: false },
+      { key: 'd1',  label: '1D',  weeks: 2,   days: 2,   daily: true  },
+      { key: 'w1',  label: '1W',  weeks: 2,   days: 6,   daily: true  },
+      { key: 'm1',  label: '1M',  weeks: 5,   days: 22,  daily: true  },
+      { key: 'm3',  label: '3M',  weeks: 14,  days: 66,  daily: true  },
+      { key: 'm6',  label: '6M',  weeks: 27,  days: 131, daily: true  },
+      { key: 'ytd', label: 'YTD', weeks: -1,  days: -1,  daily: 'auto'},
+      { key: 'y1',  label: '1Y',  weeks: 53,  days: 0,   daily: false },
+      { key: 'y3',  label: '3Y',  weeks: 157, days: 0,   daily: false },
+      { key: 'y5',  label: '5Y',  weeks: 261, days: 0,   daily: false },
+      { key: 'y10', label: '10Y', weeks: 521, days: 0,   daily: false },
     ];
-    periods.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-sector-period-btn' + (p.weeks === 14 ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        /* Decide daily vs weekly. For YTD ('auto'), use daily if the
-           year has progressed less than ~6M of trading days. */
-        var useDaily;
-        if (p.daily === 'auto') {
-          var datesD = (sc.dates_daily && sc.dates_daily.length > 0) ? sc.dates_daily : null;
-          var yr = new Date().getFullYear();
-          if (datesD) {
-            // count trading days from year start to today in daily array
-            var ytdDays = 0;
-            for (var i = 0; i < datesD.length; i++) {
-              if (datesD[i].substring(0, 4) === String(yr)) { ytdDays = datesD.length - i; break; }
-            }
-            useDaily = (ytdDays > 0 && ytdDays <= 130);
-          } else {
-            useDaily = false;
+    periodWrap.appendChild(makePeriodControl('m3', function (k) {
+      var p = null;
+      periods.forEach(function (pp) { if (pp.key === k) p = pp; });
+      if (!p) return;
+      /* Decide daily vs weekly. For YTD ('auto'), use daily if the
+         year has progressed less than ~6M of trading days. */
+      var useDaily;
+      if (p.daily === 'auto') {
+        var datesD = (sc.dates_daily && sc.dates_daily.length > 0) ? sc.dates_daily : null;
+        var yr = new Date().getFullYear();
+        if (datesD) {
+          // count trading days from year start to today in daily array
+          var ytdDays = 0;
+          for (var i = 0; i < datesD.length; i++) {
+            if (datesD[i].substring(0, 4) === String(yr)) { ytdDays = datesD.length - i; break; }
           }
+          useDaily = (ytdDays > 0 && ytdDays <= 130);
         } else {
-          useDaily = !!p.daily;
+          useDaily = false;
         }
-        sectorIsDaily = useDaily && (sc.dates_daily && sc.dates_daily.length > 0);
-        var active = _scActive(_sc);
-        var amax = active.dates.length - 1;
+      } else {
+        useDaily = !!p.daily;
+      }
+      sectorIsDaily = useDaily && (sc.dates_daily && sc.dates_daily.length > 0);
+      var active = _scActive(_sc);
+      var amax = active.dates.length - 1;
 
-        var slice;
-        if (p.weeks === -1) {
-          // YTD: count entries from year-start to end in the active dataset
-          var yr2 = new Date().getFullYear();
-          slice = active.dates.length;
-          for (var j = 0; j < active.dates.length; j++) {
-            if (active.dates[j].substring(0, 4) === String(yr2)) { slice = active.dates.length - j; break; }
-          }
-        } else {
-          slice = sectorIsDaily ? p.days : p.weeks;
+      var slice;
+      if (p.weeks === -1) {
+        // YTD: count entries from year-start to end in the active dataset
+        var yr2 = new Date().getFullYear();
+        slice = active.dates.length;
+        for (var j = 0; j < active.dates.length; j++) {
+          if (active.dates[j].substring(0, 4) === String(yr2)) { slice = active.dates.length - j; break; }
         }
-        sectorRangeStart = Math.max(0, amax - slice + 1);
-        sectorRangeEnd = amax;
-        sectorPeriod = p.label;
-        buildSectorCharts();
-        periodWrap.querySelectorAll('.hm-sector-period-btn').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-      });
-      periodWrap.appendChild(btn);
-    });
+      } else {
+        slice = sectorIsDaily ? p.days : p.weeks;
+      }
+      sectorRangeStart = Math.max(0, amax - slice + 1);
+      sectorRangeEnd = amax;
+      sectorPeriod = p.label;
+      buildSectorCharts();
+    }));
     toolbar.appendChild(periodWrap);
 
     toolbar.appendChild(Object.assign(document.createElement('div'), { className: 'hm-sector-sep' }));
@@ -10325,6 +10342,7 @@
      etc. all ship m1/m3/m6/ytd/y1/y3/y5/y10).
      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
   var STANDARD_PERIODS = [
+    { key: 'd1',  label: '1D'  },
     { key: 'w1',  label: '1W'  },
     { key: 'm1',  label: '1M'  },
     { key: 'm3',  label: '3M'  },
@@ -10340,6 +10358,41 @@
      every reference. They all point at the same canonical array. */
   var SF_PERIODS = STANDARD_PERIODS;
   var FI_PERIODS = STANDARD_PERIODS;
+
+  /* Shared "Period" control — a white "Period" label + a styled <select>
+     of STANDARD_PERIODS (warm chip). Replaces the per-panel period-pill
+     rows in every gold header. The hidden .hm-period-static span mirrors
+     the value for clean image exports. onChange(key) fires with the new
+     period key; the panel updates its own state + re-renders. The
+     <select> carries class hm-period-select so the universal "set-all"
+     control can drive every panel at once. */
+  function makePeriodControl(currentKey, onChange) {
+    var wrap = document.createElement('div');
+    wrap.className = 'hm-period-control';
+    var lbl = document.createElement('span');
+    lbl.className = 'hm-period-label';
+    lbl.textContent = 'Period';
+    wrap.appendChild(lbl);
+    var sel = document.createElement('select');
+    sel.className = 'hm-period-select';
+    var stat = document.createElement('span');
+    stat.className = 'hm-period-static';
+    STANDARD_PERIODS.forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p.key; o.textContent = p.label;
+      if (p.key === currentKey) { o.selected = true; stat.textContent = p.label; }
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', function () {
+      var lab = '';
+      STANDARD_PERIODS.forEach(function (p) { if (p.key === sel.value) lab = p.label; });
+      stat.textContent = lab;
+      onChange(sel.value);
+    });
+    wrap.appendChild(sel);
+    wrap.appendChild(stat);
+    return wrap;
+  }
 
   function renderStyleFactor(data) {
     var container = document.getElementById('hm-stylefactor');
@@ -10382,23 +10435,9 @@
 
     var allCells = [];
 
-    periodOpts.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-sf-period-btn' + (sbPeriod === p.key ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        sbPeriod = p.key;
-        /* Only deactivate period pills (direct children of sbBtns), not
-           the mode toggle pills nested inside sbModeWrap. */
-        sbBtns.querySelectorAll(':scope > .hm-sf-period-btn').forEach(function (b) {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        updateStyleBox();
-      });
-      sbBtns.appendChild(btn);
-    });
+    sbBtns.appendChild(makePeriodControl(sbPeriod, function (k) {
+      sbPeriod = k; updateStyleBox();
+    }));
 
     /* Abs / vs SPY toggle \u2014 same chrome as the period pills with a
        vertical divider, mirroring the thematic treemap pattern. */
@@ -10617,23 +10656,9 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    SF_PERIODS.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-factors-period-btn' + (fPeriod === p.key ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        fPeriod = p.key;
-        /* Only reset period buttons inside the period group, not the
-           Abs/vs SPY toggle that lives next to it. */
-        btnWrap.querySelectorAll(':scope > .hm-factors-period-btn').forEach(function (b) {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        updateFactorRows();
-      });
-      btnWrap.appendChild(btn);
-    });
+    btnWrap.appendChild(makePeriodControl(fPeriod, function (k) {
+      fPeriod = k; updateFactorRows();
+    }));
 
     /* Mode toggle (Abs / vs SPY) \u2014 same chrome as period buttons, separated
        by a vertical rule so it reads as a distinct binary control. Reuses
@@ -10885,21 +10910,9 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    FI_PERIODS.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-factors-period-btn' + (fiPeriod === p.key ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        fiPeriod = p.key;
-        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        updateRows();
-      });
-      btnWrap.appendChild(btn);
-    });
+    btnWrap.appendChild(makePeriodControl(fiPeriod, function (k) {
+      fiPeriod = k; updateRows();
+    }));
     hdr.appendChild(btnWrap);
     card.appendChild(hdr);
 
@@ -11121,22 +11134,9 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    /* Same period set as Fixed Income panel. */
-    FI_PERIODS.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-factors-period-btn' + (giPeriod === p.key ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        giPeriod = p.key;
-        btnWrap.querySelectorAll(':scope > .hm-factors-period-btn').forEach(function (b) {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        updateRows();
-      });
-      btnWrap.appendChild(btn);
-    });
+    btnWrap.appendChild(makePeriodControl(giPeriod, function (k) {
+      giPeriod = k; updateRows();
+    }));
 
     /* Local / USD currency toggle \u2014 same chrome as period pills, separated
        by a divider. Default = local since that's how indexes natively
@@ -11373,21 +11373,9 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    FI_PERIODS.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-factors-period-btn' + (cePeriod === p.key ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        cePeriod = p.key;
-        btnWrap.querySelectorAll(':scope > .hm-factors-period-btn').forEach(function (b) {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        updateRows();
-      });
-      btnWrap.appendChild(btn);
-    });
+    btnWrap.appendChild(makePeriodControl(cePeriod, function (k) {
+      cePeriod = k; updateRows();
+    }));
 
     /* USD / Local currency toggle. Default = USD (native ETF return).
        Flip to Local to back out FX and see the underlying local-market
@@ -11595,21 +11583,9 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    FI_PERIODS.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-factors-period-btn' + (cpPeriod === p.key ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        cpPeriod = p.key;
-        btnWrap.querySelectorAll('.hm-factors-period-btn').forEach(function (b) {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        updateRows();
-      });
-      btnWrap.appendChild(btn);
-    });
+    btnWrap.appendChild(makePeriodControl(cpPeriod, function (k) {
+      cpPeriod = k; updateRows();
+    }));
     hdr.appendChild(btnWrap);
     card.appendChild(hdr);
 
@@ -11881,23 +11857,9 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    FI_PERIODS.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-factors-period-btn' + (cmPeriod === p.key ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        cmPeriod = p.key;
-        /* Only deactivate period pills (direct children of btnWrap), not
-           the sort toggle pills nested inside sortWrap. */
-        btnWrap.querySelectorAll(':scope > .hm-factors-period-btn').forEach(function (b) {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        rebuildAndPaint();
-      });
-      btnWrap.appendChild(btn);
-    });
+    btnWrap.appendChild(makePeriodControl(cmPeriod, function (k) {
+      cmPeriod = k; rebuildAndPaint();
+    }));
 
     /* Sort toggle (Static / Sorted) \u2014 same chrome as period pills with
        a vertical divider, matching the treemap toggle pattern. */
@@ -12298,19 +12260,9 @@
        "\u2014" for those tiles \u2014 handled gracefully by the null path in
        updateTreemapColors. Older themes (TAN 2008, SOXX, GDX, XBI,
        etc.) get real long-window values that are useful for context. */
-    STANDARD_PERIODS.forEach(function (p) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hm-treemap-period-btn' + (treemapPeriod === p.key ? ' active' : '');
-      btn.textContent = p.label;
-      btn.addEventListener('click', function () {
-        treemapPeriod = p.key;
-        btnWrap.querySelectorAll('.hm-treemap-period-btn').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        updateTreemapColors();
-      });
-      btnWrap.appendChild(btn);
-    });
+    btnWrap.appendChild(makePeriodControl(treemapPeriod, function (k) {
+      treemapPeriod = k; updateTreemapColors();
+    }));
 
     /* Mode toggle (Abs / vs SPY) \u2014 same button styling as period for
        visual consistency, separated by a vertical rule so the user
