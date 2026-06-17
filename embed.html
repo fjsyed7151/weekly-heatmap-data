@@ -10007,7 +10007,13 @@
       { key: 'y5',  label: '5Y',  weeks: 261, days: 0,   daily: false },
       { key: 'y10', label: '10Y', weeks: 521, days: 0,   daily: false },
     ];
-    periodWrap.appendChild(makePeriodControl('m3', function (k) {
+    /* Initial dropdown value tracks the CURRENT sector period (sectorPeriod
+       holds the active label) so a re-render (e.g. a theme toggle, which
+       rebuilds every panel) keeps the dropdown in sync with the chart
+       instead of resetting to 3M. */
+    var initKey = 'm3';
+    periods.forEach(function (pp) { if (pp.label === sectorPeriod) initKey = pp.key; });
+    periodWrap.appendChild(makePeriodControl(initKey, function (k) {
       var p = null;
       periods.forEach(function (pp) { if (pp.key === k) p = pp; });
       if (!p) return;
