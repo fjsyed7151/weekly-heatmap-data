@@ -2035,7 +2035,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 10px;
+    font-size: 8px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-muted);
@@ -2064,7 +2064,7 @@
     grid-row: 3;
     display: flex;
     justify-content: space-between;
-    font-size: 10px;
+    font-size: 8px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-muted);
@@ -2116,10 +2116,17 @@
   .hm-app .hm-gave-qname.tr { top: 6px;    right: 6px; }
   .hm-app .hm-gave-qname.bl { bottom: 6px; left: 6px; }
   .hm-app .hm-gave-qname.br { bottom: 6px; right: 6px; }
-  .hm-app .hm-gave-qname.active {
-    background: var(--hm-gold);
-    border-color: var(--hm-gold);
-    color: var(--hm-white);
+  /* Active regime is shown by a gold ring on the quadrant CELL (see
+     .hm-gave-tint.active below) — NOT by filling this chip gold. A gold-
+     filled chip sits in the same quadrant as the gold "Now" dot, so when the
+     dot lands near that corner (e.g. very energy-efficient + bad currency, it
+     goes to the top-right corner where the TR chip is) the dot would merge
+     into the chip and vanish. A neutral chip keeps the dot readable wherever
+     it lands; the chip's Q-number still goes full-opacity when active (below)
+     as a subtle cue. */
+  .hm-app .hm-gave-tint.active {
+    box-shadow: inset 0 0 0 2px var(--hm-gold);
+    border-radius: var(--hm-r);
   }
   /* Subtle Q1/Q2/Q3/Q4 prefix inside each Gave chip \u2014 same visual rules as
      the Growth \u00d7 Policy panel for cross-panel consistency. */
@@ -2253,10 +2260,10 @@
     min-width: 0;
   }
   .hm-app .hm-gave-chart-title {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
-    color: var(--hm-muted);
+    color: var(--hm-dark);
     margin-bottom: 4px;
   }
   .hm-app .hm-gave-chart-meta {
@@ -2266,15 +2273,18 @@
     margin-bottom: 8px;
     flex-wrap: wrap;
   }
+  /* Current reading in gold, 7y-MA reading in brown — one step below the
+     12px title (10px), so the title leads and the two readings read as
+     secondary, color-coded data. */
   .hm-app .hm-gave-chart-val {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
-    color: var(--hm-dark);
+    color: var(--hm-gold);
     font-variant-numeric: tabular-nums;
   }
   .hm-app .hm-gave-chart-ma {
     font-size: 10px;
-    color: var(--hm-muted);
+    color: var(--hm-brown);
     font-variant-numeric: tabular-nums;
   }
   .hm-app .hm-gave-chart-delta {
@@ -8351,7 +8361,7 @@
     });
     sortedTints.forEach(function (c) {
       var tint = document.createElement('div');
-      tint.className = 'hm-gave-tint ' + c.key;
+      tint.className = 'hm-gave-tint ' + c.key + (c.key === g.quadrant ? ' active' : '');
       plane.appendChild(tint);
     });
 
@@ -8470,10 +8480,10 @@
         '<div class="hm-gave-chart-meta">' +
           '<span class="hm-gave-chart-val">' + (cur != null ? cur.toFixed(2) : '\u2014') + '</span>' +
           (curMa != null
-            ? '<span class="hm-gave-chart-ma">7y MA ' + curMa.toFixed(2) + '</span>' +
+            ? '<span class="hm-gave-chart-ma">7Y MA: ' + curMa.toFixed(2) + '</span>' +
               (delta != null
                 ? '<span class="hm-gave-chart-delta ' + deltaCls + '">' +
-                    (delta >= 0 ? '\u25B2 +' : '\u25BC ') + delta.toFixed(1) + '%' +
+                    (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%' +
                   '</span>'
                 : '')
             : '') +
@@ -8505,7 +8515,7 @@
               order: 1,
             },
             {
-              label: '7y MA',
+              label: '7Y MA',
               data: ma,
               borderColor: th === 'dark' ? '#8a90a0' : '#888',
               backgroundColor: 'transparent',
