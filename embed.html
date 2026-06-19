@@ -3728,22 +3728,6 @@
     background: var(--hm-panel);
     overflow: hidden;
   }
-  /* This gold band carries only a title — no period dropdown / toggle row.
-     The shared 34px min-height floor (sized for a 22px control row + 6/6
-     padding) leaves a text-only band looking like a half-empty tall gold
-     bar in exports. Drop the floor so it hugs the 12px title: 12 + 6 + 6 =
-     24px, matching the panel-chrome height and reading snug like the
-     control-filled bands on the other panels. Specificity (0,3,0) beats
-     the shared `.hm-app .hm-factors-header` floor (0,2,0).
-     Left padding 4px (not the shared 12px): the treemap content below
-     starts near-flush (sector labels inset 2 viewBox units), so a 12px
-     title hangs ~11px right of the map and reads as over-indented. 4px
-     aligns the title with the map's left edge while keeping a hair off
-     the panel's 1px border. */
-  .hm-app .hm-sp500-card .hm-factors-header {
-    min-height: 0;
-    padding-left: 4px;
-  }
   /* The SVG compresses with the column down to its min-width, then this
      wrapper scrolls horizontally. Header + legend sit outside it so they
      stay put (full panel width). */
@@ -14295,6 +14279,23 @@
       var clonePanelHeader = clone.querySelector('.hm-panel-header');
       if (clonePanelHeader) {
         clonePanelHeader.style.setProperty('display', 'none', 'important');
+      }
+
+      /* S&P 500 Heat Map: EXPORT-ONLY gold-band height fix. This band is
+         title-only (no period dropdown / toggle — it's a daily heatmap), so
+         the shared 34px min-height floor (sized for a ~22px control row + 6/6
+         padding) leaves it looking like a half-empty tall gold bar once the
+         24px panel chrome is display:none'd above. Drop the floor so the
+         exported band hugs its 12px title (= 24px). Applied INLINE on the
+         clone — NOT in CSS — so the LIVE on-screen header keeps its 34px and
+         stays consistent with every other panel's gold band (the live header
+         was never the problem; only the export looked too tall). Inline also
+         survives html-to-image's foreignObject capture, which .hm-export-stage
+         descendant selectors do not. Left padding is left untouched (12px,
+         matching all panels). */
+      if (panelId === 'hm-sp500-treemap') {
+        var spExportBand = clone.querySelector('.hm-factors-header');
+        if (spExportBand) spExportBand.style.setProperty('min-height', '0', 'important');
       }
 
       /* Strip the dotted-underline tooltip affordance from metric
