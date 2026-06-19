@@ -2035,7 +2035,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-muted);
@@ -2064,7 +2064,7 @@
     grid-row: 3;
     display: flex;
     justify-content: space-between;
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-muted);
@@ -2094,7 +2094,7 @@
   .hm-app .hm-gave-qname {
     position: absolute;
     z-index: 2;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 700;
     line-height: 1.2;
     padding: 3px 7px;
@@ -2267,18 +2267,18 @@
     flex-wrap: wrap;
   }
   .hm-app .hm-gave-chart-val {
-    font-size: 18px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--hm-dark);
     font-variant-numeric: tabular-nums;
   }
   .hm-app .hm-gave-chart-ma {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--hm-muted);
     font-variant-numeric: tabular-nums;
   }
   .hm-app .hm-gave-chart-delta {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     padding: 2px 6px;
     border-radius: 3px;
@@ -8300,10 +8300,10 @@
           'an inflationary regime (top). Bonds beating gold means deflationary ' +
           '(bottom).</p>' +
         '<p><b>Quadrants</b><br>' +
-          'Q1 (NE) <b>Inflationary Boom</b>: long real assets, short long bonds<br>' +
-          'Q2 (NW) <b>Inflationary Bust</b>: stagflation. Long cash and energy<br>' +
-          'Q3 (SW) <b>Deflationary Bust</b>: flight to safety. Long government bonds<br>' +
-          'Q4 (SE) <b>Deflationary Boom</b>: long growth, bonds, real estate. ' +
+          'Q1 (NE) <b>Inflationary Boom</b>: Long real assets, short long bonds<br>' +
+          'Q2 (NW) <b>Inflationary Bust</b>: Stagflation. Long cash and energy<br>' +
+          'Q3 (SW) <b>Deflationary Bust</b>: Flight to safety. Long government bonds<br>' +
+          'Q4 (SE) <b>Deflationary Boom</b>: Long growth, bonds, real estate. ' +
           '<i>All true US bull markets occur here.</i></p>' +
         '<p><b>Companion charts</b>: The two axis ratios, plus S&amp;P 500 / Gold ' +
           'as a money-illusion check. Stocks rising against gold are real gains; ' +
@@ -8494,7 +8494,11 @@
               backgroundColor: th === 'dark' ? 'rgba(218,165,32,0.14)' : 'rgba(218,165,32,0.10)',
               borderWidth: 1.75,
               pointRadius: 0,
-              pointHoverRadius: 4,
+              /* Hover indicator + tooltip swatch render as a short horizontal
+                 line (matching the line series) instead of a circle. */
+              pointStyle: 'line',
+              pointHoverRadius: 5,
+              pointHoverBorderWidth: 1.75,
               fill: true,
               tension: 0.15,
               spanGaps: true,
@@ -8508,7 +8512,9 @@
               borderWidth: 1.25,
               borderDash: [4, 4],
               pointRadius: 0,
-              pointHoverRadius: 3,
+              pointStyle: 'line',
+              pointHoverRadius: 5,
+              pointHoverBorderWidth: 1.25,
               fill: false,
               tension: 0,
               spanGaps: true,
