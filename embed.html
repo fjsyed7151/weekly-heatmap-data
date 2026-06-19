@@ -10504,7 +10504,7 @@
       var sy = parseFloat(t.getAttribute('data-y')) || 0;
       var name = t.getAttribute('data-name') || '';
       var blockPx = bw * scale;
-      var fitPx = (blockPx - 6) / Math.max(1, name.length * 0.60);
+      var fitPx = (blockPx - 4) / Math.max(1, name.length * 0.60);
       var px = Math.max(6, Math.min(10, fitPx));
       var fvb = px / scale;
       t.setAttribute('font-size', fvb.toFixed(2));
@@ -10514,7 +10514,7 @@
       var gapVB = Math.min(4 / scale, Math.max(0, 13 - fvb * 1.05));
       t.setAttribute('y', (sy + gapVB + fvb * 0.82).toFixed(1));
       if (fitPx < 6) {
-        var maxChars = Math.floor((blockPx - 6) / (6 * 0.60));
+        var maxChars = Math.floor((blockPx - 4) / (6 * 0.60));
         var ell = String.fromCharCode(0x2026);
         t.textContent = (maxChars >= 2 && maxChars < name.length) ? name.slice(0, maxChars - 1) + ell : (maxChars < 2 ? '' : name);
       } else if (t.textContent !== name) {
@@ -10586,7 +10586,7 @@
         /* font-size + y are set by sp500FitLabels (px-clamped); defaults here
            just avoid a flash before it runs. */
         labelsSvg.push('<text class="hm-sp500-seclabel" data-w="' + s.w.toFixed(1) + '" data-y="' + s.y.toFixed(1) +
-          '" data-name="' + nm + '" x="' + (s.x + 4).toFixed(1) + '" y="' + (s.y + 9).toFixed(1) +
+          '" data-name="' + nm + '" x="' + (s.x + 2).toFixed(1) + '" y="' + (s.y + 9).toFixed(1) +
           '" font-size="8" font-weight="700" font-family="Karla,sans-serif" fill="' + labelFill + '">' + nm + '</text>');
       }
       var body = { x: s.x, y: s.y + hh, w: s.w, h: s.h - hh };
