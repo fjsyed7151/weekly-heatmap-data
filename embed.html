@@ -2071,10 +2071,14 @@
     padding: 2px 4px 0;
   }
   /* Quadrant tints \u2014 the four grid tracks just carry color, no text. */
-  .hm-app .hm-gave-tint.infl_bust { background: rgba(212,42,32,0.08); }
-  .hm-app .hm-gave-tint.infl_boom { background: rgba(230,191,102,0.14); }
-  .hm-app .hm-gave-tint.defl_bust { background: rgba(110,120,150,0.10); }
-  .hm-app .hm-gave-tint.defl_boom { background: rgba(26,122,66,0.10); }
+  /* Each cell rounds only its OUTER corner (the one at the plane's corner);
+     the three inner corners stay square so the four cells meet flush at the
+     center. The active-quadrant outline (below) inherits this, so it rounds
+     just that corner. NW=top-left, NE=top-right, SW=bottom-left, SE=bottom-right. */
+  .hm-app .hm-gave-tint.infl_bust { background: rgba(212,42,32,0.08);   border-radius: var(--hm-r) 0 0 0; }
+  .hm-app .hm-gave-tint.infl_boom { background: rgba(230,191,102,0.14); border-radius: 0 var(--hm-r) 0 0; }
+  .hm-app .hm-gave-tint.defl_bust { background: rgba(110,120,150,0.10); border-radius: 0 0 0 var(--hm-r); }
+  .hm-app .hm-gave-tint.defl_boom { background: rgba(26,122,66,0.10);   border-radius: 0 0 var(--hm-r) 0; }
   /* Midlines through the plane center \u2014 subtle, so the eye can read
      position relative to the "neutral" 0 axis. */
   .hm-app .hm-gave-midline-h,
@@ -2116,17 +2120,13 @@
   .hm-app .hm-gave-qname.tr { top: 6px;    right: 6px; }
   .hm-app .hm-gave-qname.bl { bottom: 6px; left: 6px; }
   .hm-app .hm-gave-qname.br { bottom: 6px; right: 6px; }
-  /* Active regime is shown by a gold ring on the quadrant CELL (see
-     .hm-gave-tint.active below) — NOT by filling this chip gold. A gold-
-     filled chip sits in the same quadrant as the gold "Now" dot, so when the
-     dot lands near that corner (e.g. very energy-efficient + bad currency, it
-     goes to the top-right corner where the TR chip is) the dot would merge
-     into the chip and vanish. A neutral chip keeps the dot readable wherever
-     it lands; the chip's Q-number still goes full-opacity when active (below)
-     as a subtle cue. */
+  /* Active regime = a neutral (non-gold) outline on the quadrant CELL, not a
+     gold chip fill. A gold chip sat in the same quadrant as the gold "Now"
+     dot, so a corner dot could merge into it and vanish; a cell outline never
+     collides with the dot. The outline inherits the cell's outer-corner
+     rounding (above), so only that corner is rounded, the inner corners square. */
   .hm-app .hm-gave-tint.active {
-    box-shadow: inset 0 0 0 2px var(--hm-gold);
-    border-radius: var(--hm-r);
+    box-shadow: inset 0 0 0 2px var(--hm-dark);
   }
   /* Subtle Q1/Q2/Q3/Q4 prefix inside each Gave chip \u2014 same visual rules as
      the Growth \u00d7 Policy panel for cross-panel consistency. */
@@ -7553,7 +7553,7 @@
     /* hm-gave-wrap is the actual grid panel containing the quadrant
        and the companion charts together \u2014 they are not exposed as
        separate hide/show options. */
-    { id: 'hm-gave-wrap',       label: 'Macro Regime',             group: 'Macro' },
+    { id: 'hm-gave-wrap',       label: 'Gave Four Quadrants',      group: 'Macro' },
     { id: 'hm-macrocompass',    label: 'Growth \u00d7 Policy',     group: 'Macro' },
     { id: 'hm-economy',         label: 'Economic Indicators',      group: 'Macro' },
     { id: 'hm-calendar',        label: 'Economic Calendar',        group: 'Macro' },
@@ -8273,19 +8273,19 @@
      plane (same pattern as the Growth \u00d7 Policy panel). */
   var GAVE_CELLS = [
     { key: 'infl_bust', row: 0, col: 0, name: 'Inflationary Bust',
-      hint: 'Stagflation: the investor\u2019s nightmare. Very few assets work.',
+      hint: 'Prices rising, output falling.',
       longs:  ['Cash (safest currency)', 'Energy'],
       shorts: ['Financial assets', 'Long-duration bonds', 'Long-duration equities'] },
     { key: 'infl_boom', row: 0, col: 1, name: 'Inflationary Boom',
-      hint: 'Real assets dominate. Gold, commodities, real estate, cyclicals.',
+      hint: 'Prices rising, output rising.',
       longs:  ['Gold', 'Commodities', 'Real estate', 'Value stocks', 'EM equities', 'High fixed-cost cyclicals'],
       shorts: ['Long-duration bonds'] },
     { key: 'defl_bust', row: 1, col: 0, name: 'Deflationary Bust',
-      hint: 'Flight to safety. Long-dated government bonds the only winning trade.',
+      hint: 'Prices falling, output falling.',
       longs:  ['Long-dated government bonds', 'Cash'],
       shorts: ['Equities', 'Corporate bonds', 'Real estate', 'Commodities'] },
     { key: 'defl_boom', row: 1, col: 1, name: 'Deflationary Boom',
-      hint: 'Capitalism\u2019s natural state. Most long-term investments work.',
+      hint: 'Prices falling, output rising.',
       longs:  ['Innovative growth stocks (pricing power)', 'Bonds', 'Real estate'],
       shorts: ['Companies without pricing power'] },
   ];
@@ -8302,22 +8302,20 @@
        click away. Same pattern as the Growth \u00d7 Policy panel. */
     window.PANEL_INFO_HTML['hm-gave-wrap'] = function () {
       return (
-        '<p><b>Charles Gave\'s Four Quadrants</b>, a regime classifier. Two ratios ' +
-          'place the market on the plane.</p>' +
+        '<p>Where the market sits on Charles Gave\'s Four Quadrants right now, ' +
+          'placed by two ratios.</p>' +
         '<p><b>X axis</b>: S&amp;P 500 / WTI, energy efficiency. Above its 7-year ' +
           'average is a boom (right), below is a bust (left).</p>' +
-        '<p><b>Y axis</b>: Gold / IEF, currency quality. Gold beating bonds means ' +
-          'an inflationary regime (top). Bonds beating gold means deflationary ' +
+        '<p><b>Y axis</b>: Gold / IEF, currency quality. Gold outpacing bonds is ' +
+          'an inflationary regime (top); bonds outpacing gold is deflationary ' +
           '(bottom).</p>' +
         '<p><b>Quadrants</b><br>' +
-          'Q1 (NE) <b>Inflationary Boom</b>: Long real assets, short long bonds<br>' +
-          'Q2 (NW) <b>Inflationary Bust</b>: Stagflation. Long cash and energy<br>' +
-          'Q3 (SW) <b>Deflationary Bust</b>: Flight to safety. Long government bonds<br>' +
-          'Q4 (SE) <b>Deflationary Boom</b>: Long growth, bonds, real estate. ' +
-          '<i>All true US bull markets occur here.</i></p>' +
-        '<p><b>Companion charts</b>: The two axis ratios, plus S&amp;P 500 / Gold ' +
-          'as a money-illusion check. Stocks rising against gold are real gains; ' +
-          'flat or falling against gold is debasement dressed up as upside.</p>'
+          '<b>Q1 (NE) Inflationary Boom</b>: Long gold, commodities, and real assets; short long bonds<br>' +
+          '<b>Q2 (NW) Inflationary Bust</b>: Long cash and energy; avoid financial assets<br>' +
+          '<b>Q3 (SW) Deflationary Bust</b>: Long long-dated government bonds<br>' +
+          '<b>Q4 (SE) Deflationary Boom</b>: Long growth stocks, bonds, and real estate</p>' +
+        '<p>The companion charts plot the two axis ratios plus S&amp;P 500 / Gold, ' +
+          'which shows whether equity gains are real or just a weaker dollar.</p>'
       );
     };
     var gaveItem = document.querySelector('.grid-stack-item[gs-id="hm-gave-wrap"]');
@@ -8334,7 +8332,7 @@
       if (existing) existing.remove();
       var hdr = document.createElement('div');
       hdr.className = 'hm-gold-header';
-      hdr.innerHTML = '<span>Macro Regime &middot; Gave Four Quadrants</span>';
+      hdr.innerHTML = '<span>Gave Four Quadrants</span>';
       wrap.insertBefore(hdr, wrap.firstChild);
     }
 
@@ -12967,7 +12965,7 @@
     'hm-calendar':       'Economic Calendar',
     'hm-economy':        'Economic Indicators',
     'hm-indexes':        'Index Snapshot',
-    'hm-gave-wrap':      'Macro Regime',
+    'hm-gave-wrap':      'Gave Four Quadrants',
     'hm-macrocompass':   'Growth \u00d7 Policy',
     'hm-stylefactor':    'Size vs Value',
     'hm-factors':        'Factors Performance',
