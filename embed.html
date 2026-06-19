@@ -3728,6 +3728,22 @@
     background: var(--hm-panel);
     overflow: hidden;
   }
+  /* This gold band carries only a title — no period dropdown / toggle row.
+     The shared 34px min-height floor (sized for a 22px control row + 6/6
+     padding) leaves a text-only band looking like a half-empty tall gold
+     bar in exports. Drop the floor so it hugs the 12px title: 12 + 6 + 6 =
+     24px, matching the panel-chrome height and reading snug like the
+     control-filled bands on the other panels. Specificity (0,3,0) beats
+     the shared `.hm-app .hm-factors-header` floor (0,2,0).
+     Left padding 4px (not the shared 12px): the treemap content below
+     starts near-flush (sector labels inset 2 viewBox units), so a 12px
+     title hangs ~11px right of the map and reads as over-indented. 4px
+     aligns the title with the map's left edge while keeping a hair off
+     the panel's 1px border. */
+  .hm-app .hm-sp500-card .hm-factors-header {
+    min-height: 0;
+    padding-left: 4px;
+  }
   /* The SVG compresses with the column down to its min-width, then this
      wrapper scrolls horizontally. Header + legend sit outside it so they
      stay put (full panel width). */
