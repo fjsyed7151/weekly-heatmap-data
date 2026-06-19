@@ -1519,7 +1519,8 @@
   .hm-app span.hm-mc-qname {
     border-bottom-style: solid;
   }
-  .hm-app span.hm-gave-qname.active,
+  /* Gave chips get NO active border — the active quadrant is shown by the gold
+     cell outline, and a gold chip underline collided with the gold "Now" dot. */
   .hm-app span.hm-mc-qname.active {
     border-bottom-color: var(--hm-gold);
   }
@@ -2120,13 +2121,13 @@
   .hm-app .hm-gave-qname.tr { top: 6px;    right: 6px; }
   .hm-app .hm-gave-qname.bl { bottom: 6px; left: 6px; }
   .hm-app .hm-gave-qname.br { bottom: 6px; right: 6px; }
-  /* Active regime = a neutral (non-gold) outline on the quadrant CELL, not a
-     gold chip fill. A gold chip sat in the same quadrant as the gold "Now"
-     dot, so a corner dot could merge into it and vanish; a cell outline never
-     collides with the dot. The outline inherits the cell's outer-corner
-     rounding (above), so only that corner is rounded, the inner corners square. */
+  /* Active regime = a gold outline on the quadrant CELL (not a gold chip fill,
+     which sat in the same quadrant as the gold "Now" dot and could swallow it;
+     a cell outline never collides with the dot). The outline inherits the
+     cell's outer-corner rounding (above), so only that corner is rounded and
+     the inner corners stay square. */
   .hm-app .hm-gave-tint.active {
-    box-shadow: inset 0 0 0 2px var(--hm-dark);
+    box-shadow: inset 0 0 0 2px var(--hm-gold);
   }
   /* Subtle Q1/Q2/Q3/Q4 prefix inside each Gave chip \u2014 same visual rules as
      the Growth \u00d7 Policy panel for cross-panel consistency. */
@@ -2219,13 +2220,13 @@
     gap: 4px;
   }
   .hm-app .hm-gave-trade-line {
-    font-size: 11px;
-    line-height: 1.35;
-    color: var(--hm-brown);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--hm-dark);
   }
   .hm-app .hm-gave-trade-tag {
     display: inline-block;
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 800;
     padding: 1px 6px;
     border-radius: 3px;
@@ -8274,20 +8275,20 @@
   var GAVE_CELLS = [
     { key: 'infl_bust', row: 0, col: 0, name: 'Inflationary Bust',
       hint: 'Prices rising, output falling.',
-      longs:  ['Cash (safest currency)', 'Energy'],
-      shorts: ['Financial assets', 'Long-duration bonds', 'Long-duration equities'] },
+      longs:  ['cash (safest currency)', 'energy'],
+      shorts: ['financial assets', 'long-duration bonds', 'long-duration equities'] },
     { key: 'infl_boom', row: 0, col: 1, name: 'Inflationary Boom',
       hint: 'Prices rising, output rising.',
-      longs:  ['Gold', 'Commodities', 'Real estate', 'Value stocks', 'EM equities', 'High fixed-cost cyclicals'],
-      shorts: ['Long-duration bonds'] },
+      longs:  ['gold', 'commodities', 'real estate', 'value stocks', 'EM equities', 'high fixed-cost cyclicals'],
+      shorts: ['long-duration bonds'] },
     { key: 'defl_bust', row: 1, col: 0, name: 'Deflationary Bust',
       hint: 'Prices falling, output falling.',
-      longs:  ['Long-dated government bonds', 'Cash'],
-      shorts: ['Equities', 'Corporate bonds', 'Real estate', 'Commodities'] },
+      longs:  ['long-dated government bonds', 'cash'],
+      shorts: ['equities', 'corporate bonds', 'real estate', 'commodities'] },
     { key: 'defl_boom', row: 1, col: 1, name: 'Deflationary Boom',
       hint: 'Prices falling, output rising.',
-      longs:  ['Innovative growth stocks (pricing power)', 'Bonds', 'Real estate'],
-      shorts: ['Companies without pricing power'] },
+      longs:  ['innovative growth stocks (pricing power)', 'bonds', 'real estate'],
+      shorts: ['companies without pricing power'] },
   ];
 
   function renderGaveQuadrant(data) {
@@ -8302,18 +8303,13 @@
        click away. Same pattern as the Growth \u00d7 Policy panel. */
     window.PANEL_INFO_HTML['hm-gave-wrap'] = function () {
       return (
-        '<p>Where the market sits on Charles Gave\'s Four Quadrants right now, ' +
-          'placed by two ratios.</p>' +
+        '<p>Where the market sits on Charles Gave\'s Four Quadrants, based on ' +
+          'two ratios.</p>' +
         '<p><b>X axis</b>: S&amp;P 500 / WTI, energy efficiency. Above its 7-year ' +
           'average is a boom (right), below is a bust (left).</p>' +
         '<p><b>Y axis</b>: Gold / IEF, currency quality. Gold outpacing bonds is ' +
           'an inflationary regime (top); bonds outpacing gold is deflationary ' +
           '(bottom).</p>' +
-        '<p><b>Quadrants</b><br>' +
-          '<b>Q1 (NE) Inflationary Boom</b>: Long gold, commodities, and real assets; short long bonds<br>' +
-          '<b>Q2 (NW) Inflationary Bust</b>: Long cash and energy; avoid financial assets<br>' +
-          '<b>Q3 (SW) Deflationary Bust</b>: Long long-dated government bonds<br>' +
-          '<b>Q4 (SE) Deflationary Boom</b>: Long growth stocks, bonds, and real estate</p>' +
         '<p>The companion charts plot the two axis ratios plus S&amp;P 500 / Gold, ' +
           'which shows whether equity gains are real or just a weaker dollar.</p>'
       );
@@ -8420,9 +8416,15 @@
     if (activeCell) {
       var trades = document.createElement('div');
       trades.className = 'hm-gave-active-trades';
+      /* Items are stored lowercase (except acronyms like EM); join into a
+         sentence, capitalize only the first word, end with a period. */
+      var sentence = function (arr) {
+        var s = arr.join(', ');
+        return s.charAt(0).toUpperCase() + s.slice(1) + '.';
+      };
       trades.innerHTML =
-        '<div class="hm-gave-trade-line"><span class="hm-gave-trade-tag long">LONG</span>'  + activeCell.longs.join(', ')  + '</div>' +
-        '<div class="hm-gave-trade-line"><span class="hm-gave-trade-tag short">SHORT</span>' + activeCell.shorts.join(', ') + '</div>';
+        '<div class="hm-gave-trade-line"><span class="hm-gave-trade-tag long">LONG</span>'  + sentence(activeCell.longs)  + '</div>' +
+        '<div class="hm-gave-trade-line"><span class="hm-gave-trade-tag short">SHORT</span>' + sentence(activeCell.shorts) + '</div>';
       card.appendChild(trades);
     }
 
