@@ -14281,27 +14281,24 @@
         clonePanelHeader.style.setProperty('display', 'none', 'important');
       }
 
-      /* S&P 500 Heat Map: EXPORT-ONLY gold-band fixes. This band is
-         title-only (no period dropdown / toggle — it's a daily heatmap), so
-         the shared 34px min-height floor (sized for a ~22px control row + 6/6
-         padding) leaves it looking like a half-empty tall gold bar once the
-         24px panel chrome is display:none'd above. Drop the floor so the
-         exported band hugs its title, AND drop the title from 12px → 10px:
-         in the now-snug band a 12px title fills half the height and reads as
-         oversized for the band (and against the treemap's fine print below).
-         10px is on the 8/10/12 design scale and sits proportionate. Applied
-         INLINE on the clone — NOT in CSS — so the LIVE on-screen header is
-         untouched (keeps 34px + 12px, consistent with every other panel; the
-         live header was never the problem, only the export). Inline also
-         survives html-to-image's foreignObject capture, which .hm-export-stage
-         descendant selectors do not. */
+      /* S&P 500 Heat Map: EXPORT-ONLY gold-title size fix. KEEP the band at
+         the shared 34px min-height — same as EVERY other panel's export
+         header — so its top/bottom padding matches them (econ / calendar /
+         style-box all render ~11-12px of gold above + below their title).
+         The ONLY thing that read as "too big" was the 12px title once the
+         24px panel chrome is display:none'd above and the gold band is the
+         topmost strip; drop it to 10px. In the 34px band a 10px title
+         centers with a ~12px gap top/bottom — byte-for-byte the same metrics
+         as the Economic Indicators header (also a 10px title in a 34px band),
+         which is the reference the user pointed to. Do NOT collapse the band
+         height (a snug band makes the title fill it and the top/bottom gap
+         read as too small — the mistake that prompted this). Applied INLINE
+         on the clone so the LIVE on-screen header is untouched (34px / 12px,
+         consistent with the dashboard); inline also survives html-to-image's
+         foreignObject capture, which .hm-export-stage selectors do not. */
       if (panelId === 'hm-sp500-treemap') {
-        var spExportBand = clone.querySelector('.hm-factors-header');
-        if (spExportBand) {
-          spExportBand.style.setProperty('min-height', '0', 'important');
-          var spExportTitle = spExportBand.querySelector('span');
-          if (spExportTitle) spExportTitle.style.setProperty('font-size', '10px', 'important');
-        }
+        var spExportTitle = clone.querySelector('.hm-factors-header span');
+        if (spExportTitle) spExportTitle.style.setProperty('font-size', '10px', 'important');
       }
 
       /* Strip the dotted-underline tooltip affordance from metric
