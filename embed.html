@@ -14281,26 +14281,6 @@
         clonePanelHeader.style.setProperty('display', 'none', 'important');
       }
 
-      /* S&P 500 Heat Map: EXPORT-ONLY gold-title size fix. KEEP the band at
-         the shared 34px min-height — same as EVERY other panel's export
-         header — so its top/bottom padding matches them (econ / calendar /
-         style-box all render ~11-12px of gold above + below their title).
-         The ONLY thing that read as "too big" was the 12px title once the
-         24px panel chrome is display:none'd above and the gold band is the
-         topmost strip; drop it to 10px. In the 34px band a 10px title
-         centers with a ~12px gap top/bottom — byte-for-byte the same metrics
-         as the Economic Indicators header (also a 10px title in a 34px band),
-         which is the reference the user pointed to. Do NOT collapse the band
-         height (a snug band makes the title fill it and the top/bottom gap
-         read as too small — the mistake that prompted this). Applied INLINE
-         on the clone so the LIVE on-screen header is untouched (34px / 12px,
-         consistent with the dashboard); inline also survives html-to-image's
-         foreignObject capture, which .hm-export-stage selectors do not. */
-      if (panelId === 'hm-sp500-treemap') {
-        var spExportTitle = clone.querySelector('.hm-factors-header span');
-        if (spExportTitle) spExportTitle.style.setProperty('font-size', '10px', 'important');
-      }
-
       /* Strip the dotted-underline tooltip affordance from metric
          names in the export. On the live page the dotted bottom
          border tells users the label is hoverable for a chart;
