@@ -4698,10 +4698,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 0;
+    padding: 4px 6px;
+    border-radius: 3px;
     cursor: pointer;
   }
-  .hm-app .hm-customize-row:hover { color: var(--hm-gold); }
+  .hm-app .hm-customize-row:hover { background: rgba(218, 165, 32, 0.10); }
   .hm-app .hm-customize-row input[type="checkbox"] {
     -webkit-appearance: none;
     appearance: none;
@@ -7666,9 +7667,9 @@
      thematic group heading. Order within each group matches the
      dashboard's natural reading order. */
   var TOGGLEABLE_BLOCKS = [
-    // Top snapshot
-    { id: 'hm-indexes',         label: 'Index Snapshot',           group: 'Top' },
-    { id: 'hm-heatmap-wrap',    label: 'Metrics Heat Map',         group: 'Top' },
+    // Overview
+    { id: 'hm-indexes',         label: 'Index Snapshot',           group: 'Overview' },
+    { id: 'hm-heatmap-wrap',    label: 'Metrics Heat Map',         group: 'Overview' },
 
     // Equities
     { id: 'hm-sector-chart',    label: 'Sector Performance',       group: 'Equities' },
@@ -7760,6 +7761,23 @@
     else if (!hide && idx >= 0) hidden.splice(idx, 1);
     setHiddenBlocks(hidden);
     applyBlockVisibility();
+    /* When re-enabling a block, make sure it lands somewhere visible. */
+    if (!hide) ensureVisibleColumn(id);
+  }
+  /* A re-enabled block whose home column is collapsed (0px wide) would
+     reappear invisibly, leaving the user unsure where it went. Move it to
+     the top of the center column (which never collapses) so it shows up. */
+  function ensureVisibleColumn(id) {
+    var item = document.querySelector('#hm-cols .grid-stack-item[gs-id="' + id + '"]');
+    if (!item) return;
+    var col = item.closest('.hm-col');
+    if (!col || !col.classList.contains('hm-col-collapsed')) return;
+    var center = document.querySelector('.hm-col[data-col="center"]');
+    if (!center || center === col) return;
+    var firstItem = center.querySelector(':scope > .grid-stack-item');
+    if (firstItem) center.insertBefore(item, firstItem);
+    else center.appendChild(item);
+    if (typeof persistColsLayout === 'function') persistColsLayout();
   }
 
   function buildCustomizePanel() {
@@ -8760,6 +8778,7 @@
               borderColor: th === 'dark' ? '#8a90a0' : '#888',
               backgroundColor: 'transparent',
               borderWidth: 1.25,
+              borderDash: [4, 3],
               pointRadius: 0,
               pointStyle: 'line',
               pointHoverRadius: 5,
@@ -8816,6 +8835,13 @@
                   var v = c.parsed.y;
                   if (v == null) return null;
                   return c.dataset.label + ': ' + v.toFixed(2);
+                },
+                /* Filled bar swatch matching each line's color. The 7Y MA's
+                   transparent area-fill would otherwise render its swatch
+                   hollow (just a thin outline). */
+                labelColor: function (c) {
+                  var col = c.dataset.borderColor;
+                  return { borderColor: col, backgroundColor: col };
                 },
               },
             },
