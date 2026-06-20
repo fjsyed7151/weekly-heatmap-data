@@ -2502,6 +2502,12 @@
     border: 1px solid var(--hm-border);
     color: var(--hm-dark);
     white-space: nowrap;
+    /* Uniform width across all four chips (regime names vary a lot in length —
+       "Risk On" vs "Recession Risk") so the corners read evenly; centered text
+       keeps the shorter labels balanced. 108px clears the longest label and
+       stays under the 50%-12px cap even on the narrowest plane. */
+    min-width: 108px;
+    text-align: center;
     max-width: calc(50% - 12px);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -8652,8 +8658,8 @@
           'Production. Right is accelerating, left is decelerating.</p>' +
         '<p><b>Y axis</b>: Fed policy versus neutral. Up is easing, down is ' +
           'tightening.</p>' +
-        '<p><b>Tint</b>: Orange means inflation is above 2.5%, blue means ' +
-          'below.</p>' +
+        '<p>The plane behind the quadrants is washed orange when inflation is ' +
+          'running above 2.5% and blue when it is below.</p>' +
         '<p>The squares below show the last 13 weekly regime reads; hover any ' +
           'for the date.</p>'
       );
@@ -8795,7 +8801,7 @@
       hist.forEach(function (h) {
         var cell = document.createElement('span');
         cell.className = 'hm-mc-regime-cell ' + h.quadrant;
-        cell.title = h.date + ' \u00b7 ' + (quadName[h.quadrant] || h.quadrant);
+        cell.title = toMmDdYyyy(h.date) + ' \u00b7 ' + (quadName[h.quadrant] || h.quadrant);
         cells.appendChild(cell);
       });
       ribbon.appendChild(cells);
