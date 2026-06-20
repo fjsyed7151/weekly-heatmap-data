@@ -5176,6 +5176,21 @@
     padding-top: 0;
     font-size: 11px;
   }
+  .hm-app .hm-info-divider {
+    border: none;
+    border-top: 1px solid var(--hm-border);
+    margin: 10px 0;
+  }
+  .hm-app .hm-info-panel a {
+    color: var(--hm-brown);
+    text-decoration: underline;
+    text-decoration-color: var(--hm-brown);
+    transition: color 0.15s, text-decoration-color 0.15s;
+  }
+  .hm-app .hm-info-panel a:hover {
+    color: var(--hm-gold);
+    text-decoration-color: var(--hm-gold);
+  }
   /* Shared legend style (also used in info popup) */
   .hm-app .hm-legend {
     display: flex;
@@ -5969,10 +5984,6 @@
       </a>
       <!-- Spacer pushes the right-side button cluster to the far right. -->
       <span class="hm-topbar-spacer"></span>
-      <!-- Upgrade to Premium (sits to the LEFT of the clock). Hidden for
-           premium members by JS; otherwise opens the checkout modal
-           (#hm-upgrade-modal) on the host page. -->
-      <button class="hm-upgrade-btn" id="hm-upgrade-btn" type="button" hidden>Upgrade</button>
       <!-- Universal time-period selector. Click \u2192 popup with period
            options. Selecting one syncs every panel that has its own
            period control to that period. Per-panel selections still
@@ -6015,7 +6026,10 @@
         <div class="hm-info-panel" id="hm-info-panel" hidden>
           <div class="hm-info-section">
             <div class="hm-info-title">About</div>
-            <p>A macro dashboard tracking market regime across equities, rates, credit, commodities, and sentiment.</p>
+            <p>A weekly-updated dashboard for reading the macro backdrop at a glance &mdash; what's driving markets, where we sit in the cycle, and how risk is positioned across equities, rates, credit, commodities, and currencies.</p>
+            <p>Every panel is interactive &mdash; filter what you track, set one timeframe across the whole board, hover any metric for a plain-English definition and 5-year history, and export any panel as a clean image.</p>
+            <p>Every series comes from primary sources and passes an automated quality check before it publishes, so the numbers stay current and correct.</p>
+            <p><b>Upgrade to Premium</b> to brand your image exports &mdash; set a custom highlight color and add your own logo.</p>
             <p>Latest data: <b id="hm-asof-date">--</b></p>
             <p>Weekly refresh: Saturday &amp; Monday mornings (ET) &mdash; full data rebuild.</p>
             <p>Daily updates: weekday evenings (ET), after the US close &mdash; latest prices.</p>
@@ -6036,6 +6050,11 @@
           <div class="hm-info-section">
             <div class="hm-info-title">Returns</div>
             <p>All performance figures are <b>total returns</b> (dividends reinvested), the same basis fund fact sheets and Morningstar use.</p>
+          </div>
+          <div class="hm-info-section">
+            <p>Developed by <a href="https://stablebread.com/about/" target="_blank" rel="noopener">Fajasy @StableBread</a>. For questions, feedback, or requests, <a href="https://stablebread.com/contact/" target="_blank" rel="noopener">contact us here</a>!</p>
+            <hr class="hm-info-divider">
+            <p><a href="https://stablebread.com/" target="_blank" rel="noopener">Subscribe to our newsletter</a> for asymmetric stocks and macro themes.</p>
           </div>
         </div>
       </div>
@@ -6140,6 +6159,9 @@
           <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>
         </svg>
       </button>
+      <!-- Upgrade to Premium (right of the dark-mode toggle). Hidden for premium
+           members by JS; otherwise opens the host-page checkout modal. -->
+      <button class="hm-upgrade-btn" id="hm-upgrade-btn" type="button" hidden>Upgrade</button>
       <span class="hm-topbar-sep"></span>
       <!-- Right-column controls. Inner-to-outer order:
              ... | sep | [pin]  [collapse]
@@ -8236,12 +8258,20 @@
     var TOGGLES = ['hm-universal-period-toggle', 'hm-info-toggle', 'hm-customize-toggle', 'hm-brand-toggle'];
     TOGGLES.forEach(function (tid, i) {
       var t = document.getElementById(tid);
-      if (!t) return;
+      var panel = document.getElementById(PANELS[i]);
+      if (!t || !panel) return;
       t.addEventListener('click', function () {
         PANELS.forEach(function (pid, j) {
           if (j !== i) { var p = document.getElementById(pid); if (p) p.hidden = true; }
         });
       });
+      /* Mirror the panel's open state onto its toggle as .active, so the icon
+         keeps its gold styling while the popup is open. Watching the hidden
+         attribute covers every close path: click, outside-click, Esc, and the
+         mutual-exclusivity close above. */
+      var sync = function () { t.classList.toggle('active', !panel.hidden); };
+      sync();
+      new MutationObserver(sync).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
     });
   })();
 
