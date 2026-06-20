@@ -5045,23 +5045,17 @@
   }
   .hm-app .hm-upgrade-btn:hover { filter: brightness(1.08); }
   .hm-app .hm-upgrade-btn[hidden] { display: none; }
-  /* "Premium" tag shown on the locked brand controls. */
-  .hm-app .hm-premium-tag {
-    display: inline-flex;
-    align-items: center;
-    padding: 1px 6px;
-    border-radius: 3px;
-    background: #daa520;
-    color: #ffffff;
-    font: 600 10px/1.4 'Karla', system-ui, sans-serif;
-    text-transform: uppercase;
-    margin-left: 8px;
-  }
-  /* Locked brand controls: dimmed + non-interactive for non-premium users. */
+  /* Locked brand controls (non-premium): dimmed + not-allowed cursor; the
+     disabled inputs pass pointer events through to their row, so the
+     "Premium Users Only" title (set in JS) + the cross-out cursor show on
+     hover even where a browser suppresses a title on a disabled control. */
   .hm-app .hm-brand-locked .hm-brand-color-row,
-  .hm-app .hm-brand-locked .hm-brand-logo-actions { opacity: 0.5; }
-  .hm-app .hm-brand-color-row input:disabled,
-  .hm-app .hm-brand-logo-clear:disabled,
+  .hm-app .hm-brand-locked .hm-brand-logo-actions {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .hm-app .hm-brand-locked .hm-brand-color-row input,
+  .hm-app .hm-brand-locked .hm-brand-logo-clear { pointer-events: none; }
   .hm-app .hm-brand-reset:disabled { cursor: not-allowed; }
   .hm-app .hm-brand-logo-upload.hm-locked { pointer-events: none; opacity: 0.6; }
 
@@ -5965,6 +5959,10 @@
       </a>
       <!-- Spacer pushes the right-side button cluster to the far right. -->
       <span class="hm-topbar-spacer"></span>
+      <!-- Upgrade to Premium (sits to the LEFT of the clock). Hidden for
+           premium members by JS; otherwise opens the checkout modal
+           (#hm-upgrade-modal) on the host page. -->
+      <button class="hm-upgrade-btn" id="hm-upgrade-btn" type="button" hidden>Upgrade</button>
       <!-- Universal time-period selector. Click \u2192 popup with period
            options. Selecting one syncs every panel that has its own
            period control to that period. Per-panel selections still
@@ -5996,9 +5994,6 @@
           </div>
         </div>
       </div>
-      <!-- Upgrade to Premium. Hidden for premium members by JS; for everyone
-           else it opens the checkout modal (#hm-upgrade-modal) on the host page. -->
-      <button class="hm-upgrade-btn" id="hm-upgrade-btn" type="button" hidden>Upgrade</button>
       <div class="hm-info-wrap">
         <button class="hm-btn" id="hm-info-toggle" type="button" aria-label="About & sources" title="About & sources">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -7913,21 +7908,21 @@
     /* Premium gate: highlight color + logo are a paid feature. Non-premium
        users (window.HM_PREMIUM !== true, including when the flag is absent)
        still SEE the controls so they know what Premium unlocks, but the
-       controls are disabled and the panel is badged "Premium". */
+       controls are disabled, show a not-allowed cursor, and reveal a
+       "Premium Users Only" tooltip on hover. */
     if (window.HM_PREMIUM !== true) {
+      var _LOCK_MSG = 'Premium Users Only';
       [colorEl, hexEl, fileEl, clearEl, reset].forEach(function (el) {
-        if (el) el.disabled = true;
+        if (el) { el.disabled = true; el.title = _LOCK_MSG; }
+      });
+      /* Title on the (non-disabled) rows too, so the hover tooltip shows
+         reliably even where a browser suppresses it on a disabled control. */
+      panel.querySelectorAll('.hm-brand-color-row, .hm-brand-logo-actions').forEach(function (w) {
+        w.title = _LOCK_MSG;
       });
       var _uploadLabel = panel.querySelector('.hm-brand-logo-upload');
-      if (_uploadLabel) _uploadLabel.classList.add('hm-locked');
+      if (_uploadLabel) { _uploadLabel.classList.add('hm-locked'); _uploadLabel.title = _LOCK_MSG; }
       panel.classList.add('hm-brand-locked');
-      var _hdr = panel.querySelector('.hm-brand-header');
-      if (_hdr && !_hdr.querySelector('.hm-premium-tag')) {
-        var _tag = document.createElement('span');
-        _tag.className = 'hm-premium-tag';
-        _tag.textContent = 'Premium';
-        _hdr.insertBefore(_tag, _hdr.querySelector('.hm-brand-reset'));
-      }
     }
 
     function setHint(msg, isError) {
