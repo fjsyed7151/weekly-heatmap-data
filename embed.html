@@ -1519,11 +1519,9 @@
   .hm-app span.hm-mc-qname {
     border-bottom-style: solid;
   }
-  /* Gave chips get NO active border — the active quadrant is shown by the gold
-     cell outline, and a gold chip underline collided with the gold "Now" dot. */
-  .hm-app span.hm-mc-qname.active {
-    border-bottom-color: var(--hm-gold);
-  }
+  /* Neither regime panel's chips get an active border — the active quadrant is
+     shown by the gold cell outline; a gold chip underline collided with the
+     gold "Now" dot. */
   .hm-app #hm-mtip {
     position: fixed;
     z-index: 2147483000;
@@ -2380,7 +2378,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 9.5px;
+    font-size: 8px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-muted);
@@ -2405,21 +2403,26 @@
     grid-row: 3;
     display: flex;
     justify-content: space-between;
-    font-size: 9.5px;
+    font-size: 8px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-muted);
     padding: 2px 4px 0;
   }
-  /* Quadrant tints:
-       Soft Landing    (NW, decel + easing)  \u2192 muted blue   (defensive bonds/quality)
-       Risk On         (NE, accel + easing)  \u2192 green        (broad risk-on)
-       Recession Risk  (SW, decel + tight)   \u2192 muted red    (defensive cash/vol)
-       Late Cycle      (SE, accel + tight)   \u2192 amber        (cyclical real-economy) */
-  .hm-app .hm-mc-tint.soft_landing    { background: rgba(110,120,150,0.28); }
-  .hm-app .hm-mc-tint.risk_on         { background: rgba(26,122,66,0.28); }
-  .hm-app .hm-mc-tint.recession_risk  { background: rgba(212,42,32,0.22); }
-  .hm-app .hm-mc-tint.late_cycle      { background: rgba(230,191,102,0.36); }
+  /* Quadrant tints \u2014 SAME hues + opacities as the Gave plane, for a consistent
+     color language across both regime panels: NW soft_landing = muted blue/gray,
+     NE risk_on = green, SW recession_risk = red, SE late_cycle = amber. Each cell
+     rounds only its OUTER corner (inner corners square); the active outline below
+     inherits that rounding. */
+  .hm-app .hm-mc-tint.soft_landing    { background: rgba(110,120,150,0.10); border-radius: var(--hm-r) 0 0 0; }
+  .hm-app .hm-mc-tint.risk_on         { background: rgba(26,122,66,0.10);   border-radius: 0 var(--hm-r) 0 0; }
+  .hm-app .hm-mc-tint.recession_risk  { background: rgba(212,42,32,0.08);   border-radius: 0 0 0 var(--hm-r); }
+  .hm-app .hm-mc-tint.late_cycle      { background: rgba(230,191,102,0.14); border-radius: 0 0 var(--hm-r) 0; }
+  /* Active regime = a gold outline on the CELL (mirrors the Gave panel). The
+     chip carries no active styling. */
+  .hm-app .hm-mc-tint.active {
+    box-shadow: inset 0 0 0 2px var(--hm-gold);
+  }
 
   /* Regime ribbon under the plane: one colored square per shipped
      weekly history row (~24 weeks). Cells use the SAME RGBA tints
@@ -2437,7 +2440,7 @@
     border-top: 1px solid var(--hm-border);
   }
   .hm-app .hm-mc-regime-ribbon-label {
-    font-size: 9.5px;
+    font-size: 8px;
     font-weight: 600;
     color: var(--hm-muted);
     text-transform: uppercase;
@@ -2458,13 +2461,12 @@
     height: 14px;
     border-radius: 2px;
     cursor: help;
-    transition: transform 80ms;
     border: 1px solid var(--hm-border);
   }
-  .hm-app .hm-mc-regime-cell:hover {
-    transform: scaleY(1.4);
-  }
-  /* Same RGBA values as .hm-mc-tint.* so the ribbon matches the plane. */
+  /* Ribbon squares use the same hues as the plane quadrants but a higher
+     opacity: at ~14px a plane-strength wash would be invisible, so the ribbon
+     stays saturated enough to read at a glance. No hover animation — the date
+     is in the title tooltip. */
   .hm-app .hm-mc-regime-cell.soft_landing    { background: rgba(110,120,150,0.28); }
   .hm-app .hm-mc-regime-cell.risk_on         { background: rgba(26,122,66,0.28); }
   .hm-app .hm-mc-regime-cell.recession_risk  { background: rgba(212,42,32,0.22); }
@@ -2491,7 +2493,7 @@
   .hm-app .hm-mc-qname {
     position: absolute;
     z-index: 2;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 700;
     line-height: 1.2;
     padding: 3px 7px;
@@ -2512,11 +2514,9 @@
   .hm-app .hm-mc-qname.tr { top: 6px;    right: 6px; }
   .hm-app .hm-mc-qname.bl { bottom: 6px; left: 6px; }
   .hm-app .hm-mc-qname.br { bottom: 6px; right: 6px; }
-  .hm-app .hm-mc-qname.active {
-    background: var(--hm-gold);
-    border-color: var(--hm-gold);
-    color: var(--hm-white);
-  }
+  /* No gold fill on the active chip — the active regime is shown by the gold
+     cell outline (.hm-mc-tint.active). The chip's Q-number still goes full
+     opacity (below) as a subtle cue. */
   /* Subtle Q1/Q2/Q3/Q4 prefix inside each quadrant chip. Lower opacity +
      slightly heavier weight so the math-style quadrant number is visible
      but doesn't fight the actual regime name. Gets full opacity on the
@@ -2540,13 +2540,13 @@
     gap: 4px;
   }
   .hm-app .hm-mc-trade-line {
-    font-size: 11px;
-    line-height: 1.35;
-    color: var(--hm-brown);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--hm-dark);
   }
   .hm-app .hm-mc-trade-tag {
     display: inline-block;
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 800;
     padding: 1px 6px;
     border-radius: 3px;
@@ -8617,17 +8617,21 @@
        Late Cycle      (accel + tight)   \u2192  bottom-right (row 1, col 1) */
   var MC_CELLS = [
     { key: 'soft_landing',   row: 0, col: 0, name: 'Soft Landing',
-      longs:  ['Long-duration Treasuries', 'Quality growth (large-cap tech)', 'IG credit'],
-      shorts: ['Cyclicals', 'EM equities', 'Industrial commodities'] },
+      hint: 'Growth slowing, Fed easing.',
+      longs:  ['long-duration Treasuries', 'quality growth (large-cap tech)', 'IG credit'],
+      shorts: ['cyclicals', 'EM equities', 'industrial commodities'] },
     { key: 'risk_on',        row: 0, col: 1, name: 'Risk On',
-      longs:  ['Broad equities', 'High-yield credit', 'EM equities', 'Real estate'],
-      shorts: ['Dollar', 'Volatility (VIX)', 'Cash'] },
+      hint: 'Growth accelerating, Fed easing.',
+      longs:  ['broad equities', 'high-yield credit', 'EM equities', 'real estate'],
+      shorts: ['dollar', 'volatility (VIX)', 'cash'] },
     { key: 'recession_risk', row: 1, col: 0, name: 'Recession Risk',
-      longs:  ['Dollar', 'Cash', 'Volatility (VIX)'],
-      shorts: ['Equities (broad)', 'High-yield credit', 'EM equities'] },
+      hint: 'Growth slowing, Fed tightening.',
+      longs:  ['dollar', 'cash', 'volatility (VIX)'],
+      shorts: ['equities (broad)', 'high-yield credit', 'EM equities'] },
     { key: 'late_cycle',     row: 1, col: 1, name: 'Late Cycle',
-      longs:  ['Commodities', 'Value stocks', 'EM equities', 'Banks'],
-      shorts: ['Long-duration Treasuries', 'Growth/Tech'] },
+      hint: 'Growth accelerating, Fed tightening.',
+      longs:  ['commodities', 'value stocks', 'EM equities', 'banks'],
+      shorts: ['long-duration Treasuries', 'growth/tech'] },
   ];
 
   function renderMacroCompass(data) {
@@ -8642,23 +8646,16 @@
        and the user can pull up details on demand via the [i] button. */
     window.PANEL_INFO_HTML['hm-macrocompass'] = function () {
       return (
-        '<p><b>Growth \u00d7 Policy regime classifier</b> with inflation as a tint. ' +
-          'Shows which macro setup we\'re in and the trade tilts that historically ' +
-          'work in it.</p>' +
+        '<p>Where the economy sits on a growth-versus-policy grid, based on ' +
+          'two macro signals.</p>' +
         '<p><b>X axis</b>: Growth, a composite of ISM Services and Industrial ' +
           'Production. Right is accelerating, left is decelerating.</p>' +
-        '<p><b>Y axis</b>: Fed policy vs neutral. Up is easing, down is ' +
+        '<p><b>Y axis</b>: Fed policy versus neutral. Up is easing, down is ' +
           'tightening.</p>' +
-        '<p><b>Tint</b>: Orange means inflation is running above 2.5%, blue means ' +
-          'below. The same quadrant carries different conviction under high vs low ' +
-          'inflation.</p>' +
-        '<p><b>Quadrants</b><br>' +
-          'NW <b>Soft Landing</b> (decel + easing): long Treasuries, quality growth<br>' +
-          'NE <b>Risk On</b> (accel + easing): long broad equities, credit, EM<br>' +
-          'SW <b>Recession Risk</b> (decel + tight): long dollar, cash, vol<br>' +
-          'SE <b>Late Cycle</b> (accel + tight): long commodities, value, EM</p>' +
-        '<p><b>Regime ribbon</b>: The squares below show the last 13 weekly regime ' +
-          'reads. Hover any square for the date.</p>'
+        '<p><b>Tint</b>: Orange means inflation is above 2.5%, blue means ' +
+          'below.</p>' +
+        '<p>The squares below show the last 13 weekly regime reads; hover any ' +
+          'for the date.</p>'
       );
     };
     var mcItem = document.querySelector('.grid-stack-item[gs-id="hm-macrocompass"]');
@@ -8676,7 +8673,7 @@
        plane wash. No need to repeat it in the header. */
     var hdr = document.createElement('div');
     hdr.className = 'hm-gold-header';
-    hdr.innerHTML = '<span>Macro Regime \u00b7 Growth \u00d7 Policy</span>';
+    hdr.innerHTML = '<span>Growth \u00d7 Policy</span>';
     card.appendChild(hdr);
 
     var frame = document.createElement('div');
@@ -8700,7 +8697,7 @@
     });
     sortedTints.forEach(function (c) {
       var tint = document.createElement('div');
-      tint.className = 'hm-mc-tint ' + c.key;
+      tint.className = 'hm-mc-tint ' + c.key + (c.key === m.quadrant ? ' active' : '');
       plane.appendChild(tint);
     });
 
@@ -8723,11 +8720,10 @@
       var chip = document.createElement('span');
       chip.className = 'hm-mc-qname hm-metric-tip ' + cornerClass + (c.key === m.quadrant ? ' active' : '');
       chip.innerHTML = '<span class="hm-mc-qnum">' + qNum + '</span>' + c.name;
-      var tipBody =
-        '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + c.longs.join(', ')  + '</div>' +
-        '<div class="hm-mc-trade-line" style="margin-top:4px"><span class="hm-mc-trade-tag short">SHORT</span>' + c.shorts.join(', ') + '</div>';
+      /* Hover shows a one-line regime description (mirrors the Gave chips);
+         the LONG/SHORT trades for the active regime live in the block below. */
       chip.setAttribute('data-tip-title', qNum + ' \u00b7 ' + c.name);
-      chip.setAttribute('data-tip', tipBody);
+      chip.setAttribute('data-tip', c.hint);
       plane.appendChild(chip);
     });
 
@@ -8762,9 +8758,15 @@
     if (activeCell) {
       var trades = document.createElement('div');
       trades.className = 'hm-mc-active-trades';
+      /* Items stored lowercase (except acronyms like EM/IG/VIX); join, then
+         capitalize the first word and end with a period. */
+      var sentence = function (arr) {
+        var s = arr.join(', ');
+        return s.charAt(0).toUpperCase() + s.slice(1) + '.';
+      };
       trades.innerHTML =
-        '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + activeCell.longs.join(', ')  + '</div>' +
-        '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag short">SHORT</span>' + activeCell.shorts.join(', ') + '</div>';
+        '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag long">LONG</span>'  + sentence(activeCell.longs)  + '</div>' +
+        '<div class="hm-mc-trade-line"><span class="hm-mc-trade-tag short">SHORT</span>' + sentence(activeCell.shorts) + '</div>';
       card.appendChild(trades);
     }
 
@@ -13732,6 +13734,17 @@
          "Data:" date doesn't describe a forward schedule. */
   function _exportDateStamp(panelId) {
     if (panelId === 'hm-economy' || panelId === 'hm-calendar') return '';
+    /* Growth x Policy is built from monthly macro inputs (ISM, Industrial
+       Production, core PCE) + EFFR, which are FRED-fetched weekly — so its
+       latest regime read can sit a week behind the global as_of. Stamp the
+       panel's OWN data date (the last regime-history week) so it isn't
+       overstated as more current than it is. */
+    if (panelId === 'hm-macrocompass') {
+      try {
+        var mh = cachedData.macrocompass.history;
+        if (mh && mh.length) return toMmDdYyyy(mh[mh.length - 1].date);
+      } catch (e) {}
+    }
     var endIso = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
       ? cachedData.as_of : null;
     if (!endIso) return '';
