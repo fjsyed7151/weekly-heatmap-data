@@ -1119,7 +1119,7 @@
      negative margins so it spans the full card width \u2014 same pattern used
      by .hm-gave-wrap and .hm-mc. */
   .hm-app .hm-chart-section > .hm-gold-header {
-    margin: -16px -16px 14px -16px;
+    margin: -16px -16px 16px -16px;
   }
   .hm-app .hm-chart-section > .hm-gold-header b {
     font-weight: 700;
@@ -3090,7 +3090,7 @@
      gold band's top corners to the card's rounded radius automatically. */
   .hm-app .hm-gave-wrap > .hm-gold-header,
   .hm-app .hm-mc > .hm-gold-header {
-    margin: -16px -16px 14px -16px;
+    margin: -16px -16px 16px -16px;
   }
   /* Indexes wrapper \u2014 gives the gold header something to attach to without
      touching the underlying 4-card grid layout. */
@@ -5136,7 +5136,7 @@
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
-    padding: 16px;
+    padding: 12px 16px;
     z-index: 100;
     box-shadow: 0 6px 24px rgba(0,0,0,0.15);
     font-size: 12px;
@@ -5189,6 +5189,12 @@
     transition: color 0.15s, text-decoration-color 0.15s;
   }
   .hm-app .hm-info-panel a:hover {
+    color: var(--hm-gold);
+    text-decoration-color: var(--hm-gold);
+  }
+  /* The "Upgrade to Premium" CTA reads gold to stand out from the brown
+     navigation links. */
+  .hm-app .hm-info-panel a.hm-upgrade-link {
     color: var(--hm-gold);
     text-decoration-color: var(--hm-gold);
   }
@@ -5569,12 +5575,12 @@
     border-radius: var(--hm-r);
     padding: 12px 16px;
     min-width: 260px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
   }
   .hm-app.dark .hm-universal-period-panel {
     background: var(--hm-bg-alt);
     border-color: var(--hm-border-strong);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
   }
   .hm-app .hm-universal-period-panel[hidden] { display: none; }
   .hm-app .hm-universal-period-title {
@@ -6027,13 +6033,13 @@
         <div class="hm-info-panel" id="hm-info-panel" hidden>
           <div class="hm-info-section">
             <div class="hm-info-title">About</div>
-            <p>A weekly-updated dashboard for reading the macro backdrop at a glance &mdash; what's driving markets, where we sit in the cycle, and how risk is positioned across equities, rates, credit, commodities, and currencies.</p>
-            <p>Every panel is interactive &mdash; filter what you track, set one timeframe across the whole board, hover any metric for a plain-English definition and 5-year history, and export any panel as a clean image.</p>
+            <p>A weekly-updated dashboard for reading the macro backdrop at a glance. It tracks what's driving markets, where the cycle stands, and how risk is positioned across equities, rates, credit, commodities, and currencies.</p>
+            <p>Every panel is interactive. Filter what you track, set one timeframe across the whole board, hover any metric for a plain-English definition and 5-year history, and export any panel as a clean image.</p>
             <p>Every series comes from primary sources and passes an automated quality check before it publishes, so the numbers stay current and correct.</p>
-            <p><b>Upgrade to Premium</b> to brand your image exports &mdash; set a custom highlight color and add your own logo.</p>
+            <p id="hm-about-upgrade"><a href="#" class="hm-upgrade-link" role="button"><b>Upgrade to Premium</b></a> to brand your image exports with a custom highlight color and your own logo.</p>
             <p>Latest data: <b id="hm-asof-date">--</b></p>
-            <p>Weekly refresh: Saturday &amp; Monday mornings (ET) &mdash; full data rebuild.</p>
-            <p>Daily updates: weekday evenings (ET), after the US close &mdash; latest prices.</p>
+            <p>Weekly refresh: Saturday &amp; Monday mornings (ET), a full data rebuild.</p>
+            <p>Daily updates: weekday evenings (ET) after the US close, for the latest prices.</p>
           </div>
           <div class="hm-info-section">
             <div class="hm-info-title">Data sources</div>
@@ -6053,6 +6059,7 @@
             <p>All performance figures are <b>total returns</b> (dividends reinvested), the same basis fund fact sheets and Morningstar use.</p>
           </div>
           <div class="hm-info-section">
+            <hr class="hm-info-divider">
             <p>Developed by <a href="https://stablebread.com/about/" target="_blank" rel="noopener">Fajasy @StableBread</a>. For questions, feedback, or requests, <a href="https://stablebread.com/contact/" target="_blank" rel="noopener">contact us here</a>!</p>
             <hr class="hm-info-divider">
             <p><a href="https://stablebread.com/" target="_blank" rel="noopener">Subscribe to our newsletter</a> for asymmetric stocks and macro themes.</p>
@@ -8293,29 +8300,42 @@
     });
   })();
 
-  /* ---------- Upgrade button -> opens the host-page checkout modal ---------- */
+  /* ---------- Upgrade -> opens the host-page checkout modal ---------- */
+  /* The checkout form lives in a modal built on the host page (Oxygen), so
+     SureCart renders it natively. We just open that modal; we can't rely on
+     its own load-time trigger binding (the dashboard is injected after the
+     page wires its triggers), so open it here. Shared by the topbar Upgrade
+     button and the "Upgrade to Premium" link in the About popup. */
+  function openUpgradeModal() {
+    /* Preferred: click a static trigger the modal already wired on load. */
+    var trig = document.querySelector('.hm-checkout-trigger');
+    if (trig) { trig.click(); return; }
+    /* Fallback for an Oxygen native modal: reveal its backdrop directly. */
+    var el = document.getElementById('modal-15-19163');
+    if (!el) return;
+    var bd = el.classList.contains('oxy-modal-backdrop') ? el
+           : (el.closest('.oxy-modal-backdrop') || el.querySelector('.oxy-modal-backdrop'));
+    if (bd) { bd.style.display = 'flex'; bd.classList.add('live'); return; }
+    el.style.display = 'flex';
+    el.classList.add('live');
+  }
   (function () {
-    var btn = document.getElementById('hm-upgrade-btn');
-    if (!btn) return;
-    if (window.HM_PREMIUM === true) { btn.hidden = true; return; }
-    btn.hidden = false;
-    btn.addEventListener('click', function () {
-      /* The checkout form lives in a modal built on the host page (Oxygen), so
-         SureCart renders it natively. This button just opens that modal. It
-         can't rely on the modal's own load-time trigger binding (the dashboard
-         is injected after the page wires its triggers), so open it here. */
-      /* Preferred: click a static trigger the modal already wired on load. */
-      var trig = document.querySelector('.hm-checkout-trigger');
-      if (trig) { trig.click(); return; }
-      /* Fallback for an Oxygen native modal: reveal its backdrop directly. */
-      var el = document.getElementById('modal-15-19163');
-      if (!el) return;
-      var bd = el.classList.contains('oxy-modal-backdrop') ? el
-             : (el.closest('.oxy-modal-backdrop') || el.querySelector('.oxy-modal-backdrop'));
-      if (bd) { bd.style.display = 'flex'; bd.classList.add('live'); return; }
-      el.style.display = 'flex';
-      el.classList.add('live');
-    });
+    var btn    = document.getElementById('hm-upgrade-btn');
+    var upsell = document.getElementById('hm-about-upgrade');
+    var link   = document.querySelector('.hm-upgrade-link');
+    /* Premium members don't need the pitch: hide the button + the About line. */
+    if (window.HM_PREMIUM === true) {
+      if (btn) btn.hidden = true;
+      if (upsell) upsell.hidden = true;
+      return;
+    }
+    if (btn) {
+      btn.hidden = false;
+      btn.addEventListener('click', openUpgradeModal);
+    }
+    if (link) {
+      link.addEventListener('click', function (e) { e.preventDefault(); openUpgradeModal(); });
+    }
   })();
 
   /* ---------- Tidy the URL after a SureCart checkout redirect ---------- */
