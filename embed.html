@@ -6880,7 +6880,11 @@
         caretSize: 6,
         caretPadding: 10,
         displayColors: true,
-        usePointStyle: true,
+        /* Series marker = 14x2 filled bar (matches the Sector Performance +
+           Gave charts), not a circle/point. */
+        usePointStyle: false,
+        boxWidth: 14,
+        boxHeight: 2,
         titleFont: { family: 'Karla', size: 12, weight: '700' },
         bodyFont:  { family: 'Karla', size: 12, weight: '500' },
         callbacks: {
@@ -12962,9 +12966,8 @@
      is static so it lives here). */
   window.PANEL_INFO_HTML['hm-heatmap-wrap'] = function () {
     return (
-      '<p><b>The core dashboard.</b> Roughly 50 macro and market metrics across ' +
-        'nine sections, each shown as 13 weekly readings plus 5-year context ' +
-        'columns.</p>' +
+      '<p>Roughly 50 macro and market metrics across nine sections, each shown ' +
+        'as 13 weekly readings plus 5-year context columns.</p>' +
       '<p><b>Cell color</b>: Where the reading sits in its own trailing 5-year ' +
         'range. Green is the bullish end, red is the bearish end, pale is the ' +
         'middle. The scale flips for lower-is-better metrics like credit spreads, ' +
