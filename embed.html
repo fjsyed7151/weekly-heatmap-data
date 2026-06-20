@@ -1011,6 +1011,15 @@
     width: auto;
     display: block;
   }
+  /* Logo swap: the full wordmark shows on desktop; once columns stack
+     (mobile, <=1100px) it's replaced by the square favicon mark so the long
+     wordmark doesn't crowd the topbar. Same 32px height + width:auto means
+     the 500x500 mark renders as an undistorted 32x32 square. */
+  .hm-app .hm-topbar-logo .hm-logo-mark { display: none; }
+  @media (max-width: 1100px) {
+    .hm-app .hm-topbar-logo .hm-logo-full { display: none; }
+    .hm-app .hm-topbar-logo .hm-logo-mark { display: block; }
+  }
   /* Pushes the right-side button cluster to the far right. Replaces
      the old .hm-topbar-title flex:1 spacer (we removed the
      "Market Dashboard" label since the logo serves as branding). */
@@ -5995,7 +6004,8 @@
       <span class="hm-topbar-sep"></span>
       <!-- Logo \u2014 links to stablebread.com home. -->
       <a class="hm-topbar-logo" href="https://stablebread.com" aria-label="StableBread home">
-        <img src="https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png" alt="StableBread" />
+        <img class="hm-logo-full" src="https://stablebread.com/wp-content/uploads/2024/12/Official-StableBread-Logo.png" alt="StableBread" />
+        <img class="hm-logo-mark" src="https://stablebread.com/wp-content/uploads/2024/12/StableBread-Favicon.png" alt="StableBread" />
       </a>
       <!-- Spacer pushes the right-side button cluster to the far right. -->
       <span class="hm-topbar-spacer"></span>
