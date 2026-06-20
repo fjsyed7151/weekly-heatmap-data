@@ -6059,7 +6059,7 @@
             <p>This macro dashboard tracks what's driving markets, where the cycle stands, and how risk is positioned across equities, rates, credit, commodities, and currencies.</p>
             <p>Panels are interactive. Filter what you track, set one timeframe across the whole board, hover for plain-English definitions, and export any panel as a clean image.</p>
             <p id="hm-about-upgrade"><a href="#" class="hm-upgrade-link" role="button"><b>Upgrade to Premium</b></a> to brand your image exports with a custom highlight color and your own logo.</p>
-            <p>All performance figures are <b>total returns</b> (dividends reinvested).</p>
+            <p>All performance figures are total returns (dividends reinvested).</p>
           </div>
           <div class="hm-info-section">
             <div class="hm-info-title">Data relevance</div>
@@ -8382,16 +8382,15 @@
     el.classList.add('live');
   }
   (function () {
-    var btn    = document.getElementById('hm-upgrade-btn');
-    var upsell = document.getElementById('hm-about-upgrade');
-    var link   = document.querySelector('.hm-upgrade-link');
-    /* Premium members don't need the pitch: hide the button + the About line. */
+    var btn  = document.getElementById('hm-upgrade-btn');
+    var link = document.querySelector('.hm-upgrade-link');
+    /* The topbar Upgrade button (the prominent CTA pill) is for non-premium
+       only. The About popup's upgrade line stays visible for everyone -- it
+       also documents the premium export-branding feature -- so its link is
+       always wired. */
     if (window.HM_PREMIUM === true) {
       if (btn) btn.hidden = true;
-      if (upsell) upsell.hidden = true;
-      return;
-    }
-    if (btn) {
+    } else if (btn) {
       btn.hidden = false;
       btn.addEventListener('click', openUpgradeModal);
     }
