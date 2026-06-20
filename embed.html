@@ -5168,6 +5168,8 @@
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-gold);
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--hm-border);
     margin-bottom: 4px;
   }
   .hm-app .hm-info-section { margin-bottom: 16px; }
@@ -5609,6 +5611,8 @@
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-gold);
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--hm-border);
     margin-bottom: 4px;
   }
   .hm-app .hm-universal-period-options {
@@ -6078,7 +6082,7 @@
               <li><b>Robert Shiller:</b> Shiller CAPE (monthly)</li>
               <li><b>Institute for Supply Management:</b> Services PMI (monthly)</li>
             </ul>
-            <p>Every series passes an automated quality check before it publishes, so the numbers stay current.</p>
+            <p>Every series passes an automated quality check before it publishes, so the numbers stay accurate.</p>
           </div>
           <div class="hm-info-section">
             <hr class="hm-info-divider">
@@ -8887,13 +8891,13 @@
               caretSize: 6,
               caretPadding: 10,
               displayColors: true,
-              /* Series marker = a SOLID filled swatch (14x10) in each line's
-                 color. boxHeight MUST be > 2: Chart.js fills the inner box inset
-                 1px top + bottom, so a 2px-tall box leaves 0px of visible fill and
-                 renders as a hollow outline. 10px shows a solid block. */
+              /* Series marker = a short SOLID horizontal bar (14x2), exactly like
+                 the Sector Performance chart's tooltip swatches (NOT a square). The
+                 labelColor below sets borderWidth 2 so the 2px stroke fully fills
+                 the 2px box; a default ~1px stroke leaves a hollow-looking line. */
               usePointStyle: false,
               boxWidth: 14,
-              boxHeight: 10,
+              boxHeight: 2,
               titleFont: { family: 'Karla', size: 12, weight: '700' },
               bodyFont:  { family: 'Karla', size: 12, weight: '500' },
               callbacks: {
