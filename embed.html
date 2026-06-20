@@ -14206,6 +14206,70 @@
     return '<p class="hm-info-datastamp"><b>Data</b>: ' + stamp + '</p>';
   }
 
+  /* Trim trailing background from the BOTTOM of a captured panel image so the
+     composed divider + footer sit flush under the real content.
+
+     Why this exists: table panels (metrics heatmap, currency matrix, commodity
+     & FX tables) stack many rows, each with its own fractional border/padding.
+     html-to-image rounds those sub-pixel row heights independently, so the
+     rendered table can be a few px taller OR shorter than the wrapper's measured
+     height - a fixed/per-row buffer therefore either CLIPS the last row or
+     leaves a visible gap above the footer (exactly the bug the user hit twice).
+     Instead we capture those panels with a generous safety band (so the last
+     row is NEVER clipped) and reclaim the precise bottom here: scan up from the
+     bottom for the last non-background pixel row, then crop to it plus a small,
+     consistent margin. Result: footer is flush under the last row at any row
+     count / category filter, with no buffer guesswork.
+
+     Robust by construction: the bg reference is sampled from the bottom-left
+     pixel (always inside the over-captured safety band, so it is pure panel-bg
+     or transparent), and every failure path resolves the ORIGINAL url unchanged
+     (never worse than before). Returns a Promise<dataURL>. */
+  function _trimImageBottomToContent(dataUrl, pixelRatio, marginVisualPx) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var W = img.naturalWidth, H = img.naturalHeight;
+          if (!W || !H) { resolve(dataUrl); return; }
+          var cv = document.createElement('canvas');
+          cv.width = W; cv.height = H;
+          var cx = cv.getContext('2d');
+          cx.drawImage(img, 0, 0);
+          var data = cx.getImageData(0, 0, W, H).data;
+          /* bg ref = bottom-left pixel (guaranteed bg: it's in the safety band) */
+          var bi = ((H - 1) * W + 0) * 4;
+          var br = data[bi], bgc = data[bi + 1], bb = data[bi + 2], ba = data[bi + 3];
+          function rowHasContent(y) {
+            var base = y * W * 4;
+            for (var x = 0; x < W; x++) {
+              var i = base + x * 4;
+              if (Math.abs(data[i] - br) > 6 || Math.abs(data[i + 1] - bgc) > 6 ||
+                  Math.abs(data[i + 2] - bb) > 6 || Math.abs(data[i + 3] - ba) > 6) {
+                return true;
+              }
+            }
+            return false;
+          }
+          var contentBottom = -1;
+          for (var y = H - 1; y >= 0; y--) {
+            if (rowHasContent(y)) { contentBottom = y; break; }
+          }
+          if (contentBottom < 0) { resolve(dataUrl); return; }  /* all bg - bail */
+          var margin = Math.round((marginVisualPx || 0) * (pixelRatio || 1));
+          var newH = Math.min(H, contentBottom + 1 + margin);
+          if (newH >= H) { resolve(dataUrl); return; }           /* nothing to trim */
+          var out = document.createElement('canvas');
+          out.width = W; out.height = newH;
+          out.getContext('2d').drawImage(cv, 0, 0, W, newH, 0, 0, W, newH);
+          resolve(out.toDataURL('image/png'));
+        } catch (e) { resolve(dataUrl); }
+      };
+      img.onerror = function () { resolve(dataUrl); };
+      img.src = dataUrl;
+    });
+  }
+
   /* Composite the captured panel image with a footer strip below.
      The whole canvas is panel-bg (no outer dashboard-bg ring).
      Layout = padding around the panel image + a footer with URL +
@@ -14563,6 +14627,11 @@
          it. (panelId is also referenced later when picking pinnedW +
          the heatmap captureH buffer.) */
       var panelId = item.getAttribute('gs-id') || '';
+      /* Table panels: captured with a generous bottom safety band (never clip),
+         then trimmed back to the exact content bottom after render. See
+         _trimImageBottomToContent + the captureH branch below. */
+      var tableExport = (panelId === 'hm-heatmap-wrap' || panelId === 'hm-currency-matrix' ||
+                         panelId === 'hm-commodities' || panelId === 'hm-currencies');
       /* Sector chart is the one panel whose canvas is the primary
          content + supposed to fill the panel width. After the canvas
          \u2192 img replacement, force the resulting img to width:100% so
@@ -14878,62 +14947,23 @@
          expands via max() with rectW so we never clip. */
       var floorW = pinnedW || 600;
       var captureW = Math.max(floorW, Math.ceil(rectW));
-      var captureH = Math.ceil(rectH);
-      /* Buffer for panels whose last row can land at a subpixel
-         boundary that html-to-image rounds off.
-           - hm-heatmap-wrap: +20 (worst case \u2014 ~59 rows compound
-             the subpixel error).
-           - hm-currencies / hm-commodities: +10 (after the
-             flex:none + overflow:visible fixes the clone math
-             reports clip=0, but the captured PNG still occasionally
-             trims the last sparkline pixel-row on real exports \u2014
-             10px is enough breathing room without a visible bg gap).
-       */
-      if (panelId === 'hm-heatmap-wrap') {
-        /* Metrics heatmap: subpixel rounding compounds across many
-           table rows. Buffer scales linearly with visible row count.
-           Bumped to ~0.33 px/row (floored at +4) after the old ~0.245
-           coefficient still trimmed the last "Gold vs LT Govt corr" row's
-           bottom border on some renders. */
-        var visRows = clone.querySelectorAll(
-          '#hm-table tbody tr:not(.hm-section):not([data-cat-hidden="true"])'
-        ).length || 49;
-        captureH += Math.max(4, Math.ceil(visRows / 3));
-      } else if (panelId === 'hm-commodities') {
-        /* Commodity table: subpixel rounding compounds per row.
-           At full count (~30 visible rows) +10 was the tested sweet
-           spot. When the user hides categories, fewer rows render so
-           the buffer must shrink proportionally \u2014 otherwise a gap
-           appears above the footer. Linear scale: ~10px @ 30 rows
-           \u2192 ~1.3px per visible row, floored at +1 so subpixel rounding
-           never clips. */
-        var visRows = clone.querySelectorAll(
-          '.hm-commod-tbl tbody tr:not(.hm-commod-cat):not([data-cat-hidden="true"])'
-        ).length || 30;
-        captureH += Math.max(1, Math.ceil(visRows / 3));
-      } else if (panelId === 'hm-currencies') {
-        /* FX table: parallel logic to commodity. At full ~18 visible
-           rows +6 was the tested sweet spot. When the user hides
-           groups via the category filter, the buffer must shrink
-           proportionally. Same per-row coefficient as commodity
-           (~0.33), floored at +1. */
-        var visRows = clone.querySelectorAll(
-          '.hm-fx-tbl tbody tr:not(.hm-fx-cat):not([data-cat-hidden="true"])'
-        ).length || 18;
-        captureH += Math.max(1, Math.ceil(visRows / 3));
-      } else if (panelId === 'hm-currency-matrix') {
-        /* Currency Performance matrix (NxN cross-returns): same per-row
-           subpixel rounding was trimming the last currency row's bottom
-           border (it had no buffer before). Buffer by row count. */
-        var visRows = clone.querySelectorAll('.hm-cm-table tbody tr').length || 9;
-        captureH += Math.max(4, Math.ceil(visRows / 2));
+      var captureH;
+      if (tableExport) {
+        /* Table panels (metrics heatmap, currency matrix, commodity & FX
+           tables): html-to-image rounds each row's sub-pixel height
+           independently, so the rendered table can sit a few px taller than
+           the measured wrapper and clip the last row. A per-row buffer cannot
+           win (too small clips, too large leaves a gap), so capture with a
+           GENEROUS bottom safety band (never clip) and reclaim the exact
+           bottom after render in _trimImageBottomToContent. The +48 px here
+           is scratch the trim removes; the final PNG ends flush under the
+           last row at any row count / category filter. */
+        captureH = Math.ceil(rectH) + 48;
       } else {
-        /* Non-buffered panels end cleanly (no compounding sub-pixel row
-           stack), so Math.ceil(rectH) just adds up to ~1px of panel-bg
-           between the content and the footer divider — a faint gap (e.g.
-           commodity-perf: 237.3px content -> ceil 238). Round instead so the
-           footer sits flush; any sub-px trim lands in the last row's bottom
-           padding and is invisible. */
+        /* Non-table panels end cleanly (no compounding sub-pixel row stack),
+           so Math.ceil(rectH) just adds ~1px of panel-bg between content and
+           the footer divider. Round instead so the footer sits flush; any
+           sub-px trim lands in the last row's bottom padding and is invisible. */
         captureH = Math.round(rectH);
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
@@ -15092,6 +15122,15 @@
             borderRadius: '0'
           }
         });
+      }).then(function (panelDataUrl) {
+        /* Table panels were captured with a bottom safety band so the last
+           row is never clipped; trim it back to the exact content bottom here
+           so the footer composes flush under the last row (no clip, no gap).
+           8 visual px leaves a clean, consistent breath before the divider. */
+        if (tableExport) {
+          return _trimImageBottomToContent(panelDataUrl, pixelRatio, 8);
+        }
+        return panelDataUrl;
       }).then(function (panelDataUrl) {
         /* Pass pixelRatio so the composer scales footer font + logo
            in the same unit as the captured panelImg dimensions. */
