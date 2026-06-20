@@ -5545,13 +5545,13 @@
   }
   .hm-app .hm-universal-period-panel {
     position: absolute;
-    top: calc(100% + 6px);
+    top: calc(100% + 8px);
     right: 0;
     z-index: 1001;
     background: var(--hm-panel);
     border: 1px solid var(--hm-border);
     border-radius: var(--hm-r);
-    padding: 12px 14px;
+    padding: 12px 16px;
     min-width: 260px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   }
@@ -5566,10 +5566,9 @@
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    color: var(--hm-brown, #513C0C);
+    color: var(--hm-gold);
     margin-bottom: 8px;
   }
-  .hm-app.dark .hm-universal-period-title { color: var(--hm-gold-light, #e6bf66); }
   .hm-app .hm-universal-period-options {
     display: flex;
     flex-wrap: wrap;
@@ -6016,16 +6015,17 @@
         <div class="hm-info-panel" id="hm-info-panel" hidden>
           <div class="hm-info-section">
             <div class="hm-info-title">About</div>
+            <p>A macro dashboard tracking market regime across equities, rates, credit, commodities, and sentiment.</p>
             <p>Latest data: <b id="hm-asof-date">--</b></p>
-            <p>Weekly refresh: Mondays, 5:37 AM ET</p>
-            <p>Daily updates: weekdays, 6:00 PM ET</p>
+            <p>Weekly refresh: Saturday &amp; Monday mornings</p>
+            <p>Daily updates: weekday evenings, after the US close</p>
           </div>
           <div class="hm-info-section">
             <div class="hm-info-title">Data sources</div>
             <ul>
               <li><b>FRED:</b> Rates, credit, volatility, liquidity, macro, NBER recession dates (mixed daily, weekly, and monthly cadence depending on series)</li>
               <li><b>Yahoo Finance:</b> Indexes, ETFs, commodities, currencies, S&amp;P 500 constituents (daily)</li>
-              <li><b>FactSet Earnings Insight:</b> Forward EPS, P/E, net margin, sector P/E dispersion, revisions (weekly, Thursday release)</li>
+              <li><b>FactSet Earnings Insight:</b> Forward EPS, P/E, net margin, revisions (weekly, Thursday release)</li>
               <li><b>CFTC:</b> Net speculative positioning in S&amp;P 500, 10y UST, gold, WTI (weekly, Friday release for prior Tuesday)</li>
               <li><b>CNN:</b> Fear &amp; Greed sentiment (daily)</li>
               <li><b>CBOE:</b> Equity put/call ratio (daily)</li>
@@ -7606,7 +7606,7 @@
       opt.addEventListener('click', function (e) {
         e.stopPropagation();
         setPeriod(opt.getAttribute('data-period'));
-        panel.hidden = true;
+        markUniversal();   /* keep the panel open; just move the active highlight */
       });
     });
     document.addEventListener('click', function (e) {
@@ -8241,6 +8241,25 @@
         syncInputsFromStorage();
       });
     }
+  })();
+
+  /* ---------- One topbar popup open at a time ---------- */
+  /* Each topbar toggle calls e.stopPropagation(), which suppresses the other
+     popups' outside-click close — so opening one used to leave the others open.
+     Close the other three whenever any topbar toggle is clicked. (Period option
+     clicks are NOT toggles, so selecting a period leaves its own panel open.) */
+  (function () {
+    var PANELS  = ['hm-universal-period-panel', 'hm-info-panel', 'hm-customize-panel', 'hm-brand-panel'];
+    var TOGGLES = ['hm-universal-period-toggle', 'hm-info-toggle', 'hm-customize-toggle', 'hm-brand-toggle'];
+    TOGGLES.forEach(function (tid, i) {
+      var t = document.getElementById(tid);
+      if (!t) return;
+      t.addEventListener('click', function () {
+        PANELS.forEach(function (pid, j) {
+          if (j !== i) { var p = document.getElementById(pid); if (p) p.hidden = true; }
+        });
+      });
+    });
   })();
 
   /* ---------- Upgrade button -> opens the host-page checkout modal ---------- */
