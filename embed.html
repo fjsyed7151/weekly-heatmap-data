@@ -8269,25 +8269,33 @@
   })();
 
   /* ---------- Tidy the URL after a SureCart checkout redirect ---------- */
-  /* SureCart's Thank-You-Page redirect appends its order param (sc_order=...)
-     to the dashboard URL and it lingers in the address bar. Strip SureCart's
-     params on load via replaceState (no reload, so the Pro state is kept).
-     Any non-SureCart params (e.g. utm_*) are preserved. */
+  /* SureCart's Thank-You-Page redirect appends its order param (checkout_id /
+     sc_order) to the dashboard URL and it lingers in the address bar. We strip
+     SureCart's params via replaceState (no reload, so the Pro state is kept;
+     non-SureCart params like utm_* are preserved).
+     SAFE BY DESIGN: the order + the SureMembers grant are processed SERVER-side
+     and already committed before this redirect, so removing the param cannot
+     undo the purchase. We also wait a beat first, so SureCart's own client-side
+     post-checkout JS (cart clear / conversion tracking) reads the param before
+     we touch the address bar. */
   (function () {
-    try {
-      var u = new URL(window.location.href);
-      var keys = [], removed = false;
-      u.searchParams.forEach(function (v, k) { keys.push(k); });
-      keys.forEach(function (k) {
-        if (/^sc[_-]/i.test(k) || /checkout/i.test(k) || /^order/i.test(k) || k === 'live_mode' || k === 'upgraded') {
-          u.searchParams.delete(k); removed = true;
+    function tidy() {
+      try {
+        var u = new URL(window.location.href);
+        var keys = [], removed = false;
+        u.searchParams.forEach(function (v, k) { keys.push(k); });
+        keys.forEach(function (k) {
+          if (/^sc[_-]/i.test(k) || /checkout/i.test(k) || /^order/i.test(k) || k === 'live_mode' || k === 'upgraded') {
+            u.searchParams.delete(k); removed = true;
+          }
+        });
+        if (removed) {
+          var clean = u.pathname + (u.searchParams.toString() ? '?' + u.searchParams.toString() : '') + u.hash;
+          window.history.replaceState({}, document.title, clean);
         }
-      });
-      if (removed) {
-        var clean = u.pathname + (u.searchParams.toString() ? '?' + u.searchParams.toString() : '') + u.hash;
-        window.history.replaceState({}, document.title, clean);
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
+    setTimeout(tidy, 1500);
   })();
 
   /* ---------- Metric label tooltip (optionally with history chart) ---------- */
