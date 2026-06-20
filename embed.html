@@ -8279,7 +8279,7 @@
       var keys = [], removed = false;
       u.searchParams.forEach(function (v, k) { keys.push(k); });
       keys.forEach(function (k) {
-        if (/^sc[_-]/i.test(k) || k === 'checkout' || k === 'order' || k === 'order_id' || k === 'live_mode' || k === 'upgraded') {
+        if (/^sc[_-]/i.test(k) || /checkout/i.test(k) || /^order/i.test(k) || k === 'live_mode' || k === 'upgraded') {
           u.searchParams.delete(k); removed = true;
         }
       });
