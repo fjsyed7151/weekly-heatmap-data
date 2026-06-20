@@ -8887,13 +8887,13 @@
               caretSize: 6,
               caretPadding: 10,
               displayColors: true,
-              /* Series marker = short FILLED horizontal bar (14x2), matching the
-                 Sector Performance chart. usePointStyle:'line' renders a hardcoded
-                 1px stroke that's too thin; a filled box where boxHeight controls
-                 the thickness reads as a bolder line. */
+              /* Series marker = a SOLID filled swatch (14x10) in each line's
+                 color. boxHeight MUST be > 2: Chart.js fills the inner box inset
+                 1px top + bottom, so a 2px-tall box leaves 0px of visible fill and
+                 renders as a hollow outline. 10px shows a solid block. */
               usePointStyle: false,
               boxWidth: 14,
-              boxHeight: 2,
+              boxHeight: 10,
               titleFont: { family: 'Karla', size: 12, weight: '700' },
               bodyFont:  { family: 'Karla', size: 12, weight: '500' },
               callbacks: {
@@ -8914,7 +8914,9 @@
                    hollow (just a thin outline). */
                 labelColor: function (c) {
                   var col = c.dataset.borderColor;
-                  return { borderColor: col, backgroundColor: col };
+                  /* borderWidth 2 so the stroke meets the inset inner fill with
+                     no white gap -> a fully solid swatch. */
+                  return { borderColor: col, backgroundColor: col, borderWidth: 2 };
                 },
               },
             },
