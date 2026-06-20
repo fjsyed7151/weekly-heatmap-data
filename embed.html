@@ -966,8 +966,14 @@
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
-    padding: 8px 0 12px;
-    margin: -8px 0 4px;
+    /* padding-top is the gap above the icons that TRAVELS with the bar when it
+       sticks (it's bg-filled, so no page content bleeds through). The negative
+       margin-top cancels the same amount at rest so the at-rest position is
+       unchanged - it only matters once stuck, where the page inset above the bar
+       has scrolled away and this padding is the only gap left. Was 8px, which
+       collapsed the gap to ~8px on scroll; 16px keeps a visible gap when pinned. */
+    padding: 16px 0 12px;
+    margin: -16px 0 4px;
     background: var(--hm-bg);
   }
   /* Back-to-stablebread.com button on the very left of the topbar.
@@ -5983,6 +5989,42 @@
   .hm-app .hm-econ-body [data-cat][data-cat-hidden="true"],
   .hm-app .hm-treemap-grid [data-cat][data-cat-hidden="true"] {
     display: none !important;
+  }
+
+  /* MOBILE: the four topbar popups (About / Customize view / Customize design /
+     universal Period) go FULL-WIDTH below the bar instead of anchoring to their
+     icon - on a narrow viewport a 280-340px right-anchored panel either runs off
+     the left edge or ignores the page padding. position: fixed lets them span the
+     content area (left/right = the same outside padding as .hm-inner) and top
+     tracks the live-measured sticky topbar height (--hm-topbar-h, re-measured on
+     resize/scroll) so they always open just under the bar. Placed last in the
+     sheet so it wins over each panel's base rule regardless of source order.
+     z-index sits above the topbar (1000) and the period panel's own 1001. */
+  @media (max-width: 700px) {
+    .hm-app .hm-info-panel,
+    .hm-app .hm-customize-panel,
+    .hm-app .hm-brand-panel,
+    .hm-app .hm-universal-period-panel {
+      position: fixed;
+      top: calc(var(--hm-header-offset, 0px) + var(--hm-topbar-h, 52px) + 8px);
+      left: 16px;
+      right: 16px;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      max-height: calc(100vh - var(--hm-header-offset, 0px) - var(--hm-topbar-h, 52px) - 24px);
+      overflow-y: auto;
+      z-index: 1002;
+    }
+  }
+  @media (max-width: 480px) {
+    .hm-app .hm-info-panel,
+    .hm-app .hm-customize-panel,
+    .hm-app .hm-brand-panel,
+    .hm-app .hm-universal-period-panel {
+      left: 8px;
+      right: 8px;
+    }
   }
 </style>
 
