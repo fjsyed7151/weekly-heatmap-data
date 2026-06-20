@@ -2369,6 +2369,16 @@
     grid-template-columns: auto 1fr;
     grid-template-rows: auto 1fr auto;
     gap: 4px;
+    /* Cap + center the plane to match the Gave Four Quadrants frame, so the
+       quadrant doesn't stretch to the full panel width. */
+    max-width: 540px;
+    margin: 0 auto;
+  }
+  /* Below 700px, let the plane fill the panel (same as the Gave frame's
+     override). Placed AFTER the base rule above so it actually wins the
+     cascade. */
+  @media (max-width: 700px) {
+    .hm-app .hm-mc-frame { max-width: 100%; }
   }
   .hm-app .hm-mc-axis-y {
     grid-column: 1;
