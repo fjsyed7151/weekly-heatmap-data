@@ -2320,7 +2320,7 @@
     font-size: 10px;
     color: var(--hm-muted);
     margin-top: 8px;
-    line-height: 1.4;
+    line-height: 1.2;
     font-style: italic;
   }
   @media (max-width: 700px) {
@@ -3302,7 +3302,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    line-height: 1.15;
+    line-height: 1.2;
     white-space: nowrap;
     min-width: 50px;
   }
@@ -3332,7 +3332,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    line-height: 1.15;
+    line-height: 1.2;
     white-space: nowrap;
   }
   .hm-app .hm-cal-prev-label {
@@ -3835,7 +3835,7 @@
     max-width: 240px;
   }
   .hm-app.dark .hm-sp500-tip { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
-  .hm-app .hm-sp500-tip-name { font-size: 12px; font-weight: 700; color: #2d2d2d; line-height: 1.25; margin-bottom: 4px; }
+  .hm-app .hm-sp500-tip-name { font-size: 12px; font-weight: 700; color: #2d2d2d; line-height: 1.2; margin-bottom: 4px; }
   .hm-app.dark .hm-sp500-tip-name { color: #e8e4dc; }
   .hm-app .hm-sp500-tip-line { font-size: 10px; font-weight: 600; margin-top: 2px; }
   .hm-app .hm-sp500-tip-lbl { color: var(--hm-muted); }
@@ -5172,7 +5172,7 @@
     border-bottom: 1px solid var(--hm-border);
     margin-bottom: 4px;
   }
-  .hm-app .hm-info-section { margin-bottom: 16px; }
+  .hm-app .hm-info-section { margin-bottom: 12px; }
   .hm-app .hm-info-section:last-child { margin-bottom: 0; }
   .hm-app .hm-info-panel p,
   .hm-app .hm-info-panel li,
@@ -6021,7 +6021,7 @@
            period control to that period. Per-panel selections still
            work locally; this is a quick bulk-change. -->
       <div class="hm-universal-period-wrap">
-        <button class="hm-btn hm-universal-period-btn" id="hm-universal-period-toggle" type="button" aria-label="Set universal time period" title="Set time period for all components">
+        <button class="hm-btn hm-universal-period-btn" id="hm-universal-period-toggle" type="button" aria-label="Select universal time period" title="Select universal time period">
           <!-- Static clock/time icon. Stays the same regardless of the
                currently-selected universal period \u2014 the popup itself
                (and the gold outline marker on each panel's period
@@ -6048,7 +6048,7 @@
         </div>
       </div>
       <div class="hm-info-wrap">
-        <button class="hm-btn" id="hm-info-toggle" type="button" aria-label="About & sources" title="About & sources">
+        <button class="hm-btn" id="hm-info-toggle" type="button" aria-label="About this page" title="About this page">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/>
             <line x1="12" y1="16" x2="12" y2="12"/>
@@ -6116,7 +6116,7 @@
       </div>
       <!-- Brand-customization popup: highlight color + export-footer logo upload. -->
       <div class="hm-brand-wrap">
-        <button class="hm-btn" id="hm-brand-toggle" type="button" aria-label="Brand colors &amp; logo" title="Brand colors &amp; logo">
+        <button class="hm-btn" id="hm-brand-toggle" type="button" aria-label="Customize design" title="Customize design">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/>
             <circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/>
@@ -6490,6 +6490,13 @@
     var sun  = app.querySelector(".hm-icon-sun");
     moon.style.display = mode === "dark" ? "none"  : "block";
     sun.style.display  = mode === "dark" ? "block" : "none";
+    /* Tooltip names the ACTION clicking performs, so it flips with the mode. */
+    var themeTog = document.getElementById("hm-theme-toggle");
+    if (themeTog) {
+      var themeLbl = mode === "dark" ? "Toggle light mode" : "Toggle dark mode";
+      themeTog.title = themeLbl;
+      themeTog.setAttribute("aria-label", themeLbl);
+    }
     try { localStorage.setItem(STORAGE_KEY, mode); } catch (e) {}
     if (cachedData) {
       render(cachedData);
