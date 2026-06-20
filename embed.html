@@ -5077,8 +5077,9 @@
   }
   #hm-upgrade-modal .hm-upgrade-dialog {
     position: relative;
-    width: 480px;
+    width: 540px;
     max-width: calc(100vw - 32px);
+    min-height: 320px;         /* don't collapse while the SureCart form initializes */
     max-height: calc(100vh - 64px);
     overflow: auto;
     background: #ffffff;
