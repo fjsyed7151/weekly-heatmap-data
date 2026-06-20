@@ -8562,7 +8562,13 @@
               caretSize: 6,
               caretPadding: 10,
               displayColors: true,
-              usePointStyle: true,
+              /* Series marker = short FILLED horizontal bar (14x2), matching the
+                 Sector Performance chart. usePointStyle:'line' renders a hardcoded
+                 1px stroke that's too thin; a filled box where boxHeight controls
+                 the thickness reads as a bolder line. */
+              usePointStyle: false,
+              boxWidth: 14,
+              boxHeight: 2,
               titleFont: { family: 'Karla', size: 12, weight: '700' },
               bodyFont:  { family: 'Karla', size: 12, weight: '500' },
               callbacks: {
