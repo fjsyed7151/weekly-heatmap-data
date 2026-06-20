@@ -6842,7 +6842,6 @@
           yScaleID: axisId,
           borderColor: entry.color,
           borderWidth: 1.5,
-          borderDash: [6, 4],
           label: {
             display: true,
             content: labelText,
@@ -6899,7 +6898,14 @@
       datalabels: {
         display: function (ctx) { return !!ctx.dataset._dataLabels; },
         anchor: 'end',
-        align: 'end',
+        /* Place the label on the OUTSIDE of the point: above when the value is
+           >= 0, below when negative. A fixed 'end' put negative-series labels
+           (e.g. drawdowns, which are always <= 0) up toward the zero line where
+           they read as if they sat above the axis. */
+        align: function (ctx) {
+          var v = ctx.dataset.data[ctx.dataIndex];
+          return (typeof v === 'number' && v < 0) ? 'bottom' : 'top';
+        },
         offset: 4,
         color: col.label,
         font: { family: 'Karla', size: 10, weight: '600' },
@@ -12986,12 +12992,12 @@
   /* Metrics Chart (built in static HTML, fed by the heat-map checkboxes). */
   window.PANEL_INFO_HTML['hm-chart-section'] = function () {
     return (
-      '<p><b>Charts the metrics you tick</b> in the Metrics Heat Map, up to 6 at ' +
+      '<p>Charts the metrics you tick in the Metrics Heat Map, up to 6 at ' +
         'once. Empty until you select at least one row.</p>' +
-      '<p><b>Combined vs separated</b>: Combined overlays every series on one set ' +
+      '<p>Combined vs separated: Combined overlays every series on one set ' +
         'of axes, each on its own scale. Separated draws one mini-chart per metric. ' +
         'Toggle in the panel header.</p>' +
-      '<p><b>Per-series controls</b>: Each legend row can switch line, bar, or ' +
+      '<p>Per-series controls: Each legend row can switch line, bar, or ' +
         'stacked-bar, toggle data labels, hide, or remove the series. The gear ' +
         'overlays 5-year avg, min, and max reference lines.</p>' +
       '<p>Selections, view mode, and per-series settings all survive reloads.</p>'
