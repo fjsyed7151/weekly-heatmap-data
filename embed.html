@@ -8268,6 +8268,28 @@
     });
   })();
 
+  /* ---------- Tidy the URL after a SureCart checkout redirect ---------- */
+  /* SureCart's Thank-You-Page redirect appends its order param (sc_order=...)
+     to the dashboard URL and it lingers in the address bar. Strip SureCart's
+     params on load via replaceState (no reload, so the Pro state is kept).
+     Any non-SureCart params (e.g. utm_*) are preserved. */
+  (function () {
+    try {
+      var u = new URL(window.location.href);
+      var keys = [], removed = false;
+      u.searchParams.forEach(function (v, k) { keys.push(k); });
+      keys.forEach(function (k) {
+        if (/^sc[_-]/i.test(k) || k === 'checkout' || k === 'order' || k === 'order_id' || k === 'live_mode' || k === 'upgraded') {
+          u.searchParams.delete(k); removed = true;
+        }
+      });
+      if (removed) {
+        var clean = u.pathname + (u.searchParams.toString() ? '?' + u.searchParams.toString() : '') + u.hash;
+        window.history.replaceState({}, document.title, clean);
+      }
+    } catch (e) {}
+  })();
+
   /* ---------- Metric label tooltip (optionally with history chart) ---------- */
   (function () {
     var mtip = document.getElementById('hm-mtip');
