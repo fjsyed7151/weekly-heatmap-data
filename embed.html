@@ -5101,6 +5101,23 @@
     cursor: pointer;
     z-index: 2;
   }
+  /* If the modal hosts an iframed checkout PAGE instead of an inline form,
+     let the iframe fill the dialog edge-to-edge and give the close button a
+     backing so it stays visible over the page. */
+  #hm-upgrade-modal .hm-upgrade-dialog:has(iframe) { padding: 0; min-height: 0; }
+  #hm-upgrade-modal .hm-upgrade-dialog:has(iframe) .hm-upgrade-close {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  }
+  #hm-upgrade-modal .hm-upgrade-dialog iframe {
+    display: block;
+    width: 100%;
+    height: 80vh;
+    max-height: 860px;
+    border: 0;
+    border-radius: 10px;
+  }
 
   /* Info popover (next to theme toggle) */
   .hm-app .hm-info-wrap {
@@ -8226,30 +8243,29 @@
     }
   })();
 
-  /* ---------- Upgrade button + checkout modal (premium) ---------- */
+  /* ---------- Upgrade button -> opens the host-page checkout modal ---------- */
   (function () {
     var btn = document.getElementById('hm-upgrade-btn');
-    var modal = document.getElementById('hm-upgrade-modal');
-    var premium = window.HM_PREMIUM === true;
-    if (btn) {
-      btn.hidden = premium;            /* premium members never see Upgrade */
-      if (!premium) {
-        btn.addEventListener('click', function () {
-          if (modal) modal.hidden = false;
-        });
-      }
-    }
-    if (!modal) return;
-    modal.querySelectorAll('[data-hm-close]').forEach(function (el) {
-      el.addEventListener('click', function () { modal.hidden = true; });
+    if (!btn) return;
+    if (window.HM_PREMIUM === true) { btn.hidden = true; return; }
+    btn.hidden = false;
+    btn.addEventListener('click', function () {
+      /* The checkout form lives in a modal built on the host page (Oxygen), so
+         SureCart renders it natively. This button just opens that modal. It
+         can't rely on the modal's own load-time trigger binding (the dashboard
+         is injected after the page wires its triggers), so open it here. */
+      /* Preferred: click a static trigger the modal already wired on load. */
+      var trig = document.querySelector('.hm-checkout-trigger');
+      if (trig) { trig.click(); return; }
+      /* Fallback for an Oxygen native modal: reveal its backdrop directly. */
+      var el = document.getElementById('modal-15-19163');
+      if (!el) return;
+      var bd = el.classList.contains('oxy-modal-backdrop') ? el
+             : (el.closest('.oxy-modal-backdrop') || el.querySelector('.oxy-modal-backdrop'));
+      if (bd) { bd.style.display = 'flex'; bd.classList.add('live'); return; }
+      el.style.display = 'flex';
+      el.classList.add('live');
     });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !modal.hidden) modal.hidden = true;
-    });
-    /* Success needs no JS here: the modal hosts an inline SureCart form whose
-       "Custom Thank You Page" is set to this dashboard page, so a completed
-       purchase navigates the whole page back here = a reload as Pro (the PHP
-       flag re-reads SureMembers access). The modal just opens/closes. */
   })();
 
   /* ---------- Metric label tooltip (optionally with history chart) ---------- */
