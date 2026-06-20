@@ -5313,20 +5313,18 @@
     top: 0;
     bottom: 0;
     left: 50%;
-    width: 2px;
+    width: 4px;
     transform: translateX(-50%);
-    background: var(--hm-border);
+    background: var(--hm-muted);
     border-radius: 2px;
-    opacity: 1;
-    transition: background 0.15s ease, width 0.15s ease;
+    opacity: 0;
+    transition: opacity 0.15s ease;
   }
-  /* Resize handle reads as a neutral slider grip (not the gold accent),
-     darkening from the hairline border to the muted tone on hover/drag.
-     --hm-muted adapts to light + dark themes. */
+  /* The resize handle (neutral slider grip, theme-adaptive --hm-muted) stays
+     hidden until the user hovers or drags the divider. */
   .hm-app .hm-col-divider:hover::after,
   body.hm-col-resizing .hm-app .hm-col-divider::after {
-    background: var(--hm-muted);
-    width: 4px;
+    opacity: 1;
   }
   body.hm-col-resizing { cursor: col-resize; }
   body.hm-col-resizing * { cursor: col-resize !important; }
@@ -13725,12 +13723,34 @@
       var rightId = COL_IDS[rightIdx];
       var startLeftW = 0;
       var startRightW = 0;
+      var pendingX = 0;
+      var moveRaf = 0;
+      /* Apply the new widths for the latest pointer X, throttled to one call
+         per animation frame. mousemove fires far faster than 60fps and each
+         applyColWidths reflows the grid (and every chart's ResizeObserver
+         re-renders), so running it on every raw event is what made the drag
+         feel laggy. */
+      function applyDrag() {
+        moveRaf = 0;
+        if (!dragging) return;
+        var delta = pendingX - startX;
+        var leftLimits = getColLimits(leftId);
+        var rightLimits = getColLimits(rightId);
+        /* Clamp delta so both sides stay within their min/max. */
+        var minDelta = Math.max(leftLimits.min - startLeftW, startRightW - rightLimits.max);
+        var maxDelta = Math.min(leftLimits.max - startLeftW, startRightW - rightLimits.min);
+        delta = Math.max(minDelta, Math.min(maxDelta, delta));
+        _colWidths[leftIdx] = Math.round(startLeftW + delta);
+        _colWidths[rightIdx] = Math.round(startRightW - delta);
+        applyColWidths();
+      }
       div.addEventListener('mousedown', function (e) {
         if (document.body.classList.contains('hm-cols-stacked')) return;
         var leftCol = document.querySelector('.hm-col[data-col="' + leftId + '"]');
         var rightCol = document.querySelector('.hm-col[data-col="' + rightId + '"]');
         if (!leftCol || !rightCol) return;
         startX = e.clientX;
+        pendingX = e.clientX;
         startLeftW = leftCol.getBoundingClientRect().width;
         startRightW = rightCol.getBoundingClientRect().width;
         dragging = true;
@@ -13739,25 +13759,14 @@
       });
       function onMove(e) {
         if (!dragging) return;
-        var delta = e.clientX - startX;
-        var leftLimits = getColLimits(leftId);
-        var rightLimits = getColLimits(rightId);
-        /* Clamp delta so both sides stay within their min/max. */
-        var minDelta = Math.max(
-          leftLimits.min - startLeftW,
-          startRightW - rightLimits.max
-        );
-        var maxDelta = Math.min(
-          leftLimits.max - startLeftW,
-          startRightW - rightLimits.min
-        );
-        delta = Math.max(minDelta, Math.min(maxDelta, delta));
-        _colWidths[leftIdx] = Math.round(startLeftW + delta);
-        _colWidths[rightIdx] = Math.round(startRightW - delta);
-        applyColWidths();
+        pendingX = e.clientX;
+        if (!moveRaf) moveRaf = requestAnimationFrame(applyDrag);
       }
-      function onUp() {
+      function onUp(e) {
         if (!dragging) return;
+        if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
+        if (e && typeof e.clientX === 'number') pendingX = e.clientX;
+        applyDrag();
         dragging = false;
         document.body.classList.remove('hm-col-resizing');
         persistColsLayout();
