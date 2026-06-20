@@ -4664,8 +4664,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
-    padding-bottom: 8px;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
     border-bottom: 1px solid var(--hm-border);
   }
   .hm-app .hm-customize-title {
@@ -4766,8 +4766,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
-    padding-bottom: 8px;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
     border-bottom: 1px solid var(--hm-border);
   }
   .hm-app .hm-brand-title {
@@ -4800,6 +4800,9 @@
     color: var(--hm-muted);
     margin-bottom: 6px;
   }
+  /* Stacked color rows (highlight / secondary / accent): space each label
+     below the preceding color row. */
+  .hm-app .hm-brand-color-row + .hm-brand-label { margin-top: 10px; }
   .hm-app .hm-brand-color-row {
     display: flex;
     align-items: center;
@@ -5153,7 +5156,7 @@
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-gold);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
   .hm-app .hm-info-section { margin-bottom: 16px; }
   .hm-app .hm-info-section:last-child { margin-bottom: 0; }
@@ -5299,11 +5302,16 @@
     width: 2px;
     transform: translateX(-50%);
     background: var(--hm-border);
+    border-radius: 2px;
+    opacity: 1;
     transition: background 0.15s ease, width 0.15s ease;
   }
+  /* Resize handle reads as a neutral slider grip (not the gold accent),
+     darkening from the hairline border to the muted tone on hover/drag.
+     --hm-muted adapts to light + dark themes. */
   .hm-app .hm-col-divider:hover::after,
   body.hm-col-resizing .hm-app .hm-col-divider::after {
-    background: var(--hm-gold);
+    background: var(--hm-muted);
     width: 4px;
   }
   body.hm-col-resizing { cursor: col-resize; }
@@ -5589,7 +5597,7 @@
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-gold);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
   .hm-app .hm-universal-period-options {
     display: flex;
@@ -6033,16 +6041,19 @@
         <div class="hm-info-panel" id="hm-info-panel" hidden>
           <div class="hm-info-section">
             <div class="hm-info-title">About</div>
-            <p>A weekly-updated dashboard for reading the macro backdrop at a glance. It tracks what's driving markets, where the cycle stands, and how risk is positioned across equities, rates, credit, commodities, and currencies.</p>
-            <p>Every panel is interactive. Filter what you track, set one timeframe across the whole board, hover any metric for a plain-English definition and 5-year history, and export any panel as a clean image.</p>
-            <p>Every series comes from primary sources and passes an automated quality check before it publishes, so the numbers stay current and correct.</p>
+            <p>We built this dashboard to help you read the macro backdrop at a glance. It tracks what's driving markets, where the cycle stands, and how risk is positioned across equities, rates, credit, commodities, and currencies.</p>
+            <p>Panels are interactive. Filter what you track, set one timeframe across the whole board, hover for plain-English definitions, and export any panel as a clean image.</p>
             <p id="hm-about-upgrade"><a href="#" class="hm-upgrade-link" role="button"><b>Upgrade to Premium</b></a> to brand your image exports with a custom highlight color and your own logo.</p>
+          </div>
+          <div class="hm-info-section">
+            <div class="hm-info-title">Updates</div>
             <p>Latest data: <b id="hm-asof-date">--</b></p>
             <p>Weekly refresh: Saturday &amp; Monday mornings (ET), a full data rebuild.</p>
             <p>Daily updates: weekday evenings (ET) after the US close, for the latest prices.</p>
           </div>
           <div class="hm-info-section">
             <div class="hm-info-title">Data sources</div>
+            <p>Every series comes from primary sources and passes an automated quality check before it publishes, so the numbers stay current and correct.</p>
             <ul>
               <li><b>FRED:</b> Rates, credit, volatility, liquidity, macro, NBER recession dates (mixed daily, weekly, and monthly cadence depending on series)</li>
               <li><b>Yahoo Finance:</b> Indexes, ETFs, commodities, currencies, S&amp;P 500 constituents (daily)</li>
@@ -6062,7 +6073,7 @@
             <hr class="hm-info-divider">
             <p>Developed by <a href="https://stablebread.com/about/" target="_blank" rel="noopener">Fajasy @StableBread</a>. For questions, feedback, or requests, <a href="https://stablebread.com/contact/" target="_blank" rel="noopener">contact us here</a>!</p>
             <hr class="hm-info-divider">
-            <p><a href="https://stablebread.com/" target="_blank" rel="noopener">Subscribe to our newsletter</a> for asymmetric stocks and macro themes.</p>
+            <p><a href="https://stablebread.com/" target="_blank" rel="noopener">Subscribe to our newsletter</a> for research on asymmetric stocks and macro themes.</p>
           </div>
         </div>
       </div>
@@ -6110,7 +6121,17 @@
               <input type="color" id="hm-brand-color" value="#daa520" />
               <input type="text" id="hm-brand-color-hex" value="#DAA520" maxlength="7" spellcheck="false" autocomplete="off" />
             </div>
-            <div class="hm-brand-hint">Applies to header bars, accents, and image exports.</div>
+            <label class="hm-brand-label" for="hm-brand-color-pale">Secondary color</label>
+            <div class="hm-brand-color-row">
+              <input type="color" id="hm-brand-color-pale" value="#fdf9f1" />
+              <input type="text" id="hm-brand-color-pale-hex" value="#FDF9F1" maxlength="7" spellcheck="false" autocomplete="off" />
+            </div>
+            <label class="hm-brand-label" for="hm-brand-color-accent">Accent color</label>
+            <div class="hm-brand-color-row">
+              <input type="color" id="hm-brand-color-accent" value="#513c0c" />
+              <input type="text" id="hm-brand-color-accent-hex" value="#513C0C" maxlength="7" spellcheck="false" autocomplete="off" />
+            </div>
+            <div class="hm-brand-hint">Applies to header bars, accents, soft tints, and image exports.</div>
           </div>
           <div class="hm-brand-section">
             <label class="hm-brand-label">Export logo</label>
@@ -7904,15 +7925,29 @@
   /* Apply saved color override to :root (covers both light + dark since
      both .hm-app and .hm-app.dark currently set --hm-gold to the same
      value, so a single override on .hm-app cascades to both). */
-  function _applyBrandColor(hex) {
+  /* Brand-customizable theme colors. Each maps a popup color/hex input pair to
+     a CSS custom property + its (light-theme) default. Premium feature. The
+     override is set on .hm-app so it cascades to BOTH light + dark (one chosen
+     brand color applies in both themes + image exports). */
+  var BRAND_COLOR_FIELDS = [
+    { key: 'gold',  cssVar: '--hm-gold',      def: '#daa520', color: 'hm-brand-color',        hex: 'hm-brand-color-hex' },
+    { key: 'pale',  cssVar: '--hm-gold-pale', def: '#fdf9f1', color: 'hm-brand-color-pale',   hex: 'hm-brand-color-pale-hex' },
+    { key: 'brown', cssVar: '--hm-brown',     def: '#513c0c', color: 'hm-brand-color-accent', hex: 'hm-brand-color-accent-hex' },
+  ];
+
+  function _applyBrandVar(cssVar, hex) {
     var app = document.getElementById('hm-app') || document.querySelector('.hm-app');
     if (!app) return;
     if (hex && /^#?[0-9a-fA-F]{6}$/.test(hex)) {
-      var v = hex.charAt(0) === '#' ? hex : '#' + hex;
-      app.style.setProperty('--hm-gold', v);
+      app.style.setProperty(cssVar, hex.charAt(0) === '#' ? hex : '#' + hex);
     } else {
-      app.style.removeProperty('--hm-gold');
+      app.style.removeProperty(cssVar);
     }
+  }
+  /* Apply every saved color override (clearing any that are absent). */
+  function _applyAllBrandOverrides() {
+    var ov = _loadBrandOverrides();
+    BRAND_COLOR_FIELDS.forEach(function (f) { _applyBrandVar(f.cssVar, ov[f.key] || null); });
   }
 
   /* Validate a hex string. Accepts "abc" or "abcdef" or with leading #. */
@@ -7929,8 +7964,7 @@
   /* Run on first load to ensure saved override is applied before any
      painting. The IIFE below also re-applies it when the popup binds. */
   (function _applyBrandOnLoad() {
-    var ov = _loadBrandOverrides();
-    if (ov.gold) _applyBrandColor(ov.gold);
+    _applyAllBrandOverrides();
   })();
 
   (function () {
@@ -7953,7 +7987,11 @@
        "Premium Users Only" tooltip on hover. */
     if (window.HM_PREMIUM !== true) {
       var _LOCK_MSG = 'Premium Users Only';
-      [colorEl, hexEl, fileEl, clearEl, reset].forEach(function (el) {
+      var _lockEls = [fileEl, clearEl, reset];
+      BRAND_COLOR_FIELDS.forEach(function (f) {
+        _lockEls.push(document.getElementById(f.color), document.getElementById(f.hex));
+      });
+      _lockEls.forEach(function (el) {
         if (el) { el.disabled = true; el.title = _LOCK_MSG; }
       });
       /* Title on the (non-disabled) rows too, so the hover tooltip shows
@@ -7991,9 +8029,13 @@
 
     function syncInputsFromStorage() {
       var ov = _loadBrandOverrides();
-      var gold = ov.gold || DEFAULT_GOLD;
-      if (colorEl) colorEl.value = gold;
-      if (hexEl)   hexEl.value   = gold.toUpperCase();
+      BRAND_COLOR_FIELDS.forEach(function (f) {
+        var c = document.getElementById(f.color);
+        var h = document.getElementById(f.hex);
+        var val = ov[f.key] || f.def;
+        if (c) c.value = val;
+        if (h) h.value = val.toUpperCase();
+      });
       refreshLogoPreview();
       setHint(null, false);
     }
@@ -8015,41 +8057,38 @@
       if (e.key === 'Escape' && !panel.hidden) panel.hidden = true;
     });
 
-    /* Color picker (native color input) \u2014 fires 'input' continuously
-       and 'change' on commit. Use 'input' for live preview. */
-    if (colorEl) {
-      colorEl.addEventListener('input', function () {
-        var hex = _normalizeHex(colorEl.value);
-        if (!hex) return;
+    /* Wire each brand color (highlight / secondary / accent). The native
+       color input fires 'input' continuously for live preview; the hex text
+       input commits on Enter or blur. */
+    BRAND_COLOR_FIELDS.forEach(function (f) {
+      var colorInput = document.getElementById(f.color);
+      var hexInput   = document.getElementById(f.hex);
+      function commit(hex) {
         var ov = _loadBrandOverrides();
-        ov.gold = hex;
+        ov[f.key] = hex;
         _saveBrandOverrides(ov);
-        _applyBrandColor(hex);
-        if (hexEl) hexEl.value = hex.toUpperCase();
-      });
-    }
-
-    /* Hex text input \u2014 accept on Enter or blur. */
-    if (hexEl) {
-      var commitHex = function () {
-        var hex = _normalizeHex(hexEl.value);
-        if (!hex) {
-          /* invalid \u2014 snap back to current saved value */
-          syncInputsFromStorage();
-          return;
-        }
-        var ov = _loadBrandOverrides();
-        ov.gold = hex;
-        _saveBrandOverrides(ov);
-        _applyBrandColor(hex);
-        if (colorEl) colorEl.value = hex;
-        hexEl.value = hex.toUpperCase();
-      };
-      hexEl.addEventListener('change', commitHex);
-      hexEl.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { commitHex(); hexEl.blur(); }
-      });
-    }
+        _applyBrandVar(f.cssVar, hex);
+        if (colorInput) colorInput.value = hex;
+        if (hexInput)   hexInput.value = hex.toUpperCase();
+      }
+      if (colorInput) {
+        colorInput.addEventListener('input', function () {
+          var hex = _normalizeHex(colorInput.value);
+          if (hex) commit(hex);
+        });
+      }
+      if (hexInput) {
+        var commitHex = function () {
+          var hex = _normalizeHex(hexInput.value);
+          if (!hex) { syncInputsFromStorage(); return; }  /* invalid -> snap back */
+          commit(hex);
+        };
+        hexInput.addEventListener('change', commitHex);
+        hexInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { commitHex(); hexInput.blur(); }
+        });
+      }
+    });
 
     /* Logo upload. Validates PNG/JPG only + size; opens the
        Twitter-style crop modal so the user can pan + zoom into
@@ -8267,7 +8306,7 @@
       reset.addEventListener('click', function () {
         try { localStorage.removeItem(BRAND_OVERRIDES_KEY); } catch (e) {}
         try { localStorage.removeItem(BRAND_LOGO_KEY); } catch (e) {}
-        _applyBrandColor(null);
+        _applyAllBrandOverrides();
         syncInputsFromStorage();
       });
     }
