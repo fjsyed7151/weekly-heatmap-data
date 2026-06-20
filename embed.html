@@ -4678,7 +4678,7 @@
     border-bottom: 1px solid var(--hm-border);
   }
   .hm-app .hm-customize-title {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-gold);
@@ -4696,7 +4696,7 @@
   }
   .hm-app .hm-customize-reset:hover { color: var(--hm-gold); }
   .hm-app .hm-customize-group {
-    font-size: 9.5px;
+    font-size: 8px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-muted);
@@ -4780,7 +4780,7 @@
     border-bottom: 1px solid var(--hm-border);
   }
   .hm-app .hm-brand-title {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-gold);
@@ -4803,7 +4803,7 @@
   .hm-app .hm-brand-section:first-of-type { margin-top: 0; }
   .hm-app .hm-brand-label {
     display: block;
-    font-size: 9.5px;
+    font-size: 8px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-muted);
@@ -4820,8 +4820,10 @@
   .hm-app .hm-brand-color-row input[type="color"] {
     -webkit-appearance: none;
     appearance: none;
-    width: 28px;
-    height: 28px;
+    /* Square swatch reduced to match the hex field's height (was 28px). */
+    width: 24px;
+    height: 24px;
+    box-sizing: border-box;
     border: 1px solid var(--hm-border);
     border-radius: 4px;
     padding: 0;
@@ -4847,6 +4849,7 @@
   }
   .hm-app .hm-brand-hint {
     font-size: 10px;
+    line-height: 1.2;
     color: var(--hm-muted);
     margin-top: 4px;
   }
@@ -4878,7 +4881,7 @@
   .hm-app .hm-brand-logo-clear {
     flex: 1;
     font-family: 'Karla', sans-serif;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     text-align: center;
     padding: 6px 8px;
@@ -5161,7 +5164,7 @@
   }
   .hm-app .hm-info-panel[hidden] { display: none; }
   .hm-app .hm-info-title {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-gold);
@@ -5182,7 +5185,7 @@
   }
   .hm-app .hm-info-panel li {
     margin-bottom: 4px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .hm-app .hm-info-panel li b { font-weight: 600; }
   .hm-app .hm-info-panel .hm-legend {
@@ -5602,7 +5605,7 @@
   .hm-app .hm-universal-period-panel[hidden] { display: none; }
   .hm-app .hm-universal-period-title {
     font-family: 'Karla', sans-serif;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--hm-gold);
@@ -5615,7 +5618,7 @@
   }
   .hm-app .hm-universal-period-opt {
     font-family: 'Karla', sans-serif;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     padding: 4px 10px;
     border: 1px solid var(--hm-border);
@@ -6120,7 +6123,7 @@
         </button>
         <div class="hm-brand-panel" id="hm-brand-panel" hidden>
           <div class="hm-brand-header">
-            <span class="hm-brand-title">Brand &amp; logo</span>
+            <span class="hm-brand-title">Customize design</span>
             <button type="button" class="hm-brand-reset" id="hm-brand-reset">Reset</button>
           </div>
           <div class="hm-brand-section">
@@ -6139,7 +6142,6 @@
               <input type="color" id="hm-brand-color-accent" value="#513c0c" />
               <input type="text" id="hm-brand-color-accent-hex" value="#513C0C" maxlength="7" spellcheck="false" autocomplete="off" />
             </div>
-            <div class="hm-brand-hint">Applies to header bars, accents, soft tints, and image exports.</div>
           </div>
           <div class="hm-brand-section">
             <label class="hm-brand-label">Export logo</label>
@@ -7938,19 +7940,23 @@
      override is set on .hm-app so it cascades to BOTH light + dark (one chosen
      brand color applies in both themes + image exports). */
   var BRAND_COLOR_FIELDS = [
-    { key: 'gold',  cssVar: '--hm-gold',      def: '#daa520', color: 'hm-brand-color',        hex: 'hm-brand-color-hex' },
-    { key: 'pale',  cssVar: '--hm-gold-pale', def: '#fdf9f1', color: 'hm-brand-color-pale',   hex: 'hm-brand-color-pale-hex' },
-    { key: 'brown', cssVar: '--hm-brown',     def: '#513c0c', color: 'hm-brand-color-accent', hex: 'hm-brand-color-accent-hex' },
+    { key: 'gold',  cssVar: '--hm-gold',                        def: '#daa520', color: 'hm-brand-color',        hex: 'hm-brand-color-hex' },
+    /* Secondary drives BOTH the gold tint AND the warm background (both default
+       to #fdf9f1), so changing it recolors every soft tint on the dashboard. */
+    { key: 'pale',  cssVar: ['--hm-gold-pale', '--hm-bg-warm'], def: '#fdf9f1', color: 'hm-brand-color-pale',   hex: 'hm-brand-color-pale-hex' },
+    { key: 'brown', cssVar: '--hm-brown',                       def: '#513c0c', color: 'hm-brand-color-accent', hex: 'hm-brand-color-accent-hex' },
   ];
 
+  /* cssVar may be a single property or an array of properties. */
   function _applyBrandVar(cssVar, hex) {
     var app = document.getElementById('hm-app') || document.querySelector('.hm-app');
     if (!app) return;
-    if (hex && /^#?[0-9a-fA-F]{6}$/.test(hex)) {
-      app.style.setProperty(cssVar, hex.charAt(0) === '#' ? hex : '#' + hex);
-    } else {
-      app.style.removeProperty(cssVar);
-    }
+    var vars = Array.isArray(cssVar) ? cssVar : [cssVar];
+    var valid = hex && /^#?[0-9a-fA-F]{6}$/.test(hex);
+    var v = valid ? (hex.charAt(0) === '#' ? hex : '#' + hex) : null;
+    vars.forEach(function (cv) {
+      if (v) app.style.setProperty(cv, v); else app.style.removeProperty(cv);
+    });
   }
   /* Apply every saved color override (clearing any that are absent). */
   function _applyAllBrandOverrides() {
