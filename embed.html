@@ -3588,12 +3588,22 @@
     border-radius: 0;
     padding: 12px;
   }
+  /* Horizontal-scroll wrapper for the 3x3 grid. Sits inside the padded body so
+     the body's 12px padding is always respected; the grid scrolls in here once
+     it hits its min-width instead of compressing further. */
+  .hm-app .hm-sf-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
   /* Style box 3x3 grid */
   .hm-app .hm-style-grid {
     display: grid;
     grid-template-columns: auto 1fr 1fr 1fr;
     grid-template-rows: auto 1fr 1fr 1fr;
     gap: 4px;
+    /* Floor so the cells stay readable; below this the wrapper scrolls. Lands
+       around where the gold header wraps (~285px panel content width). */
+    min-width: 300px;
   }
   .hm-app .hm-style-label {
     font-size: 10px;
@@ -10915,7 +10925,13 @@
         grid.appendChild(cell);
       }
     }
-    sbBody.appendChild(grid);
+    /* Grid lives in a horizontal-scroll wrapper INSIDE the padded body, so on
+       a narrow panel the 3x3 stops compressing and scrolls instead — while the
+       body's 12px padding (outside the wrapper) is always respected. */
+    var sbScroll = document.createElement('div');
+    sbScroll.className = 'hm-sf-scroll';
+    sbScroll.appendChild(grid);
+    sbBody.appendChild(sbScroll);
     sbPanel.appendChild(sbBody);
     wrap.appendChild(sbPanel);
     container.appendChild(wrap);
@@ -14368,7 +14384,7 @@
          scrollbars in the captured PNG. Inline overflow:visible
          eliminates the scrollbar at the source \u2014 content extends
          naturally instead of being clipped behind a scrollbar UI. */
-      clone.querySelectorAll('.hm-scroll, .hm-factors-scroll, .hm-commod-wrap, .hm-fx-wrap, .hm-sp500-scroll').forEach(function (s) {
+      clone.querySelectorAll('.hm-scroll, .hm-factors-scroll, .hm-commod-wrap, .hm-fx-wrap, .hm-sp500-scroll, .hm-sf-scroll').forEach(function (s) {
         s.style.setProperty('overflow', 'visible', 'important');
         s.style.setProperty('overflow-x', 'visible', 'important');
         s.style.setProperty('overflow-y', 'visible', 'important');
