@@ -14850,13 +14850,13 @@
       if (panelId === 'hm-heatmap-wrap') {
         /* Metrics heatmap: subpixel rounding compounds across many
            table rows. Buffer scales linearly with visible row count.
-           +12 @ 49 visible rows was the user-tested sweet spot post-
-           filter (flush footer, no clipping). Coefficient ~0.245
-           px/row, floored at +2. */
+           Bumped to ~0.33 px/row (floored at +4) after the old ~0.245
+           coefficient still trimmed the last "Gold vs LT Govt corr" row's
+           bottom border on some renders. */
         var visRows = clone.querySelectorAll(
           '#hm-table tbody tr:not(.hm-section):not([data-cat-hidden="true"])'
         ).length || 49;
-        captureH += Math.max(2, Math.ceil(visRows / 4));
+        captureH += Math.max(4, Math.ceil(visRows / 3));
       } else if (panelId === 'hm-commodities') {
         /* Commodity table: subpixel rounding compounds per row.
            At full count (~30 visible rows) +10 was the tested sweet
@@ -14879,6 +14879,12 @@
           '.hm-fx-tbl tbody tr:not(.hm-fx-cat):not([data-cat-hidden="true"])'
         ).length || 18;
         captureH += Math.max(1, Math.ceil(visRows / 3));
+      } else if (panelId === 'hm-currency-matrix') {
+        /* Currency Performance matrix (NxN cross-returns): same per-row
+           subpixel rounding was trimming the last currency row's bottom
+           border (it had no buffer before). Buffer by row count. */
+        var visRows = clone.querySelectorAll('.hm-cm-table tbody tr').length || 9;
+        captureH += Math.max(4, Math.ceil(visRows / 2));
       } else {
         /* Non-buffered panels end cleanly (no compounding sub-pixel row
            stack), so Math.ceil(rectH) just adds up to ~1px of panel-bg
