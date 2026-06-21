@@ -6032,6 +6032,35 @@
       right: 8px;
     }
   }
+
+  /* ---- MOBILE pass tweaks ---- */
+  /* The universal Period popup is the exception to the full-width popup
+     treatment above: it's a fixed 5x2 grid of short chips, so stretching it
+     edge-to-edge just leaves a lopsided wrap. Keep it sized to its content,
+     anchored to the left page inset (the grouped rule's left:16px/8px stays),
+     with the options locked to two rows of five. */
+  @media (max-width: 700px) {
+    .hm-app .hm-universal-period-panel {
+      right: auto;
+      width: max-content;
+      max-width: calc(100vw - 32px);
+    }
+    .hm-app .hm-universal-period-options {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+    }
+    .hm-app .hm-universal-period-opt { min-width: 0; }
+    /* Pointer-anchored hover popups must never be wider than the screen, or a
+       clamped-to-edge tip still spills its text off the side. */
+    .hm-app .hm-sp500-tip,
+    .hm-app #hm-mtip,
+    .hm-app .hm-idx-tooltip {
+      max-width: calc(100vw - 16px);
+    }
+  }
+  @media (max-width: 480px) {
+    .hm-app .hm-universal-period-panel { max-width: calc(100vw - 16px); }
+  }
 </style>
 
 <div class="hm-app" id="hm-app">
@@ -8669,13 +8698,27 @@
     document.addEventListener('mousemove', function (e) {
       if (!mtip.classList.contains('on')) return;
       var pad = 14;
-      var x = e.clientX + pad, y = e.clientY + pad;
       var tw = mtip.offsetWidth, th = mtip.offsetHeight;
-      if (x + tw > window.innerWidth)  x = e.clientX - tw - pad;
-      if (y + th > window.innerHeight) y = e.clientY - th - pad;
+      var x = e.clientX + pad, y = e.clientY + pad;
+      if (x + tw > window.innerWidth - 8)  x = e.clientX - tw - pad;
+      if (y + th > window.innerHeight - 8) y = e.clientY - th - pad;
+      /* Clamp to the viewport so a wide tip near an edge never starts
+         off-screen -- on touch a tap can otherwise flip it left past x=0. */
+      x = Math.min(Math.max(8, x), Math.max(8, window.innerWidth - tw - 8));
+      y = Math.min(Math.max(8, y), Math.max(8, window.innerHeight - th - 8));
       mtip.style.left = x + 'px';
       mtip.style.top  = y + 'px';
     });
+    /* Touch/scroll dismiss: the tip is position:fixed and pointer-anchored, so
+       on touch (no mouseleave fires) it would hang over unrelated content after
+       a scroll. Hide it + tear down its chart on any scroll or touch-scroll. */
+    var _hideMtip = function () {
+      mtip.classList.remove('on');
+      mtip.classList.remove('with-chart');
+      if (mtipChart) { mtipChart.destroy(); mtipChart = null; }
+    };
+    window.addEventListener('scroll', _hideMtip, true);
+    window.addEventListener('touchmove', _hideMtip, { passive: true });
   })();
 
   /* ---------- Chart annotation helpers (shared across hover + always-visible charts) ---------- */
@@ -9299,6 +9342,11 @@
       tt.className = 'hm-idx-tooltip';
       var hmApp = document.querySelector('.hm-app');
       (hmApp || document.body).appendChild(tt);
+      /* Touch/scroll dismiss (hooked once): hide on scroll so a tapped
+         sparkline tooltip doesn't linger over scrolled content. */
+      var _hideIdx = function () { tt.style.opacity = 0; };
+      window.addEventListener('scroll', _hideIdx, true);
+      window.addEventListener('touchmove', _hideIdx, { passive: true });
     }
     var model = context.tooltip;
     if (model.opacity === 0) {
@@ -10982,6 +11030,11 @@
     _sp500Tip.className = 'hm-sp500-tip';
     _sp500Tip.style.display = 'none';
     (app || document.body).appendChild(_sp500Tip);
+    /* Touch/scroll dismiss (hooked once): on touch there's no mouseleave, so the
+       tip would otherwise stay floating while the page scrolls. */
+    var _hideSp = function () { _sp500Tip.style.display = 'none'; };
+    window.addEventListener('scroll', _hideSp, true);
+    window.addEventListener('touchmove', _hideSp, { passive: true });
     return _sp500Tip;
   }
   var _sp500RO = null, _sp500Svg = null, _sp500ResizeHooked = false, _sp500RT = null;
@@ -11175,8 +11228,10 @@
       var left = e.clientX + 14, top = e.clientY + 14;
       if (left + tw > window.innerWidth - 8) left = e.clientX - tw - 14;
       if (top + th > window.innerHeight - 8) top = e.clientY - th - 14;
-      tip.style.left = Math.max(8, left) + 'px';
-      tip.style.top = Math.max(8, top) + 'px';
+      left = Math.min(Math.max(8, left), Math.max(8, window.innerWidth - tw - 8));
+      top  = Math.min(Math.max(8, top),  Math.max(8, window.innerHeight - th - 8));
+      tip.style.left = left + 'px';
+      tip.style.top = top + 'px';
     });
     svg.addEventListener('mouseleave', hide);
   }
