@@ -6643,18 +6643,87 @@
     return p[1] + '/' + p[2] + '/' + p[0];
   }
 
+  /* ---- Market-trading-day snapping for DISPLAYED dates ----
+     The weekly metrics grid buckets by week-ending Friday; a bucket's VALUE is
+     the last real close in that week, but its LABEL is the calendar Friday. When
+     that Friday is a market holiday (e.g. Juneteenth 06/19) or any closed
+     session, we must never DISPLAY the closed date - we snap it back to the most
+     recent real trading day. The trading calendar is derived from the index
+     DAILY series (the data feed ships only real sessions), so it auto-excludes
+     every holiday, weekend, and closed day with NO hardcoded list. It spans ~1y
+     of daily history, which covers as_of + every visible weekly column + every
+     period start up to 1Y; dates older than that window are returned unchanged
+     (can't be verified client-side). Internal grid/return math is untouched -
+     this only relabels what the user sees. */
+  var _tradingDays = null;
+  function _isoOf(d) {
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function _tradingDaySet() {
+    if (_tradingDays) return _tradingDays;
+    var set = null;
+    try {
+      if (typeof cachedData !== 'undefined' && cachedData && cachedData.indexes) {
+        set = {};
+        cachedData.indexes.forEach(function (idx) {
+          (idx.spark_dates_daily || []).forEach(function (dt) { set[dt] = 1; });
+        });
+        if (!Object.keys(set).length) set = null;
+      }
+    } catch (e) { set = null; }
+    _tradingDays = set;
+    return set;
+  }
+  /* Most recent trading day on-or-before iso. No-op if iso is already a session,
+     if there's no calendar, or if iso predates the daily window. */
+  function _snapTradingDay(iso) {
+    if (!iso || typeof iso !== 'string') return iso;
+    var set = _tradingDaySet();
+    if (!set || set[iso]) return iso;
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return iso;
+    for (var i = 0; i < 7; i++) {            /* clears a holiday + weekend */
+      d.setDate(d.getDate() - 1);
+      var k = _isoOf(d);
+      if (set[k]) return k;
+    }
+    return iso;
+  }
+  /* The trading day strictly before iso (for 1-day windows). Falls back to a
+     weekend-skipping calendar step when no daily calendar is available. */
+  function _prevTradingDay(iso) {
+    if (!iso || typeof iso !== 'string') return iso;
+    var set = _tradingDaySet();
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return iso;
+    if (!set) {
+      d.setDate(d.getDate() - 1);
+      var dow = d.getDay();
+      if (dow === 0) d.setDate(d.getDate() - 2);
+      else if (dow === 6) d.setDate(d.getDate() - 1);
+      return _isoOf(d);
+    }
+    for (var i = 0; i < 10; i++) {
+      d.setDate(d.getDate() - 1);
+      var k = _isoOf(d);
+      if (set[k]) return k;
+    }
+    return iso;
+  }
+
   /* ---------- Table render ---------- */
   function render(data) {
     cachedData = data;
+    _tradingDays = null;  /* rebuild the trading-day calendar from the new data */
     var theme = getTheme();
-    document.getElementById("hm-asof-date").textContent = data.as_of ? toMmDdYyyy(data.as_of) : "--";
+    document.getElementById("hm-asof-date").textContent = data.as_of ? toMmDdYyyy(_snapTradingDay(data.as_of)) : "--";
 
     var table = document.getElementById("hm-table");
     table.innerHTML = "";
 
     var dates = (data.sections[0] && data.sections[0].rows[0] && data.sections[0].rows[0].dates) || [];
     var dataColCount = dates.length + 4;
-    var cols = ["Metric"].concat(dates.map(toMmDd)).concat(["%ile", "5y Avg", "5y Min", "5y Max"]);
+    var cols = ["Metric"].concat(dates.map(function (d) { return toMmDd(_snapTradingDay(d)); })).concat(["%ile", "5y Avg", "5y Min", "5y Max"]);
 
     var thead = document.createElement("thead");
     var hr = document.createElement("tr");
@@ -14214,12 +14283,25 @@
       };
       var getPeriod = periodByPanel[panelId];
       if (getPeriod) {
-        try { startIso = _periodStartIso(getPeriod(), endIso); } catch (e) {}
+        var _pk = String(getPeriod() || '').toLowerCase();
+        if (_pk === 'd1' || _pk === '1d') {
+          /* 1-day window = the last two real trading sessions, anchored to the
+             snapped last session so a closed-market label is never shown. */
+          endIso = _snapTradingDay(endIso);
+          startIso = _prevTradingDay(endIso);
+        } else {
+          try { startIso = _periodStartIso(getPeriod(), endIso); } catch (e) {}
+        }
       }
     }
-    /* En dash (\u2013), not a plain hyphen: the en dash is the typographic
-       standard for ranges ("from X to Y"). Written as a \uXXXX escape so it
-       survives the charset-less WordPress fragment and the export canvas. */
+    /* Snap displayed dates to real trading days so a closed-market label
+       (holiday / weekend) is never shown - e.g. a Juneteenth Friday becomes the
+       prior session. The weekly grid + return math are untouched; this relabels
+       only what's printed. (d1 above is already snapped.)
+       En dash (\u2013), not a hyphen: typographic standard for ranges. Written as
+       a \uXXXX escape so it survives the charset-less WP fragment + export canvas. */
+    startIso = _snapTradingDay(startIso);
+    endIso = _snapTradingDay(endIso);
     if (startIso) return toMmDdYyyy(startIso) + ' \u2013 ' + toMmDdYyyy(endIso);
     return toMmDdYyyy(endIso);
   }
