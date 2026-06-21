@@ -15141,13 +15141,12 @@
         });
       }).then(function (panelDataUrl) {
         /* Heatmap + matrix were captured with a bottom safety band so the last
-           row is never clipped; trim it back to the exact content bottom here so
-           the footer composes essentially flush under the last row (the table
-           content fills to the bottom with no natural padding, so 4 visual px is
-           just a hairline so the last-row border doesn't merge with the divider
-           - NOT a gap). */
+           row is never clipped; trim it back to the EXACT content bottom here
+           (margin 0 = fully flush) so the footer divider composes immediately
+           under the last row's bottom border - matching how the commodity/FX
+           tables compose flush. Any non-zero margin reads as "a small gap". */
         if (trimExport) {
-          return _trimImageBottomToContent(panelDataUrl, pixelRatio, 4);
+          return _trimImageBottomToContent(panelDataUrl, pixelRatio, 0);
         }
         return panelDataUrl;
       }).then(function (panelDataUrl) {
