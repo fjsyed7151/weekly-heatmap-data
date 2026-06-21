@@ -9263,7 +9263,7 @@
       hist.forEach(function (h) {
         var cell = document.createElement('span');
         cell.className = 'hm-mc-regime-cell ' + h.quadrant;
-        cell.title = toMmDdYyyy(h.date) + ' \u00b7 ' + (quadName[h.quadrant] || h.quadrant);
+        cell.title = toMmDdYyyy(_snapTradingDay(h.date)) + ' \u00b7 ' + (quadName[h.quadrant] || h.quadrant);
         cells.appendChild(cell);
       });
       ribbon.appendChild(cells);
@@ -14247,7 +14247,7 @@
     if (panelId === 'hm-macrocompass') {
       try {
         var mh = cachedData.macrocompass.history;
-        if (mh && mh.length) return toMmDdYyyy(mh[mh.length - 1].date);
+        if (mh && mh.length) return toMmDdYyyy(_snapTradingDay(mh[mh.length - 1].date));
       } catch (e) {}
     }
     var endIso = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
