@@ -771,7 +771,7 @@
     top: 0;
     bottom: 0;
     width: 0;
-    background: var(--hm-gold);
+    background: var(--hm-border-strong);
     border-radius: 2px;
     opacity: 0;
     transition: width 0.15s ease, opacity 0.15s ease;
@@ -5326,13 +5326,14 @@
     left: 50%;
     width: 4px;
     transform: translateX(-50%);
-    background: var(--hm-muted);
+    background: var(--hm-border-strong);
     border-radius: 2px;
     opacity: 0;
     transition: opacity 0.15s ease;
   }
-  /* The resize handle (neutral slider grip, theme-adaptive --hm-muted) stays
-     hidden until the user hovers or drags the divider. */
+  /* The resize handle (neutral slider grip, theme-adaptive --hm-border-strong)
+     stays hidden until the user hovers or drags the divider. A softer neutral
+     than the old --hm-muted, which read as too harsh on the light background. */
   .hm-app .hm-col-divider:hover::after,
   body.hm-col-resizing .hm-app .hm-col-divider::after {
     opacity: 1;
