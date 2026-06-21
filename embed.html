@@ -967,13 +967,14 @@
     justify-content: flex-end;
     gap: 8px;
     /* padding-top is the gap above the icons that TRAVELS with the bar when it
-       sticks (it's bg-filled, so no page content bleeds through). The negative
-       margin-top cancels the same amount at rest so the at-rest position is
-       unchanged - it only matters once stuck, where the page inset above the bar
-       has scrolled away and this padding is the only gap left. Was 8px, which
-       collapsed the gap to ~8px on scroll; 16px keeps a visible gap when pinned. */
-    padding: 16px 0 12px;
-    margin: -16px 0 4px;
+       sticks (bg-filled, so no page content bleeds through as you scroll). It
+       does NOT change the at-rest gap ABOVE the bar - that gap is the page inset
+       plus margin-top only - so the stuck gap can be sized freely here without
+       touching the rest layout. margin-top stays -8px (the original): a larger
+       negative would eat the SMALLER mobile page inset (16px) and leave the bar
+       flush to the very top at rest (the regression from the -16px attempt). */
+    padding: 12px 0 12px;
+    margin: -8px 0 4px;
     background: var(--hm-bg);
   }
   /* Back-to-stablebread.com button on the very left of the topbar.
@@ -5252,7 +5253,11 @@
 
   @media (max-width: 1024px) {
     .hm-app .hm-inner { padding: 24px 24px 64px; }
-    .hm-app .hm-topbar { padding: 0 0 8px 0; }
+    /* Keep a 12px top padding (matching desktop) so the bar retains a visible
+       gap above its icons when it sticks on scroll - this is bg-filled and
+       travels with the sticky bar. (Was 0, which made the gap collapse to
+       nothing once pinned on mobile.) Bottom stays 8px. */
+    .hm-app .hm-topbar { padding: 12px 0 8px 0; }
   }
   @media (max-width: 700px) {
     .hm-app { font-size: 12px; }
@@ -14627,11 +14632,11 @@
          it. (panelId is also referenced later when picking pinnedW +
          the heatmap captureH buffer.) */
       var panelId = item.getAttribute('gs-id') || '';
-      /* Table panels: captured with a generous bottom safety band (never clip),
-         then trimmed back to the exact content bottom after render. See
-         _trimImageBottomToContent + the captureH branch below. */
-      var tableExport = (panelId === 'hm-heatmap-wrap' || panelId === 'hm-currency-matrix' ||
-                         panelId === 'hm-commodities' || panelId === 'hm-currencies');
+      /* ONLY the metrics heatmap + currency matrix use the capture-generous-then-
+         trim path - they were the two clip/whitespace offenders. The commodity +
+         FX tables already export perfectly with their own per-row buffers (below)
+         and are deliberately NOT trimmed - do NOT add them back here. */
+      var trimExport = (panelId === 'hm-heatmap-wrap' || panelId === 'hm-currency-matrix');
       /* Sector chart is the one panel whose canvas is the primary
          content + supposed to fill the panel width. After the canvas
          \u2192 img replacement, force the resulting img to width:100% so
@@ -14947,23 +14952,35 @@
          expands via max() with rectW so we never clip. */
       var floorW = pinnedW || 600;
       var captureW = Math.max(floorW, Math.ceil(rectW));
-      var captureH;
-      if (tableExport) {
-        /* Table panels (metrics heatmap, currency matrix, commodity & FX
-           tables): html-to-image rounds each row's sub-pixel height
-           independently, so the rendered table can sit a few px taller than
-           the measured wrapper and clip the last row. A per-row buffer cannot
-           win (too small clips, too large leaves a gap), so capture with a
-           GENEROUS bottom safety band (never clip) and reclaim the exact
-           bottom after render in _trimImageBottomToContent. The +48 px here
-           is scratch the trim removes; the final PNG ends flush under the
-           last row at any row count / category filter. */
+      var captureH = Math.ceil(rectH);
+      if (trimExport) {
+        /* Metrics heatmap + currency matrix ONLY: html-to-image rounds each
+           row's sub-pixel height independently, so the rendered table can sit a
+           few px taller than the measured wrapper and clip the last row - and a
+           fixed per-row buffer over/undershoots (it did, twice). So capture with
+           a GENEROUS safety band (never clip) and reclaim the EXACT content
+           bottom after render in _trimImageBottomToContent. The +48 is scratch
+           the trim removes. */
         captureH = Math.ceil(rectH) + 48;
+      } else if (panelId === 'hm-commodities') {
+        /* Commodity table - UNCHANGED (already exported perfectly). Per-row
+           buffer compensates html-to-image's sub-pixel over-render; scales with
+           visible rows so hiding categories doesn't leave a gap. */
+        var visRows = clone.querySelectorAll(
+          '.hm-commod-tbl tbody tr:not(.hm-commod-cat):not([data-cat-hidden="true"])'
+        ).length || 30;
+        captureH += Math.max(1, Math.ceil(visRows / 3));
+      } else if (panelId === 'hm-currencies') {
+        /* FX table - UNCHANGED (already exported perfectly). Same per-row buffer
+           logic as the commodity table. */
+        var visRows = clone.querySelectorAll(
+          '.hm-fx-tbl tbody tr:not(.hm-fx-cat):not([data-cat-hidden="true"])'
+        ).length || 18;
+        captureH += Math.max(1, Math.ceil(visRows / 3));
       } else {
-        /* Non-table panels end cleanly (no compounding sub-pixel row stack),
-           so Math.ceil(rectH) just adds ~1px of panel-bg between content and
-           the footer divider. Round instead so the footer sits flush; any
-           sub-px trim lands in the last row's bottom padding and is invisible. */
+        /* Non-table panels end cleanly (no compounding sub-pixel row stack), so
+           Math.ceil(rectH) adds ~1px of panel-bg before the footer divider.
+           Round instead so the footer sits flush. */
         captureH = Math.round(rectH);
       }
       clone.style.setProperty('width', captureW + 'px', 'important');
@@ -15123,12 +15140,14 @@
           }
         });
       }).then(function (panelDataUrl) {
-        /* Table panels were captured with a bottom safety band so the last
-           row is never clipped; trim it back to the exact content bottom here
-           so the footer composes flush under the last row (no clip, no gap).
-           8 visual px leaves a clean, consistent breath before the divider. */
-        if (tableExport) {
-          return _trimImageBottomToContent(panelDataUrl, pixelRatio, 8);
+        /* Heatmap + matrix were captured with a bottom safety band so the last
+           row is never clipped; trim it back to the exact content bottom here so
+           the footer composes essentially flush under the last row (the table
+           content fills to the bottom with no natural padding, so 4 visual px is
+           just a hairline so the last-row border doesn't merge with the divider
+           - NOT a gap). */
+        if (trimExport) {
+          return _trimImageBottomToContent(panelDataUrl, pixelRatio, 4);
         }
         return panelDataUrl;
       }).then(function (panelDataUrl) {
