@@ -9324,16 +9324,27 @@
            weekly sparkline for longer periods or when daily isn't
            available. */
         var weeks = _sparkWeeksFor(idxPeriod);
-        var useDaily = (idxPeriod === 'w1' || idxPeriod === 'm1' ||
+        var useDaily = (idxPeriod === 'd1' || idxPeriod === 'w1' || idxPeriod === 'm1' ||
                         idxPeriod === 'm3' || idxPeriod === 'm6' ||
                         idxPeriod === 'ytd');
-        if (useDaily && idx.sparkline_daily && idx.sparkline_daily.length > 0) {
-          var days = weeks * 5; /* ~5 trading days/week */
+        if (useDaily && idx.sparkline_daily && idx.sparkline_daily.length >= 2) {
+          /* Slice the EXACT period window, NOT the visual-minimum weeks. This
+             same slice drives the card's % change AND the date stamp
+             (idxStampWindow below), so it must equal the selected period:
+               d1 = last 2 closes (1 trading day)
+               w1 = last 6 closes (5 trading-day intervals = 1 week)
+               m1/m3/m6/ytd = weeks*5 (already exact)
+             Previously _sparkWeeksFor widened w1 to 2 weeks and defaulted d1 to
+             13 weeks (3 months), so 1D/1W showed the wrong range and % change. */
+          var days = (idxPeriod === 'd1') ? 2 : (idxPeriod === 'w1') ? 6 : weeks * 5;
           slicedSpark = idx.sparkline_daily.slice(-days);
           slicedDates = (idx.spark_dates_daily || []).slice(-days);
         } else {
-          slicedSpark = idx.sparkline.slice(-weeks);
-          slicedDates = (idx.spark_dates || []).slice(-weeks);
+          /* Weekly fallback (long periods, or no daily series). d1 with no daily
+             falls back to the 2 most recent weekly closes (best available). */
+          var wpts = (idxPeriod === 'd1') ? 2 : weeks;
+          slicedSpark = idx.sparkline.slice(-wpts);
+          slicedDates = (idx.spark_dates || []).slice(-wpts);
         }
         /* Record the real plotted window (ISO dates sort lexicographically =
            chronologically). Widen across cards in case some have less history. */
@@ -14118,6 +14129,19 @@
       var jan1 = new Date(end.getFullYear(), 0, 1);
       jan1.setDate(jan1.getDate() + ((5 - jan1.getDay() + 7) % 7));
       return iso(jan1);
+    }
+    if (k === 'd1' || k === '1d') {
+      /* 1 trading day back. Not a weekly multiple, so handle it explicitly
+         (otherwise it fell through to null and the stamp showed only the end
+         date). Skip weekends so the start lands on a real session
+         (Sat/Sun -> Friday). Holidays aren't modeled - this is a date-stamp
+         approximation, not the return math. */
+      var dd = new Date(end.getTime());
+      dd.setDate(dd.getDate() - 1);
+      var dow = dd.getDay();
+      if (dow === 0) dd.setDate(dd.getDate() - 2);
+      else if (dow === 6) dd.setDate(dd.getDate() - 1);
+      return iso(dd);
     }
     var steps = _PERIOD_WEEK_STEPS[k];
     if (!steps) return null;
