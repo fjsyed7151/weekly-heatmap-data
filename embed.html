@@ -14295,6 +14295,21 @@
        - Calendar: a forward schedule of upcoming releases, each row dated,
          with the window end in the header subtitle. A market-close
          "Data:" date doesn't describe a forward schedule. */
+  /* Latest real DAILY trading session the data knows about = the last entry of
+     the index daily series (spark_dates_daily). The daily-cadence panels (index
+     cards, S&P heat map, commodity + FX tables/perf) refresh to this, which can
+     lead the weekly as_of mid-week. Returns an ISO string, or null. */
+  function _latestDailySession() {
+    try {
+      var mx = null, idxs = (cachedData && cachedData.indexes) || [];
+      for (var i = 0; i < idxs.length; i++) {
+        var sd = idxs[i].spark_dates_daily;
+        if (sd && sd.length) { var last = sd[sd.length - 1]; if (!mx || last > mx) mx = last; }
+      }
+      return mx;
+    } catch (e) { return null; }
+  }
+
   function _exportDateStamp(panelId) {
     if (panelId === 'hm-economy' || panelId === 'hm-calendar') return '';
     /* Growth x Policy is built from monthly macro inputs (ISM, Industrial
@@ -14325,6 +14340,12 @@
         var dts = cachedData.sections[0].rows[0].dates;
         if (dts && dts.length) startIso = dts[0];
       } catch (e) {}
+    } else if (panelId === 'hm-sp500-treemap' || panelId === 'hm-commodities' || panelId === 'hm-currencies') {
+      /* 1-day snapshot panels (S&P heat map, commodity + FX tables): their
+         numbers track the latest DAILY session, so stamp that single date
+         (e.g. Monday's close mid-week), not the weekly as_of. */
+      var _lds = _latestDailySession();
+      if (_lds) endIso = _lds;   /* startIso stays null -> single date */
     } else {
       /* Single-window panels: read the live period state var. */
       var periodByPanel = {
@@ -14343,9 +14364,14 @@
       if (getPeriod) {
         var _pk = String(getPeriod() || '').toLowerCase();
         if (_pk === 'd1' || _pk === '1d') {
-          /* 1-day window = the last two real trading sessions, anchored to the
-             snapped last session so a closed-market label is never shown. */
-          endIso = _snapTradingDay(endIso);
+          /* 1-day window = the last two real trading sessions. Commodity Perf +
+             Currency Matrix are built from DAILY tickers, so their 1-day return
+             ends at the latest daily session (e.g. Monday), not the weekly
+             as_of; the other (weekly-cadence) panels' daily series only runs to
+             as_of, so they stay anchored there. */
+          var _d1Daily = (panelId === 'hm-commodity-perf' || panelId === 'hm-currency-matrix');
+          var _lds1 = _d1Daily ? _latestDailySession() : null;
+          endIso = _lds1 || _snapTradingDay(endIso);
           startIso = _prevTradingDay(endIso);
         } else {
           try { startIso = _periodStartIso(getPeriod(), endIso); } catch (e) {}
