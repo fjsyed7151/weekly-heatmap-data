@@ -6109,7 +6109,6 @@
         <div class="hm-universal-period-panel" id="hm-universal-period-panel" hidden>
           <div class="hm-universal-period-title">Universal time period</div>
           <div class="hm-universal-period-options">
-            <button type="button" class="hm-universal-period-opt" data-period="1D">1D</button>
             <button type="button" class="hm-universal-period-opt" data-period="1W">1W</button>
             <button type="button" class="hm-universal-period-opt" data-period="1M">1M</button>
             <button type="button" class="hm-universal-period-opt" data-period="3M">3M</button>
@@ -7731,9 +7730,13 @@
        active (gold bg). */
   (function () {
     var UNIV_KEY = 'hm-universal-period';
-    var PERIOD_LABELS = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y'];
+    /* 1D intentionally NOT here: only the genuinely-daily panels (Index Snapshot,
+       Commodity Perf, Currency Matrix) offer 1D, via their own dropdown. The
+       universal control's floor is 1W (the dashboard's common granularity). A
+       stale saved '1D' falls back to 3M below. */
+    var PERIOD_LABELS = ['1W', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y'];
     var LABEL_TO_KEY = {
-      '1D': 'd1', '1W': 'w1', '1M': 'm1', '3M': 'm3', '6M': 'm6',
+      '1W': 'w1', '1M': 'm1', '3M': 'm3', '6M': 'm6',
       'YTD': 'ytd', '1Y': 'y1', '3Y': 'y3', '5Y': 'y5', '10Y': 'y10'
     };
     /* Every panel's Period dropdown carries this class, so the universal
@@ -10655,7 +10658,7 @@
        instead of resetting to 3M. */
     var initKey = 'm3';
     periods.forEach(function (pp) { if (pp.label === sectorPeriod) initKey = pp.key; });
-    periodWrap.appendChild(makePeriodControl(initKey, function (k) {
+    periodWrap.appendChild(makeWeeklyPeriodControl(initKey, function (k) {
       var p = null;
       periods.forEach(function (pp) { if (pp.key === k) p = pp; });
       if (!p) return;
@@ -10842,7 +10845,7 @@
     vsInner.appendChild(vsLbl);
     var vsSelect = document.createElement('select');
     vsSelect.className = 'hm-vs-select';
-    STANDARD_PERIODS.forEach(function (opt) {
+    STANDARD_PERIODS_NO1D.forEach(function (opt) {
       var o = document.createElement('option');
       o.value = opt.key; o.textContent = opt.label;
       if (opt.key === 'm1') o.selected = true;
@@ -11271,6 +11274,12 @@
      every reference. They all point at the same canonical array. */
   var SF_PERIODS = STANDARD_PERIODS;
   var FI_PERIODS = STANDARD_PERIODS;
+  /* Weekly-cadence panels (Sector, Style Box, Factors, Fixed Income, Global,
+     Country, Themes) have no daily data, so a "1D" view would just show a stale
+     single-day move from the last weekly close. They use this 1D-less list; the
+     genuinely-daily panels (Index Snapshot, Commodity Perf, Currency Matrix)
+     keep the full STANDARD_PERIODS. */
+  var STANDARD_PERIODS_NO1D = STANDARD_PERIODS.filter(function (p) { return p.key !== 'd1'; });
 
   /* Shared "Period" control — a white "Period" label + a styled <select>
      of STANDARD_PERIODS (warm chip). Replaces the per-panel period-pill
@@ -11279,7 +11288,8 @@
      period key; the panel updates its own state + re-renders. The
      <select> carries class hm-period-select so the universal "set-all"
      control can drive every panel at once. */
-  function makePeriodControl(currentKey, onChange) {
+  function makePeriodControl(currentKey, onChange, periods) {
+    periods = periods || STANDARD_PERIODS;
     var wrap = document.createElement('div');
     wrap.className = 'hm-period-control';
     var lbl = document.createElement('span');
@@ -11290,7 +11300,7 @@
     sel.className = 'hm-period-select';
     var stat = document.createElement('span');
     stat.className = 'hm-period-static';
-    STANDARD_PERIODS.forEach(function (p) {
+    periods.forEach(function (p) {
       var o = document.createElement('option');
       o.value = p.key; o.textContent = p.label;
       if (p.key === currentKey) { o.selected = true; stat.textContent = p.label; }
@@ -11298,13 +11308,18 @@
     });
     sel.addEventListener('change', function () {
       var lab = '';
-      STANDARD_PERIODS.forEach(function (p) { if (p.key === sel.value) lab = p.label; });
+      periods.forEach(function (p) { if (p.key === sel.value) lab = p.label; });
       stat.textContent = lab;
       onChange(sel.value);
     });
     wrap.appendChild(sel);
     wrap.appendChild(stat);
     return wrap;
+  }
+
+  /* Weekly panels' Period control: the same dropdown, minus the 1D option. */
+  function makeWeeklyPeriodControl(currentKey, onChange) {
+    return makePeriodControl(currentKey, onChange, STANDARD_PERIODS_NO1D);
   }
 
   function renderStyleFactor(data) {
@@ -11348,7 +11363,7 @@
 
     var allCells = [];
 
-    sbBtns.appendChild(makePeriodControl(sbPeriod, function (k) {
+    sbBtns.appendChild(makeWeeklyPeriodControl(sbPeriod, function (k) {
       sbPeriod = k; updateStyleBox();
     }));
 
@@ -11575,7 +11590,7 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    btnWrap.appendChild(makePeriodControl(fPeriod, function (k) {
+    btnWrap.appendChild(makeWeeklyPeriodControl(fPeriod, function (k) {
       fPeriod = k; updateFactorRows();
     }));
 
@@ -11829,7 +11844,7 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    btnWrap.appendChild(makePeriodControl(fiPeriod, function (k) {
+    btnWrap.appendChild(makeWeeklyPeriodControl(fiPeriod, function (k) {
       fiPeriod = k; updateRows();
     }));
     hdr.appendChild(btnWrap);
@@ -12053,7 +12068,7 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    btnWrap.appendChild(makePeriodControl(giPeriod, function (k) {
+    btnWrap.appendChild(makeWeeklyPeriodControl(giPeriod, function (k) {
       giPeriod = k; updateRows();
     }));
 
@@ -12292,7 +12307,7 @@
 
     var btnWrap = document.createElement('div');
     btnWrap.className = 'hm-factors-periods';
-    btnWrap.appendChild(makePeriodControl(cePeriod, function (k) {
+    btnWrap.appendChild(makeWeeklyPeriodControl(cePeriod, function (k) {
       cePeriod = k; updateRows();
     }));
 
@@ -13179,7 +13194,7 @@
        "\u2014" for those tiles \u2014 handled gracefully by the null path in
        updateTreemapColors. Older themes (TAN 2008, SOXX, GDX, XBI,
        etc.) get real long-window values that are useful for context. */
-    btnWrap.appendChild(makePeriodControl(treemapPeriod, function (k) {
+    btnWrap.appendChild(makeWeeklyPeriodControl(treemapPeriod, function (k) {
       treemapPeriod = k; updateTreemapColors();
     }));
 
