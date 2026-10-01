@@ -2496,6 +2496,25 @@
   .hm-app .hm-mc-regime-cell.risk_on         { background: rgba(26,122,66,0.28); }
   .hm-app .hm-mc-regime-cell.recession_risk  { background: rgba(212,42,32,0.22); }
   .hm-app .hm-mc-regime-cell.late_cycle      { background: rgba(230,191,102,0.36); }
+  /* Credit x Duration (.hm-cd) reuses this plane wholesale. Its regimes take the
+     SAME corner + hue as their Growth x Policy counterpart, so both panels read
+     with one color map: best top-right green, defensive top-left gray, worst
+     bottom-left red, rate pressure bottom-right amber. */
+  .hm-app .hm-mc-tint.flight_to_quality { background: rgba(110,120,150,0.10); border-radius: var(--hm-r) 0 0 0; }
+  .hm-app .hm-mc-tint.bond_rally        { background: rgba(26,122,66,0.10);   border-radius: 0 var(--hm-r) 0 0; }
+  .hm-app .hm-mc-tint.bond_selloff      { background: rgba(212,42,32,0.08);   border-radius: 0 0 0 var(--hm-r); }
+  .hm-app .hm-mc-tint.treasury_selloff  { background: rgba(230,191,102,0.14); border-radius: 0 0 var(--hm-r) 0; }
+  .hm-app .hm-mc-regime-cell.flight_to_quality { background: rgba(110,120,150,0.28); }
+  .hm-app .hm-mc-regime-cell.bond_rally        { background: rgba(26,122,66,0.28); }
+  .hm-app .hm-mc-regime-cell.bond_selloff      { background: rgba(212,42,32,0.22); }
+  .hm-app .hm-mc-regime-cell.treasury_selloff  { background: rgba(230,191,102,0.36); }
+  /* A week where neither yields nor spreads moved claims no quadrant; its
+     ribbon square stays empty rather than borrowing a regime's color. */
+  .hm-app .hm-mc-regime-cell.none { background: transparent; box-shadow: inset 0 0 0 1px var(--hm-border); }
+  /* "Q2 Flight to Quality" runs 3px past the 108px chip at the standard 7px
+     side padding. 5px keeps all four chips at the sibling's 108px, so two
+     still fit side by side on a 320px phone. */
+  .hm-app .hm-cd .hm-mc-qname { padding: 3px 5px; }
   .hm-app .hm-mc-regime-cell.is-current {
     /* Last cell highlighted with a thin gold ring + slight bump so the
        eye lands on "where we are now" first. */
@@ -3708,6 +3727,7 @@
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-commodity-perf"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-gave-wrap"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-macrocompass"] .hm-panel-header,
+  .hm-app .grid-stack > .grid-stack-item[gs-id="hm-credit-duration"] .hm-panel-header,
   .hm-app .grid-stack > .grid-stack-item[gs-id="hm-chart-section"] .hm-panel-header {
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
@@ -6324,6 +6344,7 @@
                 </div>
               </div>
             </div>
+            <div class="grid-stack-item" gs-id="hm-credit-duration"><div class="grid-stack-item-content"><div id="hm-credit-duration"></div></div></div>
             <div class="grid-stack-item" gs-id="hm-economy"><div class="grid-stack-item-content"><div id="hm-economy"></div></div></div>
             <div class="grid-stack-item" gs-id="hm-calendar"><div class="grid-stack-item-content"><div id="hm-calendar"></div></div></div>
             <div class="grid-stack-item" gs-id="hm-fixed-income"><div class="grid-stack-item-content"><div id="hm-fixed-income"></div></div></div>
@@ -6440,7 +6461,7 @@
   var HEATMAP_URL = "https://raw.githubusercontent.com/fjsyed7151/weekly-heatmap-data/main/heatmap.json";
   var SECTION_ORDER = ["Equities", "Breadth", "Sentiment & Positioning", "Volatility",
                        "Rates", "Credit & Liquidity", "Commodities & FX",
-                       "Labor", "Cross-Asset Regime"];
+                       "Growth", "Labor", "Cross-Asset Regime"];
   var STORAGE_KEY = "hm-theme";
   var MAX_METRICS = 6;
   var CHART_COLORS = ['#daa520', '#1a7a42', '#d42a20', '#2c40d0', '#8b5cf6', '#06b6d4'];
@@ -6578,6 +6599,7 @@
       renderGaveQuadrant(cachedData);
       renderGaveCharts(cachedData);
       renderMacroCompass(cachedData);
+      renderCreditDuration(cachedData);
       renderIndexes(cachedData);
       renderCommodities(cachedData);
       renderCurrencies(cachedData);
@@ -6602,19 +6624,24 @@
   function fmt(value, code) {
     if (value === null || value === undefined) return "";
     var v = Number(value);
+    var s;
     switch (code) {
-      case "pct1":   return v.toFixed(1) + "%";
-      case "pct2":   return v.toFixed(2) + "%";
-      case "pct0s":  return v.toFixed(0) + "%";
-      case "pct1s":  return v.toFixed(1) + "%";
-      case "num1":   return v.toFixed(1);
-      case "int":    return Math.round(v).toLocaleString();
-      case "bp":     return Math.round(v * 100).toString();
-      case "usd0":   return "$" + Math.round(v).toString();
-      case "usd0c":  return "$" + Math.round(v).toLocaleString();
-      case "ratio3": return v.toFixed(3);
-      default:       return v.toFixed(2);
+      case "pct1":   s = v.toFixed(1) + "%"; break;
+      case "pct2":   s = v.toFixed(2) + "%"; break;
+      case "pct0s":  s = v.toFixed(0) + "%"; break;
+      case "pct1s":  s = v.toFixed(1) + "%"; break;
+      case "num1":   s = v.toFixed(1); break;
+      case "int":    s = Math.round(v).toLocaleString(); break;
+      case "bp":     s = Math.round(v * 100).toString(); break;
+      case "usd0":   s = "$" + Math.round(v).toString(); break;
+      case "usd0c":  s = "$" + Math.round(v).toLocaleString(); break;
+      case "ratio3": s = v.toFixed(3); break;
+      default:       s = v.toFixed(2);
     }
+    /* A value that rounds to zero keeps its sign ("-0.0" for -0.04, and
+       (-0).toLocaleString() is "-0"). No digit 1-9 means the cell is a zero,
+       and zero has no sign. */
+    return /[1-9]/.test(s) ? s : s.replace("-", "");
   }
   function chartValue(v, code) {
     if (v === null || v === undefined) return null;
@@ -7890,6 +7917,7 @@
        separate hide/show options. */
     { id: 'hm-gave-wrap',       label: 'Gave Four Quadrants',      group: 'Macro' },
     { id: 'hm-macrocompass',    label: 'Growth \u00d7 Policy',     group: 'Macro' },
+    { id: 'hm-credit-duration', label: 'Credit \u00d7 Duration',   group: 'Macro' },
     { id: 'hm-economy',         label: 'Economic Indicators',      group: 'Macro' },
     { id: 'hm-calendar',        label: 'Economic Calendar',        group: 'Macro' },
   ];
@@ -8877,7 +8905,7 @@
       var chip = document.createElement('span');
       chip.className = 'hm-gave-qname hm-metric-tip ' + cornerClass + (c.key === g.quadrant ? ' active' : '');
       chip.innerHTML = '<span class="hm-gave-qnum">' + qNum + '</span>' + c.name;
-      chip.setAttribute('data-tip-title', qNum + ' \u00b7 ' + c.name);
+      chip.setAttribute('data-tip-title', qNum + ': ' + c.name);
       chip.setAttribute('data-tip', c.hint);
       plane.appendChild(chip);
     });
@@ -9235,7 +9263,7 @@
       chip.innerHTML = '<span class="hm-mc-qnum">' + qNum + '</span>' + c.name;
       /* Hover shows a one-line regime description (mirrors the Gave chips);
          the LONG/SHORT trades for the active regime live in the block below. */
-      chip.setAttribute('data-tip-title', qNum + ' \u00b7 ' + c.name);
+      chip.setAttribute('data-tip-title', qNum + ': ' + c.name);
       chip.setAttribute('data-tip', c.hint);
       plane.appendChild(chip);
     });
@@ -9308,7 +9336,7 @@
       hist.forEach(function (h) {
         var cell = document.createElement('span');
         cell.className = 'hm-mc-regime-cell ' + h.quadrant;
-        cell.title = toMmDdYyyy(_snapTradingDay(h.date)) + ' \u00b7 ' + (quadName[h.quadrant] || h.quadrant);
+        cell.title = toMmDdYyyy(_snapTradingDay(h.date)) + ': ' + (quadName[h.quadrant] || h.quadrant);
         cells.appendChild(cell);
       });
       ribbon.appendChild(cells);
@@ -9317,6 +9345,163 @@
 
     /* Methodology lives in the panel info popup (see PANEL_INFO_HTML above)
        \u2014 keeps the card compact while still being one click away. */
+
+    container.appendChild(card);
+  }
+
+  /* ---------- Credit x Duration quadrants ----------
+     Same component as Growth x Policy (it reuses every .hm-mc-* class), but it
+     reads MARKET pricing over 13 weeks instead of economic data, so it answers a
+     different question: is a bond move a rates move or a credit move?
+     Backend convention (build_credit_duration, classified on whole basis points):
+       dev_x > 0  ->  high-yield spreads tightening  ->  RIGHT half
+       dev_y > 0  ->  10y yield falling              ->  TOP half
+     Quadrants sit in the same corners, with the same hues, as their
+     Growth x Policy counterparts. Each name is true for every move it covers:
+       Flight to Quality (yields falling, spreads widening)    -> top-left
+       Bond Rally        (yields falling, spreads tightening)  -> top-right
+       Bond Selloff      (yields rising, spreads widening)     -> bottom-left
+       Treasury Selloff  (yields rising, spreads tightening)   -> bottom-right
+     A week where neither moved is 'none', and no quadrant is highlighted.
+     No long/short list: a 13-week direction read can't see how stretched yields
+     already are, so the panel shows the backend's plain readout instead. */
+  var CD_CELLS = [
+    { key: 'flight_to_quality', row: 0, col: 0, name: 'Flight to Quality',
+      hint: 'Yields falling, credit spreads widening.' },
+    { key: 'bond_rally',        row: 0, col: 1, name: 'Bond Rally',
+      hint: 'Yields falling, credit spreads tightening.' },
+    { key: 'bond_selloff',      row: 1, col: 0, name: 'Bond Selloff',
+      hint: 'Yields rising, credit spreads widening.' },
+    { key: 'treasury_selloff',  row: 1, col: 1, name: 'Treasury Selloff',
+      hint: 'Yields rising, credit spreads tightening.' },
+  ];
+
+  function renderCreditDuration(data) {
+    var container = document.getElementById('hm-credit-duration');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!data.credit_duration) return;
+    var c = data.credit_duration;
+
+    window.PANEL_INFO_HTML['hm-credit-duration'] = function () {
+      return (
+        '<p>Which kind of bond risk the market is repricing, read from 13-week ' +
+          'moves in the 10-year Treasury yield and high-yield credit spreads. It ' +
+          'tracks market pricing rather than economic data, so it can shift ' +
+          'within weeks.</p>' +
+        '<p><b>X axis</b>: The 13-week change in high-yield credit spreads, the ' +
+          'extra yield on junk-rated bonds over Treasuries. Right is tightening, ' +
+          'left is widening.</p>' +
+        '<p><b>Y axis</b>: The 13-week change in the 10-year Treasury yield. Up ' +
+          'is falling yields, down is rising yields.</p>' +
+        '<p>Distance from the center shows how large each move is next to past ' +
+          '13-week moves, and extreme moves pin the dot near the edge.</p>' +
+        '<p>The squares below show the last 13 weekly regime reads.</p>'
+      );
+    };
+    var cdItem = document.querySelector('.grid-stack-item[gs-id="hm-credit-duration"]');
+    if (cdItem) cdItem.classList.add('hm-has-info');
+
+    var card = document.createElement('div');
+    card.className = 'hm-mc hm-cd';
+
+    var hdr = document.createElement('div');
+    hdr.className = 'hm-gold-header';
+    hdr.innerHTML = '<span>Credit &times; Duration</span>';
+    card.appendChild(hdr);
+
+    var frame = document.createElement('div');
+    frame.className = 'hm-mc-frame';
+
+    /* CSS rotates the axis so the SECOND span is visually at the top:
+       falling yields UP (dev_y > 0), rising yields DOWN. */
+    var axisY = document.createElement('div');
+    axisY.className = 'hm-mc-axis-y';
+    axisY.innerHTML = '<span>&lt; Yields rising</span><span>Yields falling &gt;</span>';
+    frame.appendChild(axisY);
+
+    var plane = document.createElement('div');
+    plane.className = 'hm-mc-plane';
+
+    var sortedTints = CD_CELLS.slice().sort(function (a, b) {
+      return (a.row - b.row) || (a.col - b.col);
+    });
+    sortedTints.forEach(function (cell) {
+      var tint = document.createElement('div');
+      tint.className = 'hm-mc-tint ' + cell.key + (cell.key === c.quadrant ? ' active' : '');
+      plane.appendChild(tint);
+    });
+
+    var midH = document.createElement('div');
+    midH.className = 'hm-mc-midline-h';
+    plane.appendChild(midH);
+    var midV = document.createElement('div');
+    midV.className = 'hm-mc-midline-v';
+    plane.appendChild(midV);
+
+    var Q_NUM_BY_POS = { tl: 'Q2', tr: 'Q1', bl: 'Q3', br: 'Q4' };
+    CD_CELLS.forEach(function (cell) {
+      var cornerClass = (cell.row === 0 ? 't' : 'b') + (cell.col === 0 ? 'l' : 'r');
+      var qNum = Q_NUM_BY_POS[cornerClass];
+      var chip = document.createElement('span');
+      chip.className = 'hm-mc-qname hm-metric-tip ' + cornerClass + (cell.key === c.quadrant ? ' active' : '');
+      chip.innerHTML = '<span class="hm-mc-qnum">' + qNum + '</span>' + cell.name;
+      chip.setAttribute('data-tip-title', qNum + ': ' + cell.name);
+      chip.setAttribute('data-tip', cell.hint);
+      plane.appendChild(chip);
+    });
+
+    /* Marker padded to the inner 15-85% of the plane, same as the sibling. */
+    var marker = document.createElement('div');
+    marker.className = 'hm-mc-marker';
+    marker.style.left = (50 + c.dev_x * 35) + '%';
+    marker.style.top  = (50 - c.dev_y * 35) + '%';
+    marker.innerHTML = '<span class="hm-marker-now">Now</span>';
+    plane.appendChild(marker);
+
+    frame.appendChild(plane);
+
+    var axisX = document.createElement('div');
+    axisX.className = 'hm-mc-axis-x';
+    axisX.innerHTML = '<span>&lt; Spreads widening</span><span>Spreads tightening &gt;</span>';
+    frame.appendChild(axisX);
+
+    card.appendChild(frame);
+
+    /* Plain readout of what moved, written by the backend from the same
+       whole-basis-point changes the quadrant is classified on, so it can never
+       disagree with the dot. Same block styling as the sibling's trade list. */
+    if (c.readout) {
+      var readout = document.createElement('div');
+      readout.className = 'hm-mc-active-trades';
+      var line = document.createElement('div');
+      line.className = 'hm-mc-trade-line';
+      line.textContent = c.readout;
+      readout.appendChild(line);
+      card.appendChild(readout);
+    }
+
+    if (c.history && c.history.length) {
+      var quadName = { none: 'No Net Change' };
+      CD_CELLS.forEach(function (cell) { quadName[cell.key] = cell.name; });
+      var ribbon = document.createElement('div');
+      ribbon.className = 'hm-mc-regime-ribbon';
+      var lab = document.createElement('span');
+      lab.className = 'hm-mc-regime-ribbon-label';
+      var hist = c.history.slice(-13);
+      lab.textContent = hist.length + 'w history';
+      ribbon.appendChild(lab);
+      var cells = document.createElement('div');
+      cells.className = 'hm-mc-regime-ribbon-cells';
+      hist.forEach(function (h) {
+        var cell = document.createElement('span');
+        cell.className = 'hm-mc-regime-cell ' + h.quadrant;
+        cell.title = toMmDdYyyy(_snapTradingDay(h.date)) + ': ' + (quadName[h.quadrant] || h.quadrant);
+        cells.appendChild(cell);
+      });
+      ribbon.appendChild(cells);
+      card.appendChild(ribbon);
+    }
 
     container.appendChild(card);
   }
@@ -10174,7 +10359,8 @@
     window.PANEL_INFO_HTML['hm-economy'] = function () {
       return (
         '<p>The latest hard and soft macro readings, grouped by theme. ' +
-          'Mostly monthly; the date on each card is that series\' as-of.</p>' +
+          'Mostly monthly, with quarterly cards for GDP and debt. The date on ' +
+          'each card is the period its reading covers.</p>' +
         '<p>Each card shows the newest reading and the prior one. A direction-aware ' +
           'arrow flags the move: Green for improving, red for worsening, gray for ' +
           'flat.</p>' +
@@ -10191,7 +10377,10 @@
 
     var hdr = document.createElement('div');
     hdr.className = 'hm-econ-header';
-    hdr.innerHTML = 'Economic Indicators<span class="hm-econ-freq">Monthly</span>';
+    /* Debt & Credit is quarterly (federal debt, debt service, delinquencies),
+       the rest is monthly, so the badge can't claim a single cadence. Each
+       card still carries its own vintage date next to the name. */
+    hdr.innerHTML = 'Economic Indicators<span class="hm-econ-freq">Monthly &amp; Quarterly</span>';
     section.appendChild(hdr);
 
     var body = document.createElement('div');
@@ -10200,13 +10389,18 @@
     /* Fallback category mapping when the JSON pre-dates the `category` field. */
     var ECON_CAT_FALLBACK = {
       cpi_yoy: 'Inflation', core_cpi_yoy: 'Inflation', core_pce_yoy: 'Inflation', ppi_yoy: 'Inflation',
-      nfp_mom: 'Labor', sahm_rule: 'Labor',
-      consumer_sentiment: 'Consumer', retail_sales_mom: 'Consumer',
-      indpro_yoy: 'Real Activity', housing_starts_yoy: 'Real Activity',
+      nfp_mom: 'Labor', sahm_rule: 'Labor', unemployment_rate: 'Labor',
+      consumer_sentiment: 'Consumer', retail_sales_mom: 'Consumer', saving_rate: 'Consumer',
+      fed_debt_gdp: 'Debt & Credit', fed_interest_gdp: 'Debt & Credit',
+      household_dsr: 'Debt & Credit', cc_delinquency: 'Debt & Credit',
+      gdpnow: 'Real Activity', indpro_yoy: 'Real Activity', housing_starts_yoy: 'Real Activity',
       ism_services: 'Leading Indicators', empire_state: 'Leading Indicators', philly_fed: 'Leading Indicators',
       shiller_cape: 'Valuation & Monetary', buffett_indicator: 'Valuation & Monetary', m2_yoy: 'Valuation & Monetary'
     };
-    var CAT_ORDER = ['Inflation', 'Labor', 'Consumer', 'Real Activity',
+    /* Debt & Credit sits after Consumer: two of its four cards are household
+       leverage, so it reads as the continuation of the consumer story before
+       the panel moves on to output and surveys. */
+    var CAT_ORDER = ['Inflation', 'Labor', 'Consumer', 'Debt & Credit', 'Real Activity',
                      'Leading Indicators', 'Valuation & Monetary'];
 
     /* Group indicators by category */
@@ -10253,15 +10447,21 @@
         return card;
       }
 
+      /* toFixed keeps the sign of a value that rounds to zero, so the Sahm Rule
+         at -0.03 read "prev -0.0". Zero has no sign. */
+      var fx = function (n, d) {
+        var s = n.toFixed(d);
+        return /[1-9]/.test(s) ? s : s.replace('-', '');
+      };
       if (ind.format === 'pct1') {
-        fmtVal = val.toFixed(1) + '%';
-        fmtPrev = prev.toFixed(1) + '%';
+        fmtVal = fx(val, 1) + '%';
+        fmtPrev = fx(prev, 1) + '%';
       } else if (ind.format === 'pct2') {
-        fmtVal = val.toFixed(2) + '%';
-        fmtPrev = prev.toFixed(2) + '%';
+        fmtVal = fx(val, 2) + '%';
+        fmtPrev = fx(prev, 2) + '%';
       } else if (ind.format === 'num1') {
-        fmtVal = val.toFixed(1);
-        fmtPrev = prev.toFixed(1);
+        fmtVal = fx(val, 1);
+        fmtPrev = fx(prev, 1);
       } else if (ind.format === 'int') {
         fmtVal = Math.round(val);
         fmtPrev = Math.round(prev);
@@ -13455,6 +13655,7 @@
     /* LEFT - macro backdrop: regime, economy, rates, FX */
     'hm-macrocompass':   'left',
     'hm-gave-wrap':      'left',
+    'hm-credit-duration':'left',
     'hm-economy':        'left',
     'hm-calendar':       'left',
     'hm-fixed-income':   'left',
@@ -13485,8 +13686,20 @@
   /* Metrics Heat Map (the main table \u2014 built by render(), but its copy
      is static so it lives here). */
   window.PANEL_INFO_HTML['hm-heatmap-wrap'] = function () {
+    /* Counted from the data so the line can't go stale when metrics are added
+       (it said "nearly 50 across nine sections" after the table reached 53). */
+    var nRows = 0, nSecs = 0;
+    try {
+      (cachedData.sections || []).forEach(function (s) {
+        nSecs += 1;
+        nRows += (s.rows || []).length;
+      });
+    } catch (e) {}
+    var lead = (nRows && nSecs)
+      ? nRows + ' macro and market metrics across ' + nSecs + ' sections'
+      : 'Over 50 macro and market metrics';
     return (
-      '<p>Nearly 50 macro and market metrics across nine sections, each shown ' +
+      '<p>' + lead + ', each shown ' +
         'as 13 weekly readings plus 5-year context columns.</p>' +
       '<p><b>Cell color</b>: Where the reading sits in its own trailing 5-year ' +
         'range. Green is the bullish end, red is the bearish end, pale is the ' +
@@ -13524,6 +13737,7 @@
     'hm-indexes':        'Index Snapshot',
     'hm-gave-wrap':      'Gave Four Quadrants',
     'hm-macrocompass':   'Growth \u00d7 Policy',
+    'hm-credit-duration':'Credit \u00d7 Duration',
     'hm-stylefactor':    'Size vs Value',
     'hm-factors':        'Factors Performance',
     'hm-fixed-income':   'Fixed Income Performance',
@@ -13712,6 +13926,35 @@
 
   /* Apply a saved state to the DOM: reorder panels into their saved
      columns + slot positions, restore widths, restore sticky flags. */
+  /* A panel added after someone saved their layout isn't in state.panels.
+     applyColsLayout re-appends every SAVED panel in order and never touches
+     unknown ones, so a new panel would end up first in its column, above
+     everything the user arranged. Slot each unknown panel in right after its
+     nearest default predecessor that's still in the same saved column (or at
+     the top if none is), so new panels arrive where the default layout puts
+     them without disturbing anyone's arrangement. Mutates state in place. */
+  function _slotNewPanels(state, defaults) {
+    if (!state || !state.panels || !defaults || !defaults.panels) return;
+    var known = {};
+    COL_IDS.forEach(function (cid) {
+      (state.panels[cid] || []).forEach(function (id) { known[id] = true; });
+    });
+    COL_IDS.forEach(function (cid) {
+      var order = defaults.panels[cid] || [];
+      order.forEach(function (id, idx) {
+        if (known[id]) return;
+        var col = state.panels[cid] || (state.panels[cid] = []);
+        var at = 0;
+        for (var k = idx - 1; k >= 0; k--) {
+          var pos = col.indexOf(order[k]);
+          if (pos !== -1) { at = pos + 1; break; }
+        }
+        col.splice(at, 0, id);
+        known[id] = true;
+      });
+    });
+  }
+
   function applyColsLayout(state) {
     if (!state || !state.panels) return;
     COL_IDS.forEach(function (cid) {
@@ -14117,7 +14360,9 @@
 
     /* 4. Restore saved layout (panel order, widths, sticky flags).
        Falls back to defaults built from DEFAULT_PANEL_COLUMN. */
-    var savedState = loadColsLayout() || buildDefaultColsState();
+    var defaultState = buildDefaultColsState();   /* markup is still pristine here */
+    var savedState = loadColsLayout() || defaultState;
+    _slotNewPanels(savedState, defaultState);
     applyColsLayout(savedState);
 
     /* 5. Wire column features: topbar sticky toggles + draggable
@@ -14335,6 +14580,14 @@
       try {
         var mh = cachedData.macrocompass.history;
         if (mh && mh.length) return toMmDdYyyy(_snapTradingDay(mh[mh.length - 1].date));
+      } catch (e) {}
+    }
+    /* Credit x Duration reads FRED yields and spreads, also fetched weekly:
+       stamp its own last complete week for the same reason. */
+    if (panelId === 'hm-credit-duration') {
+      try {
+        var ch = cachedData.credit_duration.history;
+        if (ch && ch.length) return toMmDdYyyy(_snapTradingDay(ch[ch.length - 1].date));
       } catch (e) {}
     }
     var endIso = (typeof cachedData !== 'undefined' && cachedData && cachedData.as_of)
@@ -14941,6 +15194,7 @@
         'hm-calendar':      400,
         'hm-economy':       600,
         'hm-macrocompass':  600,
+        'hm-credit-duration': 600,
         'hm-gave-wrap':     800,
         'hm-theme-treemap':1200
       };
@@ -15489,6 +15743,7 @@
       safeRender('gaveQuadrant', function () { renderGaveQuadrant(data); });
       safeRender('gaveCharts',   function () { renderGaveCharts(data); });
       safeRender('macroCompass', function () { renderMacroCompass(data); });
+      safeRender('creditDuration', function () { renderCreditDuration(data); });
       safeRender('indexes',      function () { renderIndexes(data); });
       safeRender('commodities',  function () { renderCommodities(data); });
       safeRender('currencies',   function () { renderCurrencies(data); });
