@@ -9155,25 +9155,28 @@
        dev_y > 0  \u2192  net easing                \u2192  TOP half
      Marker code uses `topPct = 50 - dev_y * 35` so positive dev_y goes UP.
      Quadrant placement:
-       Soft Landing    (decel + easing)  \u2192  top-left     (row 0, col 0)
-       Risk On         (accel + easing)  \u2192  top-right    (row 0, col 1)
-       Recession Risk  (decel + tight)   \u2192  bottom-left  (row 1, col 0)
-       Late Cycle      (accel + tight)   \u2192  bottom-right (row 1, col 1) */
+       Soft Landing    (below trend + easing)  \u2192  top-left     (row 0, col 0)
+       Risk On         (above trend + easing)  \u2192  top-right    (row 0, col 1)
+       Recession Risk  (below trend + tight)   \u2192  bottom-left  (row 1, col 0)
+       Late Cycle      (above trend + tight)   \u2192  bottom-right (row 1, col 1)
+     "Trend" is the growth score's neutral (ISM 50, industrial production +2% a
+     year): the score is a level against it, not a change, so the copy never
+     says accelerating or decelerating. */
   var MC_CELLS = [
     { key: 'soft_landing',   row: 0, col: 0, name: 'Soft Landing',
-      hint: 'Growth slowing, Fed easing.',
+      hint: 'Growth below trend, policy easier than neutral.',
       longs:  ['long-duration Treasuries', 'quality growth (large-cap tech)', 'IG credit'],
       shorts: ['cyclicals', 'EM equities', 'industrial commodities'] },
     { key: 'risk_on',        row: 0, col: 1, name: 'Risk On',
-      hint: 'Growth accelerating, Fed easing.',
+      hint: 'Growth above trend, policy easier than neutral.',
       longs:  ['broad equities', 'high-yield credit', 'EM equities', 'real estate'],
       shorts: ['dollar', 'volatility (VIX)', 'cash'] },
     { key: 'recession_risk', row: 1, col: 0, name: 'Recession Risk',
-      hint: 'Growth slowing, Fed tightening.',
+      hint: 'Growth below trend, policy tighter than neutral.',
       longs:  ['dollar', 'cash', 'volatility (VIX)'],
       shorts: ['equities (broad)', 'high-yield credit', 'EM equities'] },
     { key: 'late_cycle',     row: 1, col: 1, name: 'Late Cycle',
-      hint: 'Growth accelerating, Fed tightening.',
+      hint: 'Growth above trend, policy tighter than neutral.',
       longs:  ['commodities', 'value stocks', 'EM equities', 'banks'],
       shorts: ['long-duration Treasuries', 'growth/tech'] },
   ];
@@ -9192,10 +9195,14 @@
       return (
         '<p>Where the economy sits on a growth-versus-policy grid, based on ' +
           'two macro signals.</p>' +
-        '<p><b>X axis</b>: Growth, a composite of ISM Services and Industrial ' +
-          'Production. Right is accelerating, left is decelerating.</p>' +
-        '<p><b>Y axis</b>: Fed policy versus neutral. Up is easing, down is ' +
-          'tightening.</p>' +
+        '<p><b>X axis</b>: Growth, a composite of the ISM Services PMI against 50 ' +
+          'and industrial production against 2% a year. Right is above trend, left ' +
+          'is below.</p>' +
+        '<p><b>Y axis</b>: The fed funds rate minus core PCE inflation, against a ' +
+          '1% neutral rate, the New York Fed\'s latest estimate. Up is easier than ' +
+          'neutral, down is tighter.</p>' +
+        '<p><b>Tint</b>: Orange when core PCE inflation is 2.5% or higher, blue ' +
+          'when it\'s lower.</p>' +
         '<p>The squares below show the last 13 weekly regime reads.</p>'
       );
     };
@@ -9286,7 +9293,7 @@
 
     var axisX = document.createElement('div');
     axisX.className = 'hm-mc-axis-x';
-    axisX.innerHTML = '<span>&lt; Growth decel</span><span>Growth accel &gt;</span>';
+    axisX.innerHTML = '<span>&lt; Growth below trend</span><span>Growth above trend &gt;</span>';
     frame.appendChild(axisX);
 
     card.appendChild(frame);
