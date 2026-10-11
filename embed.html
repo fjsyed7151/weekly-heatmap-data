@@ -2605,10 +2605,12 @@
   .hm-app .hm-mc-trade-tag.long  { background: rgba(26,122,66,0.15);  color: var(--hm-green); }
   .hm-app .hm-mc-trade-tag.short { background: rgba(212,42,32,0.15); color: var(--hm-red); }
 
-  /* Inflation overlay on the plane itself \u2014 subtle full-plane wash that
-     lets the user feel the inflation regime without overwhelming the
-     quadrant tints. Layered via a pseudo-element so it doesn't fight with
-     hm-mc-tint's z-index. */
+  /* Inflation overlay on the plane itself: a full-plane wash, orange when core
+     PCE inflation is 2.5% or higher and blue below. It was 6% (5% blue), which
+     moved Soft Landing's grey by only 1, 8 and 12 levels out of 255, so the
+     regime was invisible; 14% (12% blue) reads at a glance while the quadrant
+     tints still show through (20% washed them together). Layered via a
+     pseudo-element so it doesn't fight with hm-mc-tint's z-index. */
   .hm-app .hm-mc.infl-high .hm-mc-plane::before,
   .hm-app .hm-mc.infl-low .hm-mc-plane::before {
     content: '';
@@ -2618,10 +2620,10 @@
     z-index: 0;
     mix-blend-mode: multiply;
   }
-  .hm-app .hm-mc.infl-high .hm-mc-plane::before { background: rgba(232,116,38,0.06); }
-  .hm-app .hm-mc.infl-low  .hm-mc-plane::before { background: rgba(46,103,178,0.05); }
-  .hm-app.dark .hm-mc.infl-high .hm-mc-plane::before { background: rgba(232,116,38,0.10); mix-blend-mode: screen; }
-  .hm-app.dark .hm-mc.infl-low  .hm-mc-plane::before { background: rgba(46,103,178,0.09); mix-blend-mode: screen; }
+  .hm-app .hm-mc.infl-high .hm-mc-plane::before { background: rgba(232,116,38,0.14); }
+  .hm-app .hm-mc.infl-low  .hm-mc-plane::before { background: rgba(46,103,178,0.12); }
+  .hm-app.dark .hm-mc.infl-high .hm-mc-plane::before { background: rgba(232,116,38,0.16); mix-blend-mode: screen; }
+  .hm-app.dark .hm-mc.infl-low  .hm-mc-plane::before { background: rgba(46,103,178,0.15); mix-blend-mode: screen; }
 
   /* Top index cards \u2014 unified panel with vertical dividers between cells.
      Previous design had 4 standalone cards with their own borders/radii; the
